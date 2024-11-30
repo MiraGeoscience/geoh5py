@@ -353,38 +353,6 @@ def test_outside_survey(tmp_path):
         np.testing.assert_array_almost_equal(locations, solution, decimal=3)
 
 
-def test_desurvey(tmp_path):
-    from geoh5py.objects import Points
-    with Workspace(r"C:\Users\dominiquef\Downloads\desurvey_test.geoh5") as workspace:
-        well = workspace.get_entity("bin 3")[0]
-
-        depths = np.abs(np.random.randn(10)) * 2000
-        locations = well.desurvey(depths)
-        Points.create(workspace, name="desurvey", vertices=locations)
-    print(locations)
-    # # Create a simple well
-    # dist = np.r_[0.0, 100.0, 200.0]
-    # azm = np.r_[90, 80, 70]
-    # dip = np.r_[-90, -60, -45]
-    #
-    # collar = np.r_[0.0, 10.0, 10.0]
-    # h5file_path = tmp_path / r"testCurve.geoh5"
-    #
-    # with Workspace(version=1.0).save_as(h5file_path) as workspace:
-    #     well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
-    #     depths = np.r_[0.0, 50, 100, 150.0, 200.0, 300.]
-        # locations = well.desurvey(depths)
-
-        # data_object = well.add_data(
-        #     {
-        #         "log_values": {
-        #             "depth": depths,
-        #             "values": np.random.randint(1, high=8, size=6),
-        #         }
-        #     }
-        # )
-
-
 def test_insert_drillhole_data(tmp_path):
     well_name = "bullseye"
     n_data = 10
