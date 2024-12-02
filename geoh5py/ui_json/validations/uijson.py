@@ -82,9 +82,7 @@ def parent_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
     child = data[name]
     parent = data[form["parent"]]
 
-    if (
-        not isinstance(parent, ObjectBase)
-        or isinstance(child, Data)
-        and parent.get_entity(child.uid)[0] is None
+    if not isinstance(parent, ObjectBase) or (
+        isinstance(child, Data) and parent.get_entity(child.uid)[0] is None
     ):
         raise UIJsonError(f"{name} data is not a child of {form['parent']}.")
