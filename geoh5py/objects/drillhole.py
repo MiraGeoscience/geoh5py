@@ -18,7 +18,7 @@
 # pylint: disable=R0902, R0904
 
 from __future__ import annotations
-from pydantic import BaseModel
+
 import re
 import uuid
 import warnings
@@ -27,26 +27,19 @@ from numbers import Real
 import numpy as np
 
 from ..data import Data, FloatData, NumericData
-from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
+from ..shared.utils import (
+    box_intersect,
+    dip_azimuth_to_vector,
+    mask_by_extent,
+    merge_arrays,
+)
 from .points import Points
 
 
-class row(BaseModel):
-    """
-    Drillhole row data.
-    """
-    azim: float | None = None
-    dip: float | None = None
-    rad: float | None = None
-    uux: float | None = None
-    uuy: float | None = None
-    uuz: float | None = None
-    xh: float | None = None
-    yh: float | None = None
-    zh: float | None = None
-    ccx: float | None = None
-    ccy: float | None = None
-    ccz: float | None = None
+INFINITE_RADIUS = 99999.9
+MINIMUM_DEPTH_INTERVAL = 1.0
+MAXIMUM_DEPTH_INTERVAL = 50.0
+
 
 class Drillhole(Points):
     """
@@ -94,6 +87,7 @@ class Drillhole(Points):
         self._trace_depth: np.ndarray | None = None
         self._locations = None
         self._surveys: np.ndarray | None = None
+        self._intervals: dict | None = None
 
         super().__init__(
             vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
@@ -158,6 +152,7 @@ class Drillhole(Points):
         value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
         self._collar = value
         self._locations = None
+        self._intervals = None
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
@@ -220,13 +215,23 @@ class Drillhole(Points):
         return None
 
     @property
+    def intervals(self):
+        """
+        Densified and computed interval information
+        """
+        if self._intervals is None:
+            self._intervals = self.compute_intervals(
+                self.surveys, self.collar.tolist(), self.end_of_hole
+            )
+        return self._intervals
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
         """
         if getattr(self, "_locations", None) is None and self.collar is not None:
-            deviations = self.deviations(self.surveys)
-            self._locations = self.deviations_to_xyz(deviations, self.surveys[:, 0], self.collar)
+            self._locations = self.depths_to_xyz(self.intervals, self.surveys[:, 0])
 
         return self._locations
 
@@ -316,6 +321,7 @@ class Drillhole(Points):
                 self.workspace.update_attribute(self, "trace")
 
         self._locations = None
+        self._intervals = None
 
     def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
         """
@@ -434,8 +440,7 @@ class Drillhole(Points):
         """
         Function to return x, y, z coordinates from depth.
         """
-        deviations = self.deviations(self.surveys, self.collar.tolist())
-        return self.deviations_to_xyz(deviations, depths)
+        return self.depths_to_xyz(self.intervals, depths)
 
     def add_vertices(self, xyz):
         """
@@ -717,8 +722,21 @@ class Drillhole(Points):
                     self.workspace.update_attribute(self, "cells")
 
     @staticmethod
-    def deviations(survey: np.ndarray, collar) -> dict:
-        # Survey['Depth', 'Azimuth', 'Dip']
+    def validate_survey_values(
+        survey: np.ndarray, end_of_hole: float | None
+    ) -> np.ndarray:
+        """
+        Validate the survey values for desurveying.
+
+        - Repeat first survey point at surface for de-survey interpolation
+        - Repeat last survey point at end of hole for de-survey interpolation
+        - Densify along intervals if greater than 50 m
+
+        :param survey: Array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        :param end_of_hole: End of the drillhole in meters.
+
+        :return: Augmented array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        """
         # Repeat first survey point at surface for de-survey interpolation
         if survey[0, 0] != 0.0:
             full_survey = np.vstack([survey[0, :], survey])
@@ -726,282 +744,112 @@ class Drillhole(Points):
         else:
             full_survey = survey.copy()
 
-        ind = np.argsort(full_survey[:, 0])
-        INFINITE_RADIUS = 99999.9
-        depths = full_survey[ind, 0]
-        azimuth = np.deg2rad(90 - full_survey[ind, 1])
-        dip = np.deg2rad(full_survey[ind, 2])
+        # Repeat last survey point at end of hole for de-survey interpolation
+        if end_of_hole is not None and end_of_hole > full_survey[-1, 0]:
+            last_row = full_survey[-1, :].copy()
+            last_row[0] = end_of_hole
+            full_survey = np.vstack([full_survey, last_row])
 
-        # intervals = {
-        #     depths[i]: row(azim=azimuth[i], dip=dip[i]) for i in ind
-        # }
-        # # for i in range(len(full_surveys)):
-        # #     survey = full_surveys[i]
-        # #     # adjust az for grid azimuth and geo->cart coord system
-        # #     az = 90 - survey.azim
-        # #     intervals[survey.depth] = IBHInterval(survey.depth, az, survey.dip)
-        #
-        # rd = az = di = sn = cs = dp0 = dp1 = cx0 = cy0 = cz0 = cx1 = cy1 = cz1 = vx = vy = vz = vr = ux = uy = uz = ur = 0.0
-        # scp = ddp = alpha = x0 = y0 = z0 = x1 = y1 = z1 = 0.0
-        # tdepth = prevdepth = 0.0
-        # it_bh = iter(intervals.items())
-        #
-        # if intervals:
-        #     it_bh = iter(intervals.items())
-        #     key, value = next(it_bh)
-        #     tdepth = prevdepth = dp1 = abs(key)
-        #     az = value.azim
-        #     di = value.dip
-        #
-        #     value.xh = collar[0]
-        #     value.yh = collar[1]
-        #     value.zh = collar[2]
-        # else:
-        #     tdepth = prevdepth = dp1 = 0
-        #     az = 0.0
-        #     di = np.deg2rad(-90.0)
-        #
-        # cs = np.cos(di)
-        # sn = np.sin(di)
-        # cx1 = cs * np.cos(az)
-        # cy1 = cs * np.sin(az)
-        # cz1 = sn
-        # if len(intervals) > 1:
-        #     it_bh = iter(intervals.items())
-        #     next(it_bh)
-        #     for key, value in it_bh:
-        #         tdepth = key
-        #         az = value.azim
-        #         di = value.dip
-        #         dp0 = dp1
-        #         dp1 = abs(tdepth)
-        #         ddp = dp1 - dp0
-        #         if ddp == 0.0:
-        #             ddp = 1.0
-        #         cx0 = cx1
-        #         cy0 = cy1
-        #         cz0 = cz1
-        #         cs = np.cos(di)
-        #         sn = np.sin(di)
-        #         cx1 = cs * np.cos(az)
-        #         cy1 = cs * np.sin(az)
-        #         cz1 = sn
-        #         # v = cross product between c0 and c1
-        #         vx = cy0 * cz1 - cz0 * cy1
-        #         vy = cz0 * cx1 - cx0 * cz1
-        #         vz = cx0 * cy1 - cy0 * cx1
-        #         vr = np.sqrt(vx * vx + vy * vy + vz * vz)
-        #         # scp = dot product between c0 and c1
-        #         scp = cx0 * cx1 + cy0 * cy1 + cz0 * cz1
-        #         ux = cx1 - scp * cx0
-        #         uy = cy1 - scp * cy0
-        #         uz = cz1 - scp * cz0
-        #         ur = np.sqrt(ux * ux + uy * uy + uz * uz)
-        #         if ur == 0.0:
-        #             ur = INFINITE_RADIUS
-        #         ux = ux / ur
-        #         uy = uy / ur
-        #         uz = uz / ur
-        #
-        #         # scp/vr = cos(gamma)/sin(gamma) = cot(gamma) with gamma the angle between c0 and c1.
-        #         # arccot(x) = pi/2 - arctan(x)
-        #         # (https://en.wikipedia.org/wiki/Inverse_trigonometric_functions) so alpha = abs(pi/2 -
-        #         # arctan(scp/vr)) = abs(arccot(scp/vr)) = abs(arccot(cot(gamma))) = abs(gamma) alpha is
-        #         # the positive angle between c0 and c1.
-        #         alpha = abs(0.5 * np.pi - np.arctan2(scp, vr))
-        #         # {should range from 0 to pi}
-        #         if alpha != 0.0:
-        #             # length of an arc of circle (here ddp) = radius * angle,
-        #             # so we approximate the path between 2 stations by an arc of circle.
-        #             rd = ddp / alpha
-        #         else:
-        #             rd = ddp * INFINITE_RADIUS  # {flag infinite radius}
-        #             alpha = ddp / rd
-        #         intervals[prevdepth].rad = rd
-        #         intervals[prevdepth].uux = ux
-        #         intervals[prevdepth].uuy = uy
-        #         intervals[prevdepth].uuz = uz
-        #         intervals[prevdepth].ccx = cx0
-        #         intervals[prevdepth].ccy = cy0
-        #         intervals[prevdepth].ccz = cz0
-        #         x0 = intervals[prevdepth].xh
-        #         y0 = intervals[prevdepth].yh
-        #         z0 = intervals[prevdepth].zh
-        #         sn = np.sin(alpha)
-        #         cs = 1.0 - np.cos(alpha)
-        #         x1 = x0 + rd * (cx0 * sn + ux * cs)
-        #         y1 = y0 + rd * (cy0 * sn + uy * cs)
-        #         z1 = z0 + rd * (cz0 * sn + uz * cs)
-        #         intervals[tdepth].xh = x1
-        #         intervals[tdepth].yh = y1
-        #         intervals[tdepth].zh = z1
-        #         prevdepth = tdepth
-        #
-        #     intervals[tdepth].uux = 0.0
-        #     intervals[tdepth].uuy = 0.0
-        #     intervals[tdepth].uuz = 0.0
-        #     intervals[tdepth].rad = INFINITE_RADIUS
-        #     intervals[tdepth].ccx = cx1
-        #     intervals[tdepth].ccy = cy1
-        #     intervals[tdepth].ccz = cz1
-        # else:
-        #     if 0.0 not in intervals:
-        #         intervals[0.0] = IBHInterval(tdepth, az, di)
-        #     intervals[0.0].rad = INFINITE_RADIUS
-        #     intervals[0.0].ccx = cx1
-        #     intervals[0.0].ccy = cy1
-        #     intervals[0.0].ccz = cz1
-        #     intervals[0.0].uux = 0.0
-        #     intervals[0.0].uuy = 0.0
-        #     intervals[0.0].uuz = 0.0
-        #     intervals[0.0].xh = collar[0]
-        #     intervals[0.0].yh = collar[1]
-        #     intervals[0.0].zh = collar[2]
+        # Densify along intervals if greater than 50 m
+        deltas = np.diff(full_survey[:, 0])
+        new_points = []
+        for ii, delta in enumerate(deltas):
+            if delta > MAXIMUM_DEPTH_INTERVAL:
+                depths = np.arange(0, delta, MAXIMUM_DEPTH_INTERVAL)
+                d_azm = (full_survey[ii + 1, 1] - full_survey[ii, 1]) / delta
+                d_dip = (full_survey[ii + 1, 2] - full_survey[ii, 2]) / delta
+                new_points.append(
+                    np.c_[
+                        full_survey[ii, 0] + depths[1:],
+                        full_survey[ii, 1] + d_azm * depths[1:],
+                        full_survey[ii, 2] + d_dip * depths[1:],
+                    ]
+                )
 
-        sin_dip = np.sin(dip)
-        cos_dip = np.cos(dip)
+        if len(new_points) > 1:
+            full_survey = np.vstack([full_survey, np.vstack(new_points)])
 
-        dx = cos_dip * np.cos(azimuth)
-        dy = cos_dip * np.sin(azimuth)
-        dz = sin_dip
+        return np.unique(full_survey, axis=0)
+
+    @staticmethod
+    def compute_intervals(survey: np.ndarray, collar, end_of_hole) -> dict:
+        """
+        Compute the intervals from survey and collar information.
+
+        Stores a dictionary describing the arc circle between the survey points
+        separated by a maximum depth interval of 50 m.
+
+        Translated from C++ code.
+
+        :param survey: Array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        :param collar: Collar location of the drillhole.
+        :param end_of_hole: End of the drillhole in meters.
+        """
+        full_survey = Drillhole.validate_survey_values(survey, end_of_hole)
+        unit_vector = dip_azimuth_to_vector(full_survey[:, 2], full_survey[:, 1])
 
         if survey.shape[0] < 2:
             return {
-                "depths": 0,
+                "depths": np.r_[0],
                 "rad": np.r_[INFINITE_RADIUS],
-                "uux": np.r_[0],
-                "uuy": np.r_[0],
-                "uuz": np.r_[0],
-                "dx": dx,
-                "dy": dy,
-                "dz": dz,
-                "x": collar[0],
-                "y": collar[1],
-                "z": collar[2]
+                "tangential": np.zeros((1, 3)),
+                "unit_vector": unit_vector,
+                "locations": np.c_[collar],
             }
 
         # Cross product between neighbours
-        cross = np.cross(np.c_[dx[:-1], dy[:-1], dz[:-1]], np.c_[dx[1:], dy[1:], dz[1:]], axis=1)
+        cross = np.cross(unit_vector[:-1, :], unit_vector[1:, :], axis=1)
         vr = np.linalg.norm(cross, axis=1)
+        dot = np.sum(unit_vector[:-1, :] * unit_vector[1:, :], axis=1)
+        tangential = unit_vector[1:, :] - dot[:, None] * unit_vector[:-1, :]
+        norm = np.linalg.norm(tangential, axis=1)
+        norm[norm == 0.0] = INFINITE_RADIUS
+        tangential /= norm[:, None]
+        alpha = np.abs(0.5 * np.pi - np.arctan2(dot, vr))
+        delta_depth = np.diff(full_survey[:, 0])
+        radius = delta_depth / alpha
 
-        scp = np.sum(np.c_[dx[:-1], dy[:-1], dz[:-1]] * np.c_[dx[1:], dy[1:], dz[1:]], axis=1)
-        ux = dx[1:] - scp * dx[:-1]
-        uy = dy[1:] - scp * dy[:-1]
-        uz = dz[1:] - scp * dz[:-1]
-        ur = np.linalg.norm(np.c_[ux, uy, uz], axis=1)
-        ur[ur == 0.0] = INFINITE_RADIUS
-
-        ux /= ur
-        uy /= ur
-        uz /= ur
-
-        alpha = np.abs(0.5 * np.pi - np.arctan2(scp, vr))
-        ddp = np.diff(depths)
-        rd = ddp / alpha
-
-        rd[alpha == 0.0] = ddp[alpha == 0.0] * INFINITE_RADIUS
-        alpha[alpha == 0.0] = ddp[alpha == 0.0] / rd[alpha == 0.0]
+        radius[alpha == 0.0] = delta_depth[alpha == 0.0] * INFINITE_RADIUS
+        alpha[alpha == 0.0] = delta_depth[alpha == 0.0] / radius[alpha == 0.0]
 
         intervals = {
-            "depths": full_survey[:, 0],
-            "rad": np.r_[rd, INFINITE_RADIUS],
-            "uux": np.r_[ux, 0],
-            "uuy": np.r_[uy, 0],
-            "uuz": np.r_[uz, 0],
-            "dx": dx,
-            "dy": dy,
-            "dz": dz,
-            "x": np.r_[collar[0], collar[0] + np.cumsum(rd * (dx[:-1] * np.sin(alpha) + ux * (1 - np.cos(alpha))))],
-            "y": np.r_[collar[1], collar[1] + np.cumsum(rd * (dy[:-1] * np.sin(alpha) + uy * (1 - np.cos(alpha))))],
-            "z": np.r_[collar[2], collar[2] + np.cumsum(rd * (dz[:-1] * np.sin(alpha) + uz * (1 - np.cos(alpha))))],
+            "depths": np.r_[full_survey[:, 0]],
+            "rad": np.r_[radius, INFINITE_RADIUS],
+            "tangential": np.vstack([tangential, np.zeros(3)]),
+            "unit_vector": unit_vector,
+            "locations": np.r_[
+                np.c_[collar],
+                collar
+                + np.cumsum(
+                    radius[:, None]
+                    * (
+                        np.sin(alpha)[:, None] * unit_vector[:-1, :]
+                        + (1 - np.cos(alpha))[:, None] * tangential
+                    ),
+                    axis=0,
+                ),
+            ],
         }
 
         return intervals
 
     @staticmethod
-    def deviations_to_xyz(deviations: dict, depths: np.ndarray) -> np.ndarray:
+    def depths_to_xyz(intervals: dict, depths: np.ndarray) -> np.ndarray:
         """
         Convert survey parameters to x, y, z coordinates.
 
-        :param deviations: Dictionary of deviation parameters.
+        :param intervals: Dictionary of intervals parameters.
         :param depths: Array of depth values.
         :param collar: Array of collar coordinates.
         """
-        ind = np.searchsorted(deviations["depths"], depths, side="right") - 1
-        dl = depths - deviations["depths"][ind]
-        radii = deviations["rad"][ind]
+        ind = np.searchsorted(intervals["depths"], depths, side="right") - 1
+        dl = depths - intervals["depths"][ind]
+        radii = intervals["rad"][ind]
         radii[radii == 0.0] = 1.0
 
         angle = dl / radii
-
-        x = deviations["x"][ind] + radii * (
-            deviations["dx"][ind] * np.sin(angle) + deviations["uux"][ind] * (1 - np.cos(angle))
+        locations = intervals["locations"][ind, :] + radii[:, None] * (
+            np.sin(angle)[:, None] * intervals["unit_vector"][ind, :]
+            + (1 - np.cos(angle))[:, None] * intervals["tangential"][ind, :]
         )
-        y = deviations["y"][ind] + radii * (
-            deviations["dy"][ind] * np.sin(angle) + deviations["uuy"][ind] * (1 - np.cos(angle))
-        )
-        z = deviations["z"][ind] + radii * (
-            deviations["dz"][ind] * np.sin(angle) + deviations["uuz"][ind] * (1 - np.cos(angle))
-        )
-
-        return np.c_[x, y, z]
-
-
-def compute_deviation(surveys: np.ndarray) -> np.ndarray:
-    """
-    Compute deviation distances from survey parameters.
-
-    :param surveys: Array of azimuth, dip and depth values.
-    """
-    if surveys is None:
-        raise AttributeError(
-            "Cannot compute deviation coordinates without `survey` attribute."
-        )
-
-    lengths = surveys[1:, 0] - surveys[:-1, 0]
-
-    deviation = []
-    for component in [deviation_x, deviation_y, deviation_z]:
-        dl_in = component(surveys[:-1, 1], surveys[:-1, 2])
-        dl_out = component(surveys[1:, 1], surveys[1:, 2])
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
-        deviation += [dl_in + lengths * ddl / 2.0]
-
-    return np.vstack(deviation).T
-
-
-def deviation_x(azimuth, dip):
-    """
-    Compute the easting deviation.
-
-    :param azimuth: Degree angle clockwise from North
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in easting distance.
-    """
-    return np.cos(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
-
-
-def deviation_y(azimuth, dip):
-    """
-    Compute the northing deviation.
-
-    :param azimuth: Degree angle clockwise from North
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in northing distance.
-    """
-    return np.sin(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
-
-
-def deviation_z(_, dip):
-    """
-    Compute the vertical deviation.
-
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in vertical distance.
-    """
-    return np.sin(np.deg2rad(dip))
-
-
+        return locations
