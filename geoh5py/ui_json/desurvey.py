@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
+
 def updateIntervalInfo(self):
     intervals.clear()
 
@@ -29,7 +30,9 @@ def updateIntervalInfo(self):
         az = 90 - survey.azim
         intervals[survey.depth] = IBHInterval(survey.depth, az, survey.dip)
 
-    rd = az = di = sn = cs = dp0 = dp1 = cx0 = cy0 = cz0 = cx1 = cy1 = cz1 = vx = vy = vz = vr = ux = uy = uz = ur = 0.0
+    rd = az = di = sn = cs = dp0 = dp1 = cx0 = cy0 = cz0 = cx1 = cy1 = cz1 = vx = vy = (
+        vz
+    ) = vr = ux = uy = uz = ur = 0.0
     scp = ddp = alpha = x0 = y0 = z0 = x1 = y1 = z1 = 0.0
     tdepth = prevdepth = 0.0
     it_bh = iter(intervals.items())
