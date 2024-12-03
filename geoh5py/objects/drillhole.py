@@ -722,7 +722,7 @@ class Drillhole(Points):
                     self.workspace.update_attribute(self, "cells")
 
     @staticmethod
-    def validate_survey_values(
+    def densify_survey_values(
         survey: np.ndarray, end_of_hole: float | None
     ) -> np.ndarray:
         """
@@ -786,7 +786,7 @@ class Drillhole(Points):
         :param collar: Collar location of the drillhole.
         :param end_of_hole: End of the drillhole in meters.
         """
-        full_survey = Drillhole.validate_survey_values(survey, end_of_hole)
+        full_survey = Drillhole.densify_survey_values(survey, end_of_hole)
         unit_vector = dip_azimuth_to_vector(full_survey[:, 2], full_survey[:, 1])
 
         if survey.shape[0] < 2:
@@ -841,7 +841,6 @@ class Drillhole(Points):
 
         :param intervals: Dictionary of intervals parameters.
         :param depths: Array of depth values.
-        :param collar: Array of collar coordinates.
         """
         ind = np.searchsorted(intervals["depths"], depths, side="right") - 1
         dl = depths - intervals["depths"][ind]
