@@ -737,14 +737,13 @@ class Drillhole(Points):
 
         :return: Augmented array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
         """
+        full_survey = survey.copy()
+
         # Repeat first survey point at surface for de-survey interpolation
         if survey[0, 0] != 0.0:
-            full_survey = np.vstack([survey[0, :], survey])
+            full_survey = np.vstack([survey[0, :], full_survey])
             full_survey[0, 0] = 0.0
-        else:
-            full_survey = survey.copy()
 
-        # Repeat last survey point at end of hole for de-survey interpolation
         if end_of_hole is not None and end_of_hole > full_survey[-1, 0]:
             last_row = full_survey[-1, :].copy()
             last_row[0] = end_of_hole
@@ -754,17 +753,19 @@ class Drillhole(Points):
         deltas = np.diff(full_survey[:, 0])
         new_points = []
         for ii, delta in enumerate(deltas):
-            if delta > MAXIMUM_DEPTH_INTERVAL:
-                depths = np.arange(0, delta, MAXIMUM_DEPTH_INTERVAL)
-                d_azm = (full_survey[ii + 1, 1] - full_survey[ii, 1]) / delta
-                d_dip = (full_survey[ii + 1, 2] - full_survey[ii, 2]) / delta
-                new_points.append(
-                    np.c_[
-                        full_survey[ii, 0] + depths[1:],
-                        full_survey[ii, 1] + d_azm * depths[1:],
-                        full_survey[ii, 2] + d_dip * depths[1:],
-                    ]
-                )
+            if delta < MAXIMUM_DEPTH_INTERVAL:
+                continue
+
+            depths = np.arange(0, delta, MAXIMUM_DEPTH_INTERVAL)
+            d_azm = (full_survey[ii + 1, 1] - full_survey[ii, 1]) / delta
+            d_dip = (full_survey[ii + 1, 2] - full_survey[ii, 2]) / delta
+            new_points.append(
+                np.c_[
+                    full_survey[ii, 0] + depths[1:],
+                    full_survey[ii, 1] + d_azm * depths[1:],
+                    full_survey[ii, 2] + d_dip * depths[1:],
+                ]
+            )
 
         if len(new_points) > 1:
             full_survey = np.vstack([full_survey, np.vstack(new_points)])
