@@ -80,7 +80,15 @@ class Data(Entity):
         if parent is None:
             parent = self.parent
 
-        if self.values is not None and mask is not None:
+        if (
+            self.values is not None
+            and mask is not None
+            and self.association
+            in (
+                DataAssociationEnum.VERTEX,
+                DataAssociationEnum.CELL,
+            )
+        ):
             if not isinstance(mask, np.ndarray):
                 raise TypeError("Mask must be an array or None.")
 
@@ -89,19 +97,7 @@ class Data(Entity):
                     f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
                 )
 
-            n_values = (
-                parent.n_cells
-                if self.association is DataAssociationEnum.CELL
-                else parent.n_vertices
-            )
-
-            if n_values < self.values.shape[0]:
-                kwargs.update({"values": self.values[mask]})
-            else:
-                values = np.ones_like(self.values) * self.nan_value
-                values[mask] = self.values[mask]
-
-                kwargs.update({"values": values})
+            kwargs.update({"values": self.values[mask]})
 
         new_entity = parent.workspace.copy_to_parent(
             self,
