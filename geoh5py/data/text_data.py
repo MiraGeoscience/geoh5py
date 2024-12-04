@@ -69,6 +69,11 @@ class TextData(Data):
                 [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
             )
 
+            if self.n_values is not None and len(values) < self.n_values:
+                full_array = np.full(self.n_values, self.nan_value, dtype=values.dtype)
+                full_array[: len(values)] = values
+                return full_array
+
         if (not isinstance(values, (str, type(None), np.ndarray))) or (
             isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
         ):
