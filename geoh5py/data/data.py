@@ -96,8 +96,19 @@ class Data(Entity):
                 raise ValueError(
                     f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
                 )
-            values = self.values.copy()
-            values[~mask] = self.nan_value
+
+            n_values = (
+                parent.n_cells
+                if self.association is DataAssociationEnum.CELL
+                else parent.n_vertices
+            )
+
+            # Trimming values to the mask
+            if n_values < self.values.shape[0]:
+                values = self.values[mask]
+            else:
+                values = self.values.copy()
+                values[~mask] = self.nan_value
 
             kwargs.update({"values": values})
 
