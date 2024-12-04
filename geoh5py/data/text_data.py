@@ -141,6 +141,13 @@ class MultiTextData(Data):
     def formatted_values(self):
         return text_formating(self.values)
 
+    @property
+    def nan_value(self):
+        """
+        Value used to represent missing data in python.
+        """
+        return ""
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.MULTI_TEXT
@@ -150,7 +157,7 @@ class MultiTextData(Data):
     ) -> np.ndarray | str | None:
         if isinstance(values, np.ndarray) and self.n_values is not None:
             if len(values) < self.n_values:
-                full_array = np.full(self.n_values, "", dtype=values.dtype)
+                full_array = np.full(self.n_values, self.nan_value, dtype=values.dtype)
                 full_array[: len(values)] = values
                 return full_array
 

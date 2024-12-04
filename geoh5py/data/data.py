@@ -96,8 +96,10 @@ class Data(Entity):
                 raise ValueError(
                     f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
                 )
+            values = self.values.copy()
+            values[~mask] = self.nan_value
 
-            kwargs.update({"values": self.values[mask]})
+            kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
             self,
