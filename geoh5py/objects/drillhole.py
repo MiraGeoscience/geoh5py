@@ -786,6 +786,7 @@ class Drillhole(Points):
         :param collar: Collar location of the drillhole.
         :param end_of_hole: End of the drillhole in meters.
         """
+        collar = np.asarray(collar).reshape((1, 3))
         full_survey = Drillhole.densify_survey_values(survey, end_of_hole)
         unit_vector = dip_azimuth_to_vector(full_survey[:, 2], full_survey[:, 1])
 
@@ -795,7 +796,7 @@ class Drillhole(Points):
                 "rad": np.r_[INFINITE_RADIUS],
                 "tangential": np.zeros((1, 3)),
                 "unit_vector": unit_vector,
-                "locations": np.c_[collar],
+                "locations": collar,
             }
 
         # Cross product between neighbours
@@ -819,7 +820,7 @@ class Drillhole(Points):
             "tangential": np.vstack([tangential, np.zeros(3)]),
             "unit_vector": unit_vector,
             "locations": np.r_[
-                np.c_[collar],
+                collar,
                 collar
                 + np.cumsum(
                     radius[:, None]
@@ -842,8 +843,8 @@ class Drillhole(Points):
         :param intervals: Dictionary of intervals parameters.
         :param depths: Array of depth values.
         """
-        ind = np.searchsorted(intervals["depths"], depths, side="right") - 1
-        dl = depths - intervals["depths"][ind]
+        ind = np.searchsorted(intervals["depths"], depths.flatten(), side="right") - 1
+        dl = depths.flatten() - intervals["depths"][ind]
         radii = intervals["rad"][ind]
         radii[radii == 0.0] = 1.0
 
