@@ -80,7 +80,15 @@ class Data(Entity):
         if parent is None:
             parent = self.parent
 
-        if self.values is not None and mask is not None:
+        if (
+            self.values is not None
+            and mask is not None
+            and self.association
+            in (
+                DataAssociationEnum.VERTEX,
+                DataAssociationEnum.CELL,
+            )
+        ):
             if not isinstance(mask, np.ndarray):
                 raise TypeError("Mask must be an array or None.")
 
@@ -95,13 +103,14 @@ class Data(Entity):
                 else parent.n_vertices
             )
 
+            # Trimming values to the mask
             if n_values < self.values.shape[0]:
-                kwargs.update({"values": self.values[mask]})
+                values = self.values[mask]
             else:
-                values = np.ones_like(self.values) * self.nan_value
-                values[mask] = self.values[mask]
+                values = self.values.copy()
+                values[~mask] = self.nan_value
 
-                kwargs.update({"values": values})
+            kwargs.update({"values": values})
 
         new_entity = parent.workspace.copy_to_parent(
             self,
