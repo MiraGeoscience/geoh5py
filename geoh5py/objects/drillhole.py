@@ -843,8 +843,9 @@ class Drillhole(Points):
         :param intervals: Dictionary of intervals parameters.
         :param depths: Array of depth values.
         """
-        ind = np.searchsorted(intervals["depths"], depths.flatten(), side="right") - 1
-        dl = depths.flatten() - intervals["depths"][ind]
+        depths = np.asarray(depths).flatten()
+        ind = np.searchsorted(intervals["depths"], depths, side="right") - 1
+        dl = depths - intervals["depths"][ind]
         radii = intervals["rad"][ind]
         radii[radii == 0.0] = 1.0
 
