@@ -17,7 +17,9 @@
 
 from __future__ import annotations
 
-from geoh5py.shared.utils import find_unique_name
+import numpy as np
+
+from geoh5py.shared.utils import dip_azimuth_to_vector, find_unique_name
 
 
 def test_find_unique_name():
@@ -25,3 +27,19 @@ def test_find_unique_name():
     names = ["test", "test(1)", "bidon"]
 
     assert find_unique_name(name, names) == "test(2)"
+
+
+def test_dip_azimuth_to_vector():
+    dip = -45
+    azimuth = 90
+
+    np.testing.assert_almost_equal(
+        dip_azimuth_to_vector(dip, azimuth), np.c_[0.7071, 0.0, -0.7071], decimal=3
+    )
+
+    dip = 45
+    azimuth = 245
+
+    np.testing.assert_almost_equal(
+        dip_azimuth_to_vector(dip, azimuth), np.c_[-0.641, -0.299, 0.707], decimal=3
+    )

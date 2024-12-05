@@ -395,7 +395,13 @@ def compare_entities(
         compare_bytes(object_a, object_b)
         return
 
-    base_ignore = ["_workspace", "_children", "_visual_parameters", "_entity_class"]
+    base_ignore = [
+        "_workspace",
+        "_children",
+        "_visual_parameters",
+        "_entity_class",
+        "_intervals",
+    ]
     ignore_list = base_ignore + ignore if ignore else base_ignore
 
     for attr in [k for k in object_a.__dict__ if k not in ignore_list]:
@@ -647,6 +653,27 @@ def get_attributes(entity, omit_list=(), attributes=None) -> dict:
             attributes[key] = attr
 
     return attributes
+
+
+def dip_azimuth_to_vector(
+    dip: float | np.ndarray, azimuth: float | np.ndarray
+) -> np.ndarray:
+    """
+    Convert dip and azimuth to a unit vector.
+
+    :param dip: The dip angle in degree from horizontal (positive up).
+    :param azimuth: The azimuth angle in degree from North (clockwise).
+
+    :return: The unit vector.
+    """
+    azimuth = np.deg2rad(90 - azimuth)
+    dip = np.deg2rad(dip)
+
+    return np.c_[
+        np.cos(dip) * np.cos(azimuth),
+        np.cos(dip) * np.sin(azimuth),
+        np.sin(dip),
+    ]
 
 
 def xy_rotation_matrix(angle: float) -> np.ndarray:
