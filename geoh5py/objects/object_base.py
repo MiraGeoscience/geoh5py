@@ -308,19 +308,13 @@ class ObjectBase(EntityContainer):
             for child in self.children:
                 if isinstance(child, PropertyGroup):
                     continue
-                if isinstance(child, Data) and child.association in (
-                    DataAssociationEnum.VERTEX,
-                    DataAssociationEnum.CELL,
-                ):
-                    child_copy = child.copy(
-                        parent=new_object,
-                        clear_cache=clear_cache,
-                        mask=mask,
-                    )
-                else:
-                    child_copy = self.workspace.copy_to_parent(
-                        child, new_object, clear_cache=clear_cache
-                    )
+
+                child_copy = child.copy(
+                    parent=new_object,
+                    clear_cache=clear_cache,
+                    mask=mask,
+                )
+
                 children_map[child.uid] = child_copy.uid
 
             if self.property_groups:

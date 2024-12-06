@@ -116,7 +116,7 @@ class Group(EntityContainer):
                 )
 
             if len(copy_group.children) == 0:
-                copy_group.workspace.remove_entity(copy_group)
+                copy_group.workspace.remove_entity(copy_group, force=True)
                 return None
 
         return copy_group
