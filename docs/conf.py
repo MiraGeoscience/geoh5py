@@ -15,7 +15,9 @@
 import os
 import sys
 
+from datetime import datetime
 from pathlib import Path
+from importlib.metadata import version
 
 sys.path.append(str(Path("_ext").resolve()))
 sys.path.append(str(Path().parent.resolve()))
@@ -25,7 +27,25 @@ sys.path.append(str(Path().parent.resolve()))
 # documentation root, use pathlib.Path.resolve to make it absolute, like shown here.
 # sys.path.insert(0, Path().resolve())
 
-# -- General configuration ------------------------------------------------
+# Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
+project = "geoh5py"
+author = "Mira Geoscience Ltd."
+project_copyright = "%Y, Mira Geoscience Ltd"
+
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+# The full version, including alpha/beta/rc tags.
+release = version("geoh5py")
+# The short X.Y.Z version.
+version = ".".join(release.split(".")[:3])
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = "2.2.1"
@@ -78,14 +98,6 @@ source_suffix = ".rst"
 
 # The master toctree document.
 master_doc = "index"
-
-# General information about the project.
-project = "geoh5py"
-
-# The short X.Y version.
-version = "0.10.0"
-# The full version, including alpha/beta/rc tags.
-release = "0.10.0-beta.5"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -148,10 +160,8 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
-# otherwise, readthedocs.org uses their theme by default, so no need to specify it
-
-# html_theme = 'default'
+else:
+    html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -167,6 +177,7 @@ check_meta = False
 html_theme_options = {
     "navigation_depth": 5,
     "collapse_navigation": False,
+    "description": f"version {release}",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -229,7 +240,7 @@ html_theme_options = {
 html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-html_show_copyright = False
+html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -241,6 +252,14 @@ html_show_copyright = False
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = "geoh5pyDocumentation"
+
+def get_copyright_notice():
+    return f"Copyright {datetime.now().strftime(project_copyright)}"
+
+
+rst_epilog = f"""
+.. |copyright_notice| replace:: {get_copyright_notice()}.
+"""
 
 numfig = True
 # -- Options for LaTeX output ---------------------------------------------
