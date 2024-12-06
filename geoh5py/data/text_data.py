@@ -69,6 +69,11 @@ class TextData(Data):
                 [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
             )
 
+            if self.n_values is not None and len(values) < self.n_values:
+                full_array = np.full(self.n_values, self.nan_value, dtype=values.dtype)
+                full_array[: len(values)] = values
+                return full_array
+
         if (not isinstance(values, (str, type(None), np.ndarray))) or (
             isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
         ):
@@ -141,6 +146,13 @@ class MultiTextData(Data):
     def formatted_values(self):
         return text_formating(self.values)
 
+    @property
+    def nan_value(self):
+        """
+        Value used to represent missing data in python.
+        """
+        return ""
+
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
         return PrimitiveTypeEnum.MULTI_TEXT
@@ -148,7 +160,13 @@ class MultiTextData(Data):
     def validate_values(
         self, values: np.ndarray | str | None
     ) -> np.ndarray | str | None:
-        if not isinstance(values, np.ndarray | str | type(None)):
+        if isinstance(values, np.ndarray) and self.n_values is not None:
+            if len(values) < self.n_values:
+                full_array = np.full(self.n_values, self.nan_value, dtype=values.dtype)
+                full_array[: len(values)] = values
+                return full_array
+
+        elif not isinstance(values, str | type(None)):
             raise ValueError(
                 f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
             )

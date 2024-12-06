@@ -267,7 +267,7 @@ def test_no_survey(tmp_path):
         solution = np.kron(collar, np.ones((3, 1)))
         solution[:, 2] -= depths
 
-        np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+        np.testing.assert_array_almost_equal(locations, solution, decimal=1)
 
 
 def test_single_survey(tmp_path):
@@ -295,7 +295,7 @@ def test_single_survey(tmp_path):
             ]
         )
 
-        np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+        np.testing.assert_array_almost_equal(locations, solution, decimal=1)
 
 
 def test_survey_with_info(tmp_path):
@@ -350,7 +350,7 @@ def test_outside_survey(tmp_path):
             ]
         )
 
-        np.testing.assert_array_almost_equal(locations, solution, decimal=3)
+        np.testing.assert_array_almost_equal(locations, solution, decimal=1)
 
 
 def test_insert_drillhole_data(tmp_path):

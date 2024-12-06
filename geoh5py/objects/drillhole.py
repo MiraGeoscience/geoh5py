@@ -27,8 +27,18 @@ from numbers import Real
 import numpy as np
 
 from ..data import Data, FloatData, NumericData
-from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
+from ..shared.utils import (
+    box_intersect,
+    dip_azimuth_to_vector,
+    mask_by_extent,
+    merge_arrays,
+)
 from .points import Points
+
+
+INFINITE_RADIUS = 99999.9
+MINIMUM_DEPTH_INTERVAL = 1.0
+MAXIMUM_DEPTH_INTERVAL = 50.0
 
 
 class Drillhole(Points):
@@ -77,6 +87,7 @@ class Drillhole(Points):
         self._trace_depth: np.ndarray | None = None
         self._locations = None
         self._surveys: np.ndarray | None = None
+        self._intervals: dict | None = None
 
         super().__init__(
             vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
@@ -141,6 +152,7 @@ class Drillhole(Points):
         value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
         self._collar = value
         self._locations = None
+        self._intervals = None
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
@@ -203,20 +215,23 @@ class Drillhole(Points):
         return None
 
     @property
+    def intervals(self):
+        """
+        Densified and computed interval information
+        """
+        if self._intervals is None:
+            self._intervals = self.compute_intervals(
+                self.surveys, self.collar.tolist(), self.end_of_hole
+            )
+        return self._intervals
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
         """
         if getattr(self, "_locations", None) is None and self.collar is not None:
-            surveys = np.vstack([self.surveys[0, :], self.surveys])
-            surveys[0, 0] = 0.0
-            lengths = surveys[1:, 0] - surveys[:-1, 0]
-            deviation = compute_deviation(surveys)
-            self._locations = np.c_[
-                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 0]]),
-                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 1]]),
-                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 2]]),
-            ]
+            self._locations = self.depths_to_xyz(self.intervals, self.surveys[:, 0])
 
         return self._locations
 
@@ -306,6 +321,7 @@ class Drillhole(Points):
                 self.workspace.update_attribute(self, "trace")
 
         self._locations = None
+        self._intervals = None
 
     def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
         """
@@ -424,35 +440,7 @@ class Drillhole(Points):
         """
         Function to return x, y, z coordinates from depth.
         """
-        if self.locations is None:
-            raise AttributeError(
-                "The 'desurvey' operation requires the 'locations' "
-                "attribute to be defined."
-            )
-
-        if isinstance(depths, list):
-            depths = np.asarray(depths)
-
-        # Repeat first survey point at surface for de-survey interpolation
-        surveys = np.vstack([self.surveys[0, :], self.surveys])
-        surveys[0, 0] = 0.0
-
-        ind_loc = np.maximum(
-            np.searchsorted(surveys[:, 0], depths, side="left") - 1,
-            0,
-        )
-        deviation = compute_deviation(surveys)
-        ind_dev = np.minimum(ind_loc, deviation.shape[0] - 1)
-        locations = (
-            self.locations[ind_loc, :]
-            + np.r_[depths - surveys[ind_loc, 0]][:, None]
-            * np.c_[
-                deviation[ind_dev, 0],
-                deviation[ind_dev, 1],
-                deviation[ind_dev, 2],
-            ]
-        )
-        return locations
+        return self.depths_to_xyz(self.intervals, depths)
 
     def add_vertices(self, xyz):
         """
@@ -733,60 +721,137 @@ class Drillhole(Points):
                     self._cells = key_map.reshape((-1, 2)).astype("uint32")
                     self.workspace.update_attribute(self, "cells")
 
+    @staticmethod
+    def densify_survey_values(
+        survey: np.ndarray, end_of_hole: float | None
+    ) -> np.ndarray:
+        """
+        Validate the survey values for desurveying.
 
-def compute_deviation(surveys: np.ndarray) -> np.ndarray:
-    """
-    Compute deviation distances from survey parameters.
+        - Repeat first survey point at surface for de-survey interpolation
+        - Repeat last survey point at end of hole for de-survey interpolation
+        - Densify along intervals if greater than 50 m
 
-    :param surveys: Array of azimuth, dip and depth values.
-    """
-    if surveys is None:
-        raise AttributeError(
-            "Cannot compute deviation coordinates without `survey` attribute."
+        :param survey: Array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        :param end_of_hole: End of the drillhole in meters.
+
+        :return: Augmented array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        """
+        full_survey = survey.copy()
+
+        # Repeat first survey point at surface for de-survey interpolation
+        if survey[0, 0] != 0.0:
+            full_survey = np.vstack([survey[0, :], full_survey])
+            full_survey[0, 0] = 0.0
+
+        if end_of_hole is not None and end_of_hole > full_survey[-1, 0]:
+            last_row = full_survey[-1, :].copy()
+            last_row[0] = end_of_hole
+            full_survey = np.vstack([full_survey, last_row])
+
+        # Densify along intervals if greater than 50 m
+        deltas = np.diff(full_survey[:, 0])
+        new_points = []
+        for ii, delta in enumerate(deltas):
+            if delta < MAXIMUM_DEPTH_INTERVAL:
+                continue
+
+            depths = np.arange(0, delta, MAXIMUM_DEPTH_INTERVAL)
+            d_azm = (full_survey[ii + 1, 1] - full_survey[ii, 1]) / delta
+            d_dip = (full_survey[ii + 1, 2] - full_survey[ii, 2]) / delta
+            new_points.append(
+                np.c_[
+                    full_survey[ii, 0] + depths[1:],
+                    full_survey[ii, 1] + d_azm * depths[1:],
+                    full_survey[ii, 2] + d_dip * depths[1:],
+                ]
+            )
+
+        if len(new_points) > 1:
+            full_survey = np.vstack([full_survey, np.vstack(new_points)])
+
+        return np.unique(full_survey, axis=0)
+
+    @staticmethod
+    def compute_intervals(survey: np.ndarray, collar, end_of_hole) -> dict:
+        """
+        Compute the intervals from survey and collar information.
+
+        Stores a dictionary describing the arc circle between the survey points
+        separated by a maximum depth interval of 50 m.
+
+        Translated from C++ code.
+
+        :param survey: Array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        :param collar: Collar location of the drillhole.
+        :param end_of_hole: End of the drillhole in meters.
+        """
+        collar = np.asarray(collar).reshape((1, 3))
+        full_survey = Drillhole.densify_survey_values(survey, end_of_hole)
+        unit_vector = dip_azimuth_to_vector(full_survey[:, 2], full_survey[:, 1])
+
+        if survey.shape[0] < 2:
+            return {
+                "depths": np.r_[0],
+                "rad": np.r_[INFINITE_RADIUS],
+                "tangential": np.zeros((1, 3)),
+                "unit_vector": unit_vector,
+                "locations": collar,
+            }
+
+        # Cross product between neighbours
+        cross = np.cross(unit_vector[:-1, :], unit_vector[1:, :], axis=1)
+        vr = np.linalg.norm(cross, axis=1)
+        dot = np.sum(unit_vector[:-1, :] * unit_vector[1:, :], axis=1)
+        tangential = unit_vector[1:, :] - dot[:, None] * unit_vector[:-1, :]
+        norm = np.linalg.norm(tangential, axis=1)
+        norm[norm == 0.0] = INFINITE_RADIUS
+        tangential /= norm[:, None]
+        alpha = np.abs(0.5 * np.pi - np.arctan2(dot, vr))
+        delta_depth = np.diff(full_survey[:, 0])
+        radius = delta_depth / alpha
+
+        radius[alpha == 0.0] = delta_depth[alpha == 0.0] * INFINITE_RADIUS
+        alpha[alpha == 0.0] = delta_depth[alpha == 0.0] / radius[alpha == 0.0]
+
+        intervals = {
+            "depths": np.r_[full_survey[:, 0]],
+            "rad": np.r_[radius, INFINITE_RADIUS],
+            "tangential": np.vstack([tangential, np.zeros(3)]),
+            "unit_vector": unit_vector,
+            "locations": np.r_[
+                collar,
+                collar
+                + np.cumsum(
+                    radius[:, None]
+                    * (
+                        np.sin(alpha)[:, None] * unit_vector[:-1, :]
+                        + (1 - np.cos(alpha))[:, None] * tangential
+                    ),
+                    axis=0,
+                ),
+            ],
+        }
+
+        return intervals
+
+    @staticmethod
+    def depths_to_xyz(intervals: dict, depths: np.ndarray) -> np.ndarray:
+        """
+        Convert survey parameters to x, y, z coordinates.
+
+        :param intervals: Dictionary of intervals parameters.
+        :param depths: Array of depth values.
+        """
+        depths = np.asarray(depths).flatten()
+        ind = np.searchsorted(intervals["depths"], depths, side="right") - 1
+        dl = depths - intervals["depths"][ind]
+        radii = intervals["rad"][ind]
+        radii[radii == 0.0] = 1.0
+
+        angle = dl / radii
+        locations = intervals["locations"][ind, :] + radii[:, None] * (
+            np.sin(angle)[:, None] * intervals["unit_vector"][ind, :]
+            + (1 - np.cos(angle))[:, None] * intervals["tangential"][ind, :]
         )
-
-    lengths = surveys[1:, 0] - surveys[:-1, 0]
-
-    deviation = []
-    for component in [deviation_x, deviation_y, deviation_z]:
-        dl_in = component(surveys[:-1, 1], surveys[:-1, 2])
-        dl_out = component(surveys[1:, 1], surveys[1:, 2])
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
-        deviation += [dl_in + lengths * ddl / 2.0]
-
-    return np.vstack(deviation).T
-
-
-def deviation_x(azimuth, dip):
-    """
-    Compute the easting deviation.
-
-    :param azimuth: Degree angle clockwise from North
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in easting distance.
-    """
-    return np.cos(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
-
-
-def deviation_y(azimuth, dip):
-    """
-    Compute the northing deviation.
-
-    :param azimuth: Degree angle clockwise from North
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in northing distance.
-    """
-    return np.sin(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
-
-
-def deviation_z(_, dip):
-    """
-    Compute the vertical deviation.
-
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in vertical distance.
-    """
-    return np.sin(np.deg2rad(dip))
+        return locations
