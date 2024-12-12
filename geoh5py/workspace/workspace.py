@@ -1246,8 +1246,10 @@ class Workspace(AbstractContextManager):
         if mode is None:
             mode = self._mode
 
-        if mode == "r+" and any(
-            k in str(self.h5file.absolute()) for k in NETWORK_DRIVES
+        if (
+            mode == "r+"
+            and isinstance(self.h5file, Path)
+            and any(k in str(self.h5file.absolute()) for k in NETWORK_DRIVES)
         ):
             warnings.warn(
                 "Opening workspace with write access in a network "
