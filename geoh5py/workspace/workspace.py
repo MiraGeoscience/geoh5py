@@ -73,6 +73,16 @@ from ..shared.utils import (
 )
 
 
+NETWORK_DRIVES = [
+    "Egnyte Connect",
+    "One Drive",
+    "Dropbox",
+    "Google Drive",
+    "Box",
+    "iCloud",
+]
+
+
 # pylint: disable=too-many-instance-attributes
 class Workspace(AbstractContextManager):
     """
@@ -1235,6 +1245,13 @@ class Workspace(AbstractContextManager):
 
         if mode is None:
             mode = self._mode
+
+        if mode == "r+" and any(k in str(self.h5file) for k in NETWORK_DRIVES):
+            warnings.warn(
+                "Opening workspace with write access in a network "
+                "drive may lead to slow operations or access errors. "
+                "Consider copying the file to static local drive."
+            )
 
         try:
             self._geoh5 = h5py.File(self.h5file, mode)
