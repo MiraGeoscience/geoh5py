@@ -78,6 +78,7 @@ NETWORK_DRIVES = [
     "One Drive",
     "Dropbox",
     "Google Drive",
+    "googledrive",
     "Box",
     "iCloud",
 ]
