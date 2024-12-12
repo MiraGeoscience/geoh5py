@@ -160,3 +160,10 @@ def test_in_memory_to_disk():
         compare_entities(points, new_points, ignore=["_parent"])
 
     workspace.close()
+
+
+def test_network_drive_warning(tmp_path):
+    network_drive = tmp_path / "Dropbox"
+    network_drive.mkdir()
+    with pytest.warns(match="Opening workspace with write access in a network drive"):
+        _ = Workspace(network_drive / "test.geoh5")
