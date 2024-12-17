@@ -52,14 +52,14 @@ def get_conda_recipe_version():
 
 
 def test_version_is_consistent():
+    assert geoh5py.__version__ == get_pyproject_version()
     normalized_conda_version = Version(get_conda_recipe_version())
     normalized_version = Version(geoh5py.__version__)
     assert normalized_conda_version == normalized_version
-    assert geoh5py.__version__ == get_pyproject_version()
 
 
 def test_conda_version_is_pep440():
-    version = get_conda_recipe_version()
+    version = Version(get_conda_recipe_version())
     assert version is not None
 
 
