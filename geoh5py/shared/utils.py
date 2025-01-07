@@ -788,7 +788,7 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     """
     string_dict = {}
     for key, value in values.items():
-        mappers = [nan2str, inf2str, as_str_if_uuid, none2str]
+        mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
         string_dict[key] = dict_mapper(value, mappers)
 
     return string_dict
@@ -866,6 +866,12 @@ def list2str(value):
 def none2str(value):
     if value is None:
         return ""
+    return value
+
+
+def path2str(value):
+    if isinstance(value, Path):
+        return str(value)
     return value
 
 

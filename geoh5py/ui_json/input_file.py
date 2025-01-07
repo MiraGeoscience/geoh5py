@@ -46,6 +46,7 @@ from .utils import (
     path2workspace,
     set_enabled,
     str2inf,
+    str2path,
     workspace2path,
 )
 from .validation import InputValidation
@@ -490,7 +491,11 @@ class InputFile:
                     raise JSONParameterValidationError(key, error.args[0]) from error
                 value = cls.numify(value)
 
-            mappers = [str2none, str2inf, str2uuid, path2workspace]
+            mappers = [str2none, str2inf, str2uuid, str2path]
+
+            if key == "geoh5":
+                mappers.append(path2workspace)
+
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
