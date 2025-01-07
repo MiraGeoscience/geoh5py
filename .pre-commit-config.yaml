@@ -12,17 +12,17 @@ ci:
 
 repos:
 -   repo: https://github.com/python-poetry/poetry
-    rev: 1.8.0
+    rev: 2.0.0
     hooks:
     -   id: poetry-check
         args: [--lock]
 -   repo: https://github.com/hadialqattan/pycln
-    rev: v2.4.0
+    rev: v2.5.0
     hooks:
     -   id: pycln
         args: [--config=pyproject.toml]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.0
+    rev: v0.8.6
     hooks:
     -   id: ruff
         args:
@@ -31,7 +31,7 @@ repos:
 #        -   --unsafe-fixes
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.12.1
+    rev: v1.14.1
     hooks:
     -   id: mypy
         additional_dependencies: [
@@ -58,12 +58,12 @@ repos:
                 geoh5py/ui_json/validation.py
             )$
 -   repo: https://github.com/codingjoe/relint
-    rev: 3.3.0
+    rev: 3.3.1
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings
 -   repo: https://github.com/MiraGeoscience/pre-commit-hooks
-    rev: v1.0.1
+    rev: v1.0.2
     hooks:
     -   id: check-copyright
         files: (^LICENSE|^README(|-dev).rst|\.py|\.pyi)$
