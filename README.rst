@@ -50,10 +50,6 @@ Documentation
 
 `Online documentation <https://mirageoscience-geoh5py.readthedocs-hosted.com/en/latest/>`_
 
-See also documentation for the `geoh5 file format`_.
-
-.. _geoh5 file format: docs/content/geoh5_file_format.textile
-
 
 Installation
 ^^^^^^^^^^^^
