@@ -791,7 +791,7 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     """
     string_dict = {}
     for key, value in values.items():
-        mappers = [nan2str, inf2str, as_str_if_uuid, none2str]
+        mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
         string_dict[key] = dict_mapper(value, mappers)
 
     return string_dict
@@ -872,6 +872,12 @@ def none2str(value):
     return value
 
 
+def path2str(value):
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
 def nan2str(value):
     if value is np.nan:
         return ""
@@ -913,3 +919,9 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
+
+
+def str2path(value):
+    if isinstance(value, str) and Path(value).exists():
+        return Path(value)
+    return value

@@ -119,6 +119,19 @@ def test_input_file_json():
         InputFile(ui_json=ui_json).data
 
 
+def test_workspace_geoh5_path(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+
+    in_file = InputFile(ui_json=ui_json)
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+    assert isinstance(reload_input.data["geoh5"], Workspace)
+    assert isinstance(reload_input.data["workspace_geoh5"], Path)
+
+
 def test_input_file_name_path(tmp_path: Path):
     # pylint: disable=protected-access
 
