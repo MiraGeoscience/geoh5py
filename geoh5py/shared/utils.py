@@ -919,3 +919,9 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
+
+
+def str2path(value):
+    if isinstance(value, str) and Path(value).exists():
+        return Path(value)
+    return value

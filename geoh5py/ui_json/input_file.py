@@ -38,6 +38,7 @@ from ..shared.utils import (
     entity2uuid,
     fetch_active_workspace,
     str2none,
+    str2path,
     str2uuid,
     stringify,
     uuid2entity,
@@ -49,7 +50,6 @@ from .utils import (
     path2workspace,
     set_enabled,
     str2inf,
-    str2path,
     workspace2path,
 )
 from .validation import InputValidation

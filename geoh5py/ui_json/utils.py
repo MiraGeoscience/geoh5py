@@ -303,12 +303,6 @@ def path2workspace(value):
     return value
 
 
-def str2path(value):
-    if isinstance(value, str) and Path(value).exists():
-        return Path(value)
-    return value
-
-
 def container_group2name(value):
     if isinstance(value, ContainerGroup):
         return value.name
