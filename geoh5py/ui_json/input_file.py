@@ -38,7 +38,6 @@ from ..shared.utils import (
     entity2uuid,
     fetch_active_workspace,
     str2none,
-    str2path,
     str2uuid,
     stringify,
     uuid2entity,
@@ -494,7 +493,7 @@ class InputFile:
                     raise JSONParameterValidationError(key, error.args[0]) from error
                 value = cls.numify(value)
 
-            mappers = [str2none, str2inf, str2uuid, str2path]
+            mappers = [str2none, str2inf, str2uuid]
 
             if key == "geoh5":
                 mappers.append(path2workspace)

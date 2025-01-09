@@ -129,7 +129,7 @@ def test_workspace_geoh5_path(tmp_path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
     assert isinstance(reload_input.data["geoh5"], Workspace)
-    assert isinstance(reload_input.data["workspace_geoh5"], Path)
+    assert isinstance(reload_input.data["workspace_geoh5"], str)
 
 
 def test_input_file_name_path(tmp_path: Path):
