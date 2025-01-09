@@ -1,3 +1,3 @@
 <component name="DependencyValidationManager">
-  <scope name="sources" pattern="file:geoh5py//*||file:examples//*||file:tests//*" />
+  <scope name="sources" pattern="(file:geoh5py//*||file:examples//*||file:tests//*||file:geoh5py-assets/__init__.py||file:meta.yaml||file:package.rst||file:pyproject.toml||file:README*.rst||file:devtools//*)&amp;&amp;!file:*.png&amp;&amp;!file:*.svg&amp;&amp;!file:*.jpg&amp;&amp;!file:*//htmlcov//*&amp;&amp;!file:*//.*" />
 </component>
