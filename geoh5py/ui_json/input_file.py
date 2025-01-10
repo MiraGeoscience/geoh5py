@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -418,6 +421,7 @@ class InputFile:
 
         if self.data is not None:
             self.update_ui_values(self.data)
+
         with open(self.path_name, "w", encoding="utf-8") as file:
             json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
 
@@ -485,6 +489,7 @@ class InputFile:
         """
         if not isinstance(ui_json, dict):
             raise ValueError("Input value for 'numify' must be a ui_json dictionary.")
+
         for key, value in ui_json.items():
             if isinstance(value, dict):
                 try:
@@ -493,7 +498,10 @@ class InputFile:
                     raise JSONParameterValidationError(key, error.args[0]) from error
                 value = cls.numify(value)
 
-            mappers = [str2none, str2inf, str2uuid, path2workspace]
+            mappers = [str2none, str2inf, str2uuid]
+
+            if key == "geoh5":
+                mappers.append(path2workspace)
 
             ui_json[key] = dict_mapper(value, mappers)
 
@@ -523,6 +531,7 @@ class InputFile:
         """Convert uuids to entities from the workspace."""
         if self._geoh5 is None:
             return var
+
         for key, value in var.items():
             if isinstance(value, dict):
                 if "groupValue" in value and "value" in value:

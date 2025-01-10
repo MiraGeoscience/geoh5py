@@ -50,10 +50,6 @@ Documentation
 
 `Online documentation <https://mirageoscience-geoh5py.readthedocs-hosted.com/en/latest/>`_
 
-See also documentation for the `geoh5 file format`_.
-
-.. _geoh5 file format: docs/content/geoh5_file_format.textile
-
 
 Installation
 ^^^^^^^^^^^^
@@ -100,12 +96,12 @@ The use of Third Party Software is governed by the terms of such software licens
 Third Party Software notices and/or additional terms and conditions are located in the
 `THIRD_PARTY_SOFTWARE.rst`_ file.
 
-.. _THIRD_PARTY_SOFTWARE.rst: THIRD_PARTY_SOFTWARE.rst
+.. _THIRD_PARTY_SOFTWARE.rst: docs/THIRD_PARTY_SOFTWARE.rst
 
 
 Copyright
 ^^^^^^^^^
-Copyright (c) 2024 Mira Geoscience Ltd.
+Copyright (c) 2025 Mira Geoscience Ltd.
 
 
 Citing geoh5py
