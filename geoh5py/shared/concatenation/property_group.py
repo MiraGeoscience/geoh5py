@@ -1,29 +1,33 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
-import uuid
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 
 from geoh5py.data import Data
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups.property_group import GroupTypeEnum, PropertyGroup
+
 
 if TYPE_CHECKING:
     from .concatenator import Concatenator
@@ -31,8 +35,6 @@ if TYPE_CHECKING:
 
 
 class ConcatenatedPropertyGroup(PropertyGroup):
-    _parent: ConcatenatedObject
-
     def __init__(self, parent: ConcatenatedObject, **kwargs):
         super().__init__(parent, **kwargs)
 
@@ -79,7 +81,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
     @property
     def depth_(self):
-        if self.properties is None or len(self.properties) < 1:
+        if (
+            self.properties is None
+            or len(self.properties) < 1
+            or self._property_group_type != GroupTypeEnum.DEPTH
+        ):
             return None
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
@@ -94,7 +100,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     @property
     def from_(self):
         """Return the data entities defined the 'from' depth intervals."""
-        if self.properties is None or len(self.properties) < 1:
+        if (
+            self.properties is None
+            or len(self.properties) < 1
+            or self._property_group_type != GroupTypeEnum.INTERVAL
+        ):
             return None
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
@@ -109,7 +119,11 @@ class ConcatenatedPropertyGroup(PropertyGroup):
     @property
     def to_(self):
         """Return the data entities defined the 'to' depth intervals."""
-        if self.properties is None or len(self.properties) < 2:
+        if (
+            self.properties is None
+            or len(self.properties) < 2
+            or self._property_group_type != GroupTypeEnum.INTERVAL
+        ):
             return None
 
         data = self.parent.get_data(  # pylint: disable=no-value-for-parameter
@@ -140,21 +154,43 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         parent.workspace.add_or_update_property_group(self)
 
-    def remove_properties(self, data: Data | list[Data | uuid.UUID] | uuid.UUID):
+    def _clear_data_list(
+        self, data: str | Data | list[str | Data | UUID] | UUID
+    ) -> list[str | Data | UUID]:
         """
-        Remove data from the properties.
+        Clear the data list of any data that is a depth or from/to data.
 
-        The property group is removed if only the depth or from/to data are left.
+        :param data: List of data to clear.
+
+        :return: List of data with depth and from/to data removed.
         """
-        super().remove_properties(data)
+        if not isinstance(data, (list, tuple)):
+            data = [data]
 
+        # avoid suppressing depth and from-to directly
+        avoid = []
+        if self.depth_ is not None:
+            avoid.extend([self.depth_, self.depth_.uid, self.depth_.name])
+        if self.from_ is not None:
+            avoid.extend([self.from_, self.from_.uid, self.from_.name])
+        if self.to_ is not None:
+            avoid.extend([self.to_, self.to_.uid, self.to_.name])
+
+        return [d for d in data if d not in avoid]
+
+    def _remove_depth_from_to(self):
+        """
+        Remove the depth or from/to data from the property group
+            if they are the only properties left.
+        """
         if (
             self._properties is not None
             and len(self._properties) == 1
             and self.depth_ is not None
         ):
             self.depth_.allow_delete = True
-            self.parent.remove_children([self.depth_])
+            self._properties.remove(self.depth_.uid)
+            self.parent.remove_children([self.depth_, self])
 
         elif (
             self._properties is not None
@@ -163,6 +199,23 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             and self.to_ is not None
         ):
             self.to_.allow_delete = True
+            self._properties.remove(self.to_.uid)
             self.parent.remove_children([self.to_])
+
             self.from_.allow_delete = True
-            self.parent.remove_children([self.from_])
+            self._properties.remove(self.from_.uid)
+            self.parent.remove_children([self.from_, self])
+
+    def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
+        """
+        Remove data from the properties.
+
+        The property group is removed if only the depth or from/to data are left.
+
+        :param data: Data to remove.
+        """
+        data = self._clear_data_list(data)
+        if data:
+            super().remove_properties(data)
+
+        self._remove_depth_from_to()

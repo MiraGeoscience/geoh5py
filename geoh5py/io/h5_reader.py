@@ -1,19 +1,21 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
 from __future__ import annotations
@@ -26,7 +28,14 @@ import h5py
 import numpy as np
 
 from ..shared import FLOAT_NDV, fetch_h5_handle
-from ..shared.utils import KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
+from ..shared.utils import (
+    INV_KEY_MAP,
+    KEY_MAP,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+    str2uuid,
+    str_json_to_dict,
+)
 
 
 class H5Reader:
@@ -40,7 +49,7 @@ class H5Reader:
         file: str | h5py.File,
         uid: uuid.UUID,
         entity_type: str,
-    ) -> tuple[dict, dict, dict] | None:
+    ) -> tuple[dict, dict, dict] | tuple[None, None, None]:
         """
         Get attributes of an :obj:`~geoh5py.shared.entity.Entity`.
 
@@ -66,24 +75,34 @@ class H5Reader:
                 entity = h5file[name][entity_type].get(as_str_if_uuid(uid))
 
             if entity is None:
-                return None
+                return None, None, None
 
-            attributes: dict = {"entity": {}}
-            type_attributes: dict = {"entity_type": {}}
+            attributes: dict = {}
+            type_attributes: dict = {}
             property_groups: dict = {}
 
             for key, value in entity.attrs.items():
-                attributes["entity"][key] = value
+                attributes[INV_KEY_MAP.get(key, key)] = value
+
+            # TODO Use lazy pointer to data
+            if entity_type != "Data":
+                for key, value in entity.items():
+                    if key.lower() in ["metadata", "options"]:
+                        attributes[INV_KEY_MAP[key]] = cls.fetch_metadata(
+                            file, uid, entity_type, key
+                        )
+                    elif (
+                        key in INV_KEY_MAP
+                        and isinstance(value, h5py.Dataset)
+                        and value.ndim > 0
+                    ):
+                        attributes[INV_KEY_MAP[key]] = value[:]
 
             if "Type" in entity:
-                type_attributes["entity_type"] = cls.fetch_type_attributes(
-                    entity["Type"]
-                )
+                type_attributes = cls.fetch_type_attributes(entity["Type"])
             # Check if the entity has property_group
             if "PropertyGroups" in entity:
                 property_groups = cls.fetch_property_groups(file, uid)
-
-            attributes["entity"]["on_file"] = True
 
         return attributes, type_attributes, property_groups
 
@@ -105,8 +124,14 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
             label = KEY_MAP.get(key, key)
+
+            if "types" in entity_type:
+                root_handle = h5file[name]["Types"][entity_type]
+            else:
+                root_handle = h5file[name][entity_type]
+
             try:
-                values = h5file[name][entity_type][as_str_if_uuid(uid)][label][:]
+                values = root_handle[as_str_if_uuid(uid)][label][:]
                 return values
             except KeyError:
                 return None
@@ -276,24 +301,14 @@ class H5Reader:
             name = list(h5file)[0]
 
             try:
-                metadata = np.r_[
-                    h5file[name][entity_type][as_str_if_uuid(uid)][argument]
+                value = np.r_[h5file[name][entity_type][as_str_if_uuid(uid)][argument]][
+                    0
                 ]
-                metadata = as_str_if_utf8_bytes(metadata[0])
 
             except KeyError:
                 return None
 
-        metadata = json.loads(metadata)
-
-        for key, val in metadata.items():
-            if isinstance(val, dict):
-                for sub_key, sub_val in val.items():
-                    metadata[key][sub_key] = str2uuid(sub_val)
-            else:
-                metadata[key] = str2uuid(val)
-
-        return metadata
+        return str_json_to_dict(value)
 
     @classmethod
     def fetch_project_attributes(cls, file: str | h5py.File) -> dict[Any, Any]:
@@ -347,7 +362,7 @@ class H5Reader:
                 for pg_uid in pg_handle:
                     property_groups[pg_uid] = {}
                     for attr, value in pg_handle[pg_uid].attrs.items():
-                        property_groups[pg_uid][attr] = value
+                        property_groups[pg_uid][INV_KEY_MAP.get(attr, attr)] = value
             except KeyError:
                 pass
         return property_groups
@@ -379,7 +394,7 @@ class H5Reader:
         """
         type_attributes = {}
         for key, value in type_handle.attrs.items():
-            type_attributes[key] = value
+            type_attributes[INV_KEY_MAP.get(key, key)] = value
 
         if "Color map" in type_handle:
             type_attributes["color_map"] = {}
@@ -388,9 +403,9 @@ class H5Reader:
             type_attributes["color_map"]["values"] = type_handle["Color map"][:]
 
         if "Value map" in type_handle:
-            mapping = cls.fetch_value_map(type_handle)
-            type_attributes["value_map"] = mapping
-
+            type_attributes["value_map"] = type_handle["Value map"][:].astype(
+                [("Key", "<u4"), ("Value", h5py.special_dtype(vlen=str))]
+            )
         return type_attributes
 
     @classmethod
@@ -414,27 +429,6 @@ class H5Reader:
                 uuids = []
 
         return uuids
-
-    @classmethod
-    def fetch_value_map(cls, h5_handle: h5py.Group) -> dict:
-        """
-        Get data :obj:`~geoh5py.data.data.Data.value_map`
-
-        :param h5_handle: Handle to the target h5 group.
-
-        :return value_map: :obj:`dict` of {:obj:`int`: :obj:`str`}
-        """
-        try:
-            value_map = h5_handle["Value map"][:]
-            mapping = {}
-            for key, value in value_map.tolist():
-                value = as_str_if_utf8_bytes(value)
-                mapping[key] = value
-
-        except KeyError:
-            mapping = {}
-
-        return mapping
 
     @classmethod
     def fetch_file_object(

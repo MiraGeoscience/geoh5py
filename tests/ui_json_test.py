@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -103,7 +106,7 @@ def test_input_file_json():
         RequiredValidationError,
         match=RequiredValidationError.message("title", None, None),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
     # Test wrong type for core geoh5 parameter
     ui_json = deepcopy(default_ui_json)
@@ -113,7 +116,20 @@ def test_input_file_json():
         ValueError,
         match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
+
+
+def test_workspace_geoh5_path(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+
+    in_file = InputFile(ui_json=ui_json)
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+    assert isinstance(reload_input.data["geoh5"], Workspace)
+    assert isinstance(reload_input.data["workspace_geoh5"], str)
 
 
 def test_input_file_name_path(tmp_path: Path):
@@ -194,7 +210,7 @@ def test_integer_parameter(tmp_path: Path):
         in_file.data = data
 
     data.pop("integer")
-    with pytest.raises(ValueError, match="The number of input values"):
+    with pytest.warns(UserWarning, match="The number of input values"):
         in_file.data = data
 
     data["integer"] = 123
@@ -355,9 +371,7 @@ def test_shape_parameter(tmp_path: Path):
         ShapeValidationError,
         match=re.escape(ShapeValidationError.message("data", (1,), (2,))),
     ):
-        getattr(
-            InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}}), "data"
-        )
+        InputFile(ui_json=ui_json, validations={"data": {"shape": (2,)}}).data
 
 
 def test_missing_required_field(tmp_path: Path):
@@ -375,7 +389,7 @@ def test_missing_required_field(tmp_path: Path):
             "object", RequiredValidationError.message("value", None, None)
         ),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_object_promotion(tmp_path: Path):
@@ -403,8 +417,8 @@ def test_object_promotion(tmp_path: Path):
 
 def test_group_promotion(tmp_path):
     workspace = get_workspace(tmp_path)
-    group = workspace.get_entity("Entity")[0]
-    dh_group = workspace.get_entity("Drillholes Group")[0]
+    group = workspace.get_entity("Container Group")[0]
+    dh_group = workspace.get_entity("Drillhole Group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
@@ -440,7 +454,7 @@ def test_invalid_uuid_string(tmp_path: Path):
         TypeValidationError,
         match=TypeValidationError.message("data", "int", ["str", "UUID", "Entity"]),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_valid_uuid_in_workspace(tmp_path: Path):
@@ -456,7 +470,7 @@ def test_valid_uuid_in_workspace(tmp_path: Path):
         AssociationValidationError,
         match=AssociationValidationError.message("data", bogus_uuid, workspace),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_property_group_with_wrong_type(tmp_path: Path):
@@ -480,18 +494,24 @@ def test_property_group_with_wrong_type(tmp_path: Path):
             ),
         ),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
     ui_json["data"]["dataGroupType"] = "3D vector"
     ui_json["data"]["value"] = points.property_groups[0]
 
     with pytest.raises(
         PropertyGroupValidationError,
-        match=PropertyGroupValidationError.message(
-            "data", points.property_groups[0], "3D vector"
+        match=re.escape(
+            PropertyGroupValidationError.message(
+                "data", points.property_groups[0], ["3D vector"]
+            )
         ),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
+
+    ui_json["data"]["dataGroupType"] = ["3D vector", "Multi-element"]
+
+    assert InputFile(ui_json=ui_json).data is not None
 
 
 def test_data_with_wrong_parent(tmp_path: Path):
@@ -516,7 +536,7 @@ def test_data_with_wrong_parent(tmp_path: Path):
         AssociationValidationError,
         match=AssociationValidationError.message("data", no_property_child[0], points),
     ):
-        getattr(InputFile(ui_json=ui_json), "data")
+        InputFile(ui_json=ui_json).data
 
 
 def test_input_file(tmp_path: Path):
@@ -668,7 +688,7 @@ def test_multi_object_value_parameter(tmp_path: Path):
         UserWarning,
         match="Data associated with multiSelect dependent is not supported. Validation ignored.",
     ):
-        getattr(in_file, "data")
+        in_file.data
 
     ui_json.pop("data")
     in_file = InputFile(ui_json=ui_json)

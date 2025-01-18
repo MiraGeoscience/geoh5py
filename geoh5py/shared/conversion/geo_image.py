@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -24,6 +27,7 @@ from PIL import Image
 
 from ... import objects
 from .base import BaseConversion
+
 
 if TYPE_CHECKING:
     from ...objects import GeoImage, Grid2D
@@ -48,8 +52,8 @@ class GeoImageConversion(BaseConversion):
             dtype=[("x", float), ("y", float), ("z", float)],
         )
 
-        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0]
-        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1]
+        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0].astype(np.int32)
+        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1].astype(np.int32)
 
         # Compute the distances
         distance_u = np.linalg.norm(geoimage.vertices[2] - geoimage.vertices[3])
@@ -151,12 +155,13 @@ class GeoImageConversion(BaseConversion):
             **grid2d_kwargs,
         )
 
-        image = geoimage.image.copy()
+        if geoimage.image is not None:
+            image = geoimage.image.copy()
 
-        if mode is not None and mode != image.mode:
-            image = image.convert(mode if mode != "GRAY" else "L")
+            if mode is not None and mode != image.mode:
+                image = image.convert(mode if mode != "GRAY" else "L")
 
-        if copy_children:
-            GeoImageConversion.add_data_2dgrid(image, output)
+            if copy_children:
+                GeoImageConversion.add_data_2dgrid(image, output)
 
         return output

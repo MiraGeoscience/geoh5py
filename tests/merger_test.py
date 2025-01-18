@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -43,9 +46,6 @@ def test_merge_point_data_unique_entity(tmp_path):
                 allow_move=False,
             )
         )
-
-        test = PropertyGroup(parent=points[0], name="test")
-
         data.append(
             points[0].add_data(
                 {
@@ -56,7 +56,6 @@ def test_merge_point_data_unique_entity(tmp_path):
                 }
             )
         )
-
         data.append(
             points[0].add_data(
                 {
@@ -67,7 +66,6 @@ def test_merge_point_data_unique_entity(tmp_path):
                 }
             )
         )
-
         points[0].add_data(
             {
                 "TestText": {
@@ -269,7 +267,7 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(ValueError, match="Need more than one object"):
             _ = PointsMerger.merge_objects(workspace, [points[0]])
 
-        surface = Surface(
+        surface = Surface.create(
             workspace,
             vertices=np.random.randn(10, 3),
         )
@@ -277,7 +275,7 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(TypeError, match="All objects must be of"):
             _ = PointsMerger.merge_objects(workspace, [points[0], surface])
 
-        surface2 = Surface(
+        surface2 = Surface.create(
             workspace,
             vertices=np.random.randn(10, 3),
         )
@@ -285,10 +283,7 @@ def test_merge_attribute_error(tmp_path):
         with pytest.raises(TypeError, match="The input entities must be a list"):
             _ = PointsMerger.merge_objects(workspace, [surface, surface2])
 
-        points[0] = Points(workspace)
-
-        with pytest.raises(AttributeError, match="All entities must have vertices"):
-            _ = PointsMerger.merge_objects(workspace, points)
+        points[0] = Points.create(workspace)
 
         with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
             _ = BaseMerger.create_object(workspace, points, name="bidon")

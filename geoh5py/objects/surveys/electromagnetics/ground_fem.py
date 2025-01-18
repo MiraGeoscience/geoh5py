@@ -1,27 +1,29 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
 import uuid
 
-from geoh5py.objects.object_base import ObjectType
-
 from .base import FEMSurvey, LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey
+
 
 # pylint: disable=too-many-ancestors
 
@@ -65,31 +67,20 @@ class MovingLoopGroundFEMSurvey(FEMSurvey, MovingLoopGroundEMSurvey):
         return MovingLoopGroundFEMTransmitters
 
 
-class MovingLoopGroundFEMReceivers(
-    MovingLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class MovingLoopGroundFEMReceivers(MovingLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
+    _TYPE_UID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
     __TYPE = "Receivers"
 
     _transmitters: MovingLoopGroundFEMTransmitters | None = None
-
-    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
         return self.transmitters
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_transmitter_type(self):
@@ -104,29 +95,18 @@ class MovingLoopGroundFEMReceivers(
         return self.__TYPE
 
 
-class MovingLoopGroundFEMTransmitters(
-    MovingLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class MovingLoopGroundFEMTransmitters(MovingLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
+    _TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
     __TYPE = "Transmitters"
-
-    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Ground FEM Tx"
 
     @property
     def complement(self):
         return self.receivers
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_receiver_type(self):
@@ -174,31 +154,20 @@ class LargeLoopGroundFEMSurvey(FEMSurvey, LargeLoopGroundEMSurvey):
         return LargeLoopGroundFEMTransmitters
 
 
-class LargeLoopGroundFEMReceivers(
-    LargeLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class LargeLoopGroundFEMReceivers(LargeLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    __TYPE_UID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
+    _TYPE_UID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
     __TYPE = "Receivers"
 
     _transmitters: LargeLoopGroundFEMTransmitters | None = None
-
-    def __init__(self, object_type: ObjectType, name="Airborne FEM Rx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
         return self.transmitters
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_transmitter_type(self):
@@ -213,29 +182,18 @@ class LargeLoopGroundFEMReceivers(
         return self.__TYPE
 
 
-class LargeLoopGroundFEMTransmitters(
-    LargeLoopGroundFEMSurvey
-):  # pylint: disable=too-many-ancestors
+class LargeLoopGroundFEMTransmitters(LargeLoopGroundFEMSurvey):  # pylint: disable=too-many-ancestors
     """
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    __TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
+    _TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
     __TYPE = "Transmitters"
-
-    def __init__(self, object_type: ObjectType, name="Ground FEM Tx", **kwargs):
-        super().__init__(object_type, name=name, **kwargs)
+    _default_name = "Ground FEM Tx"
 
     @property
     def complement(self):
         return self.receivers
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
 
     @property
     def default_receiver_type(self):

@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=too-many-ancestors
 
@@ -44,7 +47,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
 
         if isinstance(property_group, str):
-            property_group = self.get_property_group(property_group)[0]
+            property_group = self.get_property_group(property_group)[0]  # type: ignore
         if not isinstance(property_group, ConcatenatedPropertyGroup):
             raise AttributeError(
                 "Input data dictionary must contain a key/value pair of depth data "
@@ -106,8 +109,8 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 obj_list.append(data[1])
         return obj_list
 
-    def validate_data(
-        self, attributes: dict, property_group=None, collocation_distance=None
+    def validate_association(
+        self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """
         Validate input drillhole data attributes.
@@ -118,8 +121,16 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         """
         if collocation_distance is None:
             collocation_distance = attributes.get(
-                "collocation_distance", getattr(self, "default_collocation_distance")
+                "collocation_distance", self.default_collocation_distance
             )
+
+        if attributes["name"] in self.get_data_list():
+            raise ValueError(
+                f"Data with name '{attributes['name']}' already present "
+                f"on the drillhole '{self.name}'. "
+                "Consider changing the values or renaming."
+            )
+
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
@@ -234,9 +245,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"depth_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.fetch_property_group(  # type: ignore
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Depth table",
@@ -260,7 +269,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"DEPTH{label}": {
                     "association": "DEPTH",
                     "values": depth,
-                    "entity_type": {"primitive_type": "FLOAT"},
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -331,9 +340,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             property_group = f"Interval_{ind}"
 
         if isinstance(property_group, str):
-            out_group: ConcatenatedPropertyGroup = getattr(
-                self, "find_or_create_property_group"
-            )(
+            out_group: ConcatenatedPropertyGroup = self.fetch_property_group(  # type: ignore
                 name=property_group,
                 association="DEPTH",
                 property_group_type="Interval table",
@@ -356,7 +363,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"FROM{label}": {
                     "association": "DEPTH",
                     "values": from_to[:, 0],
-                    "entity_type": {"primitive_type": "FLOAT"},
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -364,7 +371,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"TO{label}": {
                     "association": "DEPTH",
                     "values": from_to[:, 1],
-                    "entity_type": {"primitive_type": "FLOAT"},
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -375,13 +382,16 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
 
         return out_group
 
-    def sort_depths(self):
+    def post_processing(self):
         """Bypass sort_depths from previous version."""
 
     def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
         """
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
+
         if isinstance(values, np.ndarray):
             values = values.T.tolist()
 

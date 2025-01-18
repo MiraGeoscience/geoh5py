@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -25,8 +28,10 @@ from warnings import warn
 
 from ..shared.utils import ensure_uuid
 
+
 if TYPE_CHECKING:
     from ..workspace import Workspace
+    from .entity import Entity
 
 EntityTypeT = TypeVar("EntityTypeT", bound="EntityType")
 
@@ -48,9 +53,10 @@ class EntityType(ABC):
     def __init__(
         self,
         workspace: Workspace,
+        *,
         uid: uuid.UUID | None = None,
         description: str | None = "Entity",
-        name: str | None = "Entity",
+        name: str = "Entity",
         on_file: bool = False,
         **_,
     ):
@@ -97,28 +103,10 @@ class EntityType(ABC):
 
         attributes.update(kwargs)
 
-        if attributes.get("uid") in getattr(
-            attributes.get("workspace", self.workspace), "_types"
-        ):
+        if attributes.get("uid") in attributes.get("workspace", self.workspace)._types:  # pylint: disable=protected-access
             del attributes["uid"]
 
         return self.__class__(**attributes)
-
-    @classmethod
-    def create(cls, workspace, **kwargs):
-        """
-        WILL BE  DEPRECATED IN 10.0.0
-        Creates a new instance of :obj:`~geoh5py.data.data_type.DataType` with
-        corresponding :obj:`~geoh5py.data.primitive_type_enum.PrimitiveTypeEnum`.
-
-        :param workspace: The workspace to associate the entity type with.
-        :param kwargs: Keyword arguments to initialize the new DataType.
-
-        :return: A new instance of :obj:`~geoh5py.data.data_type.DataType`.
-        """
-        warn("This method will be deprecated in 10.0.0. Use the class constructor")
-
-        return cls(workspace, **kwargs)
 
     @classmethod
     def create_custom(cls, workspace: Workspace, **kwargs):
@@ -167,7 +155,7 @@ class EntityType(ABC):
         cls,
         workspace: Workspace,
         uid: uuid.UUID | None = None,
-        entity_class: type | None = None,
+        entity_class: type[Entity] | None = None,
         **kwargs,
     ):
         """
@@ -190,10 +178,8 @@ class EntityType(ABC):
         kwargs = cls.convert_kwargs(kwargs)
         uid = kwargs.pop("uid", uid)
 
-        if (
-            getattr(entity_class, "default_type_uid", None) is not None
-        ) and uid is None:
-            uid = getattr(entity_class, "default_type_uid")()
+        if entity_class is not None and uid is None:
+            uid = entity_class.default_type_uid()
 
         if uid is not None:
             entity_type = cls.find(workspace, ensure_uuid(uid))
@@ -203,16 +189,16 @@ class EntityType(ABC):
         return cls(workspace, uid=uid, **kwargs)
 
     @property
-    def name(self) -> str | None:
+    def name(self) -> str:
         """
         The name of the entity type.
         """
         return self._name
 
     @name.setter
-    def name(self, name: str | None):
-        if not isinstance(name, (str, type(None))):
-            raise TypeError(f"name must be a string or None, not {type(name)}")
+    def name(self, name: str):
+        if not isinstance(name, str):
+            raise TypeError(f"name must be a string, not {type(name)}")
 
         self._name = name
 

@@ -4,7 +4,8 @@ checks:
   argument-count:
     enabled: true
     config:
-      threshold: 6
+      threshold: 10  # as long as not hitting too-many-positional-arguments
+                     # (note: for CodeClimate, '*' and '/' are counted as arguments)
   complex-logic:
     enabled: true
     config:

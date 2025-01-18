@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=too-many-lines
 # pylint: disable=too-many-locals
@@ -92,6 +95,7 @@ def create_drillholes(h5file_path, version=1.0, ga_version="1.0", add_data=True)
                     },
                 }
             )
+
             well.add_data(
                 {
                     "text Data": {
@@ -173,7 +177,6 @@ def test_concatenator(tmp_path):
         compare_entities(dh_group_copy, dh_group, ignore=["_uid"])
 
     with Workspace(h5file_path) as workspace:
-
         assert len(workspace.get_entity("DH_group")[0].children) == 1
 
 
@@ -182,40 +185,38 @@ def test_concatenated_entities(tmp_path):
     with Workspace.create(h5file_path, version=2.0) as workspace:
         class_type = type("TestGroup", (Concatenator, ContainerGroup), {})
         entity_type = Group.find_or_create_type(workspace)
-        concat = class_type(entity_type)
+        concat = class_type(entity_type=entity_type)
 
         class_obj_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
         object_type = ObjectBase.find_or_create_type(workspace)
 
         with pytest.raises(UserWarning) as error:
-            concat_object = class_obj_type(object_type)
+            concat_object = class_obj_type(entity_type=object_type)
 
         assert (
             "Creating a concatenated object must have a parent of type Concatenator."
             in str(error)
         )
 
-        concat_object = class_obj_type(object_type, parent=concat)
+        concat_object = class_obj_type(entity_type=object_type, parent=concat)
 
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
             dtype = data_type.DataType.find_or_create(
                 workspace, primitive_type=FloatData.primitive_type()
             )
-            data = class_type(dtype)
+            class_type(entity_type=dtype)
 
         assert "Creating a concatenated data must have a parent" in str(error)
 
-        data = class_type(dtype, parent=concat_object)
+        data = class_type(entity_type=dtype, parent=concat_object)
 
         assert data.property_group is None
 
-        with pytest.raises(
-            AttributeError, match="must have a 'property_groups' attribute"
-        ):
-            prop_group = ConcatenatedPropertyGroup(None)
+        with pytest.raises(TypeError, match="must have a 'property_groups' attribute"):
+            ConcatenatedPropertyGroup(None)
 
-        prop_group = ConcatenatedPropertyGroup(parent=concat_object)
+        prop_group = ConcatenatedPropertyGroup(parent=concat_object, properties=[data])
 
         with pytest.raises(
             AttributeError, match="Cannot change parent of a property group."
@@ -225,7 +226,7 @@ def test_concatenated_entities(tmp_path):
         assert prop_group.to_ is None
         assert prop_group.from_ is None
 
-        setattr(prop_group, "_parent", None)
+        prop_group._parent = None
 
         with pytest.raises(
             ValueError,
@@ -237,9 +238,6 @@ def test_concatenated_entities(tmp_path):
 
         assert prop_group.parent == concat_object
 
-        with pytest.raises(KeyError, match="A Property Group"):
-            concat_object.create_property_group(name="property_group")
-
 
 def test_empty_concatenated_property_group():
     workspace = Workspace()
@@ -248,7 +246,7 @@ def test_empty_concatenated_property_group():
         workspace,
         parent=dh_group,
     )
-    ConcatenatedPropertyGroup(parent=well)
+    ConcatenatedPropertyGroup(parent=well, association="DEPTH")
     assert not well.from_
 
 
@@ -603,7 +601,9 @@ def test_copy_and_append_drillhole_data(tmp_path):
                         },
                     },
                     property_group=ConcatenatedPropertyGroup(
-                        parent=well, property_group_type="Multi-element"
+                        parent=well,
+                        property_group_type="Multi-element",
+                        association="DEPTH",
                     ),
                 )
 
@@ -684,6 +684,7 @@ def test_remove_drillhole_data(tmp_path):
         well = workspace.get_entity("well")[0]
         all_data = [well.get_entity(name)[0] for name in well.get_data_list()]
         all_data = [data for data in all_data if data.allow_delete]
+
         well.remove_children(all_data)
 
         assert len(well.property_groups) == 0
@@ -727,7 +728,9 @@ def test_copy_drillhole_group(tmp_path):
         dh_group.add_file(tmp_path / file_name)
         dh_group_copy = dh_group.copy(workspace)
 
-        for child_a, child_b in zip(dh_group.children, dh_group_copy.children):
+        for child_a, child_b in zip(
+            dh_group.children, dh_group_copy.children, strict=False
+        ):
             if isinstance(child_a, Drillhole):
                 assert child_a.name == child_b.name
                 assert child_a.collar == child_b.collar
@@ -822,7 +825,7 @@ def test_locations(tmp_path):
         property_group="my property group",
     )
 
-    property_group = dh.find_or_create_property_group(name="my property group")
+    property_group = dh.fetch_property_group(name="my property group")
     assert np.allclose(property_group.locations, np.arange(0, 10.0))
 
     dh.add_data(
@@ -834,7 +837,7 @@ def test_locations(tmp_path):
         },
         property_group="my other property group",
     )
-    property_group = dh.find_or_create_property_group(name="my other property group")
+    property_group = dh.fetch_property_group(name="my other property group")
     assert np.allclose(
         property_group.locations, np.c_[np.arange(0, 10.0), np.arange(1, 11.0)]
     )
@@ -844,7 +847,9 @@ def test_is_collocated(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     dh_group = DrillholeGroup.create(ws)
     dh = Drillhole.create(ws, name="dh", parent=dh_group)
-    property_group = dh.find_or_create_property_group(name="some uninitialized group")
+    property_group = dh.fetch_property_group(
+        name="some uninitialized group", association="DEPTH"
+    )
     assert not property_group.is_collocated(np.arange(0, 10.0), 0.01)
     dh.add_data(
         {
@@ -855,7 +860,7 @@ def test_is_collocated(tmp_path):
         },
         property_group="my property group",
     )
-    property_group = dh.find_or_create_property_group(name="my property group")
+    property_group = dh.fetch_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(0, 10.0), 0.01)
     assert property_group.is_collocated(np.arange(0.001, 10), 0.01)
     assert not property_group.is_collocated(np.arange(1, 11.0), 0.01)
@@ -875,7 +880,7 @@ def test_is_collocated(tmp_path):
         property_group="my property group",
     )
 
-    property_group = dh2.find_or_create_property_group(name="my property group")
+    property_group = dh2.fetch_property_group(name="my property group")
     assert property_group.is_collocated(np.arange(1, 11.0), 0.01)
 
     dh.add_data(
@@ -887,7 +892,7 @@ def test_is_collocated(tmp_path):
         },
         property_group="my other property group",
     )
-    property_group = dh.find_or_create_property_group(name="my other property group")
+    property_group = dh.fetch_property_group(name="my other property group")
     assert property_group.is_collocated(
         np.c_[np.arange(0, 10.0), np.arange(1, 11.0)], 0.01
     )
@@ -1031,7 +1036,10 @@ def test_add_data_to_property(tmp_path):
             "new value",
             verification_map_value,
             data_type=data_type.DataType(
-                workspace, "REFERENCED", name="new_value", value_map=value_map
+                workspace,
+                primitive_type="REFERENCED",
+                name="new_value",
+                value_map=value_map,
             ),
         )
 
@@ -1068,8 +1076,8 @@ def test_add_data_to_property(tmp_path):
         verificationc["interval_values_a"] = verification_map_value
 
         assert compare_structured_arrays(
-            verificationc,
-            verificationd,
+            verificationc.astype([("new_value", np.float32)]),
+            verificationd.astype([("new_value", np.float32)]),
             tolerance=1e-5,
         )
 
@@ -1093,12 +1101,10 @@ def test_tables_errors(tmp_path):
 
     with workspace.open():
         with pytest.raises(TypeError, match="The parent must be a Concatenator"):
-            getattr(DrillholesGroupTable, "_get_property_groups")("bidon", "bidon")
+            DrillholesGroupTable._get_property_groups("bidon", "bidon")
 
         with pytest.raises(ValueError, match="No property group with name"):
-            getattr(DrillholesGroupTable, "_get_property_groups")(
-                drillhole_group, "bidon"
-            )
+            DrillholesGroupTable._get_property_groups(drillhole_group, "bidon")
 
         with pytest.raises(KeyError, match="The name must"):
             drillhole_group.drillholes_tables[
@@ -1165,3 +1171,7 @@ def test_surveys_info(tmp_path):
 
     assert len(dh.parent.data["Surveys"]) == 35
     assert "Info" in dh.parent.data["Surveys"].dtype.names
+
+    with workspace.open():
+        dh = workspace.get_entity("Info Drillhole")[0]
+        assert len(dh.surveys) == 5

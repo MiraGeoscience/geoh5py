@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=R0914
 
@@ -23,7 +26,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from geoh5py.objects import CurrentElectrode, PotentialElectrode
 from geoh5py.workspace import Workspace
@@ -40,17 +42,11 @@ def test_copy_survey_dcip(tmp_path: Path):
         x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
         vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
         parts = np.kron(np.arange(4), np.ones(n_data)).astype("int")
-        currents = CurrentElectrode.create(workspace, name=name)
-
-        with pytest.raises(AttributeError, match="Cells must be set"):
-            currents.add_default_ab_cell_id()
-
-        currents.vertices = vertices
-        currents.parts = parts
-        currents.add_default_ab_cell_id()
-        potentials = PotentialElectrode.create(
-            workspace, name=name + "_rx", vertices=vertices
+        currents = CurrentElectrode.create(
+            workspace, name=name, vertices=vertices, parts=parts
         )
+        currents.add_default_ab_cell_id()
+
         n_dipoles = 9
         dipoles = []
         current_id = []
@@ -61,7 +57,7 @@ def test_copy_survey_dcip(tmp_path: Path):
                 dipole_ids = currents.cells[cell_id, :] + 2 + dipole
 
                 if (
-                    any(dipole_ids > (potentials.n_vertices - 1))
+                    any(dipole_ids > (vertices.shape[0] - 1))
                     or len(np.unique(parts[np.r_[cell_id, dipole_ids]])) > 1
                 ):
                     continue
@@ -69,7 +65,13 @@ def test_copy_survey_dcip(tmp_path: Path):
                 dipoles += [dipole_ids]
                 current_id += [val]
 
-        potentials.cells = np.vstack(dipoles).astype("uint32")
+        potentials = PotentialElectrode.create(
+            workspace,
+            name=name + "_rx",
+            vertices=vertices,
+            cells=np.vstack(dipoles).astype("uint32"),
+        )
+
         potentials.add_data(
             {"fake_ab": {"values": np.random.randn(potentials.n_cells)}}
         )

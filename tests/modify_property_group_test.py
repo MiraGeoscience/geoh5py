@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -29,7 +32,8 @@ from geoh5py.workspace import Workspace
 def test_modify_property_group(tmp_path):
     def compare_objects(object_a, object_b, ignore=None):
         if ignore is None:
-            ignore = ["_workspace", "_children", "_parent"]
+            ignore = ["_workspace", "_children", "_parent", "_property_table"]
+
         for attr in object_a.__dict__.keys():
             if attr in ignore:
                 continue
@@ -65,7 +69,7 @@ def test_modify_property_group(tmp_path):
             f"Period{i + 1}" in children_list for i in range(4)
         ), "Missing data children"
         # Property group object should have been created
-        prop_group = curve.find_or_create_property_group(name="myGroup")
+        prop_group = curve.fetch_property_group(name="myGroup")
 
         # Remove on props from the list
         prop_group.remove_properties(curve.children[0])
@@ -80,8 +84,7 @@ def test_modify_property_group(tmp_path):
         )
 
         assert (
-            curve.find_or_create_property_group(name="cell_group").association.name
-            == "CELL"
+            curve.fetch_property_group(name="cell_group").association.name == "CELL"
         ), "Failed to create a CELL property_group"
 
         # Re-open the workspace
@@ -89,17 +92,15 @@ def test_modify_property_group(tmp_path):
 
         # Read the property_group back in
         rec_curve = workspace.get_entity(obj_name)[0]
-        rec_prop_group = rec_curve.find_or_create_property_group(name="myGroup")
+        rec_prop_group = rec_curve.fetch_property_group(name="myGroup")
+
         compare_objects(rec_prop_group, prop_group)
 
         with pytest.raises(DeprecationWarning):
             workspace.fetch_property_groups(rec_curve)
 
-        compare_objects(
-            rec_curve.find_or_create_property_group(name="myGroup"), prop_group
-        )
+        compare_objects(rec_curve.fetch_property_group(name="myGroup"), prop_group)
 
         assert (
-            rec_curve.find_or_create_property_group(name="cell_group").association.name
-            == "CELL"
+            rec_curve.fetch_property_group(name="cell_group").association.name == "CELL"
         ), "Failed to recover a CELL property_group"

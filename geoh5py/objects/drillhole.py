@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=R0902, R0904
 
@@ -21,27 +24,44 @@ from __future__ import annotations
 
 import re
 import uuid
+import warnings
+from numbers import Real
 
 import numpy as np
 
-from ..data import Data, DataType, FloatData, NumericData
-from ..groups import PropertyGroup
-from ..shared.utils import box_intersect, mask_by_extent, merge_arrays
-from .object_base import ObjectType
+from ..data import Data, FloatData, NumericData
+from ..shared.utils import (
+    box_intersect,
+    dip_azimuth_to_vector,
+    mask_by_extent,
+    merge_arrays,
+)
 from .points import Points
+
+
+INFINITE_RADIUS = 99999.9
+MINIMUM_DEPTH_INTERVAL = 1.0
+MAXIMUM_DEPTH_INTERVAL = 50.0
 
 
 class Drillhole(Points):
     """
-    Drillhole object class defined by
+    Drillhole object class defined by a collar and survey.
 
-    .. warning:: Not yet implemented.
-
+    :param collar: Coordinates of the drillhole.
+    :param cost: Cost estimate of the drillhole.
+    :param end_of_hole: End of drillhole in meters.
+    :param planning: Status of the hole, defaults to 'Default'.
+    :param surveys: Survey information provided as 'Depth', 'Azimuth', 'Dip'.
+    :param vertices: Coordinates of the vertices.
+    :param default_collocation_distance: Minimum collocation distance for matching depth on merge.
     """
 
-    __TYPE_UID = uuid.UUID(
+    _TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
+    __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
+    __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()
     _attribute_map.update(
         {
@@ -52,24 +72,41 @@ class Drillhole(Points):
         }
     )
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        *,
+        collar: np.ndarray | list | None = None,
+        cost: float = 0.0,
+        end_of_hole: float | None = None,
+        planning: str = "Default",
+        surveys: np.ndarray | list | tuple | None = None,
+        vertices: np.ndarray | None = None,
+        default_collocation_distance: float = 1e-2,
+        **kwargs,
+    ):
         self._cells: np.ndarray | None = None
-        self._collar: np.ndarray | None = None
-        self._cost: float | None = 0.0
         self._depths: FloatData | None = None
-        self._end_of_hole: float | None = None
-        self._planning: str = "Default"
-        self._surveys: np.ndarray | None = None
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
-        self._default_collocation_distance = 1e-2
+        self._surveys: np.ndarray | None = None
+        self._intervals: dict | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(
+            vertices=(0.0, 0.0, 0.0) if vertices is None else vertices, **kwargs
+        )
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        return cls.__TYPE_UID
+        if vertices is None:
+            self._vertices = None
+
+        self.collar = collar
+        self.cost = cost
+        self.default_collocation_distance = default_collocation_distance
+        self.end_of_hole = end_of_hole
+        self.planning = planning
+
+        if surveys is not None:
+            self.surveys = surveys
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -85,57 +122,65 @@ class Drillhole(Points):
 
     @cells.setter
     def cells(self, indices):
-        assert indices.dtype == "uint32", "Indices array must be of type 'uint32'"
+        if indices.dtype != "uint32":
+            raise TypeError("Indices array must be of type 'uint32'")
         self._cells = indices
         self.workspace.update_attribute(self, "cells")
 
     @property
-    def collar(self):
+    def collar(self) -> np.ndarray:
         """
-        :obj:`numpy.array` of :obj:`float`, shape (3, ): Coordinates of the collar
+        Coordinates of the collar, shape(1, 3)
         """
         return self._collar
 
     @collar.setter
     def collar(self, value: list | np.ndarray | None):
-        if value is not None:
-            if isinstance(value, np.ndarray):
-                value = value.tolist()
-
-            if isinstance(value, str):
-                value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
-
-            if len(value) != 3:
-                raise ValueError("Origin must be a list or numpy array of len (3,).")
-
-            value = np.asarray(
-                tuple(value), dtype=[("x", float), ("y", float), ("z", float)]
+        if value is None:
+            warnings.warn(
+                "No 'collar' provided. Using (0, 0, 0) as default point at the origin.",
+                UserWarning,
             )
-            self._collar = value
+            value = (0.0, 0.0, 0.0)
+
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
+
+        if isinstance(value, str):
+            value = [float(n) for n in re.findall(r"-?\d+\.\d+", value)]
+
+        if len(value) != 3:
+            raise ValueError("Origin must be a list or numpy array of len (3,).")
+
+        value = np.asarray(tuple(value), dtype=self.__COLLAR_DTYPE)
+        self._collar = value
+        self._locations = None
+        self._intervals = None
+
+        if self.on_file:
             self.workspace.update_attribute(self, "attributes")
 
-        self._locations = None
-
-        if self.trace is not None:
-            self._trace = None
-            self._trace_depth = None
-            self.workspace.update_attribute(self, "trace")
-            self.workspace.update_attribute(self, "trace_depth")
+            if self.trace is not None:
+                self._trace = None
+                self._trace_depth = None
+                self.workspace.update_attribute(self, "trace")
+                self.workspace.update_attribute(self, "trace_depth")
 
     @property
-    def cost(self):
+    def cost(self) -> float:
         """
         :obj:`float`: Cost estimate of the drillhole
         """
         return self._cost
 
     @cost.setter
-    def cost(self, value: float | int):
-        assert isinstance(
-            value, (float, int)
-        ), f"Provided cost value must be of type {float} or int."
-        self._cost = value
-        self.workspace.update_attribute(self, "attributes")
+    def cost(self, value: Real):
+        if not isinstance(value, Real):
+            raise TypeError(f"Provided cost value must be of type {float} or int.")
+        self._cost = float(value)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def end_of_hole(self) -> float | None:
@@ -145,12 +190,13 @@ class Drillhole(Points):
         return self._end_of_hole
 
     @end_of_hole.setter
-    def end_of_hole(self, value: float | int | None):
-        assert isinstance(
-            value, (int, float, type(None))
-        ), f"Provided end_of_hole value must be of type {int}"
+    def end_of_hole(self, value: Real | None):
+        if not isinstance(value, (int, float, type(None))):
+            raise TypeError(f"Provided end_of_hole value must be of type {int}")
         self._end_of_hole = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def extent(self) -> np.ndarray | None:
@@ -172,20 +218,23 @@ class Drillhole(Points):
         return None
 
     @property
+    def intervals(self):
+        """
+        Densified and computed interval information
+        """
+        if self._intervals is None:
+            self._intervals = self.compute_intervals(
+                self.surveys, self.collar.tolist(), self.end_of_hole
+            )
+        return self._intervals
+
+    @property
     def locations(self) -> np.ndarray | None:
         """
         Lookup array of the well path in x, y, z coordinates.
         """
         if getattr(self, "_locations", None) is None and self.collar is not None:
-            surveys = np.vstack([self.surveys[0, :], self.surveys])
-            surveys[0, 0] = 0.0
-            lengths = surveys[1:, 0] - surveys[:-1, 0]
-            deviation = compute_deviation(surveys)
-            self._locations = np.c_[
-                self.collar["x"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 0]]),
-                self.collar["y"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 1]]),
-                self.collar["z"] + np.cumsum(np.r_[0.0, lengths * deviation[:, 2]]),
-            ]
+            self._locations = self.depths_to_xyz(self.intervals, self.surveys[:, 0])
 
         return self._locations
 
@@ -210,6 +259,15 @@ class Drillhole(Points):
         return None
 
     @property
+    def n_cells(self) -> int | None:
+        """
+        Number of cells.
+        """
+        if self.cells is not None:
+            return self.cells.shape[0]
+        return None
+
+    @property
     def planning(self) -> str:
         """
         Status of the hole on of "Default", "Ongoing", "Planned", "Completed" or "No status"
@@ -219,19 +277,25 @@ class Drillhole(Points):
     @planning.setter
     def planning(self, value: str):
         choices = ["Default", "Ongoing", "Planned", "Completed", "No status"]
-        assert value in choices, f"Provided planning value must be one of {choices}"
+        if value not in choices:
+            raise ValueError(f"Provided planning value must be one of {choices}")
         self._planning = value
-        self.workspace.update_attribute(self, "attributes")
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def surveys(self) -> np.ndarray:
         """
-        Coordinates of the surveys
+        Coordinates of the surveys.
         """
-        if (getattr(self, "_surveys", None) is None) and self.on_file:
+        if self._surveys is None and self.on_file:
             self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
 
-        if isinstance(self._surveys, np.ndarray):
+        if self._surveys is None:
+            surveys = np.c_[0, 0, -90]
+
+        else:
             surveys = np.vstack(
                 [
                     self._surveys["Depth"],
@@ -240,37 +304,49 @@ class Drillhole(Points):
                 ]
             ).T
 
-        else:
-            surveys = np.c_[0, 0, -90]
-
         return surveys.astype(float)
 
     @surveys.setter
-    def surveys(self, value):
-        if value is not None:
-            self._surveys = self.format_survey_values(value)
+    def surveys(self, array: np.ndarray | list | tuple):
+        if not isinstance(array, (np.ndarray, list, tuple)):
+            raise TypeError(
+                "Input 'surveys' must be of type 'numpy.ndarray' or 'list'."
+            )
+
+        self._surveys = self.format_survey_values(array)
+        self.end_of_hole = float(self._surveys["Depth"][-1])
+
+        if self.on_file:
             self.workspace.update_attribute(self, "surveys")
-            self.end_of_hole = float(self._surveys["Depth"][-1])
-            self._trace = None
-            self.workspace.update_attribute(self, "trace")
+
+            if self.trace is not None:
+                self._trace = None
+                self.workspace.update_attribute(self, "trace")
 
         self._locations = None
+        self._intervals = None
 
-    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
+    def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
         """
         Reformat the survey values as structured array with the right shape.
         """
-        if isinstance(values, list):
-            values = np.vstack(values)
+        if isinstance(values, (list, tuple)):
+            values = np.array(values, ndmin=2)
 
-        if values.shape[1] != 3:
-            raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
+        if np.issubdtype(values.dtype, np.number):
+            if values.shape[1] != 3:
+                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
-        array_values = np.asarray(
-            np.core.records.fromarrays(
-                values.T, names="Depth, Azimuth, Dip", formats="<f4, <f4, <f4"
+            array_values = np.asarray(
+                np.core.records.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
             )
-        )
+        else:
+            array_values = values
+
+        if array_values.dtype.descr[:3] != self.__SURVEY_DTYPE.descr:
+            raise ValueError(
+                f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
+            )
         return array_values
 
     @property
@@ -282,7 +358,9 @@ class Drillhole(Points):
 
     @default_collocation_distance.setter
     def default_collocation_distance(self, tol):
-        assert tol > 0, "Tolerance value should be >0"
+        if not tol > 0:
+            raise ValueError("Tolerance value should be >0.")
+
         self._default_collocation_distance = tol
         self.workspace.update_attribute(self, "attributes")
 
@@ -361,140 +439,28 @@ class Drillhole(Points):
                 f"Input '_depth' property must be of type{FloatData} or None"
             )
 
-    def add_data(
-        self,
-        data: dict,
-        property_group: str | PropertyGroup | None = None,
-        compression: int = 5,
-        collocation_distance=None,
-    ) -> Data | list[Data]:
-        """
-        Create :obj:`~geoh5py.data.data.Data` specific to the drillhole object
-        from dictionary of name and arguments. A keyword 'depth' or 'from-to'
-        with corresponding depth values is expected in order to locate the
-        data along the well path.
-
-        :param data: Dictionary of data to be added to the object, e.g.
-
-        .. code-block:: python
-
-            data_dict = {
-                "data_A": {
-                    'values', [v_1, v_2, ...],
-                    "from-to": numpy.ndarray,
-                    },
-                "data_B": {
-                    'values', [v_1, v_2, ...],
-                    "depth": numpy.ndarray,
-                    },
-            }
-
-        :param property_group: Name or PropertyGroup used to group the data.
-        :param collocation_distance: Minimum collocation distance for matching
-        :param compression: Compression level for data.
-
-        :return: List of new Data objects.
-        """
-        data_objects = []
-
-        for name, attributes in data.items():
-            assert isinstance(attributes, dict), (
-                f"Given value to data {name} should of type {dict}. "
-                f"Type {type(attributes)} given instead."
-            )
-            assert (
-                "values" in attributes
-            ), f"Given attributes for data {name} should include 'values'"
-
-            attributes["name"] = name
-
-            if attributes["name"] in self.get_data_list():
-                raise ValueError(
-                    f"Data with name '{attributes['name']}' already present "
-                    f"on the drillhole '{self.name}'. "
-                    "Consider changing the values or renaming."
-                )
-
-            attributes, new_property_group = self.validate_data(
-                attributes, property_group, collocation_distance=collocation_distance
-            )
-
-            entity_type = DataType.validate_data_type(self.workspace, attributes)
-            kwargs = {
-                "name": None,
-                "parent": self,
-                "association": attributes["association"],
-                "allow_move": False,
-            }
-            for key, val in attributes.items():
-                if key in ["parent", "association", "entity_type", "type"]:
-                    continue
-                kwargs[key] = val
-
-            data_object = self.workspace.create_entity(
-                Data, entity=kwargs, entity_type=entity_type, compression=compression
-            )
-
-            if not isinstance(data_object, Data):
-                continue
-
-            if new_property_group is not None:
-                self.add_data_to_group(data_object, new_property_group)
-
-            data_objects.append(data_object)
-
-        # Check the depths and re-sort data if necessary
-        self.sort_depths()
-
-        if len(data_objects) == 1:
-            return data_objects[0]
-
-        return data_objects
-
     def desurvey(self, depths):
         """
         Function to return x, y, z coordinates from depth.
         """
-        if self.locations is None:
-            raise AttributeError(
-                "The 'desurvey' operation requires the 'locations' "
-                "attribute to be defined."
-            )
-
-        if isinstance(depths, list):
-            depths = np.asarray(depths)
-
-        # Repeat first survey point at surface for de-survey interpolation
-        surveys = np.vstack([self.surveys[0, :], self.surveys])
-        surveys[0, 0] = 0.0
-
-        ind_loc = np.maximum(
-            np.searchsorted(surveys[:, 0], depths, side="left") - 1,
-            0,
-        )
-        deviation = compute_deviation(surveys)
-        ind_dev = np.minimum(ind_loc, deviation.shape[0] - 1)
-        locations = (
-            self.locations[ind_loc, :]
-            + np.r_[depths - surveys[ind_loc, 0]][:, None]
-            * np.c_[
-                deviation[ind_dev, 0],
-                deviation[ind_dev, 1],
-                deviation[ind_dev, 2],
-            ]
-        )
-        return locations
+        return self.depths_to_xyz(self.intervals, depths)
 
     def add_vertices(self, xyz):
         """
         Function to add vertices to the drillhole
         """
         indices = np.arange(xyz.shape[0])
-        if isinstance(self.vertices, np.ndarray):
-            indices += self.vertices.shape[0]
-            self.vertices = np.vstack([self.vertices, xyz])
-        else:
-            self.vertices = xyz
+        if self._vertices is not None:
+            indices += self.n_vertices
+            xyz = np.vstack([self.vertices, xyz])
+
+        self._vertices = np.asarray(
+            np.core.records.fromarrays(
+                xyz.T.tolist(),
+                dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
+            )
+        )
+        self.workspace.update_attribute(self, "vertices")
 
         return indices.astype("uint32")
 
@@ -651,8 +617,8 @@ class Drillhole(Points):
 
         return values
 
-    def validate_data(
-        self, attributes: dict, property_group=None, collocation_distance=None
+    def validate_association(
+        self, attributes: dict, property_group=None, collocation_distance=None, **_
     ) -> tuple:
         """
         Validate input drillhole data attributes.
@@ -677,6 +643,13 @@ class Drillhole(Points):
                     "and 'from-to'."
                 )
 
+        if attributes["name"] in self.get_data_list():
+            raise ValueError(
+                f"Data with name '{attributes['name']}' already present "
+                f"on the drillhole '{self.name}'. "
+                "Consider changing the values or renaming."
+            )
+
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
             attributes["values"] = self.validate_depth_data(
@@ -697,7 +670,31 @@ class Drillhole(Points):
 
         return attributes, property_group
 
-    def sort_depths(self):
+    @property
+    def vertices(self) -> np.ndarray | None:
+        """
+        :obj:`~geoh5py.objects.object_base.ObjectBase.vertices`
+        """
+        if self._vertices is None and self.on_file:
+            self._vertices = self.workspace.fetch_array_attribute(self, "vertices")
+
+        if self._vertices is not None:
+            return self._vertices.view("<f8").reshape((-1, 3))
+
+        return None
+
+    @vertices.setter
+    def vertices(self, vertices: np.ndarray | list | tuple):
+        xyz = self.validate_vertices(vertices)
+        if self._vertices is not None and self._vertices.shape != xyz.shape:
+            raise ValueError(
+                "New vertices array must have the same shape as the current vertices array."
+            )
+        self._vertices = xyz
+
+        self.workspace.update_attribute(self, "vertices")
+
+    def post_processing(self):
         """
         Read the 'DEPTH' data and sort all Data.values if needed
         """
@@ -706,7 +703,7 @@ class Drillhole(Points):
 
             depths = data_obj.values
             if isinstance(data_obj, NumericData):
-                depths = data_obj.format_values(depths)
+                depths = data_obj.validate_values(depths)
 
             if not np.all(np.diff(depths) >= 0):
                 sort_ind = np.argsort(depths)
@@ -716,69 +713,148 @@ class Drillhole(Points):
                         isinstance(child, NumericData)
                         and getattr(child.association, "name", None) == "VERTEX"
                     ):
-                        child.values = child.format_values(child.values)[sort_ind]
+                        child.values = child.validate_values(child.values)[sort_ind]
 
                 if self.vertices is not None:
-                    self.vertices = self.vertices[sort_ind, :]
+                    self._vertices = self.vertices[sort_ind, :]
+                    self.workspace.update_attribute(self, "vertices")
 
                 if self.cells is not None:
                     key_map = np.argsort(sort_ind)[self.cells.flatten()]
-                    self.cells = key_map.reshape((-1, 2)).astype("uint32")
+                    self._cells = key_map.reshape((-1, 2)).astype("uint32")
+                    self.workspace.update_attribute(self, "cells")
 
+    @staticmethod
+    def densify_survey_values(
+        survey: np.ndarray, end_of_hole: float | None
+    ) -> np.ndarray:
+        """
+        Validate the survey values for desurveying.
 
-def compute_deviation(surveys: np.ndarray) -> np.ndarray:
-    """
-    Compute deviation distances from survey parameters.
+        - Repeat first survey point at surface for de-survey interpolation
+        - Repeat last survey point at end of hole for de-survey interpolation
+        - Densify along intervals if greater than 50 m
 
-    :param surveys: Array of azimuth, dip and depth values.
-    """
-    if surveys is None:
-        raise AttributeError(
-            "Cannot compute deviation coordinates without `survey` attribute."
+        :param survey: Array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        :param end_of_hole: End of the drillhole in meters.
+
+        :return: Augmented array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        """
+        full_survey = survey.copy()
+
+        # Repeat first survey point at surface for de-survey interpolation
+        if survey[0, 0] != 0.0:
+            full_survey = np.vstack([survey[0, :], full_survey])
+            full_survey[0, 0] = 0.0
+
+        if end_of_hole is not None and end_of_hole > full_survey[-1, 0]:
+            last_row = full_survey[-1, :].copy()
+            last_row[0] = end_of_hole
+            full_survey = np.vstack([full_survey, last_row])
+
+        # Densify along intervals if greater than 50 m
+        deltas = np.diff(full_survey[:, 0])
+        new_points = []
+        for ii, delta in enumerate(deltas):
+            if delta < MAXIMUM_DEPTH_INTERVAL:
+                continue
+
+            depths = np.arange(0, delta, MAXIMUM_DEPTH_INTERVAL)
+            d_azm = (full_survey[ii + 1, 1] - full_survey[ii, 1]) / delta
+            d_dip = (full_survey[ii + 1, 2] - full_survey[ii, 2]) / delta
+            new_points.append(
+                np.c_[
+                    full_survey[ii, 0] + depths[1:],
+                    full_survey[ii, 1] + d_azm * depths[1:],
+                    full_survey[ii, 2] + d_dip * depths[1:],
+                ]
+            )
+
+        if len(new_points) > 1:
+            full_survey = np.vstack([full_survey, np.vstack(new_points)])
+
+        return np.unique(full_survey, axis=0)
+
+    @staticmethod
+    def compute_intervals(survey: np.ndarray, collar, end_of_hole) -> dict:
+        """
+        Compute the intervals from survey and collar information.
+
+        Stores a dictionary describing the arc circle between the survey points
+        separated by a maximum depth interval of 50 m.
+
+        Translated from C++ code.
+
+        :param survey: Array of survey points with columns 'Depth', 'Azimuth', 'Dip'.
+        :param collar: Collar location of the drillhole.
+        :param end_of_hole: End of the drillhole in meters.
+        """
+        collar = np.asarray(collar).reshape((1, 3))
+        full_survey = Drillhole.densify_survey_values(survey, end_of_hole)
+        unit_vector = dip_azimuth_to_vector(full_survey[:, 2], full_survey[:, 1])
+
+        if survey.shape[0] < 2:
+            return {
+                "depths": np.r_[0],
+                "rad": np.r_[INFINITE_RADIUS],
+                "tangential": np.zeros((1, 3)),
+                "unit_vector": unit_vector,
+                "locations": collar,
+            }
+
+        # Cross product between neighbours
+        cross = np.cross(unit_vector[:-1, :], unit_vector[1:, :], axis=1)
+        vr = np.linalg.norm(cross, axis=1)
+        dot = np.sum(unit_vector[:-1, :] * unit_vector[1:, :], axis=1)
+        tangential = unit_vector[1:, :] - dot[:, None] * unit_vector[:-1, :]
+        norm = np.linalg.norm(tangential, axis=1)
+        norm[norm == 0.0] = INFINITE_RADIUS
+        tangential /= norm[:, None]
+        alpha = np.abs(0.5 * np.pi - np.arctan2(dot, vr))
+        delta_depth = np.diff(full_survey[:, 0])
+        radius = delta_depth / alpha
+
+        radius[alpha == 0.0] = delta_depth[alpha == 0.0] * INFINITE_RADIUS
+        alpha[alpha == 0.0] = delta_depth[alpha == 0.0] / radius[alpha == 0.0]
+
+        intervals = {
+            "depths": np.r_[full_survey[:, 0]],
+            "rad": np.r_[radius, INFINITE_RADIUS],
+            "tangential": np.vstack([tangential, np.zeros(3)]),
+            "unit_vector": unit_vector,
+            "locations": np.r_[
+                collar,
+                collar
+                + np.cumsum(
+                    radius[:, None]
+                    * (
+                        np.sin(alpha)[:, None] * unit_vector[:-1, :]
+                        + (1 - np.cos(alpha))[:, None] * tangential
+                    ),
+                    axis=0,
+                ),
+            ],
+        }
+
+        return intervals
+
+    @staticmethod
+    def depths_to_xyz(intervals: dict, depths: np.ndarray) -> np.ndarray:
+        """
+        Convert survey parameters to x, y, z coordinates.
+
+        :param intervals: Dictionary of intervals parameters.
+        :param depths: Array of depth values.
+        """
+        depths = np.asarray(depths).flatten()
+        ind = np.searchsorted(intervals["depths"], depths, side="right") - 1
+        dl = depths - intervals["depths"][ind]
+        radii = intervals["rad"][ind]
+        radii[radii == 0.0] = 1.0
+
+        angle = dl / radii
+        locations = intervals["locations"][ind, :] + radii[:, None] * (
+            np.sin(angle)[:, None] * intervals["unit_vector"][ind, :]
+            + (1 - np.cos(angle))[:, None] * intervals["tangential"][ind, :]
         )
-
-    lengths = surveys[1:, 0] - surveys[:-1, 0]
-
-    deviation = []
-    for component in [deviation_x, deviation_y, deviation_z]:
-        dl_in = component(surveys[:-1, 1], surveys[:-1, 2])
-        dl_out = component(surveys[1:, 1], surveys[1:, 2])
-        ddl = np.divide(dl_out - dl_in, lengths, where=lengths != 0)
-        deviation += [dl_in + lengths * ddl / 2.0]
-
-    return np.vstack(deviation).T
-
-
-def deviation_x(azimuth, dip):
-    """
-    Compute the easting deviation.
-
-    :param azimuth: Degree angle clockwise from North
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in easting distance.
-    """
-    return np.cos(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
-
-
-def deviation_y(azimuth, dip):
-    """
-    Compute the northing deviation.
-
-    :param azimuth: Degree angle clockwise from North
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in northing distance.
-    """
-    return np.sin(np.deg2rad(450.0 - azimuth % 360.0)) * np.cos(np.deg2rad(dip))
-
-
-def deviation_z(_, dip):
-    """
-    Compute the vertical deviation.
-
-    :param dip: Degree angle positive down from horizontal
-
-    :return deviation: Change in vertical distance.
-    """
-    return np.sin(np.deg2rad(dip))
+        return locations

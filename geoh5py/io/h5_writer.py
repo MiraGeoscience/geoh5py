@@ -1,46 +1,54 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-# pylint: disable=R0904
+
+# pylint: disable=too-many-public-methods, too-many-lines
 
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from copy import deepcopy
 from typing import TYPE_CHECKING
+from warnings import warn
 
 import h5py
 import numpy as np
 
 from ..data import (
-    BooleanData,
     CommentsData,
     Data,
     DataType,
     FilenameData,
-    IntegerData,
-    TextData,
+    GeometricDataValueMapType,
+    ReferenceDataType,
+    ReferencedData,
+    ReferenceValueMap,
 )
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
 from ..shared.concatenation import Concatenator
 from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
+from .utils import str_from_subtype, str_from_type
+
 
 if TYPE_CHECKING:
     from .. import shared, workspace
@@ -53,9 +61,8 @@ class H5Writer:
 
     str_type = h5py.special_dtype(vlen=str)
 
-    @classmethod
+    @staticmethod
     def init_geoh5(
-        cls,
         file: str | h5py.File,
         workspace: workspace.Workspace,
     ):
@@ -70,7 +77,7 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             project = h5file.create_group(workspace.name)
-            cls.write_attributes(h5file, workspace)
+            H5Writer.write_attributes(h5file, workspace)
             project.create_group("Data")
             project.create_group("Groups")
             project.create_group("Objects")
@@ -79,8 +86,8 @@ class H5Writer:
             types.create_group("Group types")
             types.create_group("Object types")
 
-    @classmethod
-    def create_dataset(cls, entity_handle, dataset: np.ndarray, label: str) -> None:
+    @staticmethod
+    def create_dataset(entity_handle, dataset: np.ndarray, label: str) -> None:
         """
         Create a dataset on geoh5.
 
@@ -154,9 +161,8 @@ class H5Writer:
                 if parent is not None:
                     H5Writer.remove_child(h5file, uid, ref_type, parent)
 
-    @classmethod
+    @staticmethod
     def fetch_handle(
-        cls,
         file: str | h5py.File,
         entity,
         return_parent: bool = False,
@@ -188,18 +194,17 @@ class H5Writer:
             }
 
             if isinstance(entity, EntityType):
-                try:
+                if "Types" in base_handle:
                     base_handle = base_handle["Types"]
-                except KeyError:
+                else:
                     base_handle = base_handle.create_group("Types")
 
             for key, value in hierarchy.items():
                 if isinstance(entity, key):
-                    try:
+                    if value in base_handle:
                         base_handle = base_handle[value]
-                    except KeyError:
+                    else:
                         base_handle = base_handle.create_group(value)
-                    break
 
             # Check if already in the project
             if as_str_if_uuid(uid) in base_handle:
@@ -210,9 +215,8 @@ class H5Writer:
 
         return None
 
-    @classmethod
+    @staticmethod
     def save_entity(
-        cls,
         file: str | h5py.File,
         entity,
         compression: int = 5,
@@ -246,9 +250,9 @@ class H5Writer:
 
         return new_entity
 
-    @classmethod
+    @staticmethod
     def update_concatenated_field(
-        cls, file: str | h5py.File, entity, attribute: str, channel: str
+        file: str | h5py.File, entity, attribute: str, channel: str
     ) -> None:
         """
         Update the attributes of a concatenated :obj:`~geoh5py.shared.entity.Entity`.
@@ -271,11 +275,9 @@ class H5Writer:
                     attribute.capitalize()
                 )
             name = channel.replace("/", "\u2044")
-            try:
+            if name in attr_handle:
                 del attr_handle[name]
                 entity.workspace.repack = True
-            except KeyError:
-                pass
 
             values = getattr(entity, attribute).get(channel, None)
 
@@ -283,7 +285,6 @@ class H5Writer:
                 return
 
             if isinstance(values, np.ndarray):
-
                 if np.issubdtype(values.dtype, np.floating):
                     values = values.astype(np.float32)
 
@@ -300,9 +301,8 @@ class H5Writer:
                 compression_opts=9,
             )
 
-    @classmethod
+    @staticmethod
     def update_field(
-        cls,
         file: str | h5py.File,
         entity,
         attribute: str,
@@ -322,15 +322,18 @@ class H5Writer:
 
             if entity_handle is None:
                 return
-
-            if attribute in [
-                "concatenated_attributes",
-                "metadata",
-                "options",
-                "trace_depth",
+            if attribute == "concatenated_attributes":
+                H5Writer.write_group_values(
+                    h5file, entity, attribute, compression, **kwargs
+                )
+            elif attribute in [
                 "values",
             ]:
-                cls.write_data_values(h5file, entity, attribute, compression, **kwargs)
+                H5Writer.write_data_values(
+                    h5file, entity, attribute, compression, **kwargs
+                )
+            elif attribute in ["metadata", "options"]:
+                H5Writer.write_metadata(h5file, entity, attribute, **kwargs)
             elif attribute in [
                 "cells",
                 "concatenated_object_ids",
@@ -340,29 +343,31 @@ class H5Writer:
                 "prisms",
                 "surveys",
                 "trace",
+                "trace_depth",
                 "u_cell_delimiters",
                 "v_cell_delimiters",
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                cls.write_array_attribute(h5file, entity, attribute, **kwargs)
+                H5Writer.write_array_attribute(h5file, entity, attribute, **kwargs)
             elif attribute == "property_groups":
-                cls.write_property_groups(h5file, entity)
+                H5Writer.write_property_groups(h5file, entity)
             elif attribute == "color_map":
-                cls.write_color_map(h5file, entity)
+                H5Writer.write_color_map(h5file, entity)
             elif attribute == "value_map":
-                cls.write_value_map(h5file, entity)
+                H5Writer.write_value_map(h5file, entity)
+            elif attribute == "data_map":
+                H5Writer.write_data_map(h5file, entity)
             elif attribute == "entity_type":
                 del entity_handle["Type"]
                 entity.workspace.repack = True
                 new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
                 entity_handle["Type"] = new_type
             else:
-                cls.write_attributes(h5file, entity)
+                H5Writer.write_attributes(h5file, entity)
 
-    @classmethod
+    @staticmethod
     def write_attributes(
-        cls,
         file: str | h5py.File,
         entity,
     ) -> None:
@@ -405,15 +410,14 @@ class H5Writer:
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
-                    entity_handle.attrs.create(key, value, dtype=cls.str_type)
+                    entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
                     )
 
-    @classmethod
+    @staticmethod
     def write_color_map(
-        cls,
         file: str | h5py.File,
         entity_type: shared.EntityType,
     ) -> None:
@@ -431,27 +435,26 @@ class H5Writer:
             if entity_type_handle is None:
                 return
 
-            try:
+            if "Color map" in entity_type_handle:
                 del entity_type_handle["Color map"]
                 entity_type.workspace.repack = True
-            except KeyError:
-                pass
 
             if color_map is not None and color_map.values is not None:
-                cls.create_dataset(
+                H5Writer.create_dataset(
                     entity_type_handle,
-                    getattr(color_map, "_values"),
+                    color_map._values,  # pylint: disable=protected-access
                     "Color map",
                 )
                 entity_type_handle["Color map"].attrs.create(
-                    "File name", color_map.name, dtype=cls.str_type
+                    "File name", color_map.name, dtype=H5Writer.str_type
                 )
 
-    @classmethod
+    @staticmethod
     def write_value_map(
-        cls,
         file: str | h5py.File,
-        entity_type: shared.EntityType,
+        entity_type: ReferenceDataType,
+        name="Value map",
+        value_map: ReferenceValueMap | None = None,
     ) -> None:
         """
         Add :obj:`~geoh5py.data.reference_value_map.ReferenceValueMap` to a
@@ -459,31 +462,78 @@ class H5Writer:
 
         :param file: Name or handle to a geoh5 file
         :param entity_type: Target entity_type with value_map
+        :param name: Name of the value map
+        :param value_map: Value map to be written
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            reference_value_map = getattr(entity_type, "value_map", None)
-            names = ["Key", "Value"]
-            formats = ["<u4", h5py.special_dtype(vlen=str)]
+            if isinstance(entity_type, GeometricDataValueMapType):
+                return
 
             entity_type_handle = H5Writer.fetch_handle(h5file, entity_type)
 
             if entity_type_handle is None:
                 return
 
-            try:
-                del entity_type_handle["Value map"]
+            dtype = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
+
+            if value_map is None:
+                value_map = entity_type.value_map
+
+            if value_map is None:
+                return
+
+            if not isinstance(value_map, ReferenceValueMap):
+                raise TypeError("Value map must be a ReferenceValueMap object.")
+
+            if name in entity_type_handle:
+                del entity_type_handle[name]
                 entity_type.workspace.repack = True
-            except KeyError:
-                pass
 
-            if reference_value_map is not None and reference_value_map.map is not None:
-                dtype = list(zip(names, formats))
-                array = np.array(list(reference_value_map.map.items()), dtype=dtype)
-                cls.create_dataset(entity_type_handle, array, "Value map")
+            H5Writer.create_dataset(
+                entity_type_handle,
+                value_map.map.astype(dtype),
+                name,
+            )
 
-    @classmethod
+            if name != "Value map":
+                entity_type_handle[name].attrs.create(
+                    "Name", value_map.name, dtype=H5Writer.str_type
+                )
+                entity_type_handle[name].attrs.create(
+                    "Allow delete", True, dtype="int8"
+                )
+
+    @staticmethod
+    def write_data_map(file: str | h5py.File, data: ReferencedData):
+        """
+        Write the value map of geometric data.
+
+        :param file: Name or handle to a geoh5 file
+        :param data: Target referenced data with value map
+        """
+        if data.data_maps is None:
+            return
+
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_type_handle = H5Writer.fetch_handle(h5file, data.entity_type)
+
+            if entity_type_handle is None:
+                return
+
+            for name in entity_type_handle:
+                if re.match("Value map [0-9]", name):
+                    del entity_type_handle[name]
+
+            for ii, child in enumerate(data.data_maps.values()):
+                H5Writer.write_value_map(
+                    h5file,
+                    data.entity_type,
+                    f"Value map {ii + 1}",
+                    child.entity_type.value_map,
+                )
+
+    @staticmethod
     def write_visible(
-        cls,
         file: str | h5py.File,
         entity,
     ) -> None:
@@ -509,9 +559,9 @@ class H5Writer:
                 )
                 visible["Visible"] = 1
 
-    @classmethod
+    @staticmethod
     def write_array_attribute(
-        cls, file: str | h5py.File, entity, attribute, values=None, **kwargs
+        file: str | h5py.File, entity, attribute, values=None, **kwargs
     ) -> None:
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
@@ -535,17 +585,14 @@ class H5Writer:
             ):
                 entity_handle = entity_handle["Concatenated Data"]
 
-            try:
+            if KEY_MAP[attribute] in entity_handle:
                 del entity_handle[KEY_MAP[attribute]]
                 entity.workspace.repack = True
-            except KeyError:
-                pass
 
             if isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.str_):
                 values = values.astype(h5py.special_dtype(vlen=str))
 
             if values is not None:
-
                 entity_handle.create_dataset(
                     KEY_MAP[attribute],
                     data=values,
@@ -554,14 +601,111 @@ class H5Writer:
                     **kwargs,
                 )
 
-    @classmethod
-    def write_data_values(  # pylint: disable=too-many-branches
-        cls,
+    @staticmethod
+    def prepare_data_to_write(
+        h5file: h5py.File, entity: Data | Group | ObjectBase, attribute: str
+    ) -> tuple[h5py.Group, str] | tuple[None, None]:
+        """
+        Prepare data to be written to a geoh5 file.
+
+        :param h5file: Name or handle to a geoh5 file.
+        :param entity: Entity with attributes to be added to the geoh5 file.
+        :param attribute: The attribute to be written to the geoh5 file.
+
+        :return: The entity handle, the name map, and the values to be written to the geoh5 file.
+        """
+        entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+        if entity_handle is None:
+            return None, None
+
+        name_map = KEY_MAP[attribute]
+
+        if isinstance(entity, Concatenator) and name_map != "Metadata":
+            entity_handle = entity_handle["Concatenated Data"]
+
+            if (
+                attribute == "concatenated_attributes"
+                and entity.concat_attr_str == "Attributes Jsons"
+            ):
+                name_map = entity.concat_attr_str
+
+        if name_map in entity_handle:
+            del entity_handle[name_map]
+            entity.workspace.repack = True
+
+        return entity_handle, name_map
+
+    @staticmethod
+    def write_group_values(
         file: str | h5py.File,
-        entity,
+        entity: Group,
         attribute,
         compression: int,
         values=None,
+        **kwargs,
+    ):
+        """
+        Add Concatenator values.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param attribute: Name of the attribute to be written to geoh5
+        :param compression: Compression level for the data.
+        :param values: Data values.
+        """
+        if not isinstance(entity, Group):
+            raise TypeError(
+                "Entity must be a Group object; " f"got '{type(entity)}' instead."
+            )
+        # check type here
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
+                h5file, entity, attribute
+            )
+
+            # Give the chance to fetch from file
+            values = getattr(entity, attribute, None) if values is None else values
+
+            if values is None or entity_handle is None:
+                return
+
+            if (
+                attribute == "concatenated_attributes"
+                and isinstance(entity, Concatenator)
+                and entity.concat_attr_str == "Attributes Jsons"
+            ):
+                values = [
+                    json.dumps(val).encode("utf-8") for val in values["Attributes"]
+                ]
+
+            if name_map == "Attributes Jsons":
+                entity_handle.create_dataset(
+                    name_map,
+                    data=values,
+                    compression="gzip",
+                    compression_opts=compression,
+                    **kwargs,
+                )
+            elif isinstance(values, dict):
+                values = deepcopy(values)
+                values = dict_mapper(values, [as_str_if_uuid])
+                entity_handle.create_dataset(
+                    name_map,
+                    data=json.dumps(values, indent=4),
+                    dtype=h5py.special_dtype(vlen=str),
+                    shape=(1,),
+                    **kwargs,
+                )
+            else:
+                warn(f"Writing '{values}' on '{entity.name}' failed.")
+
+    @staticmethod
+    def write_data_values(  # pylint: disable=too-many-branches
+        file: str | h5py.File,
+        entity: Data,
+        attribute,
+        compression: int,
         **kwargs,
     ) -> None:
         """
@@ -571,94 +715,84 @@ class H5Writer:
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
         :param compression: Compression level for the data.
-        :param values: Data values.
         """
+        if not isinstance(entity, Data):
+            raise TypeError(
+                "Entity must be a Data object; " f"got '{type(entity)}' instead."
+            )
+
         with fetch_h5_handle(file, mode="r+") as h5file:
-            entity_handle = H5Writer.fetch_handle(h5file, entity)
-
-            if entity_handle is None:
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
+                h5file, entity, attribute
+            )
+            if entity.formatted_values is None or entity_handle is None:
                 return
-
-            name_map = KEY_MAP[attribute]
-            if isinstance(entity, Concatenator):
-                entity_handle = entity_handle["Concatenated Data"]
-
-                if (
-                    attribute == "concatenated_attributes"
-                    and entity.concat_attr_str == "Attributes Jsons"
-                ):
-                    name_map = entity.concat_attr_str
-
-            if name_map in entity_handle:
-                del entity_handle[name_map]
-                entity.workspace.repack = True
-
-            if values is None:
-                if getattr(entity, attribute, None) is None:
-                    return
-
-                values = getattr(entity, "_" + attribute)
-                if (
-                    attribute == "concatenated_attributes"
-                    and entity.concat_attr_str == "Attributes Jsons"
-                ):
-                    values = [
-                        json.dumps(val).encode("utf-8") for val in values["Attributes"]
-                    ]
-
-            # Adding an array of values
-            if isinstance(values, dict) or isinstance(entity, CommentsData):
-                values = deepcopy(values)
-                if isinstance(entity, CommentsData):
-                    values = {"Comments": values}
-
-                values = dict_mapper(values, [as_str_if_uuid])
-
+            if isinstance(entity, CommentsData):
                 entity_handle.create_dataset(
                     name_map,
-                    data=json.dumps(values, indent=4),
+                    data=entity.formatted_values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                     **kwargs,
                 )
-
             elif isinstance(entity, FilenameData):
-                cls.write_file_name_data(entity_handle, entity, values)
-
-            elif isinstance(values, str):
+                H5Writer.write_file_name_data(entity_handle, entity)
+            elif isinstance(entity.values, str):
                 entity_handle.create_dataset(
                     name_map,
-                    data=values,
+                    data=entity.values,
                     dtype=h5py.special_dtype(vlen=str),
                     shape=(1,),
                     **kwargs,
                 )
-
             else:
-                out_values = deepcopy(values)
-                if isinstance(entity, BooleanData):
-                    out_values = np.round(out_values).astype("int8")
-
-                elif isinstance(entity, IntegerData):
-                    out_values = np.round(out_values).astype("int32")
-
-                elif isinstance(entity, TextData) and not isinstance(values[0], bytes):
-                    out_values = np.char.encode(values, encoding="utf-8").astype("O")
-
-                if getattr(entity, "ndv", None) is not None:
-                    out_values[np.isnan(out_values)] = entity.ndv
-
                 entity_handle.create_dataset(
                     name_map,
-                    data=out_values,
+                    data=entity.formatted_values,
                     compression="gzip",
                     compression_opts=compression,
                     **kwargs,
                 )
 
-    @classmethod
+    @staticmethod
+    def write_metadata(  # pylint: disable=too-many-branches
+        file: str | h5py.File,
+        entity: Group | ObjectBase,
+        attribute,
+        values=None,
+        **kwargs,
+    ) -> None:
+        """
+        Add data :obj:`~geoh5py.data.data.Data.values`.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target entity.
+        :param attribute: Name of the attribute to be written to geoh5
+        :param values: Data values.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle, name_map = H5Writer.prepare_data_to_write(
+                h5file, entity, attribute
+            )
+
+            # Give the chance to fetch from file
+            values = getattr(entity, attribute, None) if values is None else values
+
+            if values is None or entity_handle is None:
+                return
+
+            values = deepcopy(values)
+            values = dict_mapper(values, [as_str_if_uuid])
+            entity_handle.create_dataset(
+                name_map,
+                data=json.dumps(values, indent=4),
+                dtype=h5py.special_dtype(vlen=str),
+                shape=(1,),
+                **kwargs,
+            )
+
+    @staticmethod
     def clear_stats_cache(
-        cls,
         file: str | h5py.File,
         entity: Data,
     ) -> None:
@@ -681,9 +815,8 @@ class H5Writer:
                 del entity_type_handle["StatsCache"]
                 entity.workspace.repack = True
 
-    @classmethod
+    @staticmethod
     def write_entity(
-        cls,
         file: str | h5py.File,
         entity,
         compression: int,
@@ -700,14 +833,7 @@ class H5Writer:
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file)[0]
-
-            if isinstance(entity, Data):
-                entity_type = "Data"
-            elif isinstance(entity, ObjectBase):
-                entity_type = "Objects"
-            else:
-                entity_type = "Groups"
-
+            entity_type = str_from_type(entity)
             uid = entity.uid
 
             if entity_type not in h5file[base]:
@@ -738,7 +864,7 @@ class H5Writer:
             entity_handle["Type"] = new_type
             entity.entity_type.on_file = True
 
-            cls.write_properties(h5file, entity, compression)
+            H5Writer.write_properties(h5file, entity, compression)
             entity.on_file = True
 
             if isinstance(entity, RootGroup):
@@ -749,11 +875,10 @@ class H5Writer:
 
         return entity_handle
 
-    @classmethod
+    @staticmethod
     def write_entity_type(
-        cls,
         file: str | h5py.File,
-        entity_type: shared.EntityType,
+        entity_type: shared.EntityType | ReferenceDataType,
     ) -> h5py.Group:
         """
         Add an :obj:`~geoh5py.shared.entity_type.EntityType` to geoh5.
@@ -766,15 +891,7 @@ class H5Writer:
         with fetch_h5_handle(file, mode="r+") as h5file:
             base = list(h5file)[0]
             uid = entity_type.uid
-
-            if isinstance(entity_type, DataType):
-                entity_type_str = "Data types"
-            elif isinstance(entity_type, ObjectType):
-                entity_type_str = "Object types"
-            elif isinstance(entity_type, GroupType):
-                entity_type_str = "Group types"
-            else:
-                return None
+            entity_type_str = str_from_subtype(entity_type)
 
             if "Types" not in h5file[base]:
                 h5file[base].create_group("Types")
@@ -796,17 +913,15 @@ class H5Writer:
             if hasattr(entity_type, "color_map"):
                 H5Writer.write_color_map(h5file, entity_type)
 
-            if hasattr(entity_type, "value_map"):
+            if isinstance(entity_type, ReferenceDataType):
                 H5Writer.write_value_map(h5file, entity_type)
 
             entity_type.on_file = True
 
         return new_type
 
-    @classmethod
-    def write_file_name_data(
-        cls, entity_handle: h5py.Group, entity: FilenameData, values: bytes
-    ) -> None:
+    @staticmethod
+    def write_file_name_data(entity_handle: h5py.Group, entity: FilenameData) -> None:
         """
         Write a dataset for the file name and file blob.
 
@@ -814,29 +929,28 @@ class H5Writer:
         :param entity: Target :obj:`~geoh5py.data.filename_data.FilenameData` entity.
         :param values: Bytes data
         """
-        if entity.file_name is None:
-            raise AttributeError("FilenameData requires the 'file_name' to be set.")
+        if entity.file_bytes is None or entity.values is None:
+            raise AttributeError("FilenameData requires the 'file_bytes' to be set.")
 
         entity_handle.create_dataset(
             "Data",
-            data=entity.file_name,
+            data=entity.values,
             dtype=h5py.special_dtype(vlen=str),
             shape=(1,),
         )
 
-        if entity.file_name in entity_handle:
-            del entity_handle[entity.file_name]
+        if entity.values in entity_handle:
+            del entity_handle[entity.values]
             entity.workspace.repack = True
 
         entity_handle.create_dataset(
-            entity.file_name,
-            data=np.asarray(np.void(values[:])),
+            entity.values,
+            data=np.asarray(np.void(entity.file_bytes[:])),
             shape=(1,),
         )
 
-    @classmethod
+    @staticmethod
     def write_properties(
-        cls,
         file: str | h5py.File,
         entity: Entity,
         compression: int,
@@ -855,9 +969,8 @@ class H5Writer:
                 if getattr(entity, attribute, None) is not None:
                     H5Writer.update_field(h5file, entity, attribute, compression)
 
-    @classmethod
+    @staticmethod
     def write_property_groups(
-        cls,
         file: str | h5py.File,
         entity,
     ) -> None:
@@ -873,20 +986,18 @@ class H5Writer:
             if entity_handle is None:
                 return
 
-            try:
+            if "PropertyGroups" in entity_handle:
                 del entity_handle["PropertyGroups"]
                 entity.workspace.repack = True
-            except KeyError:
-                pass
 
             if hasattr(entity, "property_groups") and isinstance(
                 entity.property_groups, list
             ):
                 for p_g in entity.property_groups:
-                    cls.add_or_update_property_group(h5file, p_g)
+                    H5Writer.add_or_update_property_group(h5file, p_g)
 
-    @classmethod
-    def add_or_update_property_group(cls, file, property_group, remove=False):
+    @staticmethod
+    def add_or_update_property_group(file, property_group, remove=False):
         """
         Update a :obj:`~geoh5py.groups.property_group.PropertyGroup` associated with
         an :obj:`~geoh5py.shared.entity.Entity`.
@@ -931,6 +1042,8 @@ class H5Writer:
 
                 elif key == "ID":
                     value = as_str_if_uuid(value)
+                elif key == "Property Group Type":
+                    value = value.value
 
                 group_handle.attrs.create(
                     key, value, dtype=h5py.special_dtype(vlen=str)
@@ -938,9 +1051,8 @@ class H5Writer:
 
             property_group.on_file = True
 
-    @classmethod
+    @staticmethod
     def write_to_parent(
-        cls,
         file: str | h5py.File,
         entity: Entity,
         compression: int,
@@ -962,15 +1074,7 @@ class H5Writer:
             uid = entity.uid
             entity_handle = H5Writer.write_entity(h5file, entity, compression)
             parent_handle = H5Writer.write_entity(h5file, entity.parent, compression)
-
-            if isinstance(entity, Data):
-                entity_type = "Data"
-            elif isinstance(entity, ObjectBase):
-                entity_type = "Objects"
-            elif isinstance(entity, Group):
-                entity_type = "Groups"
-            else:
-                return
+            entity_type = str_from_type(entity)
 
             # Check if child h5py.Group already exists
             if entity_type not in parent_handle:

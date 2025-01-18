@@ -1,30 +1,31 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
-import shutil
 import warnings
 from io import BytesIO
 from pathlib import Path
+from shutil import copy, move
 from time import time
 from typing import Any
-
-import numpy as np
 
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, Group
@@ -96,13 +97,23 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     :param parameter: Name of parameter to check type.
     """
     dependency = ui_json[parameter]["dependency"]
-    key = "enabled" if ui_json[dependency].get("optional", False) else "value"
+
+    key = (
+        "enabled"
+        if (
+            ui_json[dependency].get("optional", False)
+            or "enabled" in ui_json[dependency]
+        )
+        else "value"
+    )
+
     if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
-        is_required = ui_json[dependency].get(key, True)
+        is_required = bool(ui_json[dependency].get(key, True)) & bool(
+            ui_json[dependency]["value"]
+        )
     else:
         is_required = not ui_json[dependency].get(key, True)
-
-    if ("optional" in ui_json[parameter]) & is_required:
+    if ("optional" in ui_json[parameter]) & bool(is_required):
         is_required = ui_json[parameter]["enabled"]
 
     return is_required
@@ -173,7 +184,7 @@ def group_enabled(group: dict[str, dict]) -> bool:
     return group[parameters[0]].get("enabled", True)
 
 
-def set_enabled(ui_json: dict, parameter: str, value: bool):
+def set_enabled(ui_json: dict, parameter: str, value: bool, validate=True):
     """
     Set enabled status for an optional or groupOptional parameter.
 
@@ -181,7 +192,9 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
     :param parameter: Parameter name.
     :param value: Boolean value set to parameter's enabled member.
     """
-    if ui_json[parameter].get("optional", False):
+    if ui_json[parameter].get("optional", False) or bool(
+        ui_json[parameter].get("dependency", False)
+    ):
         ui_json[parameter]["enabled"] = value
 
     is_group_optional = False
@@ -195,15 +208,16 @@ def set_enabled(ui_json: dict, parameter: str, value: bool):
                 for form in group.values():
                     form["enabled"] = value
 
-    if not is_group_optional and "dependency" in ui_json[parameter]:
-        is_group_optional = not dependency_requires_value(ui_json, parameter)
+    if validate:
+        if not is_group_optional and "dependency" in ui_json[parameter]:
+            is_group_optional = not dependency_requires_value(ui_json, parameter)
 
-    if (not value) and not (
-        ui_json[parameter].get("optional", False) or is_group_optional
-    ):
-        warnings.warn(
-            f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
-        )
+        if (not value) and not (
+            ui_json[parameter].get("optional", False) or is_group_optional
+        ):
+            warnings.warn(
+                f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
+            )
 
 
 def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
@@ -234,7 +248,7 @@ def is_uijson(ui_json: dict[str, dict]):
         "run_command",
         "conda_environment",
         "geoh5",
-        "workspace",
+        "workspace_geoh5",
     ]
 
     is_a_uijson = True
@@ -255,24 +269,6 @@ def is_form(var) -> bool:
     return is_a_form
 
 
-def list2str(value):
-    if isinstance(value, list):  # & (key not in exclude):
-        return str(value)[1:-1]
-    return value
-
-
-def none2str(value):
-    if value is None:
-        return ""
-    return value
-
-
-def inf2str(value):  # map np.inf to "inf"
-    if not isinstance(value, (int, float)):
-        return value
-    return str(value) if not np.isfinite(value) else value
-
-
 def str2list(value):  # map "[...]" to [...]
     if isinstance(value, str):
         if value in ["inf", "-inf", ""]:
@@ -282,12 +278,6 @@ def str2list(value):  # map "[...]" to [...]
         except ValueError:
             return value
 
-    return value
-
-
-def str2none(value):
-    if value == "":
-        return None
     return value
 
 
@@ -339,9 +329,6 @@ def monitored_directory_copy(
         with Workspace.create(working_path / temp_geoh5) as w_s:
             entity.copy(parent=w_s, copy_children=copy_children)
 
-    shutil.move(
-        working_path / temp_geoh5,
-        directory_path / temp_geoh5,
-    )
+    move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
 
     return str(directory_path / temp_geoh5)

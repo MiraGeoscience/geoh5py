@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -34,22 +37,22 @@ from ..shared.utils import (
     dict_mapper,
     entity2uuid,
     fetch_active_workspace,
+    str2none,
     str2uuid,
+    stringify,
     uuid2entity,
 )
 from .constants import base_validations, ui_validations
 from .utils import (
     container_group2name,
     flatten,
-    inf2str,
-    none2str,
     path2workspace,
     set_enabled,
     str2inf,
-    str2none,
     workspace2path,
 )
 from .validation import InputValidation
+
 
 # pylint: disable=simplifiable-if-expression, too-many-instance-attributes
 
@@ -90,6 +93,7 @@ class InputFile:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
         data: dict[str, Any] | None = None,
         ui_json: dict[str, Any] | None = None,
         validate: bool = True,
@@ -128,9 +132,9 @@ class InputFile:
                 raise AttributeError("'ui_json' must be set before setting data.")
 
             if len(value) != len(self._ui_json):
-                raise ValueError(
-                    "The number of input values for 'data' must "
-                    "equal the number of parameters in 'ui_json'."
+                warnings.warn(
+                    "The number of input values for 'data' differs from "
+                    "the number of parameters in 'ui_json'."
                 )
 
             if self._geoh5 is None and "geoh5" in value:
@@ -206,9 +210,6 @@ class InputFile:
         with open(json_file, encoding="utf-8") as file:
             input_file.ui_json = json.load(file)
 
-        if isinstance(input_file.geoh5, Workspace):
-            input_file.geoh5.close()
-
         return input_file
 
     @property
@@ -258,13 +259,13 @@ class InputFile:
             raise AttributeError("InputFile requires a 'ui_json' to be defined.")
 
         for key, value in data.items():
-            if isinstance(self.ui_json[key], dict):
+            if key in self.ui_json and isinstance(self.ui_json[key], dict):
                 enabled = self.ui_json[key].get("enabled", None)
                 if enabled is not None:
                     if self.validation_options.get("update_enabled", True):
                         enabled = False if value is None else True
 
-                    set_enabled(self.ui_json, key, enabled)
+                    set_enabled(self.ui_json, key, enabled, validate=self.validate)
 
                 member = "value"
                 if "isValue" in self.ui_json[key]:
@@ -461,9 +462,7 @@ class InputFile:
         :return: Dictionary with inf and none types converted to string
             representations in json format.
         """
-        for key, value in var.items():
-            mappers = [inf2str, as_str_if_uuid, none2str]
-            var[key] = dict_mapper(value, mappers)
+        var = stringify(var)
 
         return var
 
@@ -494,7 +493,11 @@ class InputFile:
                     raise JSONParameterValidationError(key, error.args[0]) from error
                 value = cls.numify(value)
 
-            mappers = [str2none, str2inf, str2uuid, path2workspace]
+            mappers = [str2none, str2inf, str2uuid]
+
+            if key == "geoh5":
+                mappers.append(path2workspace)
+
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
@@ -507,16 +510,17 @@ class InputFile:
         Other parameters are left unchanged.
         """
         mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
+        demoted: dict[str, Any] = {}
         for key, value in var.items():
             if isinstance(value, dict):
-                var[key] = cls.demote(value)
+                demoted[key] = cls.demote(value)
 
             elif isinstance(value, (list, tuple)):
-                var[key] = [dict_mapper(val, mappers) for val in value]
+                demoted[key] = [dict_mapper(val, mappers) for val in value]
             else:
-                var[key] = dict_mapper(value, mappers)
+                demoted[key] = dict_mapper(value, mappers)
 
-        return var
+        return demoted
 
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """Convert uuids to entities from the workspace."""

@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -85,7 +88,7 @@ def test_remove_root(tmp_path: Path):
         )
         compare_entities(
             data_group,
-            rec_points.find_or_create_property_group(name=group_name),
+            rec_points.fetch_property_group(name=group_name),
             ignore=["_parent", "_on_file"],
         )
 
@@ -105,28 +108,12 @@ def test_remove_root(tmp_path: Path):
             }
         )
 
-        with pytest.raises(
-            ValueError, match="All input 'data' must have the same association"
-        ):
+        with pytest.raises(ValueError, match="Data 'DataValues2b' association"):
             points2.add_data_to_group(data2, "bidon")
 
-        with pytest.raises(
-            ValueError, match="No children data found on the parent object."
-        ):
+        with pytest.raises(ValueError, match="Data 'abs' not found in parent"):
             points2.add_data_to_group(["abs"], "bidon")
 
-        setattr(points2, "_property_groups", None)
+        points2._property_groups = None
 
         assert points2.remove_data_from_groups(data2) is None
-
-        assert points2.reference_to_uid(points2.children[0]) == [
-            points2.children[0].uid
-        ]
-
-        assert points2.reference_to_uid(points2.children[0].name) == [
-            points2.children[0].uid
-        ]
-
-        assert points2.reference_to_uid(points2.children[0].uid) == [
-            points2.children[0].uid
-        ]

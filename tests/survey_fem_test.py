@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -46,12 +49,16 @@ def test_create_survey_airborne_fem(tmp_path):
     receivers = AirborneFEMReceivers.create(
         workspace, vertices=vertices, name=name + "_rx"
     )
+    receivers.tx_id_property = np.arange(receivers.n_vertices)
+
     assert isinstance(
         receivers, AirborneFEMReceivers
     ), "Entity type AirborneFEMReceivers failed to create."
     transmitters = AirborneFEMTransmitters.create(
         workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
+    transmitters.tx_id_property = np.arange(transmitters.n_vertices)
+
     assert isinstance(
         transmitters, AirborneFEMTransmitters
     ), "Entity type AirborneFEMTransmitters failed to create."
@@ -71,10 +78,26 @@ def test_create_survey_airborne_fem(tmp_path):
     ):
         transmitters.transmitters = receivers
 
-    receivers.transmitters = transmitters
+    transmitters.receivers = receivers
+
+    assert (
+        transmitters.tx_id_property.entity_type == receivers.tx_id_property.entity_type
+    )
 
     with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
         receivers.loop_radius = "123"
+
+    # Reset the tx_id_property
+    receivers.tx_id_property = np.arange(receivers.n_vertices)
+    transmitters.tx_id_property = np.arange(transmitters.n_vertices)
+
+    assert (
+        receivers.metadata["EM Dataset"]["Tx ID tx property"]
+        == transmitters.tx_id_property.uid
+    )
+    assert (
+        receivers.tx_id_property.entity_type == transmitters.tx_id_property.entity_type
+    )
 
     receivers.loop_radius = 123.0
     angles = receivers.add_data(
@@ -311,6 +334,7 @@ def test_survey_airborne_fem_data(tmp_path):
                     for child in receivers_rec.children
                     if not isinstance(child, PropertyGroup)
                 ],
+                strict=False,
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
 
@@ -379,10 +403,12 @@ def test_create_survey_ground_fem_large_loop(
         match=f"Provided transmitters must be of type {type(transmitters)}",
     ):
         transmitters.transmitters = receivers
-
+    receivers.tx_id_property = np.hstack(tx_id)
     receivers.transmitters = transmitters
 
-    receivers.tx_id_property = np.hstack(tx_id)
+    assert (
+        receivers.tx_id_property.entity_type == transmitters.tx_id_property.entity_type
+    )
 
     with Workspace.create(Path(tmp_path) / r"testGround_copy.geoh5") as new_workspace:
         receivers_orig = receivers.copy(new_workspace)

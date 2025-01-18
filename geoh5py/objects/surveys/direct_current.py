@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=too-many-ancestors
 
@@ -26,9 +29,10 @@ from typing import cast
 
 import numpy as np
 
-from ...data import Data, ReferencedData
+from ...data import Data, ReferencedData, ReferenceValueMap
+from ...shared.utils import str_json_to_dict
 from ..curve import Curve
-from ..object_type import ObjectType
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +41,10 @@ class BaseElectrode(Curve, ABC):
     _potential_electrodes: PotentialElectrode | None = None
     _current_electrodes: CurrentElectrode | None = None
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._ab_cell_id: ReferencedData | None = None
 
-        super().__init__(object_type, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def ab_cell_id(self) -> ReferencedData | None:
@@ -81,32 +85,29 @@ class BaseElectrode(Curve, ABC):
                     if isinstance(self, PotentialElectrode)
                     else self.potential_electrodes
                 )
-
+                attributes = {
+                    "values": data.astype(np.int32),
+                    "association": "CELL",
+                }
                 if complement is not None and complement.ab_cell_id is not None:
-                    entity_type = complement.ab_cell_id.entity_type
+                    attributes["entity_type"] = complement.ab_cell_id.entity_type
                 else:
                     value_map = {ii: str(ii) for ii in range(data.max() + 1)}
                     value_map[0] = "Unknown"
-                    entity_type = {  # type: ignore
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                    }
-
-                data = self.add_data(
-                    {
-                        "A-B Cell ID": {
-                            "values": data.astype(np.int32),
-                            "association": "CELL",
-                            "entity_type": entity_type,
+                    attributes.update(
+                        {  # type: ignore
+                            "primitive_type": "REFERENCED",
+                            "value_map": value_map,
                         }
-                    }
-                )
+                    )
+
+                data = self.add_data({"A-B Cell ID": attributes})
 
                 if isinstance(data, ReferencedData):
                     self._ab_cell_id = data
 
     @property
-    def ab_map(self) -> dict | None:
+    def ab_map(self) -> ReferenceValueMap | None:
         """
         Get the ReferenceData.value_map of the ab_value_id
         """
@@ -117,6 +118,7 @@ class BaseElectrode(Curve, ABC):
     def copy(
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -206,7 +208,7 @@ class BaseElectrode(Curve, ABC):
                 )
             }
             new_map = {
-                val: new_entity.current_electrodes.ab_cell_id.value_map.map[val]
+                val: dict(new_entity.current_electrodes.ab_cell_id.value_map.map)[val]
                 for val in value_map.values()
             }
             new_complement.ab_cell_id.values = np.asarray(
@@ -215,7 +217,7 @@ class BaseElectrode(Curve, ABC):
             new_entity.ab_cell_id.values = np.asarray(
                 [value_map[val] for val in new_entity.ab_cell_id.values]
             )
-            new_entity.ab_cell_id.value_map.map = new_map
+            new_entity.ab_cell_id.entity_type.value_map = new_map
 
         return new_entity
 
@@ -226,31 +228,22 @@ class BaseElectrode(Curve, ABC):
         The associated current_electrodes (transmitters)
         """
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default unique identifier. Implemented on the child class."""
+    @staticmethod
+    def validate_metadata(value):
+        if isinstance(value, np.ndarray):
+            value = value[0]
 
-    @Curve.metadata.setter  # type: ignore
-    def metadata(self, values: dict | None):
-        if isinstance(values, dict):
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
+
+        if isinstance(value, dict):
             default_keys = ["Current Electrodes", "Potential Electrodes"]
 
-            if self.metadata:
-                existing_keys = self.metadata.copy()
-                existing_keys.update(values)
-            else:
-                existing_keys = values
-
             # check if metadata has the required keys
-            if not all(key in existing_keys for key in default_keys):
+            if not all(key in value for key in default_keys):
                 raise ValueError(f"Input metadata must have for keys {default_keys}")
 
-            for key in default_keys:
-                if self.workspace.get_entity(existing_keys[key])[0] is None:
-                    raise KeyError(f"Input {key} uuid not present in Workspace")
-
-        super(Curve, Curve).metadata.fset(self, values)  # type: ignore
+        return value
 
     @property
     @abstractmethod
@@ -265,7 +258,7 @@ class PotentialElectrode(BaseElectrode):
     Ground potential electrode (receiver).
     """
 
-    __TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
+    _TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
 
     @property
     def current_electrodes(self):
@@ -310,32 +303,18 @@ class PotentialElectrode(BaseElectrode):
         """
         return self
 
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
-
 
 class CurrentElectrode(BaseElectrode):
     """
     Ground direct current electrode (transmitter).
     """
 
-    __TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
+    _TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
 
-    def __init__(self, object_type: ObjectType, **kwargs):
+    def __init__(self, **kwargs):
         self._current_line_id: uuid.UUID | None = None
 
-        super().__init__(object_type, **kwargs)
-
-    @classmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """
-        :return: Default unique identifier
-        """
-        return cls.__TYPE_UID
+        super().__init__(**kwargs)
 
     @property
     def current_electrodes(self):
@@ -401,13 +380,14 @@ class CurrentElectrode(BaseElectrode):
                 "A-B Cell ID": {
                     "values": data,
                     "association": "CELL",
-                    "entity_type": {
-                        "primitive_type": "REFERENCED",
-                        "value_map": value_map,
-                    },
+                    "primitive_type": "REFERENCED",
+                    "value_map": value_map,
                 }
             }
         )
-        if isinstance(ab_cell_id, ReferencedData):
-            ab_cell_id.entity_type.name = "A-B"
-            self._ab_cell_id = ab_cell_id
+
+        if not isinstance(ab_cell_id, ReferencedData):
+            raise UserWarning("Could not create 'A-B Cell ID' data.")
+
+        ab_cell_id.entity_type.name = "A-B"
+        self._ab_cell_id = ab_cell_id

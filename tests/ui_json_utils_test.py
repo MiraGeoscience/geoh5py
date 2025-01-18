@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -25,8 +28,10 @@ import pytest
 from geoh5py.shared.utils import dict_mapper
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
+from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import (
     collect,
+    dependency_requires_value,
     flatten,
     group_enabled,
     group_optional,
@@ -71,6 +76,7 @@ def test_flatten():
 def test_collect():
     ui_json = deepcopy(default_ui_json)
     ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
+    ui_json["string_parameter"]["tooltip"] = "Bla bla bla"
     ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
     ui_json["integer_parameter"] = templates.integer_parameter(optional="enabled")
     enabled_params = collect(ui_json, "enabled", value=True)
@@ -78,7 +84,7 @@ def test_collect():
     assert all(k in enabled_params for k in ["string_parameter", "integer_parameter"])
     tooltip_params = collect(ui_json, "tooltip")
     assert len(tooltip_params) == 1
-    assert "run_command_boolean" in tooltip_params
+    assert "string_parameter" in tooltip_params
 
 
 def test_group_optional():
@@ -98,15 +104,25 @@ def test_group_optional():
 
 
 def test_requires_value():
-    # Check the groupOptional behaviour
+    # check default parameters
     ui_json = deepcopy(default_ui_json)
     ui_json["string_parameter"] = templates.string_parameter()
     ui_json["string_parameter"]["group"] = "test"
-    ui_json["string_parameter"]["groupOptional"] = True
+    ui_json["string_parameter"]["enabled"] = True
+    ui_json["string_parameter"]["groupOptional"] = (
+        False  # equivalent to not having groupOptional
+    )
     ui_json["float_parameter"] = templates.float_parameter(optional="enabled")
     ui_json["float_parameter"]["group"] = "test"
     ui_json["integer_parameter"] = templates.integer_parameter()
     ui_json["integer_parameter"]["group"] = "test"
+    assert requires_value(ui_json, "string_parameter")
+    assert requires_value(ui_json, "float_parameter")
+    assert requires_value(ui_json, "integer_parameter")
+
+    # Check the groupOptional behaviour
+    ui_json["string_parameter"].pop("enabled")
+    ui_json["string_parameter"]["groupOptional"] = True
     assert requires_value(ui_json, "string_parameter")
     assert requires_value(ui_json, "float_parameter")
     assert requires_value(ui_json, "integer_parameter")
@@ -277,7 +293,7 @@ def test_flatten_group_value():
         group_value=my_uuid,
     )
 
-    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    validators = InputValidation._validations_from_uijson(ui_json)
     assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)
@@ -290,7 +306,7 @@ def test_flatten_group_value():
         group_value=None,
         optional="enabled",
     )
-    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    validators = InputValidation._validations_from_uijson(ui_json)
     assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)
@@ -305,7 +321,7 @@ def test_range_label():
         value=[1, 2], property_=my_uuid, is_complement=False, optional="enabled"
     )
 
-    validators = getattr(InputValidation, "_validations_from_uijson")(ui_json)
+    validators = InputValidation._validations_from_uijson(ui_json)
     assert validators["test"]["types"] == [list]
 
     flat = flatten(ui_json)

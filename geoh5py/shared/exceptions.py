@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -21,7 +24,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from geoh5py.shared.utils import iterable_message
 
 if TYPE_CHECKING:
     from geoh5py import Workspace
@@ -75,7 +77,7 @@ class AggregateValidationError(BaseValidationError):
     def message(cls, name, value, validation=None):
         msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
         for i, err in enumerate(value):
-            msg += f"\t{i}. {str(err)}\n"
+            msg += f"\t{i}. {err!s}\n"
         return msg
 
 
@@ -117,7 +119,7 @@ class AssociationValidationError(BaseValidationError):
 class PropertyGroupValidationError(BaseValidationError):
     """Error on property group validation."""
 
-    def __init__(self, name: str, value: PropertyGroup, validation: str):
+    def __init__(self, name: str, value: PropertyGroup, validation: list[str]):
         super().__init__(PropertyGroupValidationError.message(name, value, validation))
 
     @classmethod
@@ -260,3 +262,36 @@ class ValueValidationError(BaseValidationError):
         return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
             validation
         )
+
+
+def iterable_message(valid: list[Any] | None) -> str:
+    """Append possibly iterable valid: "Must be (one of): {valid}."."""
+    if valid is None:
+        msg = ""
+    elif iterable(valid, checklen=True):
+        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
+        msg = f" Must be one of: {vstr}."
+    else:
+        msg = f" Must be: '{valid[0]}'."
+
+    return msg
+
+
+def iterable(value: Any, checklen: bool = False) -> bool:
+    """
+    Checks if object is iterable.
+
+    Parameters
+    ----------
+    value : Object to check for iterableness.
+    checklen : Restrict objects with __iter__ method to len > 1.
+
+    Returns
+    -------
+    True if object has __iter__ attribute but is not string or dict type.
+    """
+    only_array_like = (not isinstance(value, str)) & (not isinstance(value, dict))
+    if (hasattr(value, "__iter__")) & only_array_like:
+        return not (checklen and (len(value) == 1))
+
+    return False

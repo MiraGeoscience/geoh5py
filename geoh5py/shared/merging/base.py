@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -33,7 +36,7 @@ class BaseMerger(ABC):
     def merge_data(
         cls,
         out_entity,
-        input_entities: list[ObjectBase],
+        input_entities: list,
     ):
         """
         Merge the data respecting the entity type, the values, and the association.
@@ -108,12 +111,8 @@ class BaseMerger(ABC):
                     values[start:end] = data.values
                     data_dict[label].values = values
 
-            data_count["VERTEX"] += (
-                input_entity.n_vertices if input_entity.n_vertices is not None else 0
-            )
-            data_count["CELL"] += (
-                input_entity.n_cells if input_entity.n_cells is not None else 0
-            )
+            data_count["VERTEX"] += getattr(input_entity, "n_vertices", 0) or 0
+            data_count["CELL"] += getattr(input_entity, "n_cells", 0) or 0
 
     @classmethod
     def merge_objects(

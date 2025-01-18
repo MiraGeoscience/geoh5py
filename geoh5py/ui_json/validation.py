@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -39,7 +42,47 @@ from geoh5py.shared.validators import (
 )
 from geoh5py.ui_json.utils import requires_value
 
+
 Validation = dict[str, Any]
+
+
+class UIJsonError(Exception):
+    """Exception raised for errors in the UIJson object."""
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ErrorPool:  # pylint: disable=too-few-public-methods
+    """Stores validation errors for all UIJson members."""
+
+    def __init__(self, errors: dict[str, ErrorLane]):
+        self.pool = errors
+
+    def throw(self):
+        msg = ""
+        msg += "Collected UIJson errors:\n"
+        for key, lane in self.pool.items():
+            if lane.errors:
+                msg += f"\t{key}:\n"
+                for i, error in enumerate(lane.errors):
+                    msg += f"\t\t{i}. {error}\n"
+
+        raise UIJsonError(msg)
+
+
+class ErrorLane:
+    """Stores validation errors for UIJson members."""
+
+    def __init__(self, error: Exception):
+        self._errors = [error]
+
+    @property
+    def errors(self):
+        return self._errors
+
+    def catch(self, error: Exception):
+        self._errors.append(error)
 
 
 class InputValidation:
@@ -109,7 +152,7 @@ class InputValidation:
     def _required_validators(validations):
         """Returns dictionary of validators required by validations."""
         unique_validators = InputValidation._unique_validators(validations)
-        sub_classes: list[BaseValidator] = getattr(BaseValidator, "__subclasses__")()
+        sub_classes: list[type[BaseValidator]] = BaseValidator.__subclasses__()
         all_validators: dict[str, Any] = {k.validator_type: k() for k in sub_classes}
         val = {}
         for k in unique_validators:
@@ -119,8 +162,8 @@ class InputValidation:
         return val
 
     @staticmethod
-    def _validations_from_uijson(  # pylint: disable=too-many-branches  # noqa: too complex
-        ui_json: dict[str, Any]
+    def _validations_from_uijson(  # pylint: disable=too-many-branches
+        ui_json: dict[str, Any],
     ) -> dict[str, dict]:
         """Determine base set of validations from ui.json structure."""
         validations: dict[str, dict] = {}

@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Curve
+from geoh5py.objects import Curve, Points
 from geoh5py.workspace import Workspace
 
 
@@ -56,17 +59,18 @@ def test_delete_entities(tmp_path: Path):
                     },
                     property_group="myGroup",
                 )
+
             else:
                 curve_2.add_data(
                     {f"Period{i + 1}": {"values": values}}, property_group="myGroup"
                 )
+
         uid_out = curve_2.children[1].uid
 
-        curve_2.remove_children(curve_2.children[0])
+        curve_2.remove_children([curve_2.children[0], "bidon"])
 
         assert (
-            uid_out
-            not in curve_2.find_or_create_property_group(name="myGroup").properties
+            uid_out not in curve_2.fetch_property_group(name="myGroup").properties
         ), "Data uid was not removed from the property_group"
 
         curve_2.remove_children(curve_2.children[0])
@@ -96,6 +100,7 @@ def test_delete_entities(tmp_path: Path):
         assert (
             len(workspace.groups) == 2
         ), "Group was not fully removed from the workspace."
+
         assert (
             len(workspace.objects) == 1
         ), "Object was not fully removed from the workspace."
@@ -119,3 +124,21 @@ def test_delete_entities(tmp_path: Path):
         len(workspace.types) == 4
     ), "Types were not properly written to the workspace."
     workspace.close()
+
+
+def test_remove_protected_children():
+    workspace = Workspace()
+    group = ContainerGroup.create(workspace)
+    child = Points.create(
+        workspace, vertices=np.random.randn(10, 3), parent=group, allow_delete=False
+    )
+    child.add_data(
+        {"DataValues": {"values": np.random.randn(10), "allow_delete": False}}
+    )
+
+    workspace.remove_entity(group)
+
+    del child, group
+    assert (
+        len(workspace.data) == len(workspace.objects) == 0
+    ), "Group was not removed from the workspace."

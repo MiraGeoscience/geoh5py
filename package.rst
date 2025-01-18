@@ -9,8 +9,7 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 
 Installation
 ^^^^^^^^^^^^
-**geoh5py** is currently written for Python 3.9 or higher, and depends on `NumPy <https://numpy.org/>`_ and
-`h5py <https://www.h5py.org/>`_.
+**geoh5py** depends on `NumPy <https://numpy.org/>`_ and `h5py <https://www.h5py.org/>`_.
 
 .. note:: Users will likely want to take advantage of other packages available in the Python ecosystem.
     We therefore recommend using `Miniforge <https://github.com/conda-forge/miniforge#download>`_ `(Windows x86_64) <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe>`_
@@ -51,4 +50,4 @@ along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
 
 Copyright
 ^^^^^^^^^
-Copyright (c) 2024 Mira Geoscience Ltd.
+Copyright (c) 2025 Mira Geoscience Ltd.

@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=R0904
 
@@ -21,14 +24,15 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
-from warnings import warn
 
 import numpy as np
 
-from ..shared.utils import str2uuid
+from ..data import CommentsData, Data
 from .entity import Entity
+
 
 if TYPE_CHECKING:
     from .. import shared
@@ -42,33 +46,107 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    def __init__(self, uid: uuid.UUID | None = None, name="Entity", **kwargs):
-        self._uid = (
-            str2uuid(uid) if isinstance(str2uuid(uid), uuid.UUID) else uuid.uuid4()
-        )
+    _TYPE_UID: uuid.UUID | None = None
+
+    def __init__(self, **kwargs):
         self._children: list = []
+        super().__init__(**kwargs)
 
-        super().__init__(uid, name, **kwargs)
+    @classmethod
+    def default_type_uid(cls) -> uuid.UUID | None:
+        """
+        Default uuid for the entity type.
+        """
+        return cls._TYPE_UID
 
-    def add_file(self, file: str):
+    def add_children(
+        self, children: Entity | PropertyGroup | list[Entity | PropertyGroup]
+    ):
+        """
+        :param children: Add a list of entities as
+            :obj:`~geoh5py.shared.entity.Entity.children`
+        """
+        if not isinstance(children, list):
+            children = [children]
+
+        for child in children:
+            if child in self._children:
+                continue
+
+            if not isinstance(child, Entity):
+                raise TypeError(
+                    f"Child must be an instance of Entity, not {type(child)}"
+                )
+
+            self._children.append(child)
+
+            if hasattr(child, "parent") and child.parent is not self:
+                child.parent = self
+
+    def add_comment(self, comment: str, author: str | None = None):
+        """
+        Add text comment to an object.
+
+        :param comment: Text to be added as comment.
+        :param author: Author's name or :obj:`~geoh5py.workspace.workspace.Workspace.contributors`.
+        """
+
+        date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        if author is None:
+            author = ",".join(self.workspace.contributors)
+
+        comment_dict = {"Author": author, "Date": date, "Text": comment}
+
+        if self.comments is None:
+            self.workspace.create_entity(
+                Data,
+                entity={
+                    "name": "UserComments",
+                    "association": "OBJECT",
+                    "values": {"Comments": [comment_dict]},
+                    "parent": self,
+                },
+                entity_type={"primitive_type": "TEXT"},
+            )
+
+        else:
+            self.comments.values = {
+                "Comments": self.comments.values["Comments"] + [comment_dict]
+            }
+
+    def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
         """
         Add a file to the object or group stored as bytes on a FilenameData
 
         :param file: File name with path to import.
+        :param name: Name of the file in the workspace.
         """
-        if not Path(file).is_file():
-            raise ValueError(f"Input file '{file}' does not exist.")
+        if isinstance(file, str):
+            file = Path(file)
 
-        with open(file, "rb") as raw_binary:
-            blob = raw_binary.read()
+        if isinstance(file, Path):
+            if not file.is_file():
+                raise ValueError(f"Input file '{file}' does not exist.")
 
-        name = Path(file).name
+            name = Path(file).name
+
+            with open(file, "rb") as raw_binary:
+                blob = raw_binary.read()
+
+        elif isinstance(file, bytes):
+            blob = file
+
+        else:
+            raise TypeError(
+                f"Input file must be a path or BytesIO object, not {type(file)}"
+            )
+
         attributes = {
             "name": name,
-            "file_name": name,
+            "file_bytes": blob,
             "association": "OBJECT",
             "parent": self,
-            "values": blob,
+            "values": name,
         }
         entity_type = {"name": "UserFiles", "primitive_type": "FILENAME"}
 
@@ -85,10 +163,22 @@ class EntityContainer(Entity):
         """
         return self._children
 
+    @property
+    def comments(self):
+        """
+        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        """
+        for child in self.children:
+            if isinstance(child, CommentsData):
+                return child
+
+        return None
+
     @abstractmethod
     def copy(
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -112,6 +202,7 @@ class EntityContainer(Entity):
         self,
         extent: np.ndarray,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         inverse: bool = False,
@@ -173,38 +264,6 @@ class EntityContainer(Entity):
             child.name for child in self.children if isinstance(child, entity_type)
         ]
         return sorted(name_list)
-
-    def reference_to_uid(
-        self, value: Entity | PropertyGroup | str | uuid.UUID
-    ) -> list[uuid.UUID]:
-        """
-        General entity reference translation.
-
-        Todo: Remove in future release
-
-        :param value: Either an `Entity`, string or uuid
-
-        :return: List of unique identifier associated with the input reference.
-        """
-        warn(
-            "EntityContainer.reference_to_uid() is deprecated "
-            "and will be removed in versions 0.10.0.",
-            DeprecationWarning,
-        )
-
-        children_uid = [child.uid for child in self.children]
-        if hasattr(value, "uid"):
-            uid = [value.uid]
-        elif isinstance(value, str):
-            uid = [
-                obj.uid
-                for obj in self.workspace.get_entity(value)
-                if (obj is not None) and (obj.uid in children_uid)
-            ]
-        elif isinstance(value, uuid.UUID):
-            uid = [value]
-
-        return uid
 
     def remove_children(self, children: list[shared.Entity | PropertyGroup]):
         """

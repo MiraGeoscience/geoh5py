@@ -1,20 +1,25 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 # import pytest
+
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -46,12 +51,16 @@ def test_data_boolean(tmp_path):
 
             values = values.astype(bool)
 
-            grid.add_data(
+            _, non_bool = grid.add_data(
                 {
                     "my_boolean": {
                         "association": "CELL",
                         "values": values.flatten(),
-                    }
+                    },
+                    "non-bool": {
+                        "association": "CELL",
+                        "values": values.astype(float),
+                    },
                 }
             )
 
@@ -89,10 +98,15 @@ def test_data_boolean(tmp_path):
             ):
                 data2.values = np.array([1.1, 0.2, 1.1])
 
+            with pytest.raises(
+                TypeError, match="'entity_type' must be of type ReferencedBooleanType"
+            ):
+                data2.entity_type = non_bool.entity_type
+
             with pytest.raises(ValueError, match="Values provided by "):
                 data2.values = np.array([0, 2, 1])
 
-            with pytest.raises(TypeError, match="Input 'values' for "):
+            with pytest.raises(TypeError, match="Input 'values' must be a numpy array"):
                 data2.values = "bidon"
 
     with Workspace(h5file_path, mode="r") as workspace:

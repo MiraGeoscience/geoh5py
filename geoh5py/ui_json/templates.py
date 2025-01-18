@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=R0913
 
@@ -26,16 +29,17 @@ from uuid import UUID
 from .. import groups, objects
 from ..shared import Entity
 
+
 known_object_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(objects)
-    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+    if hasattr(member, "_TYPE_UID") and member.default_type_uid() is not None
 ]
 
 known_group_types = [
     member.default_type_uid()
     for _, member in inspect.getmembers(groups)
-    if hasattr(member, "default_type_uid") and member.default_type_uid() is not None
+    if hasattr(member, "_TYPE_UID") and member.default_type_uid() is not None
 ]
 
 
@@ -79,6 +83,7 @@ def bool_parameter(
 
 
 def integer_parameter(
+    *,
     main: bool = True,
     label: str = "Integer data",
     value: int = 1,
@@ -112,6 +117,7 @@ def integer_parameter(
 
 
 def float_parameter(
+    *,
     main: bool = True,
     label: str = "Float data",
     value: float = 1.0,
@@ -154,6 +160,7 @@ def float_parameter(
 
 
 def string_parameter(
+    *,
     main: bool = True,
     label: str = "String data",
     value: str = "data",
@@ -178,6 +185,7 @@ def string_parameter(
 
 
 def choice_string_parameter(
+    *,
     choice_list: tuple = ("Option A", "Option B"),
     label: str = "String data",
     main: bool = True,
@@ -212,6 +220,7 @@ def choice_string_parameter(
 
 
 def file_parameter(
+    *,
     main: bool = True,
     label: str = "File choices",
     file_description: tuple = (),
@@ -246,6 +255,7 @@ def file_parameter(
 
 
 def group_parameter(
+    *,
     main: bool = True,
     label: str = "Object",
     group_type: tuple = tuple(known_group_types),
@@ -272,6 +282,7 @@ def group_parameter(
 
 
 def object_parameter(
+    *,
     main: bool = True,
     label: str = "Object",
     mesh_type: tuple = tuple(known_object_types),
@@ -306,6 +317,7 @@ def object_parameter(
 
 
 def data_parameter(
+    *,
     main: bool = True,
     label: str = "Data channel",
     association: str = "Vertex",
@@ -359,6 +371,7 @@ def data_parameter(
 
 
 def data_value_parameter(
+    *,
     main: bool = True,
     label: str = "Data channel",
     association: str = "Vertex",
@@ -408,10 +421,11 @@ def data_value_parameter(
 
 
 def drillhole_group_data(
+    *,
     value: list[str] | None = None,
     main: bool = True,
     label: str = "Data channel",
-    group_type: UUID = groups.DrillholeGroup.default_type_uid(),
+    group_type: UUID | None = groups.DrillholeGroup.default_type_uid(),
     group_value: UUID | None = None,
     multiselect: bool = True,
     optional: str | None = None,
@@ -452,6 +466,7 @@ def drillhole_group_data(
 
 
 def range_label_template(
+    *,
     main: bool = True,
     label: str = "Range",
     allow_complement: bool = False,

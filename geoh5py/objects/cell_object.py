@@ -1,26 +1,27 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
-import uuid
-import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 
@@ -29,26 +30,57 @@ from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
 
-if TYPE_CHECKING:
-    from geoh5py.objects import ObjectType
-
 
 class CellObject(Points, ABC):
     """
     Base class for object with cells.
+
+    :param cells: Array of indices defining connecting vertices.
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
+    _TYPE_UID: UUID | None = None
 
-    def __init__(self, object_type: ObjectType, name="Object", **kwargs):
-        self._cells: np.ndarray | None = None
+    def __init__(
+        self,
+        cells: np.ndarray | list | tuple | None = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
 
-        super().__init__(object_type, name=name, **kwargs)
+        self._cells = self.validate_cells(cells)
 
-    @classmethod
-    @abstractmethod
-    def default_type_uid(cls) -> uuid.UUID:
-        """Default type uid."""
+    @property
+    def cells(self) -> np.ndarray:
+        """
+        Array of indices defining connecting vertices.
+        """
+        if self._cells is None and self.on_file:
+            self._cells = self.workspace.fetch_array_attribute(self, "cells")
+
+        return self._cells
+
+    @cells.setter
+    def cells(self, cells: np.ndarray | list | tuple):
+        cells = self.validate_cells(cells)
+        if self._cells is not None and self._cells.shape != cells.shape:
+            raise ValueError(
+                "New cells array must have the same shape as the current cells array."
+            )
+        self._cells = cells
+
+        self.workspace.update_attribute(self, "cells")
+
+    @property
+    def centroids(self) -> np.ndarray | None:
+        """
+        Compute the centroids of the cells.
+        """
+        return np.mean(self.vertices[self.cells], axis=1)
+
+    @property
+    def locations(self):
+        return self.vertices
 
     def mask_by_extent(
         self,
@@ -56,7 +88,7 @@ class CellObject(Points, ABC):
         inverse: bool = False,
     ) -> np.ndarray | None:
         """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
+        Extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
         if self.extent is None or not box_intersect(self.extent, extent):
             return None
@@ -64,16 +96,22 @@ class CellObject(Points, ABC):
         vert_mask = mask_by_extent(self.vertices, extent, inverse=inverse)
 
         # Check for orphan vertices
-        if self.cells is not None:
-            cell_mask = np.all(vert_mask[self.cells], axis=1)
-            orphan_mask = np.zeros_like(vert_mask, dtype=bool)
-            orphan_mask[self.cells[cell_mask].flatten()] = True
-            vert_mask &= orphan_mask
+        cell_mask = np.all(vert_mask[self.cells], axis=1)
+        orphan_mask = np.zeros_like(vert_mask, dtype=bool)
+        orphan_mask[self.cells[cell_mask].flatten()] = True
+        vert_mask &= orphan_mask
 
         if ~np.any(vert_mask):
             return None
 
         return vert_mask
+
+    @property
+    def n_cells(self) -> int:
+        """
+        Number of vertices
+        """
+        return self.cells.shape[0]
 
     def remove_cells(self, indices: list[int] | np.ndarray, clear_cache: bool = False):
         """
@@ -82,11 +120,6 @@ class CellObject(Points, ABC):
         :param indices: Indices of cells to be removed.
         :param clear_cache: Clear cache of data values.
         """
-
-        if self.cells is None:
-            warnings.warn("No cells to be removed.", UserWarning)
-            return
-
         if isinstance(indices, (list, tuple)):
             indices = np.array(indices)
 
@@ -100,10 +133,12 @@ class CellObject(Points, ABC):
             raise ValueError("Found indices larger than the number of cells.")
 
         cells = np.delete(self.cells, indices, axis=0)
-        self._cells = None
-        setattr(self, "cells", cells)
-
-        self.remove_children_values(indices, "CELL", clear_cache=clear_cache)
+        self.load_children_values()
+        self._cells = self.validate_cells(cells)
+        self._remove_children_values(
+            indices, DataAssociationEnum.CELL, clear_cache=clear_cache
+        )
+        self.workspace.update_attribute(self, "cells")
 
     def remove_vertices(
         self, indices: list[int] | np.ndarray, clear_cache: bool = False
@@ -114,39 +149,25 @@ class CellObject(Points, ABC):
         :param indices: Indices of vertices to be removed.
         :param clear_cache: Clear cache of data values.
         """
+        n_vertices = self.vertices.shape[0]
 
-        if self.vertices is None:
-            warnings.warn("No vertices to be removed.", UserWarning)
-            return
+        super().remove_vertices(indices, clear_cache=clear_cache)
 
-        if isinstance(indices, list):
-            indices = np.array(indices)
-
-        if not isinstance(indices, np.ndarray):
-            raise TypeError("Indices must be a list or numpy array.")
-
-        if (
-            isinstance(self.vertices, np.ndarray)
-            and np.max(indices) > self.vertices.shape[0] - 1
-        ):
-            raise ValueError("Found indices larger than the number of vertices.")
-
-        vert_index = np.ones(self.vertices.shape[0], dtype=bool)
+        vert_index = np.ones(n_vertices, dtype=bool)
         vert_index[indices] = False
-        vertices = self.vertices[vert_index, :]
-
-        self._vertices = None
-        setattr(self, "vertices", vertices)
-        self.remove_children_values(indices, "VERTEX", clear_cache=clear_cache)
-
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
-        self.remove_cells(np.where(~np.all(vert_index[self.cells], axis=1)))
-        setattr(self, "cells", new_index[self.cells])
+
+        cell_mask = np.where(~np.all(vert_index[self.cells], axis=1))
+        self._cells = new_index[self.cells]
+        self.remove_cells(cell_mask)
+
+        self.workspace.update_attribute(self, "cells")
 
     def copy(  # pylint: disable=too-many-branches
         self,
         parent=None,
+        *,
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
@@ -199,7 +220,7 @@ class CellObject(Points, ABC):
                 if isinstance(child, PropertyGroup):
                     continue
                 if isinstance(child, Data):
-                    if child.name in ["A-B Cell ID", "Transmitter ID"]:
+                    if child.name in ["A-B Cell ID"]:
                         continue
 
                     child_mask = mask
@@ -228,3 +249,14 @@ class CellObject(Points, ABC):
                 )
 
         return new_object
+
+    @abstractmethod
+    def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
+        """
+        Validate or generate cells defining the connection between vertices.
+
+        :param indices: Array of indices. If None provided, the
+            vertices are connected sequentially.
+
+        :return: Array of indices defining connected vertices.
+        """

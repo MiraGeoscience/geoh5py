@@ -1,19 +1,21 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from geoh5py import groups
 from geoh5py.io import H5Writer
 from geoh5py.objects import Points
 from geoh5py.shared import fetch_h5_handle
@@ -46,9 +49,16 @@ def test_create_point_data(tmp_path):
     with pytest.warns(UserWarning, match="Input 'values' converted to a 1D array."):
         points.add_data({"test": {"values": values.reshape(-1, 1)}})
 
+    with pytest.raises(TypeError, match="Input 'data' must be of type"):
+        points.add_data("bidon")
+
     tag = points.add_data(
         {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
     )
+
+    with pytest.raises(TypeError, match="Given value to data"):
+        points.add_data({"my_comment": "bidon"})
+
     # Change some data attributes for testing
     data.allow_delete = False
     data.allow_move = True
@@ -75,21 +85,31 @@ def test_create_point_data(tmp_path):
             etype_handle.get("StatsCache") is None
         ), "StatsCache was not properly deleted on update of values"
 
+    assert np.allclose(points.vertices, points.locations)
+
+
+def test_add_children(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        group = groups.Group.create(workspace)
+        point = Points.create(workspace, vertices=np.random.randn(12, 3))
+        group.add_children(point)
+
+        assert point.parent == group, "Error adding children to group."
+
 
 def test_remove_point_data(tmp_path):
     # Generate a random cloud of points
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        points = Points.create(workspace)
+        pt = Points.create(workspace)
+        assert pt.n_vertices == 1
 
-        with pytest.warns(UserWarning, match="No vertices to be removed."):
-            points.remove_vertices([12])
+        with pytest.raises(ValueError, match="Array of 'vertices' should be of shape"):
+            Points.create(workspace, vertices=np.r_[1, 2, 3])
 
-        with pytest.raises(ValueError, match="Array of vertices must be of shape"):
-            points.vertices = np.r_[1, 2, 3]
-
-        points.vertices = np.random.randn(12, 3)
+        points = Points.create(workspace, vertices=np.random.randn(12, 3))
 
         assert (
             points.mask_by_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
@@ -103,7 +123,7 @@ def test_remove_point_data(tmp_path):
         )
 
         with pytest.raises(
-            ValueError, match="Attempting to assign 'vertices' with fewer values."
+            ValueError, match="New vertices array must have the same shape"
         ):
             points.vertices = np.random.randn(10, 3)
 
@@ -125,8 +145,7 @@ def test_copy_points_data(tmp_path):
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        points = Points.create(workspace)
-        points.vertices = np.random.randn(12, 3)
+        points = Points.create(workspace, vertices=np.random.randn(12, 3))
         data = points.add_data(
             {"DataValues": {"association": "VERTEX", "values": values}}
         )

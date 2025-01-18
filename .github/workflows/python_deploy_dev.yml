@@ -1,0 +1,35 @@
+name: Deploy python package in development
+
+on:
+  push:
+    tags:
+      - 'v*' # Push events to every version tag (eg. v1.0.0)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  call-workflow-conda-publish:
+    name: Publish development conda package on JFrog Artifactory
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_conda_package.yml@main
+    with:
+      package-name: 'geoh5py'
+      python-version: '3.10'
+      virtual-repo-names: '["public-conda-dev"]'
+    secrets:
+      JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+      JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+  call-workflow-pypi-publish:
+    name: Publish development pypi package (JFrog Artifactory, TestPyPI)
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@main
+    with:
+      package-manager: 'poetry'
+      package-name: 'geoh5py'
+      version-tag: ${{ github.ref_name }}
+      python-version: '3.10'
+      virtual-repo-names: '["public-pypi-dev", "test-pypi"]'
+    secrets:
+      JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+      JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+      PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}

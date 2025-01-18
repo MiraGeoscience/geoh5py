@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -22,7 +25,7 @@ from typing import cast
 import numpy as np
 
 from ...data import NumericData
-from ...objects import DrapeModel, ObjectBase
+from ...objects import DrapeModel
 from ...workspace import Workspace
 from .base import BaseMerger
 
@@ -32,7 +35,7 @@ class DrapeModelMerger(BaseMerger):
 
     @classmethod
     def create_object(
-        cls, workspace: Workspace, input_entities: list[DrapeModel], **kwargs
+        cls, workspace: Workspace, input_entities: list, **kwargs
     ) -> DrapeModel:
         """
         Create a new DrapeModel from a list of input DrapeModels.
@@ -57,6 +60,9 @@ class DrapeModelMerger(BaseMerger):
             # get the values of the entity
             temp_prisms: np.ndarray = input_entity.prisms
             temp_layers: np.ndarray = input_entity.layers
+
+            if len(temp_prisms) < 2:
+                raise ValueError("All DrapeModel entities must have at least 2 prisms.")
 
             # get the first ghost
             if ghost_prism.size > 0:
@@ -132,7 +138,7 @@ class DrapeModelMerger(BaseMerger):
     def merge_data(
         cls,
         out_entity,
-        input_entities: list[ObjectBase],
+        input_entities: list[DrapeModel],
     ):
         super().merge_data(out_entity, input_entities)
 

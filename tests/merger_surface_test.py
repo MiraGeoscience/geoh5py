@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -40,16 +43,17 @@ def test_merge_surface(tmp_path):
             np.random.randint(0, xyz.shape[0] - 1, (xyz.shape[0], 3)), axis=1
         )
 
-        surface0 = Surface.create(workspace, name="mySurf0", vertices=xyz)
-        surface0.cells = simplices.tolist()
-
+        surface0 = Surface.create(
+            workspace, name="mySurf0", vertices=xyz, cells=simplices.tolist()
+        )
         surfaces.append(surface0)
 
         z = np.random.randn(x.shape[0]) + 5
         xyz = np.c_[x, y, z]
 
-        surface1 = Surface.create(workspace, name="mySurf1", vertices=xyz)
-        surface1.cells = simplices.tolist()
+        surface1 = Surface.create(
+            workspace, name="mySurf1", vertices=xyz, cells=simplices.tolist()
+        )
 
         surfaces.append(surface1)
 
