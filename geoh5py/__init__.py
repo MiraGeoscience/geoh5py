@@ -20,7 +20,7 @@
 
 # flake8: noqa
 
-__version__ = "0.10.0-rc.1"
+__version__ = "0.10.0"
 
 import inspect
 
