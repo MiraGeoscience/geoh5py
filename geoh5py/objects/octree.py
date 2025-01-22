@@ -223,6 +223,9 @@ class Octree(GridObject):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
         self._u_cell_size = float(value)
+        self._centroids = None
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> int:
@@ -244,6 +247,9 @@ class Octree(GridObject):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
         self._v_cell_size = float(value)
+        self._centroids = None
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> int:
@@ -342,6 +348,9 @@ class Octree(GridObject):
             raise TypeError("Attribute 'w_cell_size' must be type(float).")
 
         self._w_cell_size = float(value)
+        self._centroids = None
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def w_count(self) -> int:
