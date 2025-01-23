@@ -14,6 +14,7 @@ jobs:
     name: Publish development conda package on JFrog Artifactory
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_conda_package.yml@DEVOPS-635
     with:
+      package-builder: 'rattler'
       package-name: 'geoh5py'
       python-version: '3.10'
       virtual-repo-names: '["public-conda-dev"]'
