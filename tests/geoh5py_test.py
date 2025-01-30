@@ -41,7 +41,7 @@ def get_pyproject_version():
 
 
 def get_conda_recipe_version():
-    path = Path(__file__).resolve().parents[1] / "meta.yaml"
+    path = Path(__file__).resolve().parents[1] / "recipe.yaml"
 
     with open(str(path), encoding="utf-8") as file:
         content = file.read()
@@ -51,7 +51,7 @@ def get_conda_recipe_version():
 
     recipe = yaml.safe_load(rendered_yaml)
 
-    return recipe["package"]["version"]
+    return recipe["context"]["version"]
 
 
 def test_version_is_consistent():
