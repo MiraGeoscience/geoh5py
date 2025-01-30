@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -291,11 +294,14 @@ def test_flatten_group_value():
     )
 
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == ["test1"]
+    assert flat["test"] == {
+        "groupValue": ui_json["test"]["groupValue"],
+        "value": ["test1"],
+    }
 
     ui_json = deepcopy(default_ui_json)
     ui_json["test"] = templates.drillhole_group_data(
@@ -304,7 +310,7 @@ def test_flatten_group_value():
         optional="enabled",
     )
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 

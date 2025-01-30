@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 from __future__ import annotations
 
 import io
@@ -160,3 +163,10 @@ def test_in_memory_to_disk():
         compare_entities(points, new_points, ignore=["_parent"])
 
     workspace.close()
+
+
+def test_network_drive_warning(tmp_path):
+    network_drive = tmp_path / "Dropbox"
+    network_drive.mkdir()
+    with pytest.warns(match="Opening workspace with write access in a network drive"):
+        _ = Workspace(network_drive / "test.geoh5")

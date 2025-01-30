@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -117,11 +120,10 @@ class GridObject(ObjectBase, ABC):
             raise ValueError(f"Array of 'origin' must be of dtype = {ORIGIN_TYPE}")
 
         self._centroids = None
-
-        if getattr(self, "_origin", None) is not None and self.on_file:
-            self.workspace.update_attribute(self, "attributes")
-
         self._origin = values
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     @abstractmethod

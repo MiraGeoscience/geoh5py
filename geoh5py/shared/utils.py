@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -577,6 +580,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
     for fun in string_funcs:
         val = fun(val, *args)
+
     return val
 
 
@@ -788,7 +792,7 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     """
     string_dict = {}
     for key, value in values.items():
-        mappers = [nan2str, inf2str, as_str_if_uuid, none2str]
+        mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
         string_dict[key] = dict_mapper(value, mappers)
 
     return string_dict
@@ -869,6 +873,12 @@ def none2str(value):
     return value
 
 
+def path2str(value):
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
 def nan2str(value):
     if value is np.nan:
         return ""
@@ -910,3 +920,17 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
+
+
+def decode_byte_array(values: np.ndarray, data_type: type) -> np.array:
+    """
+    Decode a byte array to an array of a given data type.
+
+    :param values: The byte array to decode.
+    :param data_type: The data type to convert the values to.
+
+    :return: The decoded array.
+    """
+    return (
+        np.char.decode(values, "utf-8") if values.dtype.kind == "S" else values
+    ).astype(data_type)

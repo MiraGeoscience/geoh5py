@@ -17,30 +17,24 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+from collections.abc import Callable
 
-# pylint: disable=unused-import
-# flake8: noqa
-
-from .blob_data import BlobData
-from .boolean_data import BooleanData
-from .data import Data
-from .data_association_enum import DataAssociationEnum
-from .data_type import (
-    DataType,
-    GeometricDataValueMapType,
-    GeometricDynamicDataType,
-    ReferenceDataType,
+from .uijson import (
+    ErrorPool,
+    UIJsonError,
+    dependency_type_validation,
+    mesh_type_validation,
+    parent_validation,
 )
-from .data_unit import DataUnit
-from .datetime_data import DatetimeData
-from .filename_data import FilenameData
-from .float_data import FloatData
-from .geometric_data import GeometricDataConstants
-from .integer_data import IntegerData
-from .numeric_data import NumericData
-from .primitive_type_enum import PrimitiveTypeEnum
-from .reference_value_map import ReferenceValueMap
-from .referenced_data import ReferencedData
-from .text_data import CommentsData, MultiTextData, TextData
-from .unknown_data import UnknownData
-from .visual_parameters import VisualParameters
+
+
+VALIDATIONS_MAP = {
+    "dependency": dependency_type_validation,
+    "mesh_type": mesh_type_validation,
+    "parent": parent_validation,
+}
+
+
+def get_validations(form_keys: list[str]) -> list[Callable]:
+    """Returns a list of callable validations based on identifying form keys."""
+    return [VALIDATIONS_MAP[k] for k in form_keys if k in VALIDATIONS_MAP]

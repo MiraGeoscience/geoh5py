@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -42,7 +45,6 @@ from geoh5py.shared.validators import (
     to_path,
     to_uuid,
 )
-from geoh5py.ui_json.validation import UIJsonError
 
 
 class DependencyType(str, Enum):
@@ -318,25 +320,6 @@ class DataForm(BaseForm):
         ):
             raise ValueError("A property must be provided if is_value is used.")
         return self
-
-    def _validate_parent(self, params: dict[str, Any]):
-        """Validate form uid is a child of the parent object."""
-        child = None
-        if isinstance(self.value, UUID):
-            child = self.value
-        elif "property" in list(self.model_fields_set) and not self.is_value:
-            child = self.property
-
-        if child is not None:
-            if (
-                not isinstance(params[self.parent], ObjectBase)
-                or params[self.parent].get_entity(child)[0] is None
-            ):
-                raise UIJsonError(f"{child} data is not a child of {self.parent}.")
-
-    def validate_data(self, params: dict[str, Any]):
-        """Validate the form data."""
-        self._validate_parent(params)
 
     def flatten(self):
         """Returns the data for the form."""

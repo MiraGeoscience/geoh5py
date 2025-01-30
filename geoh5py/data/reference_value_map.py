@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -63,7 +66,9 @@ class ReferenceValueMap(ABC):
 
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
             if value_map.ndim == 1:
-                value_map = {i: str(val) for i, val in enumerate(set(value_map))}
+                unique_set = set(value_map)
+                unique_set.discard(0)
+                value_map = {i + 1: str(val) for i, val in enumerate(unique_set)}
 
             value_map = dict(value_map)
 
@@ -95,6 +100,18 @@ class ReferenceValueMap(ABC):
         The key '0' is always 'Unknown'.
         """
         return self._map
+
+    def map_values(self, values: np.ndarray) -> np.ndarray:
+        """
+        Map the values to the reference values.
+
+        :param values: The values to map.
+
+        :return: The mapped values.
+        """
+        mapper = np.sort(self.map, order="Key")
+        indices = np.searchsorted(mapper["Key"], values)
+        return mapper["Value"][indices]
 
 
 BOOLEAN_VALUE_MAP = np.array(

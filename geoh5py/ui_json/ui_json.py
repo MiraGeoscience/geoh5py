@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from geoh5py import Workspace
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validation import ErrorLane, ErrorPool, UIJsonError
+from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
 
 
 class BaseUIJson(BaseModel):
@@ -97,6 +100,7 @@ class BaseUIJson(BaseModel):
                 raise ValueError("Workspace cannot be None.")
 
             data = {}
+            errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
             for field in self.model_fields_set:
                 if field == "geoh5":
                     data[field] = geoh5
@@ -108,18 +112,25 @@ class BaseUIJson(BaseModel):
                 if isinstance(value, UUID):
                     value = self._object_or_catch(geoh5, value)
 
+                if isinstance(value, UIJsonError):
+                    errors[field].append(value)
+
                 data[field] = value
 
-            self.validate_data(data)
+            self.validate_data(data, errors)
 
         return data
 
-    def validate_data(self, params: dict[str, Any] | None = None):
+    def validate_data(
+        self, params: dict[str, Any] | None = None, errors: dict[str, Any] | None = None
+    ):
         """
         Validate the UIJson data.
 
-        :param params: promoted and flattened parameters/values dictionary.  The params
+        :param params: Promoted and flattened parameters/values dictionary.  The params
             dictionary will be generated from the model values if not provided.
+        :param errors: Optionally pass existing errors. Primarily for the to_params
+            method.
 
         :raises UIJsonError: If any validations fail.
         """
@@ -128,23 +139,20 @@ class BaseUIJson(BaseModel):
             self.to_params()
             return
 
+        if errors is None:
+            errors = {k: [] for k in params}
+
+        ui_json = self.model_dump(exclude_unset=True)
         for field in self.model_fields_set:
-            value = getattr(self, field)
-            if not isinstance(value, BaseForm):
-                continue
+            form = ui_json[field]
+            validations = get_validations(list(form) if isinstance(form, dict) else [])
+            for validation in validations:
+                try:
+                    validation(field, params, ui_json)
+                except UIJsonError as e:
+                    errors[field].append(e)
 
-            try:
-                value.validate_data(params)
-            except UIJsonError as e:
-                if isinstance(params[field], ErrorLane):
-                    params[field].catch(e)
-                else:
-                    params[field] = ErrorLane(e)
-
-        error_pool = ErrorPool(
-            {k: v for k, v in params.items() if isinstance(v, ErrorLane)}
-        )
-        error_pool.throw()
+        ErrorPool(errors).throw()
 
     def _object_or_catch(
         self,
@@ -162,8 +170,4 @@ class BaseUIJson(BaseModel):
         if obj[0] is not None:
             return obj[0]
 
-        error_lane = ErrorLane(
-            UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")
-        )
-
-        return error_lane
+        return UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")

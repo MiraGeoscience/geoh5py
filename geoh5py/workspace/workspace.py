@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=too-many-lines, too-many-public-methods, too-many-arguments, too-many-locals
 
@@ -71,6 +74,17 @@ from ..shared.utils import (
     get_attributes,
     str2uuid,
 )
+
+
+NETWORK_DRIVES = [
+    "Egnyte Connect",
+    "One Drive",
+    "Dropbox",
+    "Google Drive",
+    "googledrive",
+    "Box",
+    "iCloud",
+]
 
 
 # pylint: disable=too-many-instance-attributes
@@ -753,7 +767,6 @@ class Workspace(AbstractContextManager):
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
-
             if isinstance(entity, Concatenator):
                 if any(entity.children):
                     return entity.children
@@ -1236,6 +1249,17 @@ class Workspace(AbstractContextManager):
 
         if mode is None:
             mode = self._mode
+
+        if (
+            mode == "r+"
+            and isinstance(self.h5file, Path)
+            and any(k in str(self.h5file.absolute()) for k in NETWORK_DRIVES)
+        ):
+            warnings.warn(
+                "Opening workspace with write access in a network "
+                "drive may lead to slow operations or access errors. "
+                "Consider copying the file to static local drive."
+            )
 
         try:
             self._geoh5 = h5py.File(self.h5file, mode)

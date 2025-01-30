@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -220,6 +223,9 @@ class Octree(GridObject):
             raise TypeError("Attribute 'u_cell_size' must be type(float).")
 
         self._u_cell_size = float(value)
+        self._centroids = None
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def u_count(self) -> int:
@@ -241,6 +247,9 @@ class Octree(GridObject):
             raise TypeError("Attribute 'v_cell_size' must be type(float).")
 
         self._v_cell_size = float(value)
+        self._centroids = None
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def v_count(self) -> int:
@@ -248,6 +257,25 @@ class Octree(GridObject):
         Number of cells along v-axis.
         """
         return self._v_count
+
+    @property
+    def cell_volumes(self) -> np.ndarray:
+        """
+        Returns Octree cell volumes.
+
+        Calculates nc * u_cell_size * nc * v_cell_size * nc * w_cell_size
+        where nc is the number of base cells making up the octree cell as
+        defined in the octree_cells array.
+
+        :returns: Array of cell volumes in same order as octree_cells.
+        """
+
+        return (
+            self.octree_cells["NCells"] ** 3
+            * self.u_cell_size
+            * self.v_cell_size
+            * self.w_cell_size
+        )
 
     @staticmethod
     def validate_octree_count(value: int, axis: str) -> np.int32:
@@ -320,6 +348,9 @@ class Octree(GridObject):
             raise TypeError("Attribute 'w_cell_size' must be type(float).")
 
         self._w_cell_size = float(value)
+        self._centroids = None
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def w_count(self) -> int:

@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -74,6 +77,7 @@ def test_reference_value_map():
 
     random_array = np.random.randint(1, high=10, size=1000)
     value_map = ReferenceValueMap(random_array)
+
     assert len(value_map) == 9
     assert isinstance(value_map(), dict)
 
@@ -98,9 +102,16 @@ def test_create_reference_data(tmp_path):
 
         assert data.entity_type.value_map() == rec_data.entity_type.value_map()
 
+        assert data.mapped_values[0] == dict(data.value_map.map)[data.values[0]]
+
+        data._entity_type._value_map = None  #  pylint: disable=protected-access
+
+        with pytest.raises(ValueError, match="Entity type must have a value map."):
+            _ = data.mapped_values
+
 
 def test_add_data_map(tmp_path):
-    h5file_path = tmp_path / r"testPoints.geoh5"
+    h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
         _, data = generate_value_map(workspace)
@@ -169,7 +180,7 @@ def test_add_data_map(tmp_path):
 
 
 def test_create_bytes_reference(tmp_path):
-    h5file_path = tmp_path / r"testPoints.geoh5"
+    h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
         points, data = generate_value_map(workspace)
@@ -193,3 +204,20 @@ def test_create_bytes_reference(tmp_path):
         assert data.entity_type.value_map.map.dtype == np.dtype(
             [("Key", "<u4"), ("Value", "O")]
         )
+
+
+def test_value_map_from_values(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        points, data = generate_value_map(workspace)
+
+        new = points.add_data(
+            {
+                "auto_map": {
+                    "type": "referenced",
+                    "values": data.values,
+                }
+            }
+        )
+        assert len(new.entity_type.value_map.map) == len(np.unique(data.values)) + 1

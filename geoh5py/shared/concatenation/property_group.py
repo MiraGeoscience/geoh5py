@@ -1,22 +1,26 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -152,7 +156,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         parent.workspace.add_or_update_property_group(self)
 
     def _clear_data_list(
-        self, data: str | Data | list[str | Data | UUID] | UUID
+        self, data: str | Data | Sequence[str | Data | UUID] | UUID
     ) -> list[str | Data | UUID]:
         """
         Clear the data list of any data that is a depth or from/to data.
@@ -161,7 +165,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         :return: List of data with depth and from/to data removed.
         """
-        if not isinstance(data, (list, tuple)):
+        if isinstance(data, (str, Data, UUID)):
             data = [data]
 
         # avoid suppressing depth and from-to directly
@@ -203,7 +207,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             self._properties.remove(self.from_.uid)
             self.parent.remove_children([self.from_, self])
 
-    def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
+    def remove_properties(self, data: str | Data | Sequence[str | Data | UUID] | UUID):
         """
         Remove data from the properties.
 

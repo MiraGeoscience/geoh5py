@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
-from geoh5py.objects import Points
+from geoh5py.objects import Drillhole, Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -45,6 +48,8 @@ from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
+from .drillhole_v4_0_test import create_drillholes
+
 
 def get_workspace(directory: str | Path):
     file = Path(directory).parent / "testPoints.geoh5"
@@ -56,7 +61,7 @@ def get_workspace(directory: str | Path):
 
     if len(workspace.objects) == 0:
         group = ContainerGroup.create(workspace)
-        DrillholeGroup.create(workspace, parent=group)
+        DrillholeGroup.create(workspace, name="drh_group", parent=group)
         points = Points.create(
             workspace, vertices=np.random.randn(12, 3), parent=group, name="Points_A"
         )
@@ -116,6 +121,19 @@ def test_input_file_json():
         InputFile(ui_json=ui_json).data
 
 
+def test_workspace_geoh5_path(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+
+    in_file = InputFile(ui_json=ui_json)
+    out_file = in_file.write_ui_json()
+    reload_input = InputFile.read_ui_json(out_file)
+    assert isinstance(reload_input.data["geoh5"], Workspace)
+    assert isinstance(reload_input.data["workspace_geoh5"], str)
+
+
 def test_input_file_name_path(tmp_path: Path):
     # pylint: disable=protected-access
 
@@ -123,6 +141,7 @@ def test_input_file_name_path(tmp_path: Path):
     test = InputFile()
     test.name = "test.ui.json"
     assert test.name == "test.ui.json"  # usual behaviour
+
     test._name = None
     ui_json = deepcopy(default_ui_json)
     ui_json["title"] = "Jarrod"
@@ -402,7 +421,7 @@ def test_object_promotion(tmp_path: Path):
 def test_group_promotion(tmp_path):
     workspace = get_workspace(tmp_path)
     group = workspace.get_entity("Container Group")[0]
-    dh_group = workspace.get_entity("Drillhole Group")[0]
+    dh_group = workspace.get_entity("drh_group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
@@ -424,6 +443,43 @@ def test_group_promotion(tmp_path):
     assert (
         new_in_file.data["dh"].uid == dh_group.uid
     ), "Promotion of entity from uuid string failed."
+
+
+def test_drillhole_group_promotion(tmp_path):
+    _, workspace = create_drillholes(tmp_path)
+
+    with workspace.open("r+"):
+        dh_group = workspace.get_entity("DH_group")[0]
+        ui_json = deepcopy(default_ui_json)
+        ui_json["object"] = templates.group_parameter()
+        ui_json["geoh5"] = workspace
+        ui_json["object"]["value"] = ["interval_values_a", "text Data"]
+        ui_json["object"]["groupValue"] = dh_group.uid
+        ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
+        ui_json["object"]["multiSelect"] = True
+
+        in_file = InputFile(ui_json=ui_json)
+
+        assert in_file.ui_json["object"]["value"] == ["interval_values_a", "text Data"]
+        data = in_file.data
+        assert in_file.ui_json["object"]["groupValue"] == dh_group.uid
+        assert in_file.ui_json["object"]["value"] == ["interval_values_a", "text Data"]
+        assert data["object"] == {
+            "group_value": dh_group,
+            "value": ["interval_values_a", "text Data"],
+        }
+
+        in_file.write_ui_json("test.ui.json", path=tmp_path)
+
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
+    assert (
+        new_in_file.data["object"]["group_value"].uid == dh_group.uid
+    ), "Promotion of entity from uuid string failed."
+
+    # test_errors specific to drillholes group Values
+    with workspace.open("r"):
+        with pytest.raises(TypeError, match="Input value for 'group_value'"):
+            in_file._update_group_value_ui("object", {"bi": "don"})
 
 
 def test_invalid_uuid_string(tmp_path: Path):
@@ -699,6 +755,30 @@ def test_data_parameter(tmp_path: Path):
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_b.uid)
     ui_json["data"] = templates.data_parameter(data_group_type="Multi-element")
+
+
+def test_data_object_file_association(tmp_path: Path):
+    workspace = get_workspace(tmp_path)
+    points_b = workspace.get_entity("Points_B")[0]
+    file_path = tmp_path / "test.txt"
+
+    # create a dummy txt file
+    with open(file_path, "w") as file:
+        file.write("Hello World")
+
+    file = points_b.add_file(file_path)
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=points_b.uid)
+    ui_json["data"] = templates.data_parameter(
+        value=file.uid, data_type="Filename", association="Object", parent="object"
+    )
+
+    in_file = InputFile(ui_json=ui_json)
+
+    in_file.write_ui_json(name="test.ui.json", path=tmp_path)
+    assert in_file.data["data"] == file
 
 
 def test_stringify(tmp_path: Path):

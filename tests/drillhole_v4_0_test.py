@@ -1,19 +1,22 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 
 # pylint: disable=too-many-lines
 # pylint: disable=too-many-locals
@@ -1022,7 +1025,7 @@ def test_add_data_to_property(tmp_path):
         verification_map_value = np.random.randint(
             0, 100, verification["interval_values_a"].shape[0], dtype=np.int32
         )
-        value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
+        value_map = {idx: f"abc{idx}" for idx in np.unique(verification_map_value)}
         value_map[0] = "Unknown"
 
         drillholes_table.add_values_to_property_group(
@@ -1032,7 +1035,7 @@ def test_add_data_to_property(tmp_path):
         drillholes_table.add_values_to_property_group(
             "new value",
             verification_map_value,
-            data_type=data_type.DataType(
+            data_type=data_type.ReferencedValueMapType(
                 workspace,
                 primitive_type="REFERENCED",
                 name="new_value",
@@ -1087,6 +1090,12 @@ def test_add_data_to_property(tmp_path):
             verification,
             tolerance=1e-5,
         )
+
+        verificationf = drillhole_group.drillholes_tables[
+            "property_group"
+        ].depth_table_by_name("new value", mapped=True)
+
+        assert verificationf[0][0][:3] == "abc"
 
 
 def test_tables_errors(tmp_path):

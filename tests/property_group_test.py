@@ -1,19 +1,21 @@
-#  Copyright (c) 2024 Mira Geoscience Ltd.
-#
-#  This file is part of geoh5py.
-#
-#  geoh5py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  geoh5py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
 from __future__ import annotations
@@ -200,9 +202,6 @@ def test_property_group_errors(tmp_path):
         with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
             prop_group.on_file = "bidon"
 
-        with pytest.raises(KeyError, match="A Property Group with name"):
-            curve.create_property_group(name="myGroup")
-
         with pytest.raises(
             ValueError, match="At least one of 'properties' or 'association'"
         ):
@@ -285,6 +284,26 @@ def test_copy_property_group(tmp_path):
         )
 
 
+def test_property_group_same_name(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        pg2 = PropertyGroup(parent=curve, name="myGroup", association="VERTEX")
+
+        assert pg2.name == "myGroup(1)"
+
+    with Workspace(h5file_path) as workspace:
+        # error here if a property group has the same name
+        curve = workspace.get_entity(curve.uid)[0]
+
+        assert sorted([pg.name for pg in curve.property_groups]) == [
+            "myGroup",
+            "myGroup(1)",
+        ]
+
+
 def test_clean_out_empty(tmp_path):
     h5file_path = tmp_path / r"prop_group_clean.geoh5"
 
@@ -319,7 +338,15 @@ def test_property_group_table(tmp_path):
         np.testing.assert_almost_equal(curve.locations, produced[:, :3], decimal=6)
 
         curve.add_data(
-            {"TestCell": {"values": np.random.rand(11), "association": "CELL"}},
+            {
+                "TestCell": {"values": np.random.rand(11), "association": "CELL"},
+                "Referenced": {
+                    "values": np.random.randint(0, 3, 11),
+                    "association": "CELL",
+                    "type": "referenced",
+                    "value_map": {1: "A", 2: "B", 3: "C"},
+                },
+            },
             property_group="cellGroup",
         )
 
@@ -329,6 +356,8 @@ def test_property_group_table(tmp_path):
         np.testing.assert_almost_equal(cell_group.table.locations, curve.centroids)
 
         assert cell_group.table.size == curve.n_cells
+
+        assert isinstance(cell_group.table(mapped=True)[0][1], str)
 
 
 def test_property_group_table_error(tmp_path):
