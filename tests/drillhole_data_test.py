@@ -139,18 +139,18 @@ def test_create_drillhole_data(tmp_path):
             }
         )
 
-        assert well.n_cells == (
-            from_to_a.shape[0] + 2
-        ), "Error with number of cells on interval data creation."
-        assert well.n_vertices == (
-            from_to_a.size + 4
-        ), "Error with number of vertices on interval data creation."
-        assert not np.any(
-            np.isnan(well.get_data("FROM")[0].values)
-        ), "FROM values not fully set."
-        assert not np.any(
-            np.isnan(well.get_data("TO")[0].values)
-        ), "TO values not fully set."
+        assert well.n_cells == (from_to_a.shape[0] + 2), (
+            "Error with number of cells on interval data creation."
+        )
+        assert well.n_vertices == (from_to_a.size + 4), (
+            "Error with number of vertices on interval data creation."
+        )
+        assert not np.any(np.isnan(well.get_data("FROM")[0].values)), (
+            "FROM values not fully set."
+        )
+        assert not np.any(np.isnan(well.get_data("TO")[0].values)), (
+            "TO values not fully set."
+        )
         assert (
             well.get_data("TO")[0].values.shape[0]
             == well.get_data("FROM")[0].values.shape[0]
@@ -194,9 +194,9 @@ def test_create_drillhole_data(tmp_path):
             }
         )
         new_count = from_to_a.size + 4 + n_data
-        assert well.n_vertices == (
-            new_count
-        ), "Error with new number of vertices on log data creation."
+        assert well.n_vertices == (new_count), (
+            "Error with new number of vertices on log data creation."
+        )
 
         # Add other data for tests
         data_objects += [
@@ -402,16 +402,16 @@ def test_insert_drillhole_data(tmp_path):
             collocation_distance=1e-6,
         )
 
-        assert (
-            well.n_vertices == n_data + 1
-        ), "Error adding values with collocated tolerance"
-        assert np.isnan(
-            data_object.values[insert[0]]
-        ), "Old values not re-sorted properly after insertion"
+        assert well.n_vertices == n_data + 1, (
+            "Error adding values with collocated tolerance"
+        )
+        assert np.isnan(data_object.values[insert[0]]), (
+            "Old values not re-sorted properly after insertion"
+        )
 
-        assert (
-            np.where(well.depths.values == new_depths[0])[0] == insert[0]
-        ), "Depth insertion error"
+        assert np.where(well.depths.values == new_depths[0])[0] == insert[0], (
+            "Depth insertion error"
+        )
 
 
 def test_mask_drillhole_data(tmp_path):

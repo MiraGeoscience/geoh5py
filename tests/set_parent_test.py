@@ -46,9 +46,9 @@ def test_set_parent(tmp_path):
         data_reload = workspace.get_entity("random")[0]
 
         assert entity_reload.parent == group_reload, "Parent different than expected."
-        assert (
-            entity_reload in group_reload.children
-        ), "Entity not in the list of children."
-        assert (
-            data_reload in entity_reload.children
-        ), "Data not in list of entity children."
+        assert entity_reload in group_reload.children, (
+            "Entity not in the list of children."
+        )
+        assert data_reload in entity_reload.children, (
+            "Data not in list of entity children."
+        )

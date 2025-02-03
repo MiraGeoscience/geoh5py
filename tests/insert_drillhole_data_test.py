@@ -73,12 +73,12 @@ def test_insert_drillhole_data(tmp_path):
             }
         )
 
-        assert (
-            well.n_vertices == n_data + 1
-        ), "Error adding values with collocated tolerance"
-        assert np.isnan(
-            data_object.values[indices[insert][0]]
-        ), "Old values not re-sorted properly after insertion"
+        assert well.n_vertices == n_data + 1, (
+            "Error adding values with collocated tolerance"
+        )
+        assert np.isnan(data_object.values[indices[insert][0]]), (
+            "Old values not re-sorted properly after insertion"
+        )
 
         insert_ind = np.where(~np.isnan(match_test.values))[0]
         if insert[0] <= insert[1]:

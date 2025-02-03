@@ -54,9 +54,9 @@ def test_monitored_directory_copy(tmp_path: Path):
         new_file = monitored_directory_copy(tmp_path, points)
         new_workspace = Workspace(new_file)
 
-        assert (
-            new_workspace.get_entity("groupee")[0] is None
-        ), "Parental group should not have been copied."
+        assert new_workspace.get_entity("groupee")[0] is None, (
+            "Parental group should not have been copied."
+        )
 
         for entity in workspace.objects:
             # Read the data back in from a fresh workspace

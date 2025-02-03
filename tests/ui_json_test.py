@@ -221,9 +221,9 @@ def test_integer_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["integer"] == 123
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["integer"] == 123, (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.integer_parameter(optional="enabled")
     assert test["optional"]
@@ -251,9 +251,9 @@ def test_float_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["float_parameter"] == 123.0
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["float_parameter"] == 123.0, (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.float_parameter(optional="enabled")
     assert test["optional"]
@@ -281,9 +281,9 @@ def test_string_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["string_parameter"] == "goodtogo"
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["string_parameter"] == "goodtogo", (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.string_parameter(optional="enabled")
     assert test["optional"]
@@ -313,9 +313,9 @@ def test_choice_string_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["choice_string_parameter"] == "Option A"
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["choice_string_parameter"] == "Option A", (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.choice_string_parameter(optional="enabled")
     assert test["optional"]
@@ -353,9 +353,9 @@ def test_multi_choice_string_parameter(tmp_path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert reload_input.data["choice_string_parameter"] == [
-        "Option A"
-    ], "IntegerParameter did not properly save to file."
+    assert reload_input.data["choice_string_parameter"] == ["Option A"], (
+        "IntegerParameter did not properly save to file."
+    )
 
 
 def test_file_parameter():
@@ -410,9 +410,9 @@ def test_object_promotion(tmp_path: Path):
 
     # Read back in
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
-    assert (
-        new_in_file.data["object"].uid == points.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["object"].uid == points.uid, (
+        "Promotion of entity from uuid string failed."
+    )
 
     with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
         new_in_file.data = 123
@@ -436,13 +436,13 @@ def test_group_promotion(tmp_path):
     in_file.write_ui_json("test.ui.json", path=tmp_path)
 
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
-    assert (
-        new_in_file.data["object"].uid == group.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["object"].uid == group.uid, (
+        "Promotion of entity from uuid string failed."
+    )
 
-    assert (
-        new_in_file.data["dh"].uid == dh_group.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["dh"].uid == dh_group.uid, (
+        "Promotion of entity from uuid string failed."
+    )
 
 
 def test_drillhole_group_promotion(tmp_path):
@@ -472,9 +472,9 @@ def test_drillhole_group_promotion(tmp_path):
         in_file.write_ui_json("test.ui.json", path=tmp_path)
 
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
-    assert (
-        new_in_file.data["object"]["group_value"].uid == dh_group.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["object"]["group_value"].uid == dh_group.uid, (
+        "Promotion of entity from uuid string failed."
+    )
 
     # test_errors specific to drillholes group Values
     with workspace.open("r"):
@@ -742,9 +742,9 @@ def test_multi_object_value_parameter(tmp_path: Path):
     reload_input = InputFile.read_ui_json(out_file)
     object_b = reload_input.geoh5.get_entity("Points_B")
 
-    assert (
-        reload_input.data["object"] == object_b
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["object"] == object_b, (
+        "IntegerParameter did not properly save to file."
+    )
 
 
 def test_data_parameter(tmp_path: Path):

@@ -74,9 +74,9 @@ def test_mask_by_extent():
     ):
         mask_by_extent("abc", corners)
 
-    assert not mask_by_extent(
-        np.vstack([points]), np.vstack(corners[:2])
-    ), "Point should have been outside."
+    assert not mask_by_extent(np.vstack([points]), np.vstack(corners[:2])), (
+        "Point should have been outside."
+    )
 
 
 @pytest.mark.parametrize(

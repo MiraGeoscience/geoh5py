@@ -51,17 +51,17 @@ def test_create_survey_airborne_fem(tmp_path):
     )
     receivers.tx_id_property = np.arange(receivers.n_vertices)
 
-    assert isinstance(
-        receivers, AirborneFEMReceivers
-    ), "Entity type AirborneFEMReceivers failed to create."
+    assert isinstance(receivers, AirborneFEMReceivers), (
+        "Entity type AirborneFEMReceivers failed to create."
+    )
     transmitters = AirborneFEMTransmitters.create(
         workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
     transmitters.tx_id_property = np.arange(transmitters.n_vertices)
 
-    assert isinstance(
-        transmitters, AirborneFEMTransmitters
-    ), "Entity type AirborneFEMTransmitters failed to create."
+    assert isinstance(transmitters, AirborneFEMTransmitters), (
+        "Entity type AirborneFEMTransmitters failed to create."
+    )
 
     with pytest.raises(TypeError, match=f" must be of type {AirborneFEMTransmitters}"):
         receivers.transmitters = "123"
@@ -123,9 +123,9 @@ def test_create_survey_airborne_fem(tmp_path):
             in receivers.metadata["EM Dataset"]
         ), f"Wrong metadata label set on '{key}' for input uuid."
 
-        assert (
-            getattr(receivers, key) == angles.uid
-        ), f"Wrong metadata assignment on {key} property."
+        assert getattr(receivers, key) == angles.uid, (
+            f"Wrong metadata assignment on {key} property."
+        )
         assert (
             f"{key.capitalize().replace('_', ' ')} value"
             not in receivers.metadata["EM Dataset"]
@@ -138,17 +138,17 @@ def test_create_survey_airborne_fem(tmp_path):
             f"{key.capitalize().replace('_', ' ')} value"
             in receivers.metadata["EM Dataset"]
         ), f"Wrong metadata label set on '{key}' for input uuid."
-        assert (
-            getattr(receivers, key) == 3.0
-        ), f"Wrong metadata assignment on {key} value."
+        assert getattr(receivers, key) == 3.0, (
+            f"Wrong metadata assignment on {key} value."
+        )
         assert (
             f"{key.capitalize().replace('_', ' ')} property"
             not in receivers.metadata["EM Dataset"]
         ), f"Failed in removing '{key}' property from metadata."
 
-    assert (
-        getattr(receivers, "relative_to_bearing", None) is None
-    ), "Default 'relative_to_bearing' should be None."
+    assert getattr(receivers, "relative_to_bearing", None) is None, (
+        "Default 'relative_to_bearing' should be None."
+    )
 
     with pytest.raises(
         TypeError, match="Input 'relative_to_bearing' must be one of type 'bool'"
@@ -157,9 +157,9 @@ def test_create_survey_airborne_fem(tmp_path):
 
     receivers.relative_to_bearing = True
 
-    assert getattr(
-        receivers, "relative_to_bearing", None
-    ), "Failed setting 'relative_to_bearing' to True."
+    assert getattr(receivers, "relative_to_bearing", None), (
+        "Failed setting 'relative_to_bearing' to True."
+    )
 
     new_workspace = Workspace(path)
     transmitters_rec = new_workspace.get_entity(name + "_tx")[0]
@@ -241,13 +241,13 @@ def test_survey_airborne_fem_data(tmp_path):
 
     prop_group = receivers.add_components_data({"time_data": data})[0]
 
-    assert (
-        prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
-    ), "Failed to add the property group to metadata from 'add_components_data' method."
+    assert prop_group.name in receivers.metadata["EM Dataset"]["Property groups"], (
+        "Failed to add the property group to metadata from 'add_components_data' method."
+    )
 
-    assert receivers.components == {
-        "time_data": data
-    }, "Property 'components' not accessing metadata."
+    assert receivers.components == {"time_data": data}, (
+        "Property 'components' not accessing metadata."
+    )
 
     with pytest.raises(
         ValueError,
@@ -267,9 +267,9 @@ def test_survey_airborne_fem_data(tmp_path):
 
     receivers.edit_em_metadata({"Property groups": None})
 
-    assert (
-        len(receivers.metadata["EM Dataset"]["Property groups"]) == 0
-    ), "Failed to remove property groups from the metadata."
+    assert len(receivers.metadata["EM Dataset"]["Property groups"]) == 0, (
+        "Failed to remove property groups from the metadata."
+    )
 
     with pytest.raises(
         TypeError, match="Input value for 'Property groups' must be a PropertyGroup"
@@ -289,9 +289,9 @@ def test_survey_airborne_fem_data(tmp_path):
 
     receivers.unit = "Hertz (Hz)"
 
-    assert (
-        receivers.metadata == transmitters.metadata
-    ), "Error synchronizing the transmitters and receivers metadata."
+    assert receivers.metadata == transmitters.metadata, (
+        "Error synchronizing the transmitters and receivers metadata."
+    )
 
     with pytest.raises(ValueError, match="Mask must be an array of shape"):
         receivers.copy(mask=np.r_[1, 2, 3])
@@ -372,9 +372,9 @@ def test_create_survey_ground_fem_large_loop(
     receivers = LargeLoopGroundFEMReceivers.create(
         workspace, vertices=np.vstack(vertices)
     )
-    assert isinstance(
-        receivers, LargeLoopGroundFEMReceivers
-    ), "Entity type GroundFEMReceiversLargeLoop failed to create."
+    assert isinstance(receivers, LargeLoopGroundFEMReceivers), (
+        "Entity type GroundFEMReceiversLargeLoop failed to create."
+    )
 
     transmitters = LargeLoopGroundFEMTransmitters.create(
         workspace,
@@ -383,9 +383,9 @@ def test_create_survey_ground_fem_large_loop(
     )
     transmitters.tx_id_property = transmitters.parts + 1
 
-    assert isinstance(
-        transmitters, LargeLoopGroundFEMTransmitters
-    ), "Entity type GroundFEMTransmittersLargeLoop failed to create."
+    assert isinstance(transmitters, LargeLoopGroundFEMTransmitters), (
+        "Entity type GroundFEMTransmittersLargeLoop failed to create."
+    )
 
     with pytest.raises(
         TypeError, match=f" must be of type {LargeLoopGroundFEMTransmitters}"
@@ -432,15 +432,15 @@ def test_create_survey_ground_fem(tmp_path):
     receivers = MovingLoopGroundFEMReceivers.create(
         workspace, vertices=vertices, name=name + "_rx"
     )
-    assert isinstance(
-        receivers, MovingLoopGroundFEMReceivers
-    ), "Entity type MovingLoopGroundFEMReceivers failed to create."
+    assert isinstance(receivers, MovingLoopGroundFEMReceivers), (
+        "Entity type MovingLoopGroundFEMReceivers failed to create."
+    )
     transmitters = MovingLoopGroundFEMTransmitters.create(
         workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
-    assert isinstance(
-        transmitters, MovingLoopGroundFEMTransmitters
-    ), "Entity type MovingLoopGroundFEMTransmitters failed to create."
+    assert isinstance(transmitters, MovingLoopGroundFEMTransmitters), (
+        "Entity type MovingLoopGroundFEMTransmitters failed to create."
+    )
 
     with pytest.raises(
         TypeError, match=f" must be of type {MovingLoopGroundFEMTransmitters}"

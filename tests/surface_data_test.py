@@ -108,9 +108,9 @@ def test_remove_cells_surface_data(tmp_path: Path):
 
         surface.remove_cells([0])
 
-        assert (
-            len(surface.children[0].values) == 99
-        ), "Error removing data values with cells."
+        assert len(surface.children[0].values) == 99, (
+            "Error removing data values with cells."
+        )
 
 
 def test_remove_vertices_surface_data(tmp_path: Path):
