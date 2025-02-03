@@ -49,9 +49,9 @@ def test_add_file(tmp_path: Path):
         # Rename the file locally and write back out
         new_path = tmp_path / r"temp"
         file_data.save_file(path=new_path, name="numpy_array.dat")
-        assert (
-            new_path / "numpy_array.dat"
-        ).is_file(), f"Input path '{new_path / 'numpy_array.dat'}' does not exist."
+        assert (new_path / "numpy_array.dat").is_file(), (
+            f"Input path '{new_path / 'numpy_array.dat'}' does not exist."
+        )
 
         file_data.save_file(path=new_path)
         np.testing.assert_array_equal(

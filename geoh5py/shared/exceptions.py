@@ -177,10 +177,7 @@ class InCollectionValidationError(BaseValidationError):
     @classmethod
     def message(cls, name, value, validation=None):
         _ = validation
-        return (
-            f"{cls.collection}: '{name}' "
-            f"is missing required {cls.item}(s): {value}."
-        )
+        return f"{cls.collection}: '{name}' is missing required {cls.item}(s): {value}."
 
 
 class RequiredFormMemberValidationError(InCollectionValidationError):

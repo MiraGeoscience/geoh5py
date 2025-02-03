@@ -62,6 +62,6 @@ def test_no_data_values(tmp_path):
                 if data.values is None:
                     assert rec_data.values is None, "Data 'values' saved should None"
                 else:
-                    assert all(
-                        np.isnan(rec_data.values) == np.isnan(data.values)
-                    ), "Mismatch between input and recovered data values"
+                    assert all(np.isnan(rec_data.values) == np.isnan(data.values)), (
+                        "Mismatch between input and recovered data values"
+                    )

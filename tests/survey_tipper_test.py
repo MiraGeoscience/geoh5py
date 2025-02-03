@@ -39,16 +39,16 @@ def test_create_survey_tipper(tmp_path):
     receivers = TipperReceivers.create(workspace, vertices=vertices)
     receivers.channels = [30.0, 45.0, 90.0, 180.0, 360.0, 720.0]
 
-    assert isinstance(
-        receivers, TipperReceivers
-    ), "Entity type TipperReceivers failed to create."
+    assert isinstance(receivers, TipperReceivers), (
+        "Entity type TipperReceivers failed to create."
+    )
     base_stations = TipperBaseStations.create(workspace, vertices=vertices[1:, :])
     base_stations.tx_id_property = np.arange(1, base_stations.n_vertices + 1)
     receivers.tx_id_property = np.random.randint(1, 9, receivers.n_vertices)
 
-    assert isinstance(
-        base_stations, TipperBaseStations
-    ), "Entity type TipperBaseStations failed to create."
+    assert isinstance(base_stations, TipperBaseStations), (
+        "Entity type TipperBaseStations failed to create."
+    )
 
     with pytest.raises(TypeError, match=f"{TipperBaseStations}"):
         receivers.base_stations = "123"

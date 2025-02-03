@@ -151,8 +151,7 @@ class InterpretationSection(Group):
             value = self.workspace.get_entity(str2uuid(value))[0]
         if getattr(value, "_default_name", None) != key:
             raise TypeError(
-                f"The {value} object must be a {key} object."
-                f" {type(value)} provided."
+                f"The {value} object must be a {key} object. {type(value)} provided."
             )
 
         return value

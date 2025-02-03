@@ -69,22 +69,22 @@ def test_delete_entities(tmp_path: Path):
 
         curve_2.remove_children([curve_2.children[0], "bidon"])
 
-        assert (
-            uid_out not in curve_2.fetch_property_group(name="myGroup").properties
-        ), "Data uid was not removed from the property_group"
+        assert uid_out not in curve_2.fetch_property_group(name="myGroup").properties, (
+            "Data uid was not removed from the property_group"
+        )
 
         curve_2.remove_children(curve_2.children[0])
         curve_2.remove_children(curve_2.children[0])
 
-        assert (
-            len(workspace.data) == 3
-        ), "Data were not fully removed from the workspace."
-        assert (
-            len(curve_2.children) == 2
-        ), f"Data were not fully removed from the parent object. {curve_2.children}"
-        assert (
-            len(workspace.types) == 6
-        ), "Data types were not properly removed from the workspace."
+        assert len(workspace.data) == 3, (
+            "Data were not fully removed from the workspace."
+        )
+        assert len(curve_2.children) == 2, (
+            f"Data were not fully removed from the parent object. {curve_2.children}"
+        )
+        assert len(workspace.types) == 6, (
+            "Data types were not properly removed from the workspace."
+        )
 
         # Remove entire object with data
         with pytest.raises(UserWarning) as error:
@@ -97,32 +97,32 @@ def test_delete_entities(tmp_path: Path):
 
         del curve_2, error  # Needed since still referenced in current script
         collect()
-        assert (
-            len(workspace.groups) == 2
-        ), "Group was not fully removed from the workspace."
+        assert len(workspace.groups) == 2, (
+            "Group was not fully removed from the workspace."
+        )
 
-        assert (
-            len(workspace.objects) == 1
-        ), "Object was not fully removed from the workspace."
-        assert (
-            len(workspace.data) == 1
-        ), "Data were not properly removed from the workspace."
-        assert (
-            len(workspace.types) == 4
-        ), "Data types were not properly removed from the workspace."
+        assert len(workspace.objects) == 1, (
+            "Object was not fully removed from the workspace."
+        )
+        assert len(workspace.data) == 1, (
+            "Data were not properly removed from the workspace."
+        )
+        assert len(workspace.types) == 4, (
+            "Data types were not properly removed from the workspace."
+        )
 
     # Re-open the project and check all was removed
     workspace = Workspace(h5file_path)
-    assert (
-        len(workspace.groups) == 2
-    ), "Groups were not properly written to the workspace."
-    assert (
-        len(workspace.objects) == 1
-    ), "Objects were not properly written to the workspace."
+    assert len(workspace.groups) == 2, (
+        "Groups were not properly written to the workspace."
+    )
+    assert len(workspace.objects) == 1, (
+        "Objects were not properly written to the workspace."
+    )
     assert len(workspace.data) == 1, "Data were not properly written to the workspace."
-    assert (
-        len(workspace.types) == 4
-    ), "Types were not properly written to the workspace."
+    assert len(workspace.types) == 4, (
+        "Types were not properly written to the workspace."
+    )
     workspace.close()
 
 
@@ -139,6 +139,6 @@ def test_remove_protected_children():
     workspace.remove_entity(group)
 
     del child, group
-    assert (
-        len(workspace.data) == len(workspace.objects) == 0
-    ), "Group was not removed from the workspace."
+    assert len(workspace.data) == len(workspace.objects) == 0, (
+        "Group was not removed from the workspace."
+    )

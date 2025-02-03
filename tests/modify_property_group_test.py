@@ -44,7 +44,9 @@ def test_modify_property_group(tmp_path):
             else:
                 assert np.all(
                     getattr(object_a, attr[1:]) == getattr(object_b, attr[1:])
-                ), f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
+                ), (
+                    f"Output attribute {attr[1:]} for {object_a} do not match input {object_b}"
+                )
 
     obj_name = "myCurve"
     # Generate a curve with multiple data
@@ -65,9 +67,9 @@ def test_modify_property_group(tmp_path):
             ]
 
         children_list = curve.get_data_list()
-        assert all(
-            f"Period{i + 1}" in children_list for i in range(4)
-        ), "Missing data children"
+        assert all(f"Period{i + 1}" in children_list for i in range(4)), (
+            "Missing data children"
+        )
         # Property group object should have been created
         prop_group = curve.fetch_property_group(name="myGroup")
 
