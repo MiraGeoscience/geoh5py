@@ -18,6 +18,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from importlib.metadata import version
+from packaging.version import Version
 
 sys.path.append(str(Path("_ext").resolve()))
 sys.path.append(str(Path().parent.resolve()))
@@ -44,8 +45,8 @@ project_copyright = "%Y, Mira Geoscience Ltd"
 
 # The full version, including alpha/beta/rc tags.
 release = version("geoh5py")
-# The short X.Y.Z version.
-version = ".".join(release.split(".")[:3])
+# The shorter X.Y.Z version.
+version = Version(release).base_version
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = "2.2.1"

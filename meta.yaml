@@ -1,5 +1,5 @@
 {% set name = "geoh5py" %}
-{% set version = "0.10.1b1" %}
+{% set version = "0.10.1rc1" %}
 
 package:
   name: {{ name|lower }}
