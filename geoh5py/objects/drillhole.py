@@ -811,11 +811,9 @@ class Drillhole(Points):
         norm[norm == 0.0] = INFINITE_RADIUS
         tangential /= norm[:, None]
         alpha = np.abs(0.5 * np.pi - np.arctan2(dot, vr))
+        alpha[alpha == 0.0] = INFINITE_RADIUS**-1.0
         delta_depth = np.diff(full_survey[:, 0])
         radius = delta_depth / alpha
-
-        radius[alpha == 0.0] = delta_depth[alpha == 0.0] * INFINITE_RADIUS
-        alpha[alpha == 0.0] = delta_depth[alpha == 0.0] / radius[alpha == 0.0]
 
         intervals = {
             "depths": np.r_[full_survey[:, 0]],

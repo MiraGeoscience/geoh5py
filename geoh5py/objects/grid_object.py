@@ -120,11 +120,10 @@ class GridObject(ObjectBase, ABC):
             raise ValueError(f"Array of 'origin' must be of dtype = {ORIGIN_TYPE}")
 
         self._centroids = None
-
-        if getattr(self, "_origin", None) is not None and self.on_file:
-            self.workspace.update_attribute(self, "attributes")
-
         self._origin = values
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     @abstractmethod
