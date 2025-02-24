@@ -21,9 +21,12 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import pytest
+from pydantic import computed_field
 
 from geoh5py import Workspace
 from geoh5py.objects import Curve, Points
@@ -111,6 +114,65 @@ def sample_uijson(test_path):
             )
         )
         return uijson_path
+
+
+def test_to_file(tmp_path):
+    default_filepath = tmp_path / "test_default.ui.json"
+    data = {
+        "version": "0.0.98",
+        "title": "my application",
+        "geoh5": str(tmp_path / "test.geoh5"),
+        "run_command": "mymodule.run",
+        "monitoring_directory": "",
+        "conda_environment": "my_conda",
+        "workspace_geoh5": "",
+        "my_string_parameter": {"label": "my param", "value": "my string"},
+        "my_integer_parameter": {"label": "my int", "value": 10},
+        "my_object_parameter": {
+            "label": "my object",
+            "mesh_type": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"],
+            "value": "",
+        },
+        "my_other_object_parameter": {
+            "label": "my other object",
+            "mesh_type": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"],
+            "value": "",
+        },
+        "my_data_parameter": {
+            "label": "my data",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "value": "",
+        },
+        "my_other_data_parameter": {
+            "label": "my other data",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "value": "",
+        },
+    }
+    with open(default_filepath, mode="w", encoding="utf8") as file:
+        file.write(json.dumps(data, indent=4))
+
+    class MyUIJson(BaseUIJson):
+        default_ui_json: ClassVar[Path] = default_filepath
+        title: str = "my application"
+        geoh5: Path = Path("")
+        my_string_parameter: StringForm
+        my_integer_parameter: IntegerForm
+        my_object_parameter: ObjectForm
+        my_other_object_parameter: ObjectForm
+        my_data_parameter: DataForm
+        my_other_data_parameter: DataForm
+
+        @computed_field
+        @property
+        def version(self) -> str:
+            return "0.0.99"
+
+    MyUIJson.write_default()
 
 
 def test_uijson(tmp_path):

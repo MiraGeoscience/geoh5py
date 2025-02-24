@@ -29,6 +29,7 @@ import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
+    PlainSerializer,
     field_serializer,
     field_validator,
     model_validator,
@@ -204,7 +205,7 @@ class FileForm(BaseForm):
     file_multi: bool = False
 
     @field_serializer("value", when_used="json")
-    def to_string(self, value):
+    def to_string(self, value) -> str:
         return ";".join([str(path) for path in value])
 
     @field_validator("value")
@@ -236,11 +237,18 @@ class FileForm(BaseForm):
         return data
 
 
+def to_string(meshtypes: list) -> list[str] | str:
+    if len(meshtypes) > 1:
+        return [str(k.default_type_uid) for k in meshtypes]
+    return str(meshtypes[0].default_type_uid)
+
+
 MeshTypes = Annotated[
     list[type[ObjectBase] | type[Group]],
     BeforeValidator(to_class),
     BeforeValidator(to_uuid),
     BeforeValidator(to_list),
+    PlainSerializer(to_string),
 ]
 
 

@@ -21,8 +21,9 @@
 from __future__ import annotations
 
 import json
+from abc import ABC
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -33,7 +34,7 @@ from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
 
 
-class BaseUIJson(BaseModel):
+class BaseUIJson(BaseModel, ABC):
     """
     Base class for storing ui.json data on disk.
 
@@ -49,6 +50,7 @@ class BaseUIJson(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    default_ui_json: ClassVar[Path] = Path()
     title: str
     geoh5: Path | None
     run_command: str
@@ -69,6 +71,20 @@ class BaseUIJson(BaseModel):
         if not path.exists():
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
+
+    @classmethod
+    def write_default(cls):
+        """Write the default UIJson file to disk."""
+
+        with open(cls.default_ui_json, encoding="utf-8") as file:
+            data = json.load(file)
+            uijson = cls.model_construct(**data)
+
+        with open(cls.default_ui_json, "w", encoding="utf-8") as file:
+            data = uijson.model_dump()
+            version = data.pop("version")
+            data = {"version": version, **data}
+            json.dump(data, file, ensure_ascii=True, indent=4)
 
     @classmethod
     def read(cls, path: Path):
