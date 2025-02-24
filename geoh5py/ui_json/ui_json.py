@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_serializer
 
 from geoh5py import Workspace
 from geoh5py.shared.utils import fetch_active_workspace
@@ -58,6 +58,13 @@ class BaseUIJson(BaseModel, ABC):
     conda_environment: str
     workspace_geoh5: Path
 
+    @model_serializer(when_used="json")
+    def use_default_uijson_ordering(self):
+        with open(self.default_ui_json, encoding="utf-8") as file:
+            keys = list(json.load(file))
+        data = self.model_dump()  # type: ignore
+        return {k: data[k] for k in keys if k in data}
+
     @field_validator("workspace_geoh5", mode="after")
     @classmethod
     def current_directory_if_workspace_doesnt_exist(cls, path):
@@ -78,13 +85,10 @@ class BaseUIJson(BaseModel, ABC):
 
         with open(cls.default_ui_json, encoding="utf-8") as file:
             data = json.load(file)
-            uijson = cls.model_construct(**data)
-
+        uijson = cls.model_construct(**data)
+        data = uijson.model_dump_json(indent=4)
         with open(cls.default_ui_json, "w", encoding="utf-8") as file:
-            data = uijson.model_dump()
-            version = data.pop("version")
-            data = {"version": version, **data}
-            json.dump(data, file, ensure_ascii=True, indent=4)
+            file.write(data)
 
     @classmethod
     def read(cls, path: Path):
