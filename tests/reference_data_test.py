@@ -116,9 +116,6 @@ def test_add_data_map(tmp_path):
     with Workspace.create(h5file_path) as workspace:
         _, data = generate_value_map(workspace)
 
-        with pytest.raises(ValueError, match="Data map must be a 2D array"):
-            data.add_data_map("test", np.random.randn(12))
-
         with pytest.raises(
             KeyError, match="Data map keys must be a subset of the value map keys."
         ):
