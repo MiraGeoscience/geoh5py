@@ -58,7 +58,7 @@ class BaseUIJson(BaseModel, ABC):
     conda_environment: str
     workspace_geoh5: Path
 
-    @model_serializer(when_used="always")
+    @model_serializer(when_used="json")
     def use_default_uijson_ordering(self):
         with open(self.default_ui_json, encoding="utf-8") as file:
             keys = list(json.load(file))

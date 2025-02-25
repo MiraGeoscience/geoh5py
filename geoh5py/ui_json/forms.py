@@ -240,7 +240,7 @@ class FileForm(BaseForm):
 def to_string(meshtypes: list) -> list[str] | str:
     if len(meshtypes) > 1:
         return [str(k.default_type_uid) for k in meshtypes]
-    return str(meshtypes[0].default_type_uid)
+    return str(meshtypes[0].default_type_uid())
 
 
 MeshTypes = Annotated[
@@ -248,7 +248,7 @@ MeshTypes = Annotated[
     BeforeValidator(to_class),
     BeforeValidator(to_uuid),
     BeforeValidator(to_list),
-    PlainSerializer(to_string),
+    PlainSerializer(to_string, when_used="json"),
 ]
 
 
