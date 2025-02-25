@@ -20,8 +20,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
+from .data import Data
 from .data_type import GeometricDataValueMapType, ReferenceDataType
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
@@ -38,6 +41,35 @@ class ReferencedData(IntegerData):
         self._data_maps = None
 
         super().__init__(**kwargs)
+
+    def copy(
+        self,
+        parent=None,
+        *,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ) -> Data:
+        """
+        Overwrite the copy method to ensure that the uid is set to None.
+        """
+        kwargs["uid"] = None
+        new_data = cast(
+            ReferencedData,
+            super().copy(
+                parent=parent,
+                clear_cache=clear_cache,
+                mask=mask,
+                omit_list=["_metadata", "_data_maps"],
+                **kwargs,
+            ),
+        )
+
+        if self.data_maps is not None:
+            for name, child in self.data_maps.items():
+                new_data.add_data_map(name, child.entity_type.value_map.map)
+
+        return new_data
 
     @property
     def data_maps(self) -> dict[str, GeometricDataConstants] | None:
@@ -155,9 +187,6 @@ class ReferencedData(IntegerData):
 
         if not isinstance(data, dict | np.ndarray):
             raise TypeError("Data map values must be a numpy array or dict")
-
-        if isinstance(data, np.ndarray) and data.ndim != 2:
-            raise ValueError("Data map must be a 2D array")
 
         reference_data = ReferenceValueMap(data, name=name)
 

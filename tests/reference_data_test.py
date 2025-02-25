@@ -179,6 +179,25 @@ def test_add_data_map(tmp_path):
         )
 
 
+def test_copy_data_map(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        _, data = generate_value_map(workspace)
+
+        data_map = np.c_[
+            data.entity_type.value_map.map["Key"],
+            np.random.randn(len(data.entity_type.value_map.map["Key"])),
+        ]
+        data.add_data_map("test2", data_map)
+
+        data.parent.copy()
+        geom_data = workspace.get_entity("test2")
+        assert len(geom_data) == 2
+
+        assert geom_data[0].entity_type.name != geom_data[1].entity_type.name
+
+
 def test_create_bytes_reference(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
