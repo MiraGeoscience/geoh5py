@@ -52,7 +52,8 @@ class ReferencedData(IntegerData):
         **kwargs,
     ) -> Data:
         """
-        Overwrite the copy method to ensure that the uid is set to None.
+        Overwrite the copy method to ensure that the uid is set to None and
+        transfer the GeometricDataValueMapType to the new entity type.
         """
         kwargs["uid"] = None
 
