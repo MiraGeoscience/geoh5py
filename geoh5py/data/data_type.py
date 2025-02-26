@@ -213,7 +213,6 @@ class DataType(EntityType):
         primitive_type: PrimitiveTypeEnum | str,
         *,
         dynamic_implementation_id: str | UUID | None = None,
-        name: str | None = "DataType",
         uid: UUID | None = None,
         **kwargs,
     ) -> DataType:
@@ -235,14 +234,9 @@ class DataType(EntityType):
 
         primitive_type = cls.validate_primitive_type(primitive_type)
 
-        if name is not None:
-            name = utils.find_unique_name(
-                name, [tp.name for tp in workspace.types if isinstance(tp, DataType)]
-            )
-
         if primitive_type == PrimitiveTypeEnum.BOOLEAN:
             return ReferencedBooleanType(
-                workspace, primitive_type=primitive_type, uid=uid, name=name, **kwargs
+                workspace, primitive_type=primitive_type, uid=uid, **kwargs
             )
 
         if (
@@ -254,17 +248,15 @@ class DataType(EntityType):
             )
 
             return data_type(
-                workspace, primitive_type=primitive_type, uid=uid, name=name, **kwargs
+                workspace, primitive_type=primitive_type, uid=uid, **kwargs
             )
 
         if primitive_type == PrimitiveTypeEnum.REFERENCED:
             return ReferencedValueMapType(
-                workspace, primitive_type=primitive_type, uid=uid, name=name, **kwargs
+                workspace, primitive_type=primitive_type, uid=uid, **kwargs
             )
 
-        return cls(
-            workspace, primitive_type=primitive_type, uid=uid, name=name, **kwargs
-        )
+        return cls(workspace, primitive_type=primitive_type, uid=uid, **kwargs)
 
     @property
     def hidden(self) -> bool:

@@ -24,8 +24,9 @@ from typing import cast
 
 import numpy as np
 
+from ..shared.utils import find_unique_name
 from .data import Data
-from .data_type import GeometricDataValueMapType, ReferenceDataType
+from .data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -54,6 +55,7 @@ class ReferencedData(IntegerData):
         Overwrite the copy method to ensure that the uid is set to None.
         """
         kwargs["uid"] = None
+
         new_data = cast(
             ReferencedData,
             super().copy(
@@ -63,6 +65,12 @@ class ReferencedData(IntegerData):
                 omit_list=["_metadata", "_data_maps"],
                 **kwargs,
             ),
+        )
+
+        # Always overwrite the entity type name to protect the GeometricDataValueMapType
+        new_data.entity_type.name = find_unique_name(
+            self.entity_type.name,
+            [tp.name for tp in self.workspace.types if isinstance(tp, DataType)],
         )
 
         if self.data_maps is not None:
