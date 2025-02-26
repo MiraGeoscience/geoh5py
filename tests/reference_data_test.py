@@ -193,6 +193,10 @@ def test_copy_data_map(tmp_path):
         assert len(geom_data) == 2
 
         assert geom_data[0].entity_type.name != geom_data[1].entity_type.name
+        assert np.all(
+            geom_data[0].entity_type.value_map.map
+            == geom_data[1].entity_type.value_map.map
+        )
 
 
 def test_create_bytes_reference(tmp_path):
