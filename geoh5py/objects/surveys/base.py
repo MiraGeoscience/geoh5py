@@ -33,6 +33,7 @@ from geoh5py.shared.utils import copy_no_reference
 
 
 if TYPE_CHECKING:
+    from geoh5py.entities import EntityContainer
     from geoh5py.groups import Group
     from geoh5py.workspace import Workspace
 
@@ -58,7 +59,6 @@ class BaseSurvey(ObjectBase, ABC):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        copy_complement: bool = True,
         **kwargs,
     ):
         """
@@ -79,7 +79,7 @@ class BaseSurvey(ObjectBase, ABC):
         if self.metadata is not None:
             new_entity.metadata = copy_no_reference(self.metadata)
 
-        if copy_complement and self.complement is not None:
+        if self.complement is not None:
             self.copy_complement(
                 new_entity,
                 parent=parent,
@@ -150,6 +150,17 @@ class BaseSurvey(ObjectBase, ABC):
     @abstractmethod
     def omit_list(self) -> tuple:
         """List of attributes to skip on copy."""
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent: EntityContainer):
+        self._set_parent(parent)
+
+        if self.complement is not None:
+            self.complement._set_parent(parent)  # pylint: disable=protected-access
 
     def renumber_reference_ids(self):
         """
