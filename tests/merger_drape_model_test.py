@@ -28,7 +28,7 @@ from geoh5py.shared.merging import DrapeModelMerger
 from geoh5py.workspace import Workspace
 
 
-def create_drape_model(workspace: Workspace, alpha: float = 0.0, data_type=None):
+def create_drape_model(workspace: Workspace, alpha: float = 0.0):
     n_col, n_row = 64, 32
 
     j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
@@ -48,7 +48,7 @@ def create_drape_model(workspace: Workspace, alpha: float = 0.0, data_type=None)
         {
             "indices": {
                 "values": (i * n_row + j).flatten().astype(np.int32),
-                "entity_type": data_type,
+                "association": "CELL",
             }
         }
     )
@@ -67,19 +67,12 @@ def test_merge_drape_model(tmp_path):  # pylint: disable=too-many-locals
         count_n_cells = 0
 
         # prepare the output
-        data_type = None
         for i in range(10):
-            drape_model = create_drape_model(
-                workspace_init, alpha=i * 2.5, data_type=data_type
-            )
+            drape_model = create_drape_model(workspace_init, alpha=i * 2.5)
             count_n_cells += drape_model.n_cells
             drape_models.append(drape_model)
 
-            data = drape_model.get_data("indices")[0]
-            if data_type is None:
-                data_type = data.entity_type
-
-            test_values.append(data.values)
+            test_values.append(drape_model.get_data("indices")[0].values)
             test_prisms.append(drape_model.prisms)
             test_layers.append(drape_model.layers)
 
