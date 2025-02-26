@@ -167,52 +167,37 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
 
         return cell_mask
 
-    def copy_complement(
-        self,
-        new_entity,
-        *,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-    ) -> BaseElectrode | None:
+    def renumber_reference_ids(self):
         """
-        Copy the complement entity to the new entity.
-
-        :param new_entity: New entity to copy the complement to.
-        :param parent: Parent group or workspace.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear the cache.
-        :param mask: Mask on vertices to apply to the data.
+        Renumber the ab_cell_ids based on unique values of currents.
         """
-        new_complement = super().copy_complement(
-            new_entity,
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-        )
+        if (
+            self.complement is None
+            or self.complement.ab_cell_id is None
+            or self.ab_cell_id is None
+        ):
+            raise AttributeError(
+                "The 'ab_cell_id' must be set on both the object and its complement."
+            )
 
         # Re-number the ab_cell_id
         value_map = {
             val: ind
             for ind, val in enumerate(
-                np.r_[0, np.unique(new_entity.current_electrodes.ab_cell_id.values)]
+                np.r_[0, np.unique(self.current_electrodes.ab_cell_id.values)]
             )
         }
         new_map = {
-            val: dict(new_entity.current_electrodes.ab_cell_id.value_map.map)[val]
+            val: dict(self.current_electrodes.ab_cell_id.value_map.map)[val]
             for val in value_map.values()
         }
-        new_complement.ab_cell_id.values = np.asarray(
-            [value_map[val] for val in new_complement.ab_cell_id.values]
+        self.complement.ab_cell_id.values = np.asarray(
+            [value_map[val] for val in self.complement.ab_cell_id.values]
         )
-        new_entity.ab_cell_id.values = np.asarray(
-            [value_map[val] for val in new_entity.ab_cell_id.values]
+        self.ab_cell_id.values = np.asarray(
+            [value_map[val] for val in self.ab_cell_id.values]
         )
-        new_entity.ab_cell_id.entity_type.value_map = new_map
-
-        return new_complement
+        self.ab_cell_id.entity_type.value_map = new_map  # type: ignore
 
     @property
     def omit_list(self) -> tuple:

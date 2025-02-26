@@ -193,10 +193,14 @@ def test_create_survey_dcip(tmp_path):
 
         # Check entities
         compare_entities(
-            currents, currents_rec, ignore=["_potential_electrodes", "_parent"]
+            currents,
+            currents_rec,
+            ignore=["_potential_electrodes", "_current_electrodes", "_parent"],
         )
         compare_entities(
-            potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
+            potentials,
+            potentials_rec,
+            ignore=["_potential_electrodes", "_current_electrodes", "_parent"],
         )
 
         with pytest.raises(ValueError, match="Input metadata must have"):

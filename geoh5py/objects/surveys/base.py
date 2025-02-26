@@ -134,6 +134,8 @@ class BaseSurvey(ObjectBase, ABC):
             new_entity,
         )
 
+        new_entity.renumber_reference_ids()
+
         return new_complement
 
     @abstractmethod
@@ -146,13 +148,18 @@ class BaseSurvey(ObjectBase, ABC):
 
     @property
     @abstractmethod
-    def type(self):
-        """Survey element type"""
+    def omit_list(self) -> tuple:
+        """List of attributes to skip on copy."""
+
+    def renumber_reference_ids(self):
+        """
+        Renumber the reference IDs in the survey.
+        """
 
     @property
     @abstractmethod
-    def omit_list(self) -> tuple:
-        """List of attributes to skip on copy."""
+    def type(self):
+        """Survey element type"""
 
     @property
     @abstractmethod

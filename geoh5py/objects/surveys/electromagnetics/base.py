@@ -700,49 +700,38 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     def base_transmitter_type(self):
         return Curve
 
-    def copy_complement(
-        self,
-        new_entity,
-        *,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-    ):
-        new_complement = super().copy_complement(
-            new_entity,
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-        )
-
-        # Re-number the value_map for tx_id_property to remain
-        if new_complement is not None and isinstance(
-            new_complement.tx_id_property, ReferencedData
+    def renumber_reference_ids(self):
+        """
+        Re-number the value_map for tx_id_property to remain
+        """
+        if (
+            self.tx_id_property is None
+            or self.complement is None
+            or self.complement.tx_id_property is None
         ):
-            value_map = {
-                val: ind
-                for ind, val in enumerate(
-                    np.r_[0, np.unique(new_entity.transmitters.tx_id_property.values)]
-                )
+            raise AttributeError(
+                "The 'tx_id_property' must be set on both the object and its complement."
+            )
+        value_map = {
+            val: ind
+            for ind, val in enumerate(
+                np.r_[0, np.unique(self.transmitters.tx_id_property.values)]
+            )
+        }
+        new_map = self.complement.tx_id_property.entity_type.validate_value_map(
+            {
+                val: dict(self.transmitters.tx_id_property.value_map.map)[ind]
+                for ind, val in value_map.items()
             }
-            new_map = new_complement.tx_id_property.entity_type.validate_value_map(
-                {
-                    val: dict(new_entity.transmitters.tx_id_property.value_map.map)[ind]
-                    for ind, val in value_map.items()
-                }
-            )
-            new_complement.tx_id_property.values = np.asarray(
-                [value_map[val] for val in new_complement.tx_id_property.values]
-            )
-            new_complement.tx_id_property.entity_type.value_map = new_map
-            new_entity.tx_id_property.values = np.asarray(
-                [value_map[val] for val in new_entity.tx_id_property.values]
-            )
-            new_entity.tx_id_property.entity_type.value_map = new_map
-
-        return new_complement
+        )
+        self.complement.tx_id_property.values = np.asarray(
+            [value_map[val] for val in self.complement.tx_id_property.values]
+        )
+        self.complement.tx_id_property.entity_type.value_map = new_map
+        self.tx_id_property.values = np.asarray(
+            [value_map[val] for val in self.tx_id_property.values]
+        )
+        self.tx_id_property.entity_type.value_map = new_map
 
     @property
     def default_input_types(self) -> list[str]:
