@@ -34,7 +34,7 @@ import numpy as np
 from geoh5py.data import FloatData, IntegerData, ReferencedData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
-from geoh5py.objects.object_base import ObjectBase
+from geoh5py.objects.surveys.base import BaseSurvey
 from geoh5py.shared.utils import str2uuid, str_json_to_dict
 
 
@@ -42,27 +42,26 @@ if TYPE_CHECKING:
     from geoh5py.groups import Group
     from geoh5py.workspace import Workspace
 
-TYPE_MAP = {
-    "Transmitters": "transmitters",
-    "Receivers": "receivers",
-    "Base stations": "base_stations",
-}
-OMIT_LIST = [
+OMIT_LIST = (
     "_receivers",
     "_transmitters",
     "_base_stations",
     "_tx_id_property",
     "_metadata",
-]
+)
+TYPE_MAP = {
+    "Transmitters": "transmitters",
+    "Receivers": "receivers",
+    "Base stations": "base_stations",
+}
 
 
-class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
+class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
     """
     A base electromagnetics survey object.
     """
 
     __INPUT_TYPE = None
-    __TYPE = None
     __UNITS = None
 
     def __init__(self, **kwargs):
@@ -235,102 +234,31 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
         return None
 
-    def copy(  # pylint: disable=too-many-arguments
-        self,
-        parent: Group | Workspace | None = None,
-        *,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        copy_complement: bool = True,
-        **kwargs,
-    ):
+    def get_complement_mask(
+        self, mask: np.ndarray | None, complement: BaseEMSurvey
+    ) -> np.ndarray:
         """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        Get the complement mask based on the input mask.
+
+        :param mask: Mask on the vertices.
         """
-        if parent is None:
-            parent = self.parent
-
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            omit_list=OMIT_LIST,
-            **kwargs,
-        )
-
-        # Copy metadata except reference to entities UUID
-        for key, value in self.metadata["EM Dataset"].items():
-            if not isinstance(value, (uuid.UUID, type(None))):
-                new_entity.edit_em_metadata({key: value})
-
-        if copy_complement:
-            self.copy_complement(
-                new_entity,
-                parent=parent,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
-
-        return new_entity
-
-    def copy_complement(
-        self,
-        new_entity,
-        *,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-    ) -> BaseEMSurvey | None:
-        """
-        Copy the complement entity to the new entity.
-
-        :param new_entity: New entity to copy the complement to.
-        :param parent: Parent group or workspace.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear the cache.
-        :param mask: Mask on vertices to apply to the data.
-        """
-        if self.complement is None:
-            return None
-
-        # Reset the mask based on Tx ID if it exists
         if (
-            new_entity.tx_id_property is not None
-            and self.complement.tx_id_property is not None
-            and self.complement.tx_id_property.values is not None
+            self.tx_id_property is not None
+            and complement.tx_id_property is not None
+            and complement.tx_id_property.values is not None
             and mask is not None
         ):
             max_id = np.max(
                 [
-                    self.complement.tx_id_property.values.max(),
-                    new_entity.tx_id_property.values.max(),
+                    complement.tx_id_property.values.max(),
+                    self.tx_id_property.values.max(),
                 ]
             )
             ids_mask = np.zeros(max_id + 1, dtype=bool)
-            ids_mask[new_entity.tx_id_property.values] = True
-            mask = ids_mask[self.complement.tx_id_property.values]
+            ids_mask[self.tx_id_property.values] = True
+            mask = ids_mask[complement.tx_id_property.values]
 
-        new_complement = self.complement._super_copy(  # pylint: disable=protected-access
-            parent=parent,
-            omit_list=OMIT_LIST,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-        )
-
-        setattr(
-            new_entity,
-            TYPE_MAP[self.complement.type],  # pylint: disable=no-member
-            new_complement,
-        )
-
-        return new_complement
+        return mask
 
     @property
     @abstractmethod
@@ -531,9 +459,18 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         self.edit_em_metadata({"Transmitters": transmitters.uid})
 
     @property
-    @abstractmethod
-    def type(self):
-        """Survey element type"""
+    def omit_list(self) -> tuple:
+        """
+        List of attributes to omit when copying.
+        """
+        return OMIT_LIST
+
+    @property
+    def type_map(self) -> dict[str, str]:
+        """
+        Mapping of the electrode types to the associated electrode.
+        """
+        return TYPE_MAP
 
     @property
     def unit(self) -> float | None:
@@ -681,27 +618,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             values["EM Dataset"]["Property groups"] = prop_groups
 
         return values
-
-    def _super_copy(
-        self,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Call the super().copy of the class in copy_complement method.
-
-        :return: New copy of the input entity.
-        """
-        return super().copy(
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-            **kwargs,
-        )
 
     @property
     def tx_id_property(self) -> ReferencedData | IntegerData | None:
