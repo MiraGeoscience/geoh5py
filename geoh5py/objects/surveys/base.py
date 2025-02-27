@@ -33,8 +33,8 @@ from geoh5py.shared.utils import copy_no_reference
 
 
 if TYPE_CHECKING:
-    from geoh5py.entities import EntityContainer
     from geoh5py.groups import Group
+    from geoh5py.shared.entity import EntityContainer
     from geoh5py.workspace import Workspace
 
 
@@ -124,13 +124,13 @@ class BaseSurvey(ObjectBase, ABC):
 
         setattr(
             new_entity,
-            self.type_map[self.complement.type],  # pylint: disable=no-member
+            self.type_map[self.complement.type],
             new_complement,
         )
 
         setattr(
             new_complement,
-            self.type_map[new_entity.type],  # pylint: disable=no-member
+            self.type_map[new_entity.type],
             new_entity,
         )
 

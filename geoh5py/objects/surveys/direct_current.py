@@ -41,20 +41,19 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-OMIT_LIST = (
-    "_ab_cell_id",
-    "_metadata",
-    "_potential_electrodes",
-    "_current_electrodes",
-)
-TYPE_MAP = {
-    "Transmitters": "current_electrodes",
-    "Receivers": "potential_electrodes",
-}
-
 
 class BaseElectrode(BaseSurvey, Curve, ABC):
     __TYPE = None
+    __OMIT_LIST = (
+        "_ab_cell_id",
+        "_metadata",
+        "_potential_electrodes",
+        "_current_electrodes",
+    )
+    __TYPE_MAP = {
+        "Transmitters": "current_electrodes",
+        "Receivers": "potential_electrodes",
+    }
 
     def __init__(self, **kwargs):
         self._ab_cell_id: ReferencedData | None = None
@@ -204,7 +203,7 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
         """
         List of attributes to omit when copying.
         """
-        return OMIT_LIST
+        return self.__OMIT_LIST
 
     @property
     @abstractmethod
@@ -218,7 +217,7 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
         """
         Mapping of the electrode types to the associated electrode.
         """
-        return TYPE_MAP
+        return self.__TYPE_MAP
 
     @staticmethod
     def validate_metadata(value):

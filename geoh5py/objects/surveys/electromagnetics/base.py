@@ -42,19 +42,6 @@ if TYPE_CHECKING:
     from geoh5py.groups import Group
     from geoh5py.workspace import Workspace
 
-OMIT_LIST = (
-    "_receivers",
-    "_transmitters",
-    "_base_stations",
-    "_tx_id_property",
-    "_metadata",
-)
-TYPE_MAP = {
-    "Transmitters": "transmitters",
-    "Receivers": "receivers",
-    "Base stations": "base_stations",
-}
-
 
 class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
     """
@@ -62,6 +49,18 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
     """
 
     __INPUT_TYPE = None
+    __OMIT_LIST = (
+        "_receivers",
+        "_transmitters",
+        "_base_stations",
+        "_tx_id_property",
+        "_metadata",
+    )
+    __TYPE_MAP = {
+        "Transmitters": "transmitters",
+        "Receivers": "receivers",
+        "Base stations": "base_stations",
+    }
     __UNITS = None
 
     def __init__(self, **kwargs):
@@ -463,14 +462,14 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
         """
         List of attributes to omit when copying.
         """
-        return OMIT_LIST
+        return self.__OMIT_LIST
 
     @property
     def type_map(self) -> dict[str, str]:
         """
         Mapping of the electrode types to the associated electrode.
         """
-        return TYPE_MAP
+        return self.__TYPE_MAP
 
     @property
     def unit(self) -> float | None:
