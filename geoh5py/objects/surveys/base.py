@@ -80,7 +80,7 @@ class BaseSurvey(ObjectBase, ABC):
             new_entity.metadata = copy_no_reference(self.metadata)
 
         if self.complement is not None:
-            self.copy_complement(
+            self._copy_complement(
                 new_entity,
                 parent=parent,
                 copy_children=copy_children,
@@ -90,9 +90,9 @@ class BaseSurvey(ObjectBase, ABC):
 
         return new_entity
 
-    def copy_complement(
+    def _copy_complement(
         self,
-        new_entity,
+        new_entity: BaseSurvey,
         *,
         parent: Group | Workspace | None = None,
         copy_children: bool = True,
