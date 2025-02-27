@@ -176,6 +176,7 @@ class CellObject(Points, ABC):
         """
         Sub-class extension of :func:`~geoh5py.objects.points.Points.copy`.
         """
+        cell_mask = None
         if mask is not None:
             if mask.shape == (self.n_cells,):
                 cell_mask = mask
@@ -198,8 +199,6 @@ class CellObject(Points, ABC):
                     "cells": new_cells,
                 }
             )
-        else:
-            cell_mask = None
 
         new_object = super().copy(
             parent=parent,
