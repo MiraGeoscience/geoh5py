@@ -251,7 +251,9 @@ MeshTypes = Annotated[
 ]
 
 OptionalUUID = Annotated[
-    UUID | None, BeforeValidator(empty_string_to_none), PlainSerializer(uuid_to_string)
+    UUID | None,  # pylint: disable=unsupported-binary-operation
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(uuid_to_string),
 ]
 
 
@@ -308,7 +310,7 @@ class DataType(str, Enum):
 
 
 UUIDOrNumber = Annotated[
-    UUID | float | int | None,
+    UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
     PlainSerializer(uuid_to_string),
 ]
