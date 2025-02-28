@@ -113,7 +113,7 @@ def empty_string_to_none(value):
 
 
 def none_to_empty_string(value):
-    """None transforms to empty string for serialzation."""
+    """None transforms to empty string for serialization."""
     if value is None:
         return ""
     return value
