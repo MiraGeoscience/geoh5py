@@ -34,7 +34,14 @@ from geoh5py.shared.utils import fetch_active_workspace
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
-    """Flattens ui.json format to simple key/value pair."""
+    """
+    Flattens ui.json format to simple key/value pair.
+
+    For most of the field,
+
+    :params ui_json: The form containing the data.
+
+    """
     data: dict[str, Any] = {}
     for name, value in ui_json.items():
         if isinstance(value, dict):
@@ -51,10 +58,22 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
                         "groupValue": value["groupValue"],
                         "value": value["value"],
                     }
+                elif (
+                    "isComplement" in value
+                    and "property" in value
+                    and value["property"] is not None
+                ):
+                    data[name] = {
+                        "value": value["value"],
+                        "isComplement": value["isComplement"],
+                        "property": value["property"],
+                    }
                 else:
                     data[name] = value[field]
+
         else:
             data[name] = value
+
     return data
 
 
