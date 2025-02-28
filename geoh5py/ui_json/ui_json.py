@@ -49,19 +49,13 @@ class BaseUIJson(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    version: str
     title: str
     geoh5: Path | None
     run_command: str
     monitoring_directory: Path
     conda_environment: str
     workspace_geoh5: Path
-
-    @field_validator("workspace_geoh5", mode="after")
-    @classmethod
-    def current_directory_if_workspace_doesnt_exist(cls, path):
-        if not path.exists():
-            return Path()
-        return path
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -86,6 +80,13 @@ class BaseUIJson(BaseModel):
             kwargs = json.load(file)
 
         return cls(**kwargs)
+
+    def write(self, path: Path):
+        """Write the UIJson object to file."""
+
+        with open(path, "w", encoding="utf-8") as file:
+            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
+            file.write(data)
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """

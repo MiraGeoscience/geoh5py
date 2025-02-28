@@ -29,6 +29,7 @@ import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
+    PlainSerializer,
     field_serializer,
     field_validator,
     model_validator,
@@ -39,11 +40,13 @@ from pydantic.functional_validators import BeforeValidator
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.validators import (
-    empty_string_to_uid,
+    empty_string_to_none,
     to_class,
     to_list,
     to_path,
     to_uuid,
+    types_to_string,
+    uuid_to_string,
 )
 
 
@@ -79,6 +82,9 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
+    :param verbose: Sets the level at which Geoscience Analyst will make
+        the parameter visible in a ui.json file.  Verbosity level is set
+        within Analyst menu.
     """
 
     model_config = ConfigDict(
@@ -237,10 +243,15 @@ class FileForm(BaseForm):
 
 
 MeshTypes = Annotated[
-    list[type[ObjectBase] | type[Group]],
+    list[type[ObjectBase]],
     BeforeValidator(to_class),
     BeforeValidator(to_uuid),
     BeforeValidator(to_list),
+    PlainSerializer(types_to_string, when_used="json"),
+]
+
+OptionalUUID = Annotated[
+    UUID | None, BeforeValidator(empty_string_to_none), PlainSerializer(uuid_to_string)
 ]
 
 
@@ -249,10 +260,26 @@ class ObjectForm(BaseForm):
     Geoh5py object uijson form.
     """
 
-    value: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    value: OptionalUUID
     mesh_type: MeshTypes
 
-    _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
+
+GroupTypes = Annotated[
+    list[type[Group]],
+    BeforeValidator(to_class),
+    BeforeValidator(to_uuid),
+    BeforeValidator(to_list),
+    PlainSerializer(types_to_string, when_used="json"),
+]
+
+
+class GroupForm(BaseForm):
+    """
+    Geoh5py group uijson form.
+    """
+
+    value: OptionalUUID
+    group_type: GroupTypes
 
 
 class Association(str, Enum):
@@ -280,27 +307,27 @@ class DataType(str, Enum):
     TEXT = "Text"
 
 
+UUIDOrNumber = Annotated[
+    UUID | float | int | None,
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(uuid_to_string),
+]
+
+
 class DataForm(BaseForm):
     """
     Geoh5py data uijson form.
     """
 
-    value: UUID | float | int
+    value: UUIDOrNumber
     parent: str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
     is_value: bool = False
-    property: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    property: OptionalUUID = None
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
-
-    @field_validator("property", mode="before")
-    @classmethod
-    def empty_string_to_uid(cls, val):
-        if val == "":
-            return UUID("00000000-0000-0000-0000-000000000000")
-        return val
 
     @model_validator(mode="after")
     def value_if_is_value(self):
