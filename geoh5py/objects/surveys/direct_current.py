@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import numpy as np
 
@@ -34,10 +34,6 @@ from ...shared.utils import str_json_to_dict
 from ..curve import Curve
 from .base import BaseSurvey
 
-
-if TYPE_CHECKING:
-    from ...groups import Group
-    from ...workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -145,13 +141,52 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
         The associated current_electrodes (transmitters)
         """
 
-    def get_complement_mask(
+    @property
+    def omit_list(self) -> tuple:
+        """
+        List of attributes to omit when copying.
+        """
+        return self.__OMIT_LIST
+
+    @property
+    @abstractmethod
+    def potential_electrodes(self):
+        """
+        The associated potential_electrodes (receivers)
+        """
+
+    @property
+    def type_map(self) -> dict[str, str]:
+        """
+        Mapping of the electrode types to the associated electrode.
+        """
+        return self.__TYPE_MAP
+
+    @staticmethod
+    def validate_metadata(value: dict | np.ndarray | bytes) -> dict:
+        if isinstance(value, np.ndarray):
+            value = value[0]
+
+        if isinstance(value, bytes):
+            value = str_json_to_dict(value)
+
+        if isinstance(value, dict):
+            default_keys = ["Current Electrodes", "Potential Electrodes"]
+
+            # check if metadata has the required keys
+            if not all(key in value for key in default_keys):
+                raise ValueError(f"Input metadata must have for keys {default_keys}")
+
+        return value
+
+    def _get_complement_mask(
         self, mask: np.ndarray, complement: BaseElectrode
     ) -> np.ndarray:
         """
         Get the complement mask based on the input mask.
 
-        :param mask: Mask on the vertices.
+        :param mask: Mask on vertices or cells.
+        :param complement: Complement entity.
         """
         if self.ab_cell_id is None or complement.ab_cell_id is None:
             raise ValueError(
@@ -166,7 +201,7 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
 
         return cell_mask
 
-    def renumber_reference_ids(self):
+    def _renumber_reference_ids(self):
         """
         Renumber the ab_cell_ids based on unique values of currents.
         """
@@ -197,44 +232,6 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
             [value_map[val] for val in self.ab_cell_id.values]
         )
         self.ab_cell_id.entity_type.value_map = new_map  # type: ignore
-
-    @property
-    def omit_list(self) -> tuple:
-        """
-        List of attributes to omit when copying.
-        """
-        return self.__OMIT_LIST
-
-    @property
-    @abstractmethod
-    def potential_electrodes(self):
-        """
-        The associated potential_electrodes (receivers)
-        """
-
-    @property
-    def type_map(self) -> dict[str, str]:
-        """
-        Mapping of the electrode types to the associated electrode.
-        """
-        return self.__TYPE_MAP
-
-    @staticmethod
-    def validate_metadata(value):
-        if isinstance(value, np.ndarray):
-            value = value[0]
-
-        if isinstance(value, bytes):
-            value = str_json_to_dict(value)
-
-        if isinstance(value, dict):
-            default_keys = ["Current Electrodes", "Potential Electrodes"]
-
-            # check if metadata has the required keys
-            if not all(key in value for key in default_keys):
-                raise ValueError(f"Input metadata must have for keys {default_keys}")
-
-        return value
 
 
 class PotentialElectrode(BaseElectrode):

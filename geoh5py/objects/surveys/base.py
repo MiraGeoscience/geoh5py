@@ -17,10 +17,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
-# pylint: disable=no-member, too-many-lines, too-many-ancestors
-# mypy: disable-error-code="attr-defined"
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -90,6 +86,32 @@ class BaseSurvey(ObjectBase, ABC):
 
         return new_entity
 
+    @property
+    @abstractmethod
+    def omit_list(self) -> tuple:
+        """List of attributes to skip on copy."""
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent: EntityContainer):
+        self._set_parent(parent)
+
+        if self.complement is not None:
+            self.complement._set_parent(parent)  # pylint: disable=protected-access
+
+    @property
+    @abstractmethod
+    def type(self):
+        """Survey element type"""
+
+    @property
+    @abstractmethod
+    def type_map(self) -> dict[str, str]:
+        """Map of survey element types."""
+
     def _copy_complement(
         self,
         new_entity: BaseSurvey,
@@ -112,8 +134,7 @@ class BaseSurvey(ObjectBase, ABC):
             return None
 
         # Reset the mask based on Tx ID if it exists
-        mask = new_entity.get_complement_mask(mask, self.complement)
-
+        mask = new_entity._get_complement_mask(mask, self.complement)  # pylint: disable=protected-access
         new_complement = self.complement._super_copy(  # pylint: disable=protected-access
             parent=parent,
             omit_list=self.omit_list,
@@ -134,48 +155,23 @@ class BaseSurvey(ObjectBase, ABC):
             new_entity,
         )
 
-        new_entity.renumber_reference_ids()
+        new_entity._renumber_reference_ids()  # pylint: disable=protected-access
 
         return new_complement
 
     @abstractmethod
-    def get_complement_mask(self, mask: np.ndarray, complement) -> np.ndarray:
+    def _get_complement_mask(self, mask: np.ndarray, complement) -> np.ndarray:
         """
         Get the complement mask based on the input mask.
 
-        :param mask: Mask on the vertices.
+        :param mask: Mask on vertices or cells.
+        :param complement: Complement entity.
         """
 
-    @property
-    @abstractmethod
-    def omit_list(self) -> tuple:
-        """List of attributes to skip on copy."""
-
-    @property
-    def parent(self):
-        return self._parent
-
-    @parent.setter
-    def parent(self, parent: EntityContainer):
-        self._set_parent(parent)
-
-        if self.complement is not None:
-            self.complement._set_parent(parent)  # pylint: disable=protected-access
-
-    def renumber_reference_ids(self):
+    def _renumber_reference_ids(self):
         """
         Renumber the reference IDs in the survey.
         """
-
-    @property
-    @abstractmethod
-    def type(self):
-        """Survey element type"""
-
-    @property
-    @abstractmethod
-    def type_map(self) -> dict[str, str]:
-        """Map of survey element types."""
 
     def _super_copy(
         self,
