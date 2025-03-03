@@ -45,13 +45,13 @@ def test_save_modified_properties(
 
         assert write_attributes.called, f"{write_attributes} was not called."
         assert write_array_attribute.called, f"{write_array_attribute} was not called."
-        assert (
-            not write_data_values.called
-        ), f"{write_data_values} should not have been called."
+        assert not write_data_values.called, (
+            f"{write_data_values} should not have been called."
+        )
 
-        assert (
-            not write_data_values.called
-        ), f"{write_data_values} should not have been called."
+        assert not write_data_values.called, (
+            f"{write_data_values} should not have been called."
+        )
 
         points.add_data({"rando": {"values": np.ones(n_data)}})
 

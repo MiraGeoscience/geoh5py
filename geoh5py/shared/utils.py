@@ -355,9 +355,9 @@ def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
         ), f"Error comparing attribute '{attribute}'."
 
     elif len(array_a_values) > 0 and isinstance(array_a_values[0], str):
-        assert all(
-            array_a_values == array_b_values
-        ), f"Error comparing attribute '{attribute}'."
+        assert all(array_a_values == array_b_values), (
+            f"Error comparing attribute '{attribute}'."
+        )
     else:
         np.testing.assert_array_almost_equal(
             array_a_values,
@@ -386,9 +386,9 @@ def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
 
 
 def compare_bytes(object_a, object_b):
-    assert (
-        object_a == object_b
-    ), f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
+    assert object_a == object_b, (
+        f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
+    )
 
 
 def compare_entities(

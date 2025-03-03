@@ -180,9 +180,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         geoimage_file.image = str(tmp_path / r"test.tiff")
 
-        assert (
-            geoimage_file.image == geoimage.image
-        ), "Error writing and re-loading the image file."
+        assert geoimage_file.image == geoimage.image, (
+            "Error writing and re-loading the image file."
+        )
 
         with Workspace.create(tmp_path / r"geo_image_test2.geoh5") as new_workspace:
             geoimage.copy(parent=new_workspace, clear_cache=True)
@@ -193,9 +193,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
             compare_entities(geoimage, rec_image, ignore=["_parent", "_image", "_tag"])
 
-            assert (
-                rec_image.image == geoimage.image
-            ), "Error copying the bytes image data."
+            assert rec_image.image == geoimage.image, (
+                "Error copying the bytes image data."
+            )
 
             geoimage.vertices = geoimage.vertices
 

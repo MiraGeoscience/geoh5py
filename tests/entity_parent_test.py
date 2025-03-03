@@ -33,14 +33,14 @@ def test_create_point_data(tmp_path: Path):
     h5file_path = tmp_path / r"test.geoh5"
     with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
-        assert (
-            group.parent == workspace.root
-        ), "Assigned parent=None should default to Root."
+        assert group.parent == workspace.root, (
+            "Assigned parent=None should default to Root."
+        )
 
         group = ContainerGroup.create(workspace)
-        assert (
-            group.parent == workspace.root
-        ), "Creation without parent should default to Root."
+        assert group.parent == workspace.root, (
+            "Creation without parent should default to Root."
+        )
 
         points = Points.create(workspace, parent=group)
 
@@ -59,9 +59,9 @@ def test_parent_extent(tmp_path: Path):
             workspace, vertices=np.random.randn(12, 3), parent=group
         )
 
-        assert np.allclose(
-            group.extent, point_a.extent
-        ), "Group extent should match child extent."
+        assert np.allclose(group.extent, point_a.extent), (
+            "Group extent should match child extent."
+        )
 
         point_b = Points.create(
             workspace, vertices=np.random.randn(12, 3), parent=group
@@ -69,6 +69,6 @@ def test_parent_extent(tmp_path: Path):
 
         lim_min = np.vstack((point_a.extent, point_b.extent)).min(axis=0)
         lim_max = np.vstack((point_a.extent, point_b.extent)).max(axis=0)
-        assert np.allclose(
-            group.extent, np.vstack([lim_min, lim_max])
-        ), "Group extent should match child extent."
+        assert np.allclose(group.extent, np.vstack([lim_min, lim_max])), (
+            "Group extent should match child extent."
+        )

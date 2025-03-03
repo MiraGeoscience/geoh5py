@@ -40,9 +40,9 @@ def generate_airborne_tem_survey(workspace, name="Survey"):
         workspace, vertices=vertices, name=name + "_rx"
     )
     receivers.waveform = waveform
-    assert isinstance(
-        receivers, AirborneTEMReceivers
-    ), "Entity type AirborneTEMReceivers failed to create."
+    assert isinstance(receivers, AirborneTEMReceivers), (
+        "Entity type AirborneTEMReceivers failed to create."
+    )
     transmitters = AirborneTEMTransmitters.create(
         workspace, vertices=vertices + 10.0, name=name + "_tx"
     )
@@ -59,9 +59,9 @@ def test_create_survey_airborne_tem(tmp_path):
     receivers, transmitters = generate_airborne_tem_survey(workspace, name)
 
     transmitters.tx_id_property = np.arange(transmitters.n_vertices)
-    assert isinstance(
-        transmitters, AirborneTEMTransmitters
-    ), "Entity type AirborneTEMTransmitters failed to create."
+    assert isinstance(transmitters, AirborneTEMTransmitters), (
+        "Entity type AirborneTEMTransmitters failed to create."
+    )
 
     with pytest.raises(TypeError, match=f" must be of type {AirborneTEMTransmitters}"):
         receivers.transmitters = "123"
@@ -106,9 +106,9 @@ def test_create_survey_airborne_tem(tmp_path):
             in receivers.metadata["EM Dataset"]
         ), f"Wrong metadata label set on '{key}' for input uuid."
 
-        assert (
-            getattr(receivers, key) == angles.uid
-        ), f"Wrong metadata assignment on {key} property."
+        assert getattr(receivers, key) == angles.uid, (
+            f"Wrong metadata assignment on {key} property."
+        )
         assert (
             f"{key.capitalize().replace('_', ' ')} value"
             not in receivers.metadata["EM Dataset"]
@@ -121,17 +121,17 @@ def test_create_survey_airborne_tem(tmp_path):
             f"{key.capitalize().replace('_', ' ')} value"
             in receivers.metadata["EM Dataset"]
         ), f"Wrong metadata label set on '{key}' for input uuid."
-        assert (
-            getattr(receivers, key) == 3.0
-        ), f"Wrong metadata assignment on {key} value."
+        assert getattr(receivers, key) == 3.0, (
+            f"Wrong metadata assignment on {key} value."
+        )
         assert (
             f"{key.capitalize().replace('_', ' ')} property"
             not in receivers.metadata["EM Dataset"]
         ), f"Failed in removing '{key}' property from metadata."
 
-    assert (
-        getattr(receivers, "relative_to_bearing", None) is None
-    ), "Default 'relative_to_bearing' should be None."
+    assert getattr(receivers, "relative_to_bearing", None) is None, (
+        "Default 'relative_to_bearing' should be None."
+    )
 
     with pytest.raises(
         TypeError, match="Input 'relative_to_bearing' must be one of type 'bool'"
@@ -140,9 +140,9 @@ def test_create_survey_airborne_tem(tmp_path):
 
     receivers.relative_to_bearing = True
 
-    assert getattr(
-        receivers, "relative_to_bearing", None
-    ), "Failed setting 'relative_to_bearing' to True."
+    assert getattr(receivers, "relative_to_bearing", None), (
+        "Failed setting 'relative_to_bearing' to True."
+    )
 
     new_workspace = Workspace(path)
     transmitters_rec = new_workspace.get_entity(name + "_tx")[0]
@@ -229,13 +229,13 @@ def test_survey_airborne_tem_data(tmp_path):
 
     prop_group = receivers.add_components_data({"time_data": data})[0]
 
-    assert (
-        prop_group.name in receivers.metadata["EM Dataset"]["Property groups"]
-    ), "Failed to add the property group to metadata from 'add_components_data' method."
+    assert prop_group.name in receivers.metadata["EM Dataset"]["Property groups"], (
+        "Failed to add the property group to metadata from 'add_components_data' method."
+    )
 
-    assert receivers.components == {
-        "time_data": data
-    }, "Property 'components' not accessing metadata."
+    assert receivers.components == {"time_data": data}, (
+        "Property 'components' not accessing metadata."
+    )
 
     with pytest.raises(
         ValueError,
@@ -255,9 +255,9 @@ def test_survey_airborne_tem_data(tmp_path):
 
     receivers.edit_em_metadata({"Property groups": None})
 
-    assert (
-        len(receivers.metadata["EM Dataset"]["Property groups"]) == 0
-    ), "Failed to remove property groups from the metadata."
+    assert len(receivers.metadata["EM Dataset"]["Property groups"]) == 0, (
+        "Failed to remove property groups from the metadata."
+    )
 
     with pytest.raises(
         TypeError, match="Input value for 'Property groups' must be a PropertyGroup"
@@ -293,15 +293,15 @@ def test_survey_airborne_tem_data(tmp_path):
     receivers.timing_mark = 10**-3.1
 
     assert receivers.timing_mark == 10**-3.1, "Failed in setting 'timing_mark'."
-    assert (
-        receivers.metadata == transmitters.metadata
-    ), "Error synchronizing the transmitters and receivers metadata."
+    assert receivers.metadata == transmitters.metadata, (
+        "Error synchronizing the transmitters and receivers metadata."
+    )
 
     receivers.timing_mark = None
 
-    assert (
-        "Timing mark" not in receivers.metadata["EM Dataset"]["Waveform"]
-    ), "Error removing the timing mark."
+    assert "Timing mark" not in receivers.metadata["EM Dataset"]["Waveform"], (
+        "Error removing the timing mark."
+    )
 
     # Repeat with timing mark first.
     waveform = deepcopy(receivers.waveform)
