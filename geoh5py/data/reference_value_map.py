@@ -20,13 +20,11 @@
 
 from __future__ import annotations
 
-from abc import ABC
-
 import numpy as np
 from h5py import special_dtype
 
 
-class ReferenceValueMap(ABC):
+class ReferenceValueMap:
     """Maps from reference index to reference value of ReferencedData."""
 
     MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
