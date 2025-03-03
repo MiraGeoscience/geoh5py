@@ -121,15 +121,15 @@ def none_to_empty_string(value):
 
 def types_to_string(types: list) -> list[str] | str:
     if len(types) > 1:
-        return [f"{{{k.default_type_uid()}}}" for k in types]
-    return f"{{{types[0].default_type_uid()}}}"
+        return [str(k.default_type_uid()) for k in types]
+    return str(types[0].default_type_uid())
 
 
 def uuid_to_string(value: UUID | None) -> str:
     if value is None:
         return ""
     if isinstance(value, UUID):
-        return f"{{{value!s}}}"
+        return str(value)
     return value
 
 
