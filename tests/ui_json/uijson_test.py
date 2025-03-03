@@ -51,6 +51,7 @@ def sample_uijson(test_path):
         file.write(
             json.dumps(
                 {
+                    "version": "0.1.0",
                     "title": "my application",
                     "geoh5": str(geoh5_path),
                     "run_command": "python -m my_module",
@@ -135,6 +136,7 @@ def test_uijson(tmp_path):
 
 def generate_test_uijson(workspace: Workspace, uijson, data: dict):
     return uijson(
+        version="0.1.0",
         title="my application",
         geoh5=str(workspace.h5file),
         run_command="python -m my_module",
