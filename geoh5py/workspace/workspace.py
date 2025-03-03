@@ -225,6 +225,7 @@ class Workspace(AbstractContextManager):
                     check=True,
                     shell=True,
                     stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                 )
                 Path(self._h5file).unlink()
                 move(temp_file, self._h5file, copy)
