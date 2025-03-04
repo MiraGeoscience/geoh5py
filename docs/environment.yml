@@ -8,6 +8,7 @@ dependencies:
   - pydantic
   - matplotlib
   - scipy
+  - numpy
   - h5py
   - pip
   - jupyter-book
