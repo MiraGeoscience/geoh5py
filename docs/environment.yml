@@ -5,12 +5,14 @@ channels:
   - defaults
 dependencies:
   - python=3.10
+  - pydantic
   - matplotlib
   - scipy
   - h5py
   - pip
-  - ipykernel
-  - pydantic
+  - jupyter-book
+  - jupytext
+  - notebook
   - pip:
     - sphinx
     - sphinx_issues
