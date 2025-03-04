@@ -197,15 +197,17 @@ class ReferencedData(IntegerData):
         if not isinstance(data, dict | np.ndarray):
             raise TypeError("Data map values must be a numpy array or dict")
 
-        reference_data = ReferenceValueMap(data, name=name)
-
         if self.entity_type.value_map is None:
             raise ValueError("Entity type must have a value map.")
 
-        if not set(reference_data.map["Key"]).issubset(
-            set(self.entity_type.value_map.map["Key"])
-        ):
-            raise KeyError("Data map keys must be a subset of the value map keys.")
+        reference_data = ReferenceValueMap(data, name=name)
+        # TODO: Enforce that the keys of the data map are a subset
+        #  of the value map keys once GA changes its behavior
+        # if not set(reference_data.map["Key"]).issubset(
+        #     set(self.entity_type.value_map.map["Key"])
+        # ):
+        #     raise KeyError("Data map keys must be a subset of the value map keys.")
+        #
 
         data_type = GeometricDataValueMapType(
             self.workspace,
