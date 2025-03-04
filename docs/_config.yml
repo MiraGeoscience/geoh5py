@@ -10,6 +10,12 @@ logo: images/geoh5py_logo.png
 execute:
   execute_notebooks: force
 
+sphinx:
+  extra_extensions:
+  - 'sphinx.ext.autodoc'
+  config:
+    suppress_warnings : ["etoc.toctree"]
+
 # Define the name of the latex output file for PDF builds
 latex:
   latex_documents:

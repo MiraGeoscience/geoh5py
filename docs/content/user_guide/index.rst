@@ -1,5 +1,5 @@
-Tutorials
-=========
+User Guide
+==========
 
 This section provides information on how to use the **geoh5py** package, from
 the creation of a Workspace_ to the creation and manipulation of objects and data.

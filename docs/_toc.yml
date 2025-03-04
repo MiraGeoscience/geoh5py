@@ -8,9 +8,36 @@ chapters:
 - file: content/user_guide/index
   sections:
   - file: content/user_guide/workspace
-  - file: content/user_guide/core_entities
-  - file: content/user_guide/data
-  - file: content/user_guide/survey_index
+  - file: content/user_guide/entities
     sections:
-    - file: content/user_guide/direct_current
+    - file: content/user_guide/groups
+    - file: content/user_guide/objects
+    - file: content/user_guide/surveys
+      sections:
+      - file: content/user_guide/airborne_tem
+      - file: content/user_guide/direct_current
+      - file: content/user_guide/magnetotelluric
+      - file: content/user_guide/tipper
+  - file: content/user_guide/data
+- file: content/geoh5_format/index
+  sections:
+    - file: content/geoh5_format/workspace
+    - file: content/geoh5_format/groups
+    - file: content/geoh5_format/objects
+    - file: content/geoh5_format/data
+    - file: content/geoh5_format/types
+    - file: content/geoh5_format/giftools
+    - file: content/geoh5_format/integrator/index
+      sections:
+      - file: content/geoh5_format/integrator/data
+      - file: content/geoh5_format/integrator/groups
+      - file: content/geoh5_format/integrator/objects
+      - file: content/geoh5_format/integrator/themes
+- file: content/uijson_format/index
+  sections:
+    - file: content/uijson_format/usage
+    - file: content/uijson_format/forms
+    - file: content/uijson_format/members
+- file: content/api/modules
+- file: content/release_notes
 - file: THIRD_PARTY_SOFTWARE

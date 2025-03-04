@@ -1,5 +1,5 @@
-Geoh5py
-=======
+About
+=====
 
 
 Welcome to the documentation page for **geoh5py**.
@@ -48,3 +48,17 @@ If you use **geoh5py** in your research, please cite it as follows:
 
 .. image:: https://zenodo.org/badge/207860560.svg
    :target: https://zenodo.org/badge/latestdoi/207860560
+
+
+Feedback
+^^^^^^^^
+
+Have comments or suggestions? Submit feedback.
+All the content can be found on our github_ repository.
+
+.. _github: https://github.com/MiraGeoscience/geoh5py
+
+
+Copyright
+^^^^^^^^^
+|copyright_notice|

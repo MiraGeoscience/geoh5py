@@ -39,21 +39,6 @@ Why GEOH5?
    Geoscience ANALYST automatically removes unnecessary information on save.
 
 
-Definition
-^^^^^^^^^^
-
-The following sections define the structure and components making up the GEOH5 file format.
-
-.. toctree::
-   :maxdepth: 1
-
-   hierarchy/workspace
-   hierarchy/groups
-   hierarchy/objects
-   hierarchy/data
-   hierarchy/types
-
-
 Standards
 ^^^^^^^^^
 

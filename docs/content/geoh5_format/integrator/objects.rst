@@ -1,5 +1,5 @@
-Geoscience INTEGRATOR Objects
-=============================
+Objects
+=======
 
 List object types specific to INTEGRATOR.
 
