@@ -9,6 +9,7 @@ logo: images/geoh5py_logo.png
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: force
+  run_in_temp: true
 
 sphinx:
   extra_extensions:
@@ -16,17 +17,11 @@ sphinx:
   config:
     suppress_warnings : ["etoc.toctree"]
 
+
 # Define the name of the latex output file for PDF builds
 latex:
   latex_documents:
     targetname: book.tex
-
-# Add a bibtex file so that we can create citations
-bibtex_bibfiles:
-  - references.bib
-
-bibtex_reference_style:
-  - author_year
 
 # Information about where the book exists on the web
 repository:
