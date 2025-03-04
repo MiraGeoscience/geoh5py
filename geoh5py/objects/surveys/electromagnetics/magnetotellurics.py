@@ -30,7 +30,7 @@ from geoh5py.objects.points import Points
 from .base import FEMSurvey
 
 
-class MTReceivers(FEMSurvey, Points):
+class MTReceivers(FEMSurvey, Points):  # pylint: disable=too-many-ancestors
     """
     A magnetotellurics survey object.
     """
