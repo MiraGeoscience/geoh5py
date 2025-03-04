@@ -64,8 +64,11 @@ class Group(EntityContainer):
 
         :return entity: Registered Entity to the workspace.
         """
+        if parent is None:
+            parent = self.parent
+
         new_entity = parent.workspace.copy_to_parent(
-            self, parent or self.parent, copy_children=False, **kwargs
+            self, parent, copy_children=False, **kwargs
         )
 
         if copy_children and new_entity is not None:
