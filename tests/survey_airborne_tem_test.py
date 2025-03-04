@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups import ContainerGroup, PropertyGroup
 from geoh5py.objects import AirborneTEMReceivers, AirborneTEMTransmitters, Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -361,3 +361,21 @@ def test_copy_airborne_survey(tmp_path):
                 strict=False,
             ):
                 np.testing.assert_almost_equal(child_a.values[5:], child_b.values)
+
+
+def test_copy_within_group(tmp_path):
+    name = "Survey"
+    path = tmp_path / r"testATEM.geoh5"
+
+    # Test copying receiver over through the receivers
+    with Workspace(path) as workspace:
+        receivers_orig, transmitters = generate_airborne_tem_survey(workspace, name)
+        receivers_orig.transmitters = transmitters
+        container = ContainerGroup.create(workspace, name="Container")
+
+        receivers_orig.parent = container
+
+        assert len(container.children) == 2
+
+        new_container = container.copy(workspace)
+        assert len(new_container.children) == 2
