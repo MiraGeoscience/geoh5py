@@ -24,13 +24,50 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 import numpy as np
 import pytest
 
+from geoh5py import Workspace
 from geoh5py.objects import CurrentElectrode, PotentialElectrode
 from geoh5py.shared.utils import compare_entities
-from geoh5py.workspace import Workspace
+
+
+def create_survey_dcip(workspace):
+    n_data = 12
+    x_loc, y_loc = np.meshgrid(np.arange(n_data), np.arange(-1, 3))
+    vertices = np.c_[x_loc.ravel(), y_loc.ravel(), np.zeros_like(x_loc).ravel()]
+    parts = np.kron(np.arange(4), np.ones(n_data)).astype("int")
+    currents = CurrentElectrode.create(workspace, vertices=vertices, parts=parts)
+    currents.add_default_ab_cell_id()
+
+    n_dipoles = 9
+    dipoles = []
+    current_id = []
+    for val in currents.ab_cell_id.values:
+        cell_id = int(currents.ab_map[val]) - 1
+
+        for dipole in range(n_dipoles):
+            dipole_ids = currents.cells[cell_id, :] + 2 + dipole
+
+            if (
+                any(dipole_ids > (vertices.shape[0] - 1))
+                or len(np.unique(parts[dipole_ids])) > 1
+            ):
+                continue
+
+            dipoles += [dipole_ids]
+            current_id += [val]
+
+    potentials = PotentialElectrode.create(
+        workspace,
+        vertices=vertices,
+        cells=np.vstack(dipoles).astype("uint32"),
+    )
+    potentials.ab_cell_id = np.hstack(current_id).astype("int32")
+    # potentials.
+    return currents, potentials
 
 
 def test_create_survey_dcip(tmp_path):
@@ -156,10 +193,14 @@ def test_create_survey_dcip(tmp_path):
 
         # Check entities
         compare_entities(
-            currents, currents_rec, ignore=["_potential_electrodes", "_parent"]
+            currents,
+            currents_rec,
+            ignore=["_potential_electrodes", "_current_electrodes", "_parent"],
         )
         compare_entities(
-            potentials, potentials_rec, ignore=["_current_electrodes", "_parent"]
+            potentials,
+            potentials_rec,
+            ignore=["_potential_electrodes", "_current_electrodes", "_parent"],
         )
 
         with pytest.raises(ValueError, match="Input metadata must have"):
@@ -176,3 +217,26 @@ def test_create_survey_dcip(tmp_path):
             "Potential Electrodes",
             "Just a general comment",
         ]
+
+
+def test_copy_survey_dcip(tmp_path: Path):
+    path = tmp_path / f"{__name__}.geoh5"
+
+    # Create a workspace
+    with Workspace.create(path) as workspace:
+        currents, potentials = create_survey_dcip(workspace)
+        currents.potential_electrodes = potentials
+
+        # Copy the survey to a new workspace
+        path = tmp_path / r"testDC_copy_current.geoh5"
+        with Workspace.create(path) as new_workspace:
+            new_currents = currents.copy_from_extent(
+                np.vstack([[5, 0], [8, 2]]), parent=new_workspace
+            )
+            new_potentials = potentials.copy_from_extent(
+                np.vstack([[5, 0], [8, 2]]), parent=new_workspace
+            )
+
+            np.testing.assert_array_almost_equal(
+                new_currents.vertices, new_potentials.vertices
+            )
