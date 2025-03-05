@@ -48,6 +48,16 @@ class BaseSurvey(ObjectBase, ABC):
     def complement(self):
         """Returns the complement object for self."""
 
+    @property
+    @abstractmethod
+    def complement_reference(self):
+        """Reference data linking the geometry of complement entity."""
+
+    @complement_reference.setter
+    @abstractmethod
+    def complement_reference(self, complement_reference):
+        """Set the reference data linking the geometry of complement entity."""
+
     def copy(  # pylint: disable=too-many-arguments
         self,
         parent: Group | Workspace | None = None,
@@ -133,6 +143,15 @@ class BaseSurvey(ObjectBase, ABC):
         if self.complement is None:
             return None
 
+        if self.complement_reference is not None:
+            if not copy_children:
+                mask = self.validate_mask(mask)
+                self.complement_reference.copy(parent=new_entity, mask=mask)
+
+            new_entity.complement_reference = new_entity.get_data(
+                self.complement_reference.name
+            )[0]
+
         # Reset the mask based on Tx ID if it exists
         mask = new_entity._get_complement_mask(mask, self.complement)  # pylint: disable=protected-access
         new_complement = self.complement._super_copy(  # pylint: disable=protected-access
@@ -142,6 +161,17 @@ class BaseSurvey(ObjectBase, ABC):
             clear_cache=clear_cache,
             mask=mask,
         )
+
+        if self.complement.complement_reference is not None:
+            if not copy_children:
+                mask = self.complement.validate_mask(mask)
+                self.complement.complement_reference.copy(
+                    parent=new_complement, mask=mask
+                )
+
+            new_complement.complement_reference = new_complement.get_data(
+                self.complement.complement_reference.name
+            )[0]
 
         setattr(
             new_entity,
