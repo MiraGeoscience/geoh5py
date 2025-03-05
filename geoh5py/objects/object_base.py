@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 from warnings import warn
@@ -50,6 +51,8 @@ from .object_type import ObjectType
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 
 class ObjectBase(EntityContainer):
@@ -296,16 +299,14 @@ class ObjectBase(EntityContainer):
 
         :return: New copy of the input entity.
         """
-
-        if parent is None:
-            parent = self.parent
-
         new_object = self.workspace.copy_to_parent(
             self,
-            parent,
+            parent or self.parent,
             clear_cache=clear_cache,
             **kwargs,
         )
+
+        mask = self.validate_mask(mask)
 
         if copy_children:
             children_map = {}
@@ -616,6 +617,15 @@ class ObjectBase(EntityContainer):
         attributes["association"] = self.find_association(attributes["values"])
 
         return attributes, property_group
+
+    def validate_mask(self, mask: np.ndarray | None) -> np.ndarray | None:
+        """
+        Validate the mask array.
+        """
+        if mask is not None:
+            logger.warning("Masking is not supported for %s objects.", type(self))
+
+        return mask
 
     def remove_data_from_groups(
         self, data: list[Data | UUID | str] | Data | UUID | str

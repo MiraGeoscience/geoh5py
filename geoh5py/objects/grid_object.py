@@ -131,3 +131,24 @@ class GridObject(ObjectBase, ABC):
         """
         Cell center locations in world coordinates.
         """
+
+    def validate_mask(self, mask: np.ndarray | None):
+        """
+        Validate mask array.
+
+        :param mask: Array of boolean values of shape (n_cells, ). If None provided,
+        """
+        if mask is None:
+            return None
+
+        if (
+            not isinstance(mask, np.ndarray)
+            or mask.ndim != 1
+            or mask.shape[0] != self.n_cells
+            or mask.dtype != bool
+        ):
+            raise TypeError(
+                "Mask must be a numpy array of shape (n_cells, ) and dtype 'bool'."
+            )
+
+        return mask
