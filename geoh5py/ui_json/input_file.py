@@ -539,6 +539,14 @@ class InputFile:
                         "group_value": self._uid_promotion(key, value["groupValue"]),
                         "value": value["value"],
                     }
+                elif (
+                    "isComplement" in value and "property" in value and "value" in value
+                ):
+                    var[key] = {
+                        "is_complement": value["isComplement"],
+                        "property": self._uid_promotion(key, value["property"]),
+                        "value": value["value"],
+                    }
                 else:
                     var[key] = self.promote(value)
             else:
@@ -589,9 +597,13 @@ class InputFile:
         if self.ui_json is None:
             return
 
-        group_value: Any = value.get("group_value", value.get("GroupValue", None))
+        group_value: UUID | Entity | None = None
+        if "group_value" in value or "groupValue" in value:
+            group_value = value.get("group_value", value.get("groupValue", None))
+        if "isComplement" in value or "is_complement" in value:
+            group_value = value.get("property", None)
 
-        if hasattr(group_value, "uid"):
+        if isinstance(group_value, Entity):
             group_value = group_value.uid
 
         group_value = str2uuid(group_value)
@@ -601,5 +613,9 @@ class InputFile:
                 f"Input value for 'group_value' must be of type UUID; {type(group_value)} provided."
             )
 
-        self.ui_json[key]["groupValue"] = group_value
+        if "groupValue" in self.ui_json[key]:
+            self.ui_json[key]["groupValue"] = group_value
+        elif "property" in self.ui_json[key]:
+            self.ui_json[key]["property"] = group_value
+
         self.ui_json[key]["value"] = value["value"]
