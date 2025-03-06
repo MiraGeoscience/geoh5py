@@ -14,7 +14,7 @@ generic qualities of the `Geoscience ANALYST
 <http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_
 data model, and attempts to maintain a certain level of simplicity and
 consistency throughout. It is based entirely on free and open `HDF5 technology
-<https://portal.hdfgroup.org/display/support>`__.
+<https://support.hdfgroup.org/documentation/index.html>`__.
 Given that this specification is public, the
 file format could, with further investment and involvement, become a useful
 exchange format for the broader geoscientific community.
@@ -27,7 +27,7 @@ Why GEOH5?
    Fast I/O, compression, cross-platform
 
 - Content readable and writeable by third party software.
-   We recommend using `HDFView <https://portal.hdfgroup.org/display/HDFVIEW/HDFView>`__, along with Geoscience ANALYST, when
+   We recommend using `HDFView <https://support.hdfgroup.org/downloads/index.html>`__, along with Geoscience ANALYST, when
    learning the format.
 
 - Easily extensible to new data types.
