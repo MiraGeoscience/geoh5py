@@ -20,9 +20,13 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
-from .data_type import GeometricDataValueMapType, ReferenceDataType
+from ..shared.utils import find_unique_name
+from .data import Data
+from .data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .primitive_type_enum import PrimitiveTypeEnum
@@ -38,6 +42,43 @@ class ReferencedData(IntegerData):
         self._data_maps = None
 
         super().__init__(**kwargs)
+
+    def copy(
+        self,
+        parent=None,
+        *,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ) -> Data:
+        """
+        Overwrite the copy method to ensure that the uid is set to None and
+        transfer the GeometricDataValueMapType to the new entity type.
+        """
+        kwargs["uid"] = None
+
+        new_data = cast(
+            ReferencedData,
+            super().copy(
+                parent=parent,
+                clear_cache=clear_cache,
+                mask=mask,
+                omit_list=["_metadata", "_data_maps"],
+                **kwargs,
+            ),
+        )
+
+        # Always overwrite the entity type name to protect the GeometricDataValueMapType
+        new_data.entity_type.name = find_unique_name(
+            self.entity_type.name,
+            [tp.name for tp in self.workspace.types if isinstance(tp, DataType)],
+        )
+
+        if self.data_maps is not None:
+            for name, child in self.data_maps.items():
+                new_data.add_data_map(name, child.entity_type.value_map.map)
+
+        return new_data
 
     @property
     def data_maps(self) -> dict[str, GeometricDataConstants] | None:
@@ -156,18 +197,17 @@ class ReferencedData(IntegerData):
         if not isinstance(data, dict | np.ndarray):
             raise TypeError("Data map values must be a numpy array or dict")
 
-        if isinstance(data, np.ndarray) and data.ndim != 2:
-            raise ValueError("Data map must be a 2D array")
-
-        reference_data = ReferenceValueMap(data, name=name)
-
         if self.entity_type.value_map is None:
             raise ValueError("Entity type must have a value map.")
 
-        if not set(reference_data.map["Key"]).issubset(
-            set(self.entity_type.value_map.map["Key"])
-        ):
-            raise KeyError("Data map keys must be a subset of the value map keys.")
+        reference_data = ReferenceValueMap(data, name=name)
+        # TODO: Enforce that the keys of the data map are a subset
+        #  of the value map keys once GA changes its behavior
+        # if not set(reference_data.map["Key"]).issubset(
+        #     set(self.entity_type.value_map.map["Key"])
+        # ):
+        #     raise KeyError("Data map keys must be a subset of the value map keys.")
+        #
 
         data_type = GeometricDataValueMapType(
             self.workspace,

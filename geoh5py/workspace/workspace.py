@@ -283,7 +283,7 @@ class Workspace(AbstractContextManager):
 
         entity_type_kwargs = get_attributes(
             entity.entity_type,
-            omit_list=["_workspace", "_on_file"] + list(omit_list),
+            omit_list=["_workspace", "_on_file", "_parent"] + list(omit_list),
         )
 
         # overwrite kwargs

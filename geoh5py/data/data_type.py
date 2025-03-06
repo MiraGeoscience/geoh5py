@@ -211,6 +211,7 @@ class DataType(EntityType):
         cls,
         workspace: Workspace,
         primitive_type: PrimitiveTypeEnum | str,
+        *,
         dynamic_implementation_id: str | UUID | None = None,
         uid: UUID | None = None,
         **kwargs,

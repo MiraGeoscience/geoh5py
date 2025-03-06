@@ -32,6 +32,7 @@ from ..data import (
     CommentsData,
     Data,
     DataAssociationEnum,
+    GeometricDataConstants,
     VisualParameters,
 )
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
@@ -309,7 +310,7 @@ class ObjectBase(EntityContainer):
         if copy_children:
             children_map = {}
             for child in self.children:
-                if isinstance(child, PropertyGroup):
+                if isinstance(child, PropertyGroup | GeometricDataConstants):
                     continue
 
                 child_copy = child.copy(

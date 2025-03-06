@@ -253,8 +253,8 @@ def test_copy_cells_data(tmp_path):
             }
         )
 
-        with pytest.raises(ValueError, match="Mask must be an array of shape."):
-            curve.copy(mask=[1, 2, 3])
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+            curve.copy(mask=np.r_[1, 2, 3])
 
         mask = np.zeros(11, dtype=bool)
         mask[:4] = True

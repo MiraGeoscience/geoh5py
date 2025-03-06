@@ -71,11 +71,11 @@ class Group(EntityContainer):
             self, parent, copy_children=False, **kwargs
         )
 
-        if new_entity is None:
-            return None
-
-        if copy_children:
+        if copy_children and new_entity is not None:
             for child in self.children:
+                if hasattr(child, "complement") and child.type != "Receivers":
+                    continue
+
                 child.copy(
                     parent=new_entity,
                     copy_children=True,
