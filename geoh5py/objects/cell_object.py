@@ -63,7 +63,13 @@ class CellObject(Points, ABC):
     @cells.setter
     def cells(self, cells: np.ndarray | list | tuple):
         cells = self.validate_cells(cells)
-        if self._cells is not None and self._cells.shape != cells.shape:
+        if (
+            self._cells is not None
+            and self._cells.shape != cells.shape
+            and any(
+                child.association == DataAssociationEnum.CELL for child in self.children
+            )
+        ):
             raise ValueError(
                 "New cells array must have the same shape as the current cells array."
             )
