@@ -37,7 +37,8 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
     """
     Flattens ui.json format to simple key/value pair.
 
-    For most of the field,
+    For most of the field, the value is stored in the 'value' member.
+    For widgets storing several values, values are passed as a dictionary.
 
     :params ui_json: The form containing the data.
 
