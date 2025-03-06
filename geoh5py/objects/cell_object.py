@@ -63,7 +63,13 @@ class CellObject(Points, ABC):
     @cells.setter
     def cells(self, cells: np.ndarray | list | tuple):
         cells = self.validate_cells(cells)
-        if self._cells is not None and self._cells.shape != cells.shape:
+        if (
+            self._cells is not None
+            and self._cells.shape != cells.shape
+            and any(
+                child.association == DataAssociationEnum.CELL for child in self.children
+            )
+        ):
             raise ValueError(
                 "New cells array must have the same shape as the current cells array."
             )
@@ -176,21 +182,10 @@ class CellObject(Points, ABC):
         """
         Sub-class extension of :func:`~geoh5py.objects.points.Points.copy`.
         """
-        cell_mask = None
-        if mask is not None:
-            if mask.shape == (self.n_cells,):
-                cell_mask = mask
-                new_cells = self.cells[mask, :]
-                mask = np.zeros(self.n_vertices, dtype=bool)
-                unique_ind = np.unique(new_cells)
-                mask[unique_ind] = True
-            elif mask.shape == (self.n_vertices,):
-                cell_mask = np.all(mask[self.cells], axis=1)
-            else:
-                raise ValueError(
-                    "Mask must be an array of shape (n_vertices,) or (n_cells,)"
-                )
+        cell_mask = self.validate_cell_mask(mask)
+        mask = self.validate_mask(mask)
 
+        if cell_mask is not None:
             new_id = np.ones_like(mask, dtype=int)
             new_id[mask] = np.arange(np.sum(mask))
             new_cells = new_id[self.cells[cell_mask, :]]
@@ -251,3 +246,52 @@ class CellObject(Points, ABC):
 
         :return: Array of indices defining connected vertices.
         """
+
+    def validate_mask(self, mask: np.ndarray | None) -> np.ndarray | None:
+        """
+        Validate mask and return cell mask if applicable.
+
+        :param mask: Array of boolean values to mask vertices or cells.
+
+        :return: Mask on vertex.
+        """
+        if mask is None:
+            return None
+
+        if not isinstance(mask, np.ndarray) or mask.dtype != bool:
+            raise ValueError("Mask must be an array of dtype 'bool'.")
+
+        if mask.shape == (self.n_cells,):
+            new_cells = self.cells[mask, :]
+            mask = np.zeros(self.n_vertices, dtype=bool)
+            unique_ind = np.unique(new_cells)
+            mask[unique_ind] = True
+
+        else:
+            return super().validate_mask(mask)
+
+        return mask
+
+    def validate_cell_mask(self, mask: np.ndarray | None) -> np.ndarray | None:
+        """
+        Validate mask and return cell mask if applicable.
+
+        :param mask: Array of boolean values to mask vertices or cells.
+
+        :return: Tuple of mask and cell mask.
+        """
+        if mask is None:
+            return None
+
+        if not isinstance(mask, np.ndarray) or mask.dtype != bool:
+            raise ValueError("Mask must be an array of dtype 'bool'.")
+
+        if mask.shape == (self.n_vertices,):
+            return np.all(mask[self.cells], axis=1)
+
+        if not mask.shape == (self.n_cells,):
+            raise ValueError(
+                "Mask must be an array of shape (n_vertices,) or (n_cells) and dtype 'bool'."
+            )
+
+        return mask

@@ -62,16 +62,8 @@ class Points(ObjectBase):
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
         """
-        if mask is not None and self.vertices is not None:
-            if (
-                not isinstance(mask, np.ndarray)
-                or mask.shape != (self.n_vertices,)
-                or mask.dtype != bool
-            ):
-                raise ValueError(
-                    "Mask must be an array of shape (n_vertices,) and dtype 'bool'."
-                )
-
+        mask = self.validate_mask(mask)
+        if mask is not None:
             kwargs.update({"vertices": self.vertices[mask]})
 
         new_entity = super().copy(
@@ -122,6 +114,26 @@ class Points(ObjectBase):
             indices, DataAssociationEnum.VERTEX, clear_cache=clear_cache
         )
         self.workspace.update_attribute(self, "vertices")
+
+    def validate_mask(self, mask: np.ndarray | None) -> np.ndarray | None:
+        """
+        Validate mask array.
+
+        :param mask: Array of boolean values, shape(n_vertices,).
+        """
+        if mask is None:
+            return None
+
+        if (
+            not isinstance(mask, np.ndarray)
+            or mask.shape != (self.n_vertices,)
+            or mask.dtype != bool
+        ):
+            raise ValueError(
+                "Mask must be an array of shape (n_vertices,) and dtype 'bool'."
+            )
+
+        return mask
 
     @property
     def vertices(self) -> np.ndarray:

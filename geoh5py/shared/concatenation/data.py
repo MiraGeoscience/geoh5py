@@ -67,9 +67,13 @@ class ConcatenatedData(Concatenated, Data):
             raise ValueError(
                 "The 'parent' of a concatenated data must have an 'add_children' method."
             )
-        parent.add_children([self])
+
         self._parent: ConcatenatedObject = parent
 
+        if self in parent.children:
+            return
+
+        parent.add_children([self])
         parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 
         if f"Property:{self.name}" not in parental_attr:

@@ -310,7 +310,7 @@ def test_survey_airborne_tem_data(tmp_path):
     receivers.timing_mark = 10**-3.1
     receivers.waveform = waveform
 
-    with pytest.raises(ValueError, match="Mask must be an array of shape"):
+    with pytest.raises(ValueError, match="Mask must be an array of dtype"):
         receivers.copy(mask=np.r_[1, 2, 3])
 
 
