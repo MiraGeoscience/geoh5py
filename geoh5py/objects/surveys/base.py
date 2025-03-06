@@ -145,7 +145,6 @@ class BaseSurvey(ObjectBase, ABC):
 
         if self.complement_reference is not None:
             if not copy_children:
-                mask = self.validate_mask(mask)
                 self.complement_reference.copy(parent=new_entity, mask=mask)
 
             new_entity.complement_reference = new_entity.get_data(
@@ -164,7 +163,6 @@ class BaseSurvey(ObjectBase, ABC):
 
         if self.complement.complement_reference is not None:
             if not copy_children:
-                mask = self.complement.validate_mask(mask)
                 self.complement.complement_reference.copy(
                     parent=new_complement, mask=mask
                 )

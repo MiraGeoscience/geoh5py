@@ -60,10 +60,12 @@ def create_survey_dcip(workspace):
             dipoles += [dipole_ids]
             current_id += [val]
 
+    cells = np.vstack(dipoles).astype("uint32")
+    u_verts, u_ind = np.unique(cells, return_inverse=True)
     potentials = PotentialElectrode.create(
         workspace,
-        vertices=vertices,
-        cells=np.vstack(dipoles).astype("uint32"),
+        vertices=vertices[u_verts, :],
+        cells=u_ind.reshape((-1, 2)),
     )
     potentials.ab_cell_id = np.hstack(current_id).astype("int32")
     # potentials.
@@ -240,3 +242,43 @@ def test_copy_survey_dcip(tmp_path: Path):
             np.testing.assert_array_almost_equal(
                 new_currents.vertices, new_potentials.vertices
             )
+
+
+def test_copy_with_mask(tmp_path: Path):
+    path = tmp_path / f"{__name__}.geoh5"
+
+    # Create a workspace
+    with Workspace.create(path) as workspace:
+        currents, potentials = create_survey_dcip(workspace)
+        currents.potential_electrodes = potentials
+
+        potentials.add_data(
+            {"vert_values": {"values": np.random.randn(potentials.n_vertices)}}
+        )
+
+        mask = np.ones(potentials.n_vertices, dtype=bool)
+        mask[2] = False  # Knock out one electrode
+
+        cell_mask = np.ones(potentials.n_cells, dtype=bool)
+        cell_mask[2] = False
+
+        # Copy the survey to a new workspace
+        vert_copy = potentials.copy(mask=mask)
+        assert vert_copy.n_vertices == potentials.n_vertices - 1
+        assert vert_copy.n_cells == potentials.n_cells - 5
+
+        cell_copy = potentials.copy(mask=cell_mask)
+        assert cell_copy.n_vertices == potentials.n_vertices
+        assert cell_copy.n_cells == potentials.n_cells - 1
+
+        # Repeat without copying children
+        second_survey = potentials.copy(mask=mask, copy_children=False)
+        np.testing.assert_allclose(
+            second_survey.ab_cell_id.values, vert_copy.ab_cell_id.values
+        )
+
+        # Repeat without copying children
+        second_survey = potentials.copy(mask=cell_mask, copy_children=False)
+        np.testing.assert_allclose(
+            second_survey.ab_cell_id.values, cell_copy.ab_cell_id.values
+        )
