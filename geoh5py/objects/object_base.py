@@ -306,8 +306,6 @@ class ObjectBase(EntityContainer):
             **kwargs,
         )
 
-        mask = self.validate_mask(mask)
-
         if copy_children:
             children_map = {}
             for child in self.children:
