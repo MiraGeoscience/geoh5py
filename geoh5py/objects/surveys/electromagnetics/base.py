@@ -611,15 +611,6 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
                 "Transmitter ID property must be of type ReferencedData or IntegerData."
             )
 
-        if uid is None and self.type == "Receivers":
-            self.edit_em_metadata(
-                {"Tx ID property": getattr(tx_id_property, "uid", None)}
-            )
-        elif uid is None:
-            self.edit_em_metadata(
-                {"Tx ID tx property": getattr(tx_id_property, "uid", None)}
-            )
-
         return tx_id_property
 
     def _format_transmitter_ids(self, _, attributes):
