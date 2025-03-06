@@ -229,6 +229,8 @@ class Workspace(AbstractContextManager):
                     capture_output=True,
                     encoding="utf8",
                 )
+                Path(self._h5file).unlink()
+                move(temp_file, self._h5file, copy)
             except FileNotFoundError:
                 pass
             except CalledProcessError as process_error:
