@@ -73,7 +73,7 @@ class BaseSurvey(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
-        new_entity = super().copy(
+        new_entity = self._super_copy(
             parent=parent,
             clear_cache=clear_cache,
             copy_children=copy_children,
@@ -143,14 +143,6 @@ class BaseSurvey(ObjectBase, ABC):
         if self.complement is None:
             return None
 
-        if self.complement_reference is not None:
-            if not copy_children:
-                self.complement_reference.copy(parent=new_entity, mask=mask)
-
-            new_entity.complement_reference = new_entity.get_data(
-                self.complement_reference.name
-            )[0]
-
         # Reset the mask based on Tx ID if it exists
         mask = new_entity._get_complement_mask(mask, self.complement)  # pylint: disable=protected-access
         new_complement = self.complement._super_copy(  # pylint: disable=protected-access
@@ -160,16 +152,6 @@ class BaseSurvey(ObjectBase, ABC):
             clear_cache=clear_cache,
             mask=mask,
         )
-
-        if self.complement.complement_reference is not None:
-            if not copy_children:
-                self.complement.complement_reference.copy(
-                    parent=new_complement, mask=mask
-                )
-
-            new_complement.complement_reference = new_complement.get_data(
-                self.complement.complement_reference.name
-            )[0]
 
         setattr(
             new_entity,
@@ -214,10 +196,20 @@ class BaseSurvey(ObjectBase, ABC):
 
         :return: New copy of the input entity.
         """
-        return super().copy(
+        new_entity = super().copy(
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
             mask=mask,
             **kwargs,
         )
+
+        if self.complement_reference is not None:
+            if not copy_children:
+                self.complement_reference.copy(parent=new_entity, mask=mask)
+
+            new_entity.complement_reference = new_entity.get_data(
+                self.complement_reference.name
+            )[0]
+
+        return new_entity
