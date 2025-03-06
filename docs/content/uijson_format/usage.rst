@@ -34,7 +34,7 @@ For example, a simple ui.json below describes a single parameter called 'grid_ob
 .. figure:: ./images/block_model_uijson.png
 
 Note: The **meshType** used to select the grid object is defined by a list of UUID. A complete list of UUID's for geoh5
-object types are available in the `geoh5 objects documentation <../geoh5_format/objects.rst>`_.
+object types are available in the :ref:`geoh5 objects<geoh5_objects>` documentation page.
 
 Within the accompanying python script, the parameters from the ui.json may be accessed using the InputFile module of
 geoh5py as shown below:

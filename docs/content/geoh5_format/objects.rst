@@ -1,3 +1,5 @@
+.. _geoh5_objects:
+
 Objects
 =======
 
