@@ -36,9 +36,9 @@ def test_create_interpretation_section(tmp_path: Path):
     with Workspace.create(h5file_path) as workspace:
         # create initial object
         group = InterpretationSection.create(workspace)
-        assert (
-            group.parent == workspace.root
-        ), "Assigned parent=None should default to Root."
+        assert group.parent == workspace.root, (
+            "Assigned parent=None should default to Root."
+        )
 
         curve = Curve.create(workspace, name="curve1", vertices=np.random.randn(10, 3))
 

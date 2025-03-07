@@ -36,8 +36,7 @@ class ConcatenatedData(Concatenated, Data):
     def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
-                "Creating a concatenated data must have a parent "
-                "of type Concatenated."
+                "Creating a concatenated data must have a parent of type Concatenated."
             )
 
         super().__init__(**kwargs)

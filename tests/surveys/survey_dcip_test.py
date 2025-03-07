@@ -128,9 +128,9 @@ def test_create_survey_dcip(tmp_path):
         new_values[0] = 5
         potentials.ab_cell_id = new_values
 
-        assert (
-            len(potentials.get_data("A-B Cell ID")) == 1
-        ), "Issue with new A-B Cell ID data created"
+        assert len(potentials.get_data("A-B Cell ID")) == 1, (
+            "Issue with new A-B Cell ID data created"
+        )
 
         fake_meta = {
             "Current Electrodes": uuid.uuid4(),
@@ -143,12 +143,12 @@ def test_create_survey_dcip(tmp_path):
         fake_meta["Potential Electrodes"] = potentials.uid
 
         potentials.current_electrodes = currents
-        assert (
-            currents.potential_electrodes == potentials
-        ), "Error assigning the potentiel_electrodes."
-        assert (
-            potentials.current_electrodes == currents
-        ), "Error assigning the current_electrodes."
+        assert currents.potential_electrodes == potentials, (
+            "Error assigning the potentiel_electrodes."
+        )
+        assert potentials.current_electrodes == currents, (
+            "Error assigning the current_electrodes."
+        )
 
         assert (
             currents.metadata
@@ -172,12 +172,12 @@ def test_create_survey_dcip(tmp_path):
         currents._potential_electrodes = None
 
         currents.potential_electrodes = potentials
-        assert (
-            currents.potential_electrodes == potentials
-        ), "Error assigning the potentiel_electrodes."
-        assert (
-            potentials.current_electrodes == currents
-        ), "Error assigning the current_electrodes."
+        assert currents.potential_electrodes == potentials, (
+            "Error assigning the potentiel_electrodes."
+        )
+        assert potentials.current_electrodes == currents, (
+            "Error assigning the current_electrodes."
+        )
 
         assert (
             currents.metadata

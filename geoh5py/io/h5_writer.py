@@ -656,7 +656,7 @@ class H5Writer:
         """
         if not isinstance(entity, Group):
             raise TypeError(
-                "Entity must be a Group object; " f"got '{type(entity)}' instead."
+                f"Entity must be a Group object; got '{type(entity)}' instead."
             )
         # check type here
         with fetch_h5_handle(file, mode="r+") as h5file:
@@ -718,7 +718,7 @@ class H5Writer:
         """
         if not isinstance(entity, Data):
             raise TypeError(
-                "Entity must be a Data object; " f"got '{type(entity)}' instead."
+                f"Entity must be a Data object; got '{type(entity)}' instead."
             )
 
         with fetch_h5_handle(file, mode="r+") as h5file:

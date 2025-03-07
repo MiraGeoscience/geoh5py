@@ -358,8 +358,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     ):
         if self._image_data is not None:
             raise AttributeError(
-                "The 'image' property cannot be reset. "
-                "Consider creating a new object."
+                "The 'image' property cannot be reset. Consider creating a new object."
             )
 
         if isinstance(image, (FilenameData, type(None))):

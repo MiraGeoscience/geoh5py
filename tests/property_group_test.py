@@ -131,16 +131,16 @@ def test_create_property_group(tmp_path):
             if getattr(rec_prop_group, attr) != getattr(prop_group, attr)
         ]
 
-        assert (
-            len(check_list) == 0
-        ), f"Attribute{check_list} of PropertyGroups in output differ from input"
+        assert len(check_list) == 0, (
+            f"Attribute{check_list} of PropertyGroups in output differ from input"
+        )
 
         # Copy an object without children
         new_curve = rec_object.copy(copy_children=False)
 
-        assert (
-            new_curve.property_groups is None
-        ), "Property_groups not properly removed on copy without children."
+        assert new_curve.property_groups is None, (
+            "Property_groups not properly removed on copy without children."
+        )
 
         #
         rec_object.remove_children(rec_prop_group)
@@ -150,9 +150,9 @@ def test_create_property_group(tmp_path):
 
     with Workspace(h5file_path) as workspace:
         rec_object = workspace.get_entity(curve.uid)[0]
-        assert (
-            rec_object.property_groups is None
-        ), "Property_groups not properly removed."
+        assert rec_object.property_groups is None, (
+            "Property_groups not properly removed."
+        )
 
         # test for properties post assignation
         properties = [child for child in rec_object.children if isinstance(child, Data)]

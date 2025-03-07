@@ -107,13 +107,13 @@ def test_create_survey_ground_tem_large_loop(
 
         receivers.add_components_data(values)
 
-        assert isinstance(
-            receivers, LargeLoopGroundTEMReceivers
-        ), "Entity type GroundTEMReceiversLargeLoop failed to create."
+        assert isinstance(receivers, LargeLoopGroundTEMReceivers), (
+            "Entity type GroundTEMReceiversLargeLoop failed to create."
+        )
 
-        assert isinstance(
-            transmitters, LargeLoopGroundTEMTransmitters
-        ), "Entity type GroundTEMTransmittersLargeLoop failed to create."
+        assert isinstance(transmitters, LargeLoopGroundTEMTransmitters), (
+            "Entity type GroundTEMTransmittersLargeLoop failed to create."
+        )
 
         with pytest.raises(
             TypeError, match=f" must be of type {LargeLoopGroundTEMTransmitters}"
@@ -139,9 +139,9 @@ def test_create_survey_ground_tem_large_loop(
         transmitters = workspace.get_entity(transmitters.uid)[0]
         receivers = workspace.get_entity(receivers.uid)[0]
 
-        assert (
-            transmitters.tx_id_property.uid == transmitter_uid
-        ), "Failed to maintain transmitter id property."
+        assert transmitters.tx_id_property.uid == transmitter_uid, (
+            "Failed to maintain transmitter id property."
+        )
 
         with Workspace.create(
             Path(tmp_path) / r"testGround_copy.geoh5"
@@ -209,15 +209,15 @@ def test_create_survey_ground_tem(tmp_path):
 
         receivers.tx_id_property = np.arange(receivers.n_vertices)
 
-        assert isinstance(
-            receivers, MovingLoopGroundTEMReceivers
-        ), "Entity type MovingLoopGroundTEMReceivers failed to create."
+        assert isinstance(receivers, MovingLoopGroundTEMReceivers), (
+            "Entity type MovingLoopGroundTEMReceivers failed to create."
+        )
         transmitters = MovingLoopGroundTEMTransmitters.create(
             workspace, vertices=vertices + 10.0, name=name + "_tx"
         )
-        assert isinstance(
-            transmitters, MovingLoopGroundTEMTransmitters
-        ), "Entity type MovingLoopGroundTEMTransmitters failed to create."
+        assert isinstance(transmitters, MovingLoopGroundTEMTransmitters), (
+            "Entity type MovingLoopGroundTEMTransmitters failed to create."
+        )
 
         with pytest.raises(
             TypeError, match=f" must be of type {MovingLoopGroundTEMTransmitters}"

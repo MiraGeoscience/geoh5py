@@ -247,7 +247,7 @@ def test_set_enabled():
         set_enabled(ui_json, "float_parameter", False)
 
     assert (
-        "Non-option parameter 'float_parameter' cannot be set to 'enabled' " "False "
+        "Non-option parameter 'float_parameter' cannot be set to 'enabled' False "
     ) in str(warn[0])
 
     ui_json["float_parameter"]["optional"] = True

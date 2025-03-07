@@ -105,7 +105,7 @@ def test_create_curve_data(tmp_path: Path):
         curve.add_data({"cell_values": {"values": np.ones(curve.n_cells)}})
         cells = curve.cells.copy()
 
-        assert cells.shape[0] == 11, "Error creating cells from parts." ""
+        assert cells.shape[0] == 11, "Error creating cells from parts."
 
         with pytest.raises(
             ValueError, match="New cells array must have the same shape"
@@ -133,9 +133,9 @@ def test_create_curve_data(tmp_path: Path):
             }
         )
 
-        assert np.all(
-            data_objects[0]() == data_objects[0].values
-        ), "Error using the data.call()."
+        assert np.all(data_objects[0]() == data_objects[0].values), (
+            "Error using the data.call()."
+        )
         # Re-open the workspace and read data back in
         with Workspace(h5file_path) as ws2:
             obj_rec = ws2.get_entity(curve_name)[0]

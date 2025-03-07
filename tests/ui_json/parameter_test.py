@@ -124,9 +124,6 @@ def test_type_restricted_parameter_type_validation():
 def test_value_restricted_parameter_type_validation():
     param = ValueRestrictedParameter("my_param", [1, 2, 3])
     param.value = 1
-    msg = (
-        "Value '1' provided for 'my_param' is invalid. "
-        "Must be one of: '1', '2', '3'."
-    )
+    msg = "Value '1' provided for 'my_param' is invalid. Must be one of: '1', '2', '3'."
     with pytest.raises(ValueValidationError, match=msg):
         param.value = "1"
