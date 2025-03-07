@@ -74,7 +74,12 @@ class NumericData(Data, ABC):
         if self.n_values is None:
             return values
 
+        error_message = (
+            f"Input 'values' of shape ({self.n_values},) expected. "
+            f"Array of shape{values.shape} provided for data {self.name}."
+        )
         if len(values) < self.n_values:
+            warn(error_message)
             full_vector = np.ones(self.n_values, dtype=values.dtype) * self.nan_value
             full_vector[: len(np.ravel(values))] = np.ravel(values)
             return full_vector
@@ -83,10 +88,8 @@ class NumericData(Data, ABC):
             len(values) > self.n_values
             and self.association is not DataAssociationEnum.OBJECT
         ):
-            raise ValueError(
-                f"Input 'values' of shape({self.n_values},) expected. "
-                f"Array of shape{values.shape} provided.)"
-            )
+            warn(error_message)
+            return values[: self.n_values]
 
         return values
 
