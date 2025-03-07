@@ -1,1 +1,0 @@
-- `Mira Geoscience <https://mirageoscience.com/>`_

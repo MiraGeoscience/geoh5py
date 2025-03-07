@@ -153,10 +153,10 @@ def test_copy_points_data(tmp_path):
         with pytest.raises(ValueError, match="Mask must be an array of shape"):
             points.copy(mask=np.r_[1, 2, 3])
 
-        with pytest.raises(ValueError, match="Mask must be a boolean array of shape"):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             data.copy(mask=np.r_[1, 2, 3])
 
-        with pytest.raises(TypeError, match="Mask must be an array or None."):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             data.copy(mask="abc")
 
         mask = np.zeros(12, dtype=bool)

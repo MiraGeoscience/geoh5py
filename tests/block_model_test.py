@@ -129,7 +129,7 @@ def test_create_block_model_data(tmp_path):
             compare_entities(grid, rec_obj)
             compare_entities(data, rec_data)
 
-        with pytest.raises(TypeError, match="Mask must be an array or None"):
+        with pytest.raises(TypeError, match="Mask must be a numpy array of shape"):
             grid.copy(mask="abc")
 
         # mask = np.ones(grid.n_cells, dtype=bool)

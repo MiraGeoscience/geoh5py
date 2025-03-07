@@ -92,19 +92,12 @@ class Data(Entity):
                 DataAssociationEnum.CELL,
             )
         ):
-            if not isinstance(mask, np.ndarray):
-                raise TypeError("Mask must be an array or None.")
-
-            if mask.dtype != bool or mask.shape != self.values.shape:
-                raise ValueError(
-                    f"Mask must be a boolean array of shape {self.values.shape}, not {mask.shape}"
-                )
-
-            n_values = (
-                parent.n_cells
-                if self.association is DataAssociationEnum.CELL
-                else parent.n_vertices
-            )
+            if self.association is DataAssociationEnum.CELL:
+                mask = self.parent.validate_cell_mask(mask)
+                n_values = parent.n_cells
+            else:
+                mask = self.parent.validate_mask(mask)
+                n_values = parent.n_vertices
 
             # Trimming values to the mask
             if n_values < self.values.shape[0]:

@@ -934,4 +934,11 @@ def test_range_label(tmp_path):
     ifile.write_ui_json("test_range_label.ui.json", path=tmp_path)
     new = InputFile.read_ui_json(tmp_path / "test_range_label.ui.json")
 
-    assert new.data["test"] == ifile.data["test"]
+    new_data = new.data["test"]
+    new_data["property"] = new_data["property"].uid
+
+    assert new.data["test"] == {
+        "is_complement": False,
+        "value": [0.2, 0.8],
+        "property": data.uid,
+    }

@@ -22,15 +22,29 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    PlainSerializer,
+    field_validator,
+)
 
 from geoh5py import Workspace
 from geoh5py.shared.utils import fetch_active_workspace
+from geoh5py.shared.validators import empty_string_to_none, none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
+
+
+OptionalPath = Annotated[
+    Path | None,  # pylint: disable=unsupported-binary-operation
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(none_to_empty_string),
+]
 
 
 class BaseUIJson(BaseModel):
@@ -49,19 +63,13 @@ class BaseUIJson(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    version: str
     title: str
     geoh5: Path | None
     run_command: str
-    monitoring_directory: Path
+    monitoring_directory: OptionalPath
     conda_environment: str
-    workspace_geoh5: Path
-
-    @field_validator("workspace_geoh5", mode="after")
-    @classmethod
-    def current_directory_if_workspace_doesnt_exist(cls, path):
-        if not path.exists():
-            return Path()
-        return path
+    workspace_geoh5: OptionalPath
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -86,6 +94,13 @@ class BaseUIJson(BaseModel):
             kwargs = json.load(file)
 
         return cls(**kwargs)
+
+    def write(self, path: Path):
+        """Write the UIJson object to file."""
+
+        with open(path, "w", encoding="utf-8") as file:
+            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
+            file.write(data)
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """

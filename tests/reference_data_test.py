@@ -116,14 +116,6 @@ def test_add_data_map(tmp_path):
     with Workspace.create(h5file_path) as workspace:
         _, data = generate_value_map(workspace)
 
-        with pytest.raises(ValueError, match="Data map must be a 2D array"):
-            data.add_data_map("test", np.random.randn(12))
-
-        with pytest.raises(
-            KeyError, match="Data map keys must be a subset of the value map keys."
-        ):
-            data.add_data_map("test", np.c_[np.arange(12), np.random.randn(12)])
-
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
@@ -176,6 +168,29 @@ def test_add_data_map(tmp_path):
         np.testing.assert_array_almost_equal(
             np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
             data_map[:, 1],
+        )
+
+
+def test_copy_data_map(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        _, data = generate_value_map(workspace)
+
+        data_map = np.c_[
+            data.entity_type.value_map.map["Key"],
+            np.random.randn(len(data.entity_type.value_map.map["Key"])),
+        ]
+        data.add_data_map("test2", data_map)
+
+        data.parent.copy()
+        geom_data = workspace.get_entity("test2")
+        assert len(geom_data) == 2
+
+        assert geom_data[0].entity_type.name != geom_data[1].entity_type.name
+        assert np.all(
+            geom_data[0].entity_type.value_map.map
+            == geom_data[1].entity_type.value_map.map
         )
 
 

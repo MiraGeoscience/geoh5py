@@ -147,11 +147,11 @@ class InputValidation:
                     warn(
                         f"Failed to set association for {key}. {error}",
                     )
-            elif "rangeLabel" in item:
+            elif "rangeLabel" in item and "isComplement" not in item:
                 validations[key] = {
                     "types": [list],
                 }
-            elif "groupValue" in item and "value" in item:
+            elif ("groupValue" in item or "isComplement" in item) and "value" in item:
                 validations[key] = {
                     "types": [dict],
                 }

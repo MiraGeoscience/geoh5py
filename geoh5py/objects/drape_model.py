@@ -24,6 +24,7 @@ import uuid
 
 import numpy as np
 
+from .grid_object import GridObject
 from .object_base import ObjectBase
 
 
@@ -230,3 +231,7 @@ class DrapeModel(ObjectBase):
             )
 
         return values
+
+
+DrapeModel.validate_mask = GridObject.validate_mask  # type: ignore
+DrapeModel.validate_cell_mask = GridObject.validate_cell_mask  # type: ignore

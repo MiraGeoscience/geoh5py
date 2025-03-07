@@ -32,18 +32,34 @@ import numpy as np
 from ...data import Data, ReferencedData, ReferenceValueMap
 from ...shared.utils import str_json_to_dict
 from ..curve import Curve
+from .base import BaseSurvey
 
 
 logger = logging.getLogger(__name__)
 
 
-class BaseElectrode(Curve, ABC):
-    _potential_electrodes: PotentialElectrode | None = None
-    _current_electrodes: CurrentElectrode | None = None
+class BaseElectrode(BaseSurvey, Curve, ABC):
+    __TYPE = None
+    __OMIT_LIST = (
+        "_ab_cell_id",
+        "_metadata",
+        "_potential_electrodes",
+        "_current_electrodes",
+    )
+    __TYPE_MAP = {
+        "Transmitters": "current_electrodes",
+        "Receivers": "potential_electrodes",
+    }
 
     def __init__(self, **kwargs):
         self._ab_cell_id: ReferencedData | None = None
+        self._current_electrodes: CurrentElectrode | None = None
+        self._potential_electrodes: PotentialElectrode | None = None
 
+        if "ab_cell_id" in kwargs:
+            raise ValueError(
+                "The 'ab_cell_id' must be set after instantiation of the class."
+            )
         super().__init__(**kwargs)
 
     @property
@@ -80,11 +96,7 @@ class BaseElectrode(Curve, ABC):
                 if isinstance(child, ReferencedData):
                     child.values = data.astype(np.int32)
             else:
-                complement: CurrentElectrode | PotentialElectrode = (
-                    self.current_electrodes
-                    if isinstance(self, PotentialElectrode)
-                    else self.potential_electrodes
-                )
+                complement = getattr(self, "complement", None)
                 attributes = {
                     "values": data.astype(np.int32),
                     "association": "CELL",
@@ -115,111 +127,21 @@ class BaseElectrode(Curve, ABC):
             return self.ab_cell_id.value_map
         return None
 
-    def copy(
-        self,
-        parent=None,
-        *,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        **kwargs,
-    ):
+    @property
+    @abstractmethod
+    def complement(self) -> BaseElectrode | None:
         """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
+        The complement object for the current object.
         """
-        if parent is None:
-            parent = self.parent
 
-        omit_list = [
-            "_ab_cell_id",
-            "_metadata",
-            "_potential_electrodes",
-            "_current_electrodes",
-        ]
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            omit_list=omit_list,
-            **kwargs,
-        )
+    @property
+    def complement_reference(self):
+        """Reference data linking the geometry of complement entity."""
+        return self.ab_cell_id
 
-        if self.cells is not None:
-            if mask is not None:
-                cell_mask = np.all(mask[self.cells], axis=1)
-            else:
-                cell_mask = np.ones(self.cells.shape[0], dtype=bool)
-
-            if self.ab_cell_id is not None and self.ab_cell_id.values is not None:
-                new_entity.ab_cell_id = self.ab_cell_id.values[cell_mask]
-
-        complement: CurrentElectrode | PotentialElectrode = (
-            self.current_electrodes
-            if isinstance(self, PotentialElectrode)
-            else self.potential_electrodes
-        )
-
-        # Set the mask of the complement
-        if (
-            new_entity.ab_cell_id is not None
-            and complement is not None
-            and complement.ab_cell_id is not None
-            and complement.ab_cell_id.values is not None
-            and complement.vertices is not None
-            and complement.cells is not None
-        ):
-            intersect = np.intersect1d(
-                new_entity.ab_cell_id.values,
-                complement.ab_cell_id.values,
-            )
-            cell_mask = np.r_[
-                [(val in intersect) for val in complement.ab_cell_id.values]
-            ]
-
-            # Convert cell indices to vertex indices
-            mask = np.zeros(complement.vertices.shape[0], dtype=bool)
-            mask[complement.cells[cell_mask, :]] = True
-
-            new_complement = super(Curve, complement).copy(  # type: ignore
-                parent=parent,
-                omit_list=omit_list,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-                cell_mask=cell_mask,
-            )
-
-            if isinstance(self, PotentialElectrode):
-                new_entity.current_electrodes = new_complement
-            else:
-                new_entity.potential_electrodes = new_complement
-
-            if new_complement.ab_cell_id is None and complement.ab_cell_id is not None:
-                new_complement.ab_cell_id = complement.ab_cell_id.values[cell_mask]
-
-            # Re-number the ab_cell_id
-            value_map = {
-                val: ind
-                for ind, val in enumerate(
-                    np.r_[0, np.unique(new_entity.current_electrodes.ab_cell_id.values)]
-                )
-            }
-            new_map = {
-                val: dict(new_entity.current_electrodes.ab_cell_id.value_map.map)[val]
-                for val in value_map.values()
-            }
-            new_complement.ab_cell_id.values = np.asarray(
-                [value_map[val] for val in new_complement.ab_cell_id.values]
-            )
-            new_entity.ab_cell_id.values = np.asarray(
-                [value_map[val] for val in new_entity.ab_cell_id.values]
-            )
-            new_entity.ab_cell_id.entity_type.value_map = new_map
-
-        return new_entity
+    @complement_reference.setter
+    def complement_reference(self, value: ReferencedData):
+        self.ab_cell_id = value
 
     @property
     @abstractmethod
@@ -228,8 +150,29 @@ class BaseElectrode(Curve, ABC):
         The associated current_electrodes (transmitters)
         """
 
+    @property
+    def omit_list(self) -> tuple:
+        """
+        List of attributes to omit when copying.
+        """
+        return self.__OMIT_LIST
+
+    @property
+    @abstractmethod
+    def potential_electrodes(self):
+        """
+        The associated potential_electrodes (receivers)
+        """
+
+    @property
+    def type_map(self) -> dict[str, str]:
+        """
+        Mapping of the electrode types to the associated electrode.
+        """
+        return self.__TYPE_MAP
+
     @staticmethod
-    def validate_metadata(value):
+    def validate_metadata(value: dict | np.ndarray | bytes) -> dict:
         if isinstance(value, np.ndarray):
             value = value[0]
 
@@ -245,12 +188,59 @@ class BaseElectrode(Curve, ABC):
 
         return value
 
-    @property
-    @abstractmethod
-    def potential_electrodes(self):
+    def _get_complement_mask(
+        self, mask: np.ndarray, complement: BaseElectrode
+    ) -> np.ndarray:
         """
-        The associated potential_electrodes (receivers)
+        Get the complement mask based on the input mask.
+
+        :param mask: Mask on vertices or cells.
+        :param complement: Complement entity.
         """
+        if self.ab_cell_id is None or complement.ab_cell_id is None:
+            raise ValueError(
+                "Both the object and its complement have 'ab_cell_id' set."
+            )
+
+        intersect = np.intersect1d(
+            self.ab_cell_id.values,
+            complement.ab_cell_id.values,
+        )
+        cell_mask = np.r_[[(val in intersect) for val in complement.ab_cell_id.values]]
+
+        return cell_mask
+
+    def _renumber_reference_ids(self):
+        """
+        Renumber the ab_cell_ids based on unique values of currents.
+        """
+        if (
+            self.complement is None
+            or self.complement.ab_cell_id is None
+            or self.ab_cell_id is None
+        ):
+            raise AttributeError(
+                "The 'ab_cell_id' must be set on both the object and its complement."
+            )
+
+        # Re-number the ab_cell_id
+        value_map = {
+            val: ind
+            for ind, val in enumerate(
+                np.r_[0, np.unique(self.current_electrodes.ab_cell_id.values)]
+            )
+        }
+        new_map = {
+            val: dict(self.current_electrodes.ab_cell_id.value_map.map)[val]
+            for val in value_map.values()
+        }
+        self.complement.ab_cell_id.values = np.asarray(
+            [value_map[val] for val in self.complement.ab_cell_id.values]
+        )
+        self.ab_cell_id.values = np.asarray(
+            [value_map[val] for val in self.ab_cell_id.values]
+        )
+        self.ab_cell_id.entity_type.value_map = new_map  # type: ignore
 
 
 class PotentialElectrode(BaseElectrode):
@@ -259,6 +249,11 @@ class PotentialElectrode(BaseElectrode):
     """
 
     _TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
+    __TYPE = "Receivers"
+
+    @property
+    def complement(self) -> CurrentElectrode | None:
+        return self.current_electrodes
 
     @property
     def current_electrodes(self):
@@ -303,6 +298,11 @@ class PotentialElectrode(BaseElectrode):
         """
         return self
 
+    @property
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE
+
 
 class CurrentElectrode(BaseElectrode):
     """
@@ -310,11 +310,16 @@ class CurrentElectrode(BaseElectrode):
     """
 
     _TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
+    __TYPE = "Transmitters"
 
     def __init__(self, **kwargs):
         self._current_line_id: uuid.UUID | None = None
 
         super().__init__(**kwargs)
+
+    @property
+    def complement(self) -> PotentialElectrode | None:
+        return self.potential_electrodes
 
     @property
     def current_electrodes(self):
@@ -391,3 +396,8 @@ class CurrentElectrode(BaseElectrode):
 
         ab_cell_id.entity_type.name = "A-B"
         self._ab_cell_id = ab_cell_id
+
+    @property
+    def type(self):
+        """Survey element type"""
+        return self.__TYPE

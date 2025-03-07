@@ -325,11 +325,11 @@ def test_range_label():
     )
 
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == [1, 2]
+    assert flat["test"] == {"isComplement": False, "property": my_uuid, "value": [1, 2]}
 
 
 def test_optional_error():

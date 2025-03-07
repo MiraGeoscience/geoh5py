@@ -132,6 +132,14 @@ geoh5py.objects.points module
    :undoc-members:
    :show-inheritance:
 
+geoh5py.objects.slicer module
+-----------------------------
+
+.. automodule:: geoh5py.objects.slicer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geoh5py.objects.surface module
 ------------------------------
 

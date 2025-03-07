@@ -1,0 +1,30 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+chapters:
+- file: content/installation
+- file: content/user_guide/index
+- file: content/geoh5_format/index
+  sections:
+    - file: content/geoh5_format/workspace
+    - file: content/geoh5_format/groups
+    - file: content/geoh5_format/objects
+    - file: content/geoh5_format/data
+    - file: content/geoh5_format/types
+    - file: content/geoh5_format/giftools
+    - file: content/geoh5_format/integrator/index
+      sections:
+      - file: content/geoh5_format/integrator/data
+      - file: content/geoh5_format/integrator/groups
+      - file: content/geoh5_format/integrator/objects
+      - file: content/geoh5_format/integrator/themes
+- file: content/uijson_format/index
+  sections:
+    - file: content/uijson_format/usage
+    - file: content/uijson_format/forms
+    - file: content/uijson_format/members
+- file: content/api/modules
+- file: content/release_notes
+- file: THIRD_PARTY_SOFTWARE

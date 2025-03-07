@@ -670,6 +670,16 @@ class Drillhole(Points):
 
         return attributes, property_group
 
+    def validate_mask(self, mask: np.ndarray | None) -> np.ndarray | None:
+        """
+        Validate mask array.
+
+        Always return None for drillholes such that all data is preserved.
+
+        :param mask: None
+        """
+        return None
+
     @property
     def vertices(self) -> np.ndarray | None:
         """

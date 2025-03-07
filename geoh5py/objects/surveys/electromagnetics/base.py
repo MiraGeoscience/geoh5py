@@ -27,14 +27,13 @@ import json
 import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
-from warnings import warn
 
 import numpy as np
 
 from geoh5py.data import FloatData, IntegerData, ReferencedData
 from geoh5py.groups.property_group import PropertyGroup
 from geoh5py.objects import Curve
-from geoh5py.objects.object_base import ObjectBase
+from geoh5py.objects.surveys.base import BaseSurvey
 from geoh5py.shared.utils import str2uuid, str_json_to_dict
 
 
@@ -42,27 +41,25 @@ if TYPE_CHECKING:
     from geoh5py.groups import Group
     from geoh5py.workspace import Workspace
 
-TYPE_MAP = {
-    "Transmitters": "transmitters",
-    "Receivers": "receivers",
-    "Base stations": "base_stations",
-}
-OMIT_LIST = [
-    "_receivers",
-    "_transmitters",
-    "_base_stations",
-    "_tx_id_property",
-    "_metadata",
-]
 
-
-class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
+class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
     """
     A base electromagnetics survey object.
     """
 
     __INPUT_TYPE = None
-    __TYPE = None
+    __OMIT_LIST = (
+        "_receivers",
+        "_transmitters",
+        "_base_stations",
+        "_tx_id_property",
+        "_metadata",
+    )
+    __TYPE_MAP = {
+        "Transmitters": "transmitters",
+        "Receivers": "receivers",
+        "Base stations": "base_stations",
+    }
     __UNITS = None
 
     def __init__(self, **kwargs):
@@ -216,6 +213,17 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         return None
 
     @property
+    def complement_reference(self):
+        """Reference data linking the geometry of complement entity."""
+        return self.tx_id_property
+
+    @complement_reference.setter
+    def complement_reference(
+        self, value: ReferencedData | IntegerData | np.ndarray | None
+    ):
+        self.tx_id_property = value
+
+    @property
     def components(self) -> dict | None:
         """
         Rapid access to the list of data entities for all components.
@@ -235,103 +243,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
 
         return None
 
-    def copy(  # pylint: disable=too-many-arguments
-        self,
-        parent: Group | Workspace | None = None,
-        *,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        cell_mask: np.ndarray | None = None,
-        copy_complement: bool = True,
-        **kwargs,
-    ):
-        """
-        Sub-class extension of :func:`~geoh5py.objects.cell_object.CellObject.copy`.
-        """
-        if parent is None:
-            parent = self.parent
-
-        new_entity = super().copy(
-            parent=parent,
-            clear_cache=clear_cache,
-            copy_children=copy_children,
-            mask=mask,
-            cell_mask=cell_mask,
-            omit_list=OMIT_LIST,
-            **kwargs,
-        )
-
-        # Copy metadata except reference to entities UUID
-        for key, value in self.metadata["EM Dataset"].items():
-            if not isinstance(value, (uuid.UUID, type(None))):
-                new_entity.edit_em_metadata({key: value})
-
-        if copy_complement:
-            self.copy_complement(
-                new_entity,
-                parent=parent,
-                copy_children=copy_children,
-                clear_cache=clear_cache,
-                mask=mask,
-            )
-
-        return new_entity
-
-    def copy_complement(
-        self,
-        new_entity,
-        *,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-    ) -> BaseEMSurvey | None:
-        """
-        Copy the complement entity to the new entity.
-
-        :param new_entity: New entity to copy the complement to.
-        :param parent: Parent group or workspace.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear the cache.
-        :param mask: Mask on vertices to apply to the data.
-        """
-        if self.complement is None:
-            return None
-
-        # Reset the mask based on Tx ID if it exists
-        if (
-            new_entity.tx_id_property is not None
-            and self.complement.tx_id_property is not None
-            and self.complement.tx_id_property.values is not None
-            and mask is not None
-        ):
-            max_id = np.max(
-                [
-                    self.complement.tx_id_property.values.max(),
-                    new_entity.tx_id_property.values.max(),
-                ]
-            )
-            ids_mask = np.zeros(max_id + 1, dtype=bool)
-            ids_mask[new_entity.tx_id_property.values] = True
-            mask = ids_mask[self.complement.tx_id_property.values]
-
-        new_complement = self.complement._super_copy(  # pylint: disable=protected-access
-            parent=parent,
-            omit_list=OMIT_LIST,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-        )
-
-        setattr(
-            new_entity,
-            TYPE_MAP[self.complement.type],  # pylint: disable=no-member
-            new_complement,
-        )
-
-        return new_complement
-
     @property
     @abstractmethod
     def default_input_types(self) -> list[str] | None:
@@ -341,7 +252,7 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         Must be one of 'Rx', 'Tx', 'Tx and Rx', 'Rx only', 'Rx and base stations'."""
 
     @property
-    def default_metadata(self):
+    def default_metadata(self) -> dict:
         """Default metadata structure. Implemented on the child class."""
         return {"EM Dataset": {}}
 
@@ -385,21 +296,6 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 em_metadata[key] = value
 
         self.metadata = {"EM Dataset": em_metadata}
-
-    def edit_metadata(self, entries: dict[str, Any]):
-        """
-        WILL BE DEPRECATED IN 0.10 version.
-        The name will change to edit_em_metadata.
-
-        :param entries:
-        :return:
-        """
-        warn(
-            "DEPRECATION WARNING"
-            "The method 'edit_metadata' will be deprecated in 0.10 version. "
-            "It will be replaced by 'edit_em_metadata'"
-        )
-        self.edit_em_metadata(entries)
 
     @property
     def input_type(self) -> str | None:
@@ -531,9 +427,53 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
         self.edit_em_metadata({"Transmitters": transmitters.uid})
 
     @property
-    @abstractmethod
-    def type(self):
-        """Survey element type"""
+    def omit_list(self) -> tuple:
+        """
+        List of attributes to omit when copying.
+        """
+        return self.__OMIT_LIST
+
+    @property
+    def type_map(self) -> dict[str, str]:
+        """
+        Mapping of the electrode types to the associated electrode.
+        """
+        return self.__TYPE_MAP
+
+    @property
+    def tx_id_property(self) -> ReferencedData | IntegerData | None:
+        """
+        Data link between the receiver and transmitter object.
+        """
+        if self._tx_id_property is None and self.metadata is not None:
+            self._tx_id_property = self._fetch_transmitter_id()
+
+        return self._tx_id_property
+
+    @tx_id_property.setter
+    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
+        if isinstance(value, uuid.UUID):
+            value = self.get_data(value)[0]
+
+        if isinstance(value, np.ndarray):
+            attributes = {
+                "values": value.astype(np.int32),
+            }
+            self._format_transmitter_ids(value, attributes)
+            value = self.add_data({"Transmitter ID": attributes})
+
+        if not isinstance(value, (ReferencedData, IntegerData, type(None))):
+            raise TypeError(
+                "Input value for 'tx_id_property' should be of type uuid.UUID, "
+                "ReferencedData, np.ndarray or None.)"
+            )
+
+        self._tx_id_property = value
+
+        if self.type == "Receivers":
+            self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
+        else:
+            self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
 
     @property
     def unit(self) -> float | None:
@@ -548,6 +488,59 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
             if value not in self.default_units:
                 raise ValueError(f"Input 'unit' must be one of {self.default_units}")
             self.edit_em_metadata({"Unit": value})
+
+    def validate_em_metadata(self, values: dict | np.ndarray | bytes | None) -> dict:
+        """
+        Validate and format the metadata structure for EM entities.
+
+        :param values: Metadata dictionary.
+
+        :return: Validated and formatted metadata dictionary.
+        """
+        if values is None:
+            metadata = self.default_metadata
+
+            if self.type is not None:
+                metadata["EM Dataset"][self.type] = self.uid
+
+            values = metadata
+
+        if isinstance(values, np.ndarray):
+            values = values[0]
+
+        if isinstance(values, bytes):
+            values = str_json_to_dict(values)
+
+        if not isinstance(values, dict):
+            raise TypeError("'metadata' must be of type 'dict'")
+
+        if "EM Dataset" not in values:
+            values = {"EM Dataset": values}
+
+        missing_keys = []
+        for key in self.default_metadata["EM Dataset"]:
+            if key not in values["EM Dataset"]:
+                missing_keys += [key]
+
+        if missing_keys:
+            raise KeyError(
+                f"'{missing_keys}' argument(s) missing from the input metadata."
+            )
+
+        for key, value in values["EM Dataset"].items():
+            values["EM Dataset"][key] = str2uuid(value)
+
+        if "Property groups" in values["EM Dataset"]:
+            prop_groups = []
+            for value in values["EM Dataset"]["Property groups"]:
+                prop_group = self.get_property_group(str2uuid(value))[0]
+
+                if isinstance(prop_group, PropertyGroup):
+                    prop_groups.append(prop_group.name)
+
+            values["EM Dataset"]["Property groups"] = prop_groups
+
+        return values
 
     def _edit_validate_property_groups(
         self, values: PropertyGroup | list[PropertyGroup] | list[str] | None
@@ -618,132 +611,46 @@ class BaseEMSurvey(ObjectBase, ABC):  # pylint: disable=too-many-public-methods
                 "Transmitter ID property must be of type ReferencedData or IntegerData."
             )
 
-        if uid is None and self.type == "Receivers":
-            self.edit_em_metadata(
-                {"Tx ID property": getattr(tx_id_property, "uid", None)}
-            )
-        elif uid is None:
-            self.edit_em_metadata(
-                {"Tx ID tx property": getattr(tx_id_property, "uid", None)}
-            )
-
         return tx_id_property
-
-    def validate_em_metadata(self, values: dict | np.ndarray | bytes | None) -> dict:
-        """
-        Validate and format the metadata structure for EM entities.
-
-        :param values: Metadata dictionary.
-
-        :return: Validated and formatted metadata dictionary.
-        """
-        if values is None:
-            metadata = self.default_metadata
-
-            if self.type is not None:
-                metadata["EM Dataset"][self.type] = self.uid
-
-            values = metadata
-
-        if isinstance(values, np.ndarray):
-            values = values[0]
-
-        if isinstance(values, bytes):
-            values = str_json_to_dict(values)
-
-        if not isinstance(values, dict):
-            raise TypeError("'metadata' must be of type 'dict'")
-
-        if "EM Dataset" not in values:
-            values = {"EM Dataset": values}
-
-        missing_keys = []
-        for key in self.default_metadata["EM Dataset"]:
-            if key not in values["EM Dataset"]:
-                missing_keys += [key]
-
-        if missing_keys:
-            raise KeyError(
-                f"'{missing_keys}' argument(s) missing from the input metadata."
-            )
-
-        for key, value in values["EM Dataset"].items():
-            values["EM Dataset"][key] = str2uuid(value)
-
-        if "Property groups" in values["EM Dataset"]:
-            prop_groups = []
-            for value in values["EM Dataset"]["Property groups"]:
-                prop_group = self.get_property_group(str2uuid(value))[0]
-
-                if isinstance(prop_group, PropertyGroup):
-                    prop_groups.append(prop_group.name)
-
-            values["EM Dataset"]["Property groups"] = prop_groups
-
-        return values
-
-    def _super_copy(
-        self,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Call the super().copy of the class in copy_complement method.
-
-        :return: New copy of the input entity.
-        """
-        return super().copy(
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-            **kwargs,
-        )
-
-    @property
-    def tx_id_property(self) -> ReferencedData | IntegerData | None:
-        """
-        Data link between the receiver and transmitter object.
-        """
-        if self._tx_id_property is None and self.metadata is not None:
-            self._tx_id_property = self._fetch_transmitter_id()
-
-        return self._tx_id_property
-
-    @tx_id_property.setter
-    def tx_id_property(self, value: uuid.UUID | ReferencedData | np.ndarray | None):
-        if isinstance(value, uuid.UUID):
-            value = self.get_data(value)[0]
-
-        if isinstance(value, np.ndarray):
-            attributes = {
-                "values": value.astype(np.int32),
-            }
-            self._format_transmitter_ids(value, attributes)
-            value = self.add_data({"Transmitter ID": attributes})
-
-        if not isinstance(value, (ReferencedData, IntegerData, type(None))):
-            raise TypeError(
-                "Input value for 'tx_id_property' should be of type uuid.UUID, "
-                "ReferencedData, np.ndarray or None.)"
-            )
-
-        self._tx_id_property = value
-
-        if self.type == "Receivers":
-            self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
-        else:
-            self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
 
     def _format_transmitter_ids(self, _, attributes):
         if self.complement is not None and self.complement.tx_id_property is not None:
             attributes["entity_type"] = self.complement.tx_id_property.entity_type
 
+    def _get_complement_mask(
+        self, mask: np.ndarray, complement: BaseEMSurvey
+    ) -> np.ndarray:
+        """
+        Get the complement mask based on the input mask.
+
+        :param mask: Mask on vertices or cells.
+        :param complement: Complement entity.
+        """
+        if (
+            self.tx_id_property is not None
+            and complement.tx_id_property is not None
+            and complement.tx_id_property.values is not None
+            and mask is not None
+        ):
+            max_id = np.max(
+                [
+                    complement.tx_id_property.values.max(),
+                    self.tx_id_property.values.max(),
+                ]
+            )
+            ids_mask = np.zeros(max_id + 1, dtype=bool)
+            ids_mask[self.tx_id_property.values] = True
+            mask = ids_mask[complement.tx_id_property.values]
+
+        return mask
+
 
 class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
+    """
+    A base class for moving loop ground EM surveys defined by a single transmitter
+    loop radius.
+    """
+
     __INPUT_TYPE = ["Rx"]
     _TYPE_UID: uuid.UUID | None = None
 
@@ -773,6 +680,10 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
 
 class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
+    """
+    Base class for large loop ground EM surveys defined by wire paths and transmitter ids.
+    """
+
     __INPUT_TYPE = ["Tx and Rx"]
     _TYPE_UID: uuid.UUID | None = None
 
@@ -783,50 +694,6 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     @property
     def base_transmitter_type(self):
         return Curve
-
-    def copy_complement(
-        self,
-        new_entity,
-        *,
-        parent: Group | Workspace | None = None,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-    ):
-        new_complement = super().copy_complement(
-            new_entity,
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            mask=mask,
-        )
-
-        # Re-number the value_map for tx_id_property to remain
-        if new_complement is not None and isinstance(
-            new_complement.tx_id_property, ReferencedData
-        ):
-            value_map = {
-                val: ind
-                for ind, val in enumerate(
-                    np.r_[0, np.unique(new_entity.transmitters.tx_id_property.values)]
-                )
-            }
-            new_map = new_complement.tx_id_property.entity_type.validate_value_map(
-                {
-                    val: dict(new_entity.transmitters.tx_id_property.value_map.map)[ind]
-                    for ind, val in value_map.items()
-                }
-            )
-            new_complement.tx_id_property.values = np.asarray(
-                [value_map[val] for val in new_complement.tx_id_property.values]
-            )
-            new_complement.tx_id_property.entity_type.value_map = new_map
-            new_entity.tx_id_property.values = np.asarray(
-                [value_map[val] for val in new_entity.tx_id_property.values]
-            )
-            new_entity.tx_id_property.entity_type.value_map = new_map
-
-        return new_complement
 
     @property
     def default_input_types(self) -> list[str]:
@@ -848,6 +715,39 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
                     "association": "VERTEX",
                 }
             )
+
+    def _renumber_reference_ids(self):
+        """
+        Re-number the value_map for tx_id_property to remain
+        """
+        if (
+            self.tx_id_property is None
+            or self.complement is None
+            or self.complement.tx_id_property is None
+        ):
+            raise AttributeError(
+                "The 'tx_id_property' must be set on both the object and its complement."
+            )
+        value_map = {
+            val: ind
+            for ind, val in enumerate(
+                np.r_[0, np.unique(self.transmitters.tx_id_property.values)]
+            )
+        }
+        new_map = self.complement.tx_id_property.entity_type.validate_value_map(
+            {
+                val: dict(self.transmitters.tx_id_property.value_map.map)[ind]
+                for ind, val in value_map.items()
+            }
+        )
+        self.complement.tx_id_property.values = np.asarray(
+            [value_map[val] for val in self.complement.tx_id_property.values]
+        )
+        self.complement.tx_id_property.entity_type.value_map = new_map
+        self.tx_id_property.values = np.asarray(
+            [value_map[val] for val in self.tx_id_property.values]
+        )
+        self.tx_id_property.entity_type.value_map = new_map
 
 
 class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):

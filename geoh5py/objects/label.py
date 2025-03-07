@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 from typing import TYPE_CHECKING
 
 from .object_base import ObjectBase
@@ -49,39 +48,6 @@ class Label(ObjectBase):
         self.label_position = None
 
         super().__init__(**kwargs)
-
-    def copy(
-        self,
-        parent=None,
-        *,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Function to copy an entity to a different parent entity.
-
-        :param parent: Target parent to copy the entity under. Copied to current
-            :obj:`~geoh5py.shared.entity.Entity.parent` if None.
-        :param copy_children: (Optional) Create copies of all children entities along with it.
-        :param clear_cache: Clear array attributes after copy.
-        :param mask: (Optional) Indices of vertices to copy.
-        :param kwargs: Additional keyword arguments.
-
-        :return: New copy of the input entity.
-        """
-        if mask is not None:
-            warnings.warn("Masking is not supported for Label objects.")
-
-        new_entity = super().copy(
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            **kwargs,
-        )
-
-        return new_entity
 
     @property
     def extent(self):

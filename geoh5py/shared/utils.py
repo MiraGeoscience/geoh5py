@@ -151,6 +151,28 @@ PILLOW_ARGUMENTS = {
 }
 
 
+def copy_no_reference(values: dict) -> dict:
+    """
+    Copy a dictionary without references to objects UUID.
+
+    :param values: The dictionary to copy.
+
+    :return: The copied dictionary.
+    """
+    # Copy metadata except reference to entities UUID
+    output = {}
+    for key, value in values.items():
+        if isinstance(value, dict):
+            value = copy_no_reference(value)
+
+        if isinstance(value, UUID):
+            value = None
+
+        output[key] = value
+
+    return output
+
+
 @contextmanager
 def fetch_active_workspace(workspace: Workspace | None, mode: str = "r"):
     """

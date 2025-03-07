@@ -95,12 +95,14 @@ def test_create_curve_data(tmp_path: Path):
         curve = Curve.create(
             workspace, vertices=np.arange(n_data * 3).reshape(n_data, 3)
         )
+
         # Get and change the parts
         parts = curve.parts
         parts[-3:] = 1
         with pytest.raises(AttributeError):
             curve.parts = parts
 
+        curve.add_data({"cell_values": {"values": np.ones(curve.n_cells)}})
         cells = curve.cells.copy()
 
         assert cells.shape[0] == 11, "Error creating cells from parts."
@@ -253,8 +255,8 @@ def test_copy_cells_data(tmp_path):
             }
         )
 
-        with pytest.raises(ValueError, match="Mask must be an array of shape."):
-            curve.copy(mask=[1, 2, 3])
+        with pytest.raises(ValueError, match="Mask must be an array of dtype"):
+            curve.copy(mask=np.r_[1, 2, 3])
 
         mask = np.zeros(11, dtype=bool)
         mask[:4] = True
