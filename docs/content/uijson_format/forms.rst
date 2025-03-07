@@ -1,9 +1,14 @@
 .. _parameter_types:
 
+Forms
+=====
+
+The following sections describe the different types of parameters that can be used in the **ui.json** format.
+
 .. _bool_param:
 
 Boolean Parameter
-=================
+-----------------
 
 A parameter named "input" that has a ``bool`` value.
 
@@ -23,7 +28,7 @@ A parameter named "input" that has a ``bool`` value.
 
 
 Integer Parameter
-=================
+-----------------
 
 A parameter that has an ``int`` value. The optional parameters ``min`` and ``max`` invoke a validator to insure the bound(s) are enforced.
 
@@ -44,7 +49,7 @@ A parameter that has an ``int`` value. The optional parameters ``min`` and ``max
 
 
 Float Parameter
-===============
+---------------
 
 A parameter that has a ``float`` value. The optional parameters are:
 
@@ -77,7 +82,7 @@ precision ``int``
 
 
 String Parameter
-================
+----------------
 
 For a simple string parameter, use an empty ``str`` value to have an empty string. Only a ``label`` and ``value`` is required.
 
@@ -124,7 +129,7 @@ an array of the choiceList values selected by the user.
 
 
 File Parameter
-==============
+--------------
 
 A file parameter comes with an icon to choose the file, with a ``str`` value. Extra members of the file object parameter are **fileDescription** and **fileType**. Both of these are ``str`` types and can be arrays, but must be of the same length
 
@@ -147,7 +152,7 @@ A file parameter comes with an icon to choose the file, with a ``str`` value. Ex
 
 
 Group Parameter
-===============
+---------------
 
 The group parameter can be used to select groups within ANALYST.  The **groupType** member is required and must be either
 a single type `UUID (universally unique identifier) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
@@ -195,7 +200,7 @@ drillhole group, respectively.
 .. _object_parameter:
 
 Geoscience ANALYST Object Parameter
-===================================
+-----------------------------------
 
 The object parameter allows users to select geoh5py objects from a dropdown in ANALYST.  The **meshType** member is
 required to filter the :ref:`Object Type <object_types>` available in the dropdown.  It is provided as a single type
@@ -224,7 +229,7 @@ returned is the uuid of the ANALYST object selected, or an array of uuids if man
 
 
 Geoscience ANALYST Data parameter
-=================================
+---------------------------------
 
 Creating a parameter to choose a Geoscience ANALYST object's data requires extra members:
 
@@ -359,7 +364,7 @@ included within the bounds, and if it is false they are meant to be included out
 .. figure:: ./images/range_slider_param_complement.png
 
 Dependencies on other parameters
-================================
+--------------------------------
 
 Use the **dependency** and **dependencyType** members to create dependencies. The parameter driving the dependency should set **optional** to true or be a :ref:`Boolean parameter'<bool_param>`. Below are a couple of examples. The first initializes the *favourite_package* parameter as disabled until the *python_interest* parameter is checked. The second shows the opposite when the **enabled** member is set to true.
 

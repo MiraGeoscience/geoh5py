@@ -1,7 +1,7 @@
 Types
 =====
 
-.. figure:: ../images/types.png
+.. figure:: ./images/types.png
     :align: right
     :width: 150
 
@@ -68,21 +68,9 @@ specific kind of data.
 
     Unlike ``Groups`` and ``Objects``, ``Data`` entities do not generally have fixed identifier ``Type``.
     Multiple data entities linked by a type will share common properties (color map, units, etc.).
-    Exceptions to this rule are the fixed:
-
-    .. toctree::
-       :maxdepth: 1
-
-       ../integrator/data
 
 :Primitive type: ``str``
-
-    Specifies the kind of data values stored as ``HDF5 dataset``. Must be one of:
-
-    .. toctree::
-       :maxdepth: 1
-
-       ../analyst/data
+    Specifies the kind of data values stored as ``HDF5 dataset``.
 
 :Description: ``str``
     (Optional) Description of the type.

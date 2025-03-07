@@ -1,7 +1,7 @@
-GIFTools
-========
+GIFtools Groups
+===============
 
-GIFtools group containers
+GIFtools group containers for handling of the UBC-GIF executables and projects.
 
 GIFtools Project
 ^^^^^^^^^^^^^^^^
@@ -13,7 +13,7 @@ GIFtools Project
 *To be documented*
 
 GIF Executables
-===============
+---------------
 
 **UUID : {afae95ef-c2a7-4aec-9800-0d19bd2c2c07}**
 

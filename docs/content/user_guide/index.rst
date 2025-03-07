@@ -1,20 +1,20 @@
-Tutorials
-=========
+User Guide
+==========
 
 This section provides information on how to use the **geoh5py** package, from
-the creation of a Workspace_ to the creation and manipulation of Entities_
+the creation of a Workspace_ to the creation and manipulation of objects and data.
 
-.. figure:: ./images/workspace_tree.png
+.. figure:: ./images/entities.png
 	    :align: center
 	    :width: 600
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   a_workspace.ipynb
-   b_core_entities.ipynb
-   c_data.ipynb
+   workspace
+   groups
+   objects
    surveys
+   data
 
 .. _Workspace: workspace.ipynb
-.. _Entities: entities.ipynb

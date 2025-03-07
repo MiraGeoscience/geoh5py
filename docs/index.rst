@@ -1,46 +1,18 @@
-geoh5py: Python API for geoh5. An open file format for geoscientific data
-=========================================================================
+About
+=====
 
 
-Welcome to the documentation page for **geoh5py**!
+Welcome to the documentation page for **geoh5py**.
 
-In short
-^^^^^^^^
-
-The **geoh5py** library has been created for the manipulation and storage of a wide range of
+This library has been created for the manipulation and storage of a wide range of
 geoscientific data (points, curve, surface, 2D and 3D grids) in
 `geoh5 file format <https://gist.github.com/jincandescent/06a3bd4e0e54360ad191>`_.
-Users will be able to directly leverage the powerful visualization
+Users are able to directly leverage the powerful visualization
 capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_ along with open-source code from the Python ecosystem.
 
 .. figure:: ./images/GA_demo.png
 	    :align: center
 	    :width: 600
-
-
-Contents:
-^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   content/installation.rst
-   content/user_guide/index.rst
-   content/api/modules.rst
-   content/geoh5_format/index.rst
-   content/uijson_format/index.rst
-   content/release_notes.rst
-   content/feedback.rst
-   THIRD_PARTY_SOFTWARE.rst
-
-
-Citing geoh5py
-^^^^^^^^^^^^^^
-
-If you use **geoh5py** in your research, please cite it as follows:
-
-.. image:: https://zenodo.org/badge/207860560.svg
-   :target: https://zenodo.org/badge/latestdoi/207860560
 
 
 License
@@ -69,7 +41,19 @@ Third Party Software notices and/or additional terms and conditions are located 
 
 .. _THIRD_PARTY_SOFTWARE.rst: THIRD_PARTY_SOFTWARE.rst
 
+Citing
+^^^^^^
 
-Copyright
-^^^^^^^^^
-|copyright_notice|
+If you use **geoh5py** in your research, please cite it as follows:
+
+.. image:: https://zenodo.org/badge/207860560.svg
+   :target: https://zenodo.org/badge/latestdoi/207860560
+
+
+Feedback
+^^^^^^^^
+
+Have comments or suggestions? Submit feedback.
+All the content can be found on our github_ repository.
+
+.. _github: https://github.com/MiraGeoscience/geoh5py

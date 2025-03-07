@@ -60,6 +60,14 @@ geoh5py.groups.integrator module
    :undoc-members:
    :show-inheritance:
 
+geoh5py.groups.interpretation\_section module
+---------------------------------------------
+
+.. automodule:: geoh5py.groups.interpretation_section
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geoh5py.groups.maps module
 --------------------------
 
@@ -88,6 +96,14 @@ geoh5py.groups.property\_group\_table module
 --------------------------------------------
 
 .. automodule:: geoh5py.groups.property_group_table
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+geoh5py.groups.property\_group\_type module
+-------------------------------------------
+
+.. automodule:: geoh5py.groups.property_group_type
    :members:
    :undoc-members:
    :show-inheritance:
