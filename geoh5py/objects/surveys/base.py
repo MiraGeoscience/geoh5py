@@ -48,6 +48,16 @@ class BaseSurvey(ObjectBase, ABC):
     def complement(self):
         """Returns the complement object for self."""
 
+    @property
+    @abstractmethod
+    def complement_reference(self):
+        """Reference data linking the geometry of complement entity."""
+
+    @complement_reference.setter
+    @abstractmethod
+    def complement_reference(self, complement_reference):
+        """Set the reference data linking the geometry of complement entity."""
+
     def copy(  # pylint: disable=too-many-arguments
         self,
         parent: Group | Workspace | None = None,
@@ -63,7 +73,7 @@ class BaseSurvey(ObjectBase, ABC):
         if parent is None:
             parent = self.parent
 
-        new_entity = super().copy(
+        new_entity = self._super_copy(
             parent=parent,
             clear_cache=clear_cache,
             copy_children=copy_children,
@@ -186,10 +196,20 @@ class BaseSurvey(ObjectBase, ABC):
 
         :return: New copy of the input entity.
         """
-        return super().copy(
+        new_entity = super().copy(
             parent=parent,
             copy_children=copy_children,
             clear_cache=clear_cache,
             mask=mask,
             **kwargs,
         )
+
+        if self.complement_reference is not None:
+            if not copy_children:
+                self.complement_reference.copy(parent=new_entity, mask=mask)
+
+            new_entity.complement_reference = new_entity.get_data(
+                self.complement_reference.name
+            )[0]
+
+        return new_entity

@@ -32,6 +32,7 @@ from contextlib import AbstractContextManager, contextmanager
 from gc import collect
 from getpass import getuser
 from io import BytesIO
+from logging import getLogger
 from pathlib import Path
 from shutil import copy, move
 from subprocess import CalledProcessError
@@ -75,6 +76,8 @@ from ..shared.utils import (
     str2uuid,
 )
 
+
+logger = getLogger(__name__)
 
 NETWORK_DRIVES = [
     "Egnyte Connect",
@@ -221,15 +224,17 @@ class Workspace(AbstractContextManager):
             temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
             try:
                 subprocess.run(
-                    f'h5repack --native "{self._h5file}" "{temp_file}"',
+                    ["h5repack", "--native", str(self._h5file), str(temp_file)],
                     check=True,
-                    shell=True,
-                    stdout=subprocess.DEVNULL,
+                    capture_output=True,
+                    encoding="utf8",
                 )
                 Path(self._h5file).unlink()
                 move(temp_file, self._h5file, copy)
-            except CalledProcessError:
+            except FileNotFoundError:
                 pass
+            except CalledProcessError as process_error:
+                logger.error("%s\n%s", process_error.stdout, process_error.stderr)
 
             self.repack = False
 

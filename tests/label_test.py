@@ -20,17 +20,17 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from geoh5py.objects import Label
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_label(tmp_path: Path):
+def test_create_label(tmp_path: Path, caplog):
     h5file_path = tmp_path / r"testGroup.geoh5"
 
     # Create a workspace
@@ -39,8 +39,10 @@ def test_create_label(tmp_path: Path):
 
         assert label.copy_from_extent(np.vstack([[0, 0], [1, 1]])) is None
 
-        with pytest.warns(UserWarning):
+        with caplog.at_level(logging.WARNING):
             copy_label = label.copy(mask=[[0, 0], [1, 1]])
+
+        assert "Masking is not supported" in caplog.text
 
         compare_entities(
             label, copy_label, ignore=["target_position", "label_position", "_uid"]

@@ -213,6 +213,17 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
         return None
 
     @property
+    def complement_reference(self):
+        """Reference data linking the geometry of complement entity."""
+        return self.tx_id_property
+
+    @complement_reference.setter
+    def complement_reference(
+        self, value: ReferencedData | IntegerData | np.ndarray | None
+    ):
+        self.tx_id_property = value
+
+    @property
     def components(self) -> dict | None:
         """
         Rapid access to the list of data entities for all components.
@@ -598,15 +609,6 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
         if not isinstance(tx_id_property, ReferencedData | IntegerData | type(None)):
             raise TypeError(
                 "Transmitter ID property must be of type ReferencedData or IntegerData."
-            )
-
-        if uid is None and self.type == "Receivers":
-            self.edit_em_metadata(
-                {"Tx ID property": getattr(tx_id_property, "uid", None)}
-            )
-        elif uid is None:
-            self.edit_em_metadata(
-                {"Tx ID tx property": getattr(tx_id_property, "uid", None)}
             )
 
         return tx_id_property

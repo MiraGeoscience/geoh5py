@@ -293,7 +293,7 @@ def test_survey_airborne_fem_data(tmp_path):
         receivers.metadata == transmitters.metadata
     ), "Error synchronizing the transmitters and receivers metadata."
 
-    with pytest.raises(ValueError, match="Mask must be an array of shape"):
+    with pytest.raises(ValueError, match="Mask must be an array of dtype"):
         receivers.copy(mask=np.r_[1, 2, 3])
 
     workspace.close()

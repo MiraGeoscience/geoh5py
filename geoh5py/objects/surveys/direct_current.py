@@ -135,6 +135,15 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
         """
 
     @property
+    def complement_reference(self):
+        """Reference data linking the geometry of complement entity."""
+        return self.ab_cell_id
+
+    @complement_reference.setter
+    def complement_reference(self, value: ReferencedData):
+        self.ab_cell_id = value
+
+    @property
     @abstractmethod
     def current_electrodes(self):
         """

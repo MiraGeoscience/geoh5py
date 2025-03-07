@@ -16,25 +16,3 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-
-from __future__ import annotations
-
-import uuid
-from typing import TYPE_CHECKING
-
-from .object_base import ObjectBase
-
-
-if TYPE_CHECKING:
-    from numpy import ndarray
-
-
-class NoTypeObject(ObjectBase):
-    """
-    Generic Data object without a registered type
-    """
-
-    _TYPE_UID = uuid.UUID(
-        fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
-    )

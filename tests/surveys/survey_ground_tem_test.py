@@ -72,8 +72,10 @@ def make_large_loop_survey(workspace: Workspace):
         cells=np.vstack(tx_cells),
     )
     transmitters.tx_id_property = transmitters.parts + 1
-    receivers.tx_id_property = np.hstack(tx_id)
+    transmitters.tx_id_property.name = "Random ID"
 
+    receivers.tx_id_property = np.hstack(tx_id)
+    receivers.tx_id_property.name = "Random ID receivers"
     return receivers, transmitters
 
 
@@ -176,6 +178,20 @@ def test_copy_from_extent(
             assert list(
                 transmitters_rec.tx_id_property.entity_type.value_map.map["Value"]
             ) == [b"Unknown", b"Loop 2"]
+
+
+def test_copy_no_children(
+    tmp_path,
+):
+    path = Path(tmp_path) / r"groundTEM.geoh5"
+
+    # Create a workspace
+    with Workspace.create(path) as workspace:
+        receivers, transmitters = make_large_loop_survey(workspace)
+        receivers.transmitters = transmitters
+
+        new = receivers.copy(copy_children=False)
+        assert new.tx_id_property is not None
 
 
 def test_create_survey_ground_tem(tmp_path):
