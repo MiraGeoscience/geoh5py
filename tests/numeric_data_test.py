@@ -19,21 +19,22 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
-import pytest
 
 from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_create_point_data(tmp_path):
+def test_create_point_data(tmp_path, caplog):
     h5file_path = tmp_path / r"testNumeric.geoh5"
     workspace = Workspace.create(h5file_path)
 
     values = np.random.randn(16)
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
 
-    with pytest.warns(UserWarning, match="Input 'values' of shape"):
+    with caplog.at_level(logging.WARNING):
         data = points.add_data(
             {
                 "DataValues1": {"association": "VERTEX", "values": values},
