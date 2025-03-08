@@ -1,8 +1,9 @@
 schema_version: 1
 
 context:
-  name: geoh5py
-  version: 0.11.0a1
+  name: "geoh5py"
+  version: "0.11.0a1"
+  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -18,16 +19,16 @@ build:
 
 requirements:
   host:
-    - python >=3.10.0,<4.0.0
+    - python 3.10.*
     - poetry-core >=1.0.0
     - setuptools
     - pip
   run:
-    - python >=3.10.0,<3.11
-    - pydantic >=2.5.2,<3.0.0
-    - h5py >=3.2.1,<4.0.0
-    - numpy >=1.26.0,<1.27.0
-    - pillow >=10.3.0,<10.4.0
+    - python >=${{ python_min }}
+    - h5py >=3.2.1, <4.0.dev
+    - numpy >=1.26.0, <1.27.dev
+    - pillow >=10.3.0, <10.4.dev
+    - pydantic >=2.5.2, <3.0.dev
 
 tests:
   - python:
@@ -57,5 +58,5 @@ about:
 
 extra:
   recipe-maintainers:
-    - SophieCurinier
+    - andrewg-mira
     - sebhmg
