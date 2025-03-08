@@ -34,11 +34,14 @@ tests:
   - python:
       imports:
         - geoh5py
-  - requirements:
+  - script:
+      - pytest ./tests
+    requirements:
       run:
-        - pip
-    script:
-      - pip check
+        - pytest
+    files:
+      source:
+        - tests/
 
 about:
   summary: Python API for geoh5, an open file format for geoscientific data.
