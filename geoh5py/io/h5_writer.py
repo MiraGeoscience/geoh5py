@@ -152,7 +152,10 @@ class H5Writer:
 
             if ref_type == "Types":
                 for e_type in ["Data types", "Group types", "Object types"]:
-                    if uid_str in base_type_handle[e_type]:
+                    if (
+                        e_type in base_type_handle
+                        and uid_str in base_type_handle[e_type]
+                    ):
                         del base_type_handle[e_type][uid_str]
             else:
                 if uid_str in base_type_handle:
