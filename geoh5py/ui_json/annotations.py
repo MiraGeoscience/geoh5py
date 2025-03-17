@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def deprecate(value, info):
     """Issue deprecation warning."""
-    logger.warning("Skipping deprecated field %s.", info.field_name)
+    logger.warning("Skipping deprecated field: %s.", info.field_name)
     return value
 
 
