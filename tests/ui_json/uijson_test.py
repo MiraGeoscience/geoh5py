@@ -149,6 +149,28 @@ def generate_test_uijson(workspace: Workspace, uijson, data: dict):
     )
 
 
+def test_allow_extra(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    kwargs = {
+        "my_string_parameter": {"label": "some string", "value": "test"},
+        "my_extra_form_parameter": {"label": "this is extra", "value": "extra"},
+        "my_extra_parameter": "this is also extra",
+    }
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+    assert "my_extra_parameter" in uijson.model_extra
+    assert "my_extra_form_parameter" in uijson.model_extra
+    dump = uijson.model_dump()
+    assert dump["my_extra_parameter"] == "this is also extra"
+    assert dump["my_extra_form_parameter"] == {
+        "label": "this is extra",
+        "value": "extra",
+    }
+
+
 def test_multiple_validations(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))

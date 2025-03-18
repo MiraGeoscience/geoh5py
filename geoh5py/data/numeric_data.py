@@ -17,9 +17,9 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from warnings import warn
@@ -28,6 +28,9 @@ import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
 from .data_association_enum import DataAssociationEnum
+
+
+logger = logging.getLogger(__name__)
 
 
 class NumericData(Data, ABC):
@@ -83,10 +86,13 @@ class NumericData(Data, ABC):
             len(values) > self.n_values
             and self.association is not DataAssociationEnum.OBJECT
         ):
-            raise ValueError(
-                f"Input 'values' of shape({self.n_values},) expected. "
-                f"Array of shape{values.shape} provided.)"
+            logger.warning(
+                "Input 'values' of shape (%s,) expected. Array of shape %s provided for data %s.",
+                self.n_values,
+                values.shape,
+                self.name,
             )
+            return values[: self.n_values]
 
         return values
 
