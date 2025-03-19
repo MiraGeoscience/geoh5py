@@ -38,7 +38,11 @@ tests:
       - pytest ./tests
     requirements:
       run:
+        - jinja2
         - pytest
+        - pyyaml
+        - scipy >= 1.14.0, <1.15.dev
+        - tomli
     files:
       source:
         - tests/
