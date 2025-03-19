@@ -47,14 +47,14 @@ Pillow = "~10.3.0"
 pydantic = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
-Pygments = "*"
+jinja2 = '*'
 lockfile = "^0.12.2"
+packaging = '*'
+Pygments = "*"
 pylint = ">=3.3.1"
 pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
-jinja2 = '*'
-packaging = '*'
 scipy = "~1.14.0"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
