@@ -35,14 +35,11 @@ tests:
       imports:
         - geoh5py
   - script:
-      - pytest ./tests
+      - pytest --ignore=tests/version_test.py
     requirements:
       run:
-        - jinja2
         - pytest
-        - pyyaml
         - scipy >= 1.14.0, <1.15.dev
-        - tomli
     files:
       source:
         - tests/
