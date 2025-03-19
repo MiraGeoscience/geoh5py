@@ -133,6 +133,14 @@ def uuid_to_string(value: UUID | None) -> str:
     return value
 
 
+def uuid_to_string_or_numeric(value: UUID | float | int | None) -> str | float | int:
+    if value is None:
+        return ""
+    if isinstance(value, UUID):
+        return str(value)
+    return value
+
+
 class BaseValidator(ABC):
     """Concrete base class for validators."""
 

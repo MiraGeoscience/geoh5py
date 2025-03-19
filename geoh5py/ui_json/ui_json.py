@@ -99,9 +99,7 @@ class BaseUIJson(BaseModel):
         """Write the UIJson object to file."""
 
         with open(path, "w", encoding="utf-8") as file:
-            data = self.model_dump_json(
-                indent=4, exclude_unset=True, warnings=False, by_alias=True
-            )
+            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
