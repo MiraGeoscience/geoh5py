@@ -26,7 +26,7 @@ from uuid import UUID
 import numpy as np
 
 from ...data.data_type import DataType, ReferencedValueMapType
-from ..utils import decode_byte_array, str2uuid, to_tuple
+from ..utils import decode_byte_array, find_unique_name, str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
 
 
@@ -207,7 +207,9 @@ class DrillholesGroupTable(ABC):
         """
         # get the
         for name in output_array.dtype.names:
-            if isinstance(self.properties_type[name], ReferencedValueMapType):
+            if name in self.properties_type and isinstance(
+                self.properties_type[name], ReferencedValueMapType
+            ):
                 output_array[name] = decode_byte_array(
                     self.properties_type[name].value_map.map_values(output_array[name]),
                     str,
@@ -226,6 +228,8 @@ class DrillholesGroupTable(ABC):
         :param data_type: The data type associated to description;
             useful especially for referenced data.
         """
+        name = find_unique_name(name, list(self.parent.data.keys()))
+
         if not isinstance(name, str) or name in self.parent.data:
             raise KeyError("The name must be a string not present in data.")
 
