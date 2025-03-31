@@ -31,6 +31,7 @@ from .data_type import (
     GeometricDynamicDataType,
     ReferenceDataType,
 )
+from .colour import Colour
 from .data_unit import DataUnit
 from .datetime_data import DatetimeData
 from .filename_data import FilenameData

@@ -55,6 +55,7 @@ INV_KEY_MAP = {
     "Clipping IDs": "clipping_ids: list | None",
     "Collar": "collar",
     "Color map": "color_map",
+    "Colour": "COLOUR",
     "Contributors": "contributors",
     "Concatenated object IDs": "concatenated_object_ids",
     "Cost": "cost",
@@ -956,3 +957,31 @@ def decode_byte_array(values: np.ndarray, data_type: type) -> np.array:
     return (
         np.char.decode(values, "utf-8") if values.dtype.kind == "S" else values
     ).astype(data_type)
+
+
+def min_max_scaler(
+    values: np.ndarray,
+    min_scaler: float = 0.0,
+    max_scaler: float = 1.0,
+    axis: None | int = None,
+) -> np.ndarray:
+    """
+    Min-Max scale an array.
+
+    :param values: The array to scale.
+    :param min_scaler: The minimum value to scale to.
+    :param max_scaler: The maximum value to scale to.
+    :param axis: Axis to apply scaling (eg. 0 for columns, 1 for rows).
+    :return: The scaled array.
+    """
+    v_min = values.min(axis=axis, keepdims=True)
+    v_max = values.max(axis=axis, keepdims=True)
+    v_range = v_max - v_min
+
+    scaled = np.where(
+        v_range == 0,
+        min_scaler,
+        (values - v_min) / v_range * (max_scaler - min_scaler) + min_scaler,
+    )
+
+    return scaled

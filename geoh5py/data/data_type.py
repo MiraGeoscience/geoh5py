@@ -399,24 +399,29 @@ class DataType(EntityType):
         if values is None or (
             isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
         ):
-            primitive_type = PrimitiveTypeEnum.FLOAT
+            return PrimitiveTypeEnum.FLOAT
 
-        elif isinstance(values, np.ndarray) and (
-            np.issubdtype(values.dtype, np.integer)
-        ):
-            primitive_type = PrimitiveTypeEnum.INTEGER
-        elif isinstance(values, str) or (
+        if isinstance(values, np.ndarray) and (np.issubdtype(values.dtype, np.integer)):
+            return PrimitiveTypeEnum.INTEGER
+        if isinstance(values, str) or (
             isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
         ):
-            primitive_type = PrimitiveTypeEnum.TEXT
-        elif isinstance(values, np.ndarray) and (values.dtype == bool):
-            primitive_type = PrimitiveTypeEnum.BOOLEAN
-        else:
-            raise NotImplementedError(
-                "Only add_data values of type FLOAT, INTEGER,"
-                "BOOLEAN and TEXT have been implemented"
+            return PrimitiveTypeEnum.TEXT
+        if isinstance(values, np.ndarray) and (values.dtype == bool):
+            return PrimitiveTypeEnum.BOOLEAN
+        if (
+            isinstance(values, np.ndarray)
+            and values.dtype.names == ("r", "g", "b")
+            and all(
+                values.dtype.fields[band][0] == np.uint8 for band in ("r", "g", "b")
             )
-        return primitive_type
+        ):
+            return PrimitiveTypeEnum.COLOUR
+
+        raise NotImplementedError(
+            "Only add_data values of type FLOAT, INTEGER,"
+            "BOOLEAN and TEXT have been implemented"
+        )
 
     @property
     def scale(self) -> str | None:
