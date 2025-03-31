@@ -64,7 +64,7 @@ def test_colour_data(tmp_path, caplog):
         # create values2, a structured float array rgb
         values2 = np.array(
             [(0.1, 0.5, 0.9), (0.6, 1.0, 0.4), (2.1, 1.5, 1.2), (2.1, 1.5, 0.4)],
-            dtype=[("r", np.float), ("g", np.float), ("b", np.float)],
+            dtype=[("r", np.float32), ("g", np.float32), ("b", np.float32)],
         )
 
         with caplog.at_level(logging.WARNING):
