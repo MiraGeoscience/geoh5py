@@ -2,7 +2,7 @@ schema_version: 1
 
 context:
   name: "geoh5py"
-  version: "0.11.0a1"
+  version: "0.11.0a2"
   python_min: "3.10"
 
 package:
