@@ -164,6 +164,20 @@ class ChoiceForm(BaseForm):
     Choice list uijson form.
     """
 
+    value: str
+    choice_list: list[str]
+
+    @model_validator(mode="after")
+    def valid_choice(self):
+        if self.value not in self.choice_list:
+            raise ValueError(f"Provided value: '{self.value}' is not a valid choice.")
+
+        return self
+
+
+class MultiChoiceForm(BaseForm):
+    """Multi-choice list uijson form."""
+
     value: list[str]
     choice_list: list[str]
     multi_select: bool = False
@@ -173,12 +187,6 @@ class ChoiceForm(BaseForm):
     def to_list(cls, value):
         if not isinstance(value, list):
             value = [value]
-        return value
-
-    @field_serializer("value", when_used="json")
-    def string_if_single(self, value):
-        if len(value) == 1:
-            value = value[0]
         return value
 
     @model_validator(mode="after")
