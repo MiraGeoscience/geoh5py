@@ -97,26 +97,23 @@ class Colour(Data):
             [(name.lower(), values.dtype[name]) for name in values.dtype.names]
         )
 
-        for band in ["r", "g", "b"]:
+        for band in ["r", "g", "b", "a"]:
             if band not in values.dtype.names:
-                raise ValueError(
-                    "Values must be a 2D numpy array containing RGB bands."
-                )
+                if band == "a":
+                    values = rfn.append_fields(
+                        values,
+                        names="a",
+                        data=np.full(values.shape[0], 255, dtype=np.uint8),
+                        usemask=False,
+                    )
+                else:
+                    raise ValueError(
+                        "Values must be a 2D numpy array containing RGB bands."
+                    )
 
             # ensure the min and the max are between 0 and 255
             if not values[band].dtype == np.uint8:
                 values[band] = min_max_scaler(values[band], 0, 255).astype(np.uint8)
-
-        if "a" in values.dtype.names:
-            if values["a"].dtype != np.uint8:
-                values["a"] = min_max_scaler(values["a"], 0, 255).astype(np.uint8)
-        else:
-            values = rfn.append_fields(
-                values,
-                names="a",
-                data=np.full(values.shape[0], 255, dtype=np.uint8),
-                usemask=False,
-            )
 
         return values[["r", "g", "b", "a"]]
 
