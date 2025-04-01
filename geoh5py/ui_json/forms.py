@@ -47,6 +47,7 @@ from geoh5py.shared.validators import (
     to_uuid,
     types_to_string,
     uuid_to_string,
+    uuid_to_string_or_numeric,
 )
 
 
@@ -312,7 +313,7 @@ class DataType(str, Enum):
 UUIDOrNumber = Annotated[
     UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
+    PlainSerializer(uuid_to_string_or_numeric),
 ]
 
 

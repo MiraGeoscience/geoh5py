@@ -69,7 +69,8 @@ class TextData(Data):
 
         if isinstance(values, np.ndarray) and values.dtype == object:
             values = np.array(
-                [v.decode("utf-8") if isinstance(v, bytes) else v for v in values]
+                [v.decode("utf-8") if isinstance(v, bytes) else v for v in values],
+                dtype=str,
             )
 
             if self.n_values is not None and len(values) < self.n_values:
