@@ -27,7 +27,6 @@ from warnings import warn
 import numpy as np
 
 from .data import Data, PrimitiveTypeEnum
-from .data_association_enum import DataAssociationEnum
 
 
 logger = logging.getLogger(__name__)
@@ -66,35 +65,6 @@ class NumericData(Data, ABC):
         :param values: numpy array to modify.
         :return: the formatted values.
         """
-
-    def format_length(self, values: np.ndarray) -> np.ndarray:
-        """
-        Check for possible mismatch between the length of values
-        :param values: the values to check.
-        :return: the values with the right length.
-        """
-
-        if self.n_values is None:
-            return values
-
-        if len(values) < self.n_values:
-            full_vector = np.ones(self.n_values, dtype=values.dtype) * self.nan_value
-            full_vector[: len(np.ravel(values))] = np.ravel(values)
-            return full_vector
-
-        if (
-            len(values) > self.n_values
-            and self.association is not DataAssociationEnum.OBJECT
-        ):
-            logger.warning(
-                "Input 'values' of shape (%s,) expected. Array of shape %s provided for data %s.",
-                self.n_values,
-                values.shape,
-                self.name,
-            )
-            return values[: self.n_values]
-
-        return values
 
     def validate_values(self, values: np.ndarray | None) -> np.ndarray:
         """

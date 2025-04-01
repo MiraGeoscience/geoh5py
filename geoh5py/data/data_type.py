@@ -409,12 +409,11 @@ class DataType(EntityType):
             return PrimitiveTypeEnum.TEXT
         if isinstance(values, np.ndarray) and (values.dtype == bool):
             return PrimitiveTypeEnum.BOOLEAN
+
         if (
             isinstance(values, np.ndarray)
-            and values.dtype.names == ("r", "g", "b")
-            and all(
-                values.dtype.fields[band][0] == np.uint8 for band in ("r", "g", "b")
-            )
+            and (values.dtype.names in ("r", "g", "b"), ("r", "g", "b", "a"))
+            and all(dtype[0] == np.uint8 for dtype in values.dtype.fields.values())
         ):
             return PrimitiveTypeEnum.COLOUR
 

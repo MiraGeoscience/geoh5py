@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 import pytest
+from numpy.lib import recfunctions as rfn
 
 from geoh5py.objects import Points, Surface
 from geoh5py.workspace import Workspace
@@ -38,6 +39,10 @@ def test_colour_data(tmp_path, caplog):
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
         )
 
+        result0 = rfn.append_fields(
+            values, "a", np.full(values.shape[0], 255, dtype=np.uint8), usemask=False
+        )
+
         # create a colour object
         points.add_data({"colour1": {"values": values, "association": "Vertex"}})
 
@@ -45,7 +50,7 @@ def test_colour_data(tmp_path, caplog):
     with Workspace(h5file_path) as workspace:
         points = workspace.get_entity("Points")[0]
         colour_data = points.get_data("colour1")[0]
-        assert all(colour_data.values == values)
+        assert all(colour_data.values == result0)
 
         # create values1: a float np array
         values1 = np.array(
@@ -55,16 +60,26 @@ def test_colour_data(tmp_path, caplog):
         colour_data.values = values1
 
         result1 = np.array(
-            [(0, 0, 0), (255, 255, 0), (0, 0, 0)],
-            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
+            [(0, 0, 0, 255), (255, 255, 0, 255), (90, 90, 90, 0)],
+            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
         assert all(colour_data.values == result1)
 
         # create values2, a structured float array rgb
         values2 = np.array(
-            [(0.1, 0.5, 0.9), (0.6, 1.0, 0.4), (2.1, 1.5, 1.2), (2.1, 1.5, 0.4)],
-            dtype=[("r", np.float32), ("g", np.float32), ("b", np.float32)],
+            [
+                (0.1, 0.5, 0.9, 0.2),
+                (0.6, 1.0, 0.4, 0.1),
+                (2.1, 1.5, 1.2, 0.6),
+                (2.1, 1.5, 0.4, 0.9),
+            ],
+            dtype=[
+                ("r", np.float32),
+                ("g", np.float32),
+                ("b", np.float32),
+                ("a", np.float32),
+            ],
         )
 
         with caplog.at_level(logging.WARNING):
@@ -73,8 +88,8 @@ def test_colour_data(tmp_path, caplog):
         assert "Input 'values' of shape" in caplog.text
 
         result2 = np.array(
-            [(0, 0, 159), (63, 127, 0), (255, 255, 255)],
-            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
+            [(0, 0, 159, 31), (63, 127, 0, 0), (255, 255, 255, 159)],
+            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
         assert all(colour_data.values == result2)
@@ -90,8 +105,8 @@ def test_colour_data(tmp_path, caplog):
         )
 
         result3 = np.array(
-            [(0, 0, 0), (255, 255, 0)],
-            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
+            [(0, 0, 0, 255), (255, 255, 0, 255)],
+            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
         assert all(data_object.values == result3)

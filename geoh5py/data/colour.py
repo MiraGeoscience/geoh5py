@@ -23,10 +23,10 @@ import logging
 from typing import Any
 
 import numpy as np
+from numpy.lib import recfunctions as rfn
 
 from ..shared.utils import min_max_scaler
 from .data import Data
-from .data_association_enum import DataAssociationEnum
 from .primitive_type_enum import PrimitiveTypeEnum
 
 
@@ -69,10 +69,15 @@ class Colour(Data):
         if values.dtype != np.uint8:
             values = min_max_scaler(values, 0, 255, axis=0)
 
+        if values.shape[1] == 3:
+            values = np.column_stack(
+                (values, np.full(values.shape[0], 255, dtype=np.uint8))
+            )
+
         values = (
-            values[:, :3]
+            values[:, :4]
             .astype(np.uint8)
-            .view([("r", "u1"), ("g", "u1"), ("b", "u1")])
+            .view([("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")])
             .reshape(-1)
         )
 
@@ -87,6 +92,10 @@ class Colour(Data):
 
         :return: The RGB values.
         """
+        # convert the dtype names to lower case
+        values = values.astype(
+            [(name.lower(), values.dtype[name]) for name in values.dtype.names]
+        )
 
         for band in ["r", "g", "b"]:
             if band not in values.dtype.names:
@@ -98,7 +107,18 @@ class Colour(Data):
             if not values[band].dtype == np.uint8:
                 values[band] = min_max_scaler(values[band], 0, 255).astype(np.uint8)
 
-        return values[["r", "g", "b"]]
+        if "a" in values.dtype.names:
+            if values["a"].dtype != np.uint8:
+                values["a"] = min_max_scaler(values["a"], 0, 255).astype(np.uint8)
+        else:
+            values = rfn.append_fields(
+                values,
+                names="a",
+                data=np.full(values.shape[0], 255, dtype=np.uint8),
+                usemask=False,
+            )
+
+        return values[["r", "g", "b", "a"]]
 
     @classmethod
     def _verify_parents(cls, parent: Any):
@@ -119,43 +139,14 @@ class Colour(Data):
                     f"The allowed parents are {cls.allowed_parent}"
                 )
 
-    def format_length(self, values: np.ndarray) -> np.ndarray:
-        """
-        Ensure the structured RGB array has the expected length.
-
-        :param values: The structured array to check.
-
-        :return: Structured array with adjusted length.
-        """
-        if self.n_values is None:
-            return values
-
-        dtype = values.dtype
-        nan_rgb = tuple([self.nan_value] * len(dtype.names))
-
-        if len(values) < self.n_values:
-            full_vector = np.empty(self.n_values, dtype=dtype)
-            full_vector[:] = nan_rgb
-            full_vector[: len(values)] = values
-            return full_vector
-
-        if (
-            len(values) > self.n_values
-            and self.association is not DataAssociationEnum.OBJECT
-        ):
-            logger.warning(
-                "Input 'values' of shape (%s,) expected. Array of shape %s provided for data %s.",
-                self.n_values,
-                values.shape,
-                self.name,
-            )
-            return values[: self.n_values]
-
-        return values
-
     @property
     def nan_value(self):
-        return 0
+        return np.array(
+            [
+                (90, 90, 90, 0),
+            ],
+            dtype=[("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")],
+        )
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
