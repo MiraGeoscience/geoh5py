@@ -379,6 +379,14 @@ class DataType(EntityType):
         """
         return self._units
 
+    @units.setter
+    def units(self, unit: str | None):
+        if not isinstance(unit, (str, type(None))):
+            raise TypeError(f"Attribute 'units' must be a string, not {type(unit)}")
+        self._units = unit
+
+        self.workspace.update_attribute(self, "attributes")
+
     @staticmethod
     def primitive_type_from_values(values: np.ndarray | None) -> PrimitiveTypeEnum:
         """
@@ -408,14 +416,6 @@ class DataType(EntityType):
             "Only add_data values of type FLOAT, INTEGER,"
             "BOOLEAN, TEXT and COLOUR have been implemented"
         )
-
-    @units.setter
-    def units(self, unit: str | None):
-        if not isinstance(unit, (str, type(None))):
-            raise TypeError(f"Attribute 'units' must be a string, not {type(unit)}")
-        self._units = unit
-
-        self.workspace.update_attribute(self, "attributes")
 
     @property
     def scale(self) -> str | None:

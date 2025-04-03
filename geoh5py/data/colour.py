@@ -92,6 +92,7 @@ class Colour(Data):
 
         :return: The RGB values.
         """
+
         # convert the dtype names to lower case
         values = values.astype(
             [(name.lower(), values.dtype[name]) for name in values.dtype.names]
@@ -112,7 +113,7 @@ class Colour(Data):
                     )
 
             # ensure the min and the max are between 0 and 255
-            if not values[band].dtype == np.uint8:
+            if values[band].dtype != np.uint8:
                 values[band] = min_max_scaler(values[band], 0, 255).astype(np.uint8)
 
         return values[["r", "g", "b", "a"]]
