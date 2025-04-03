@@ -38,6 +38,7 @@ from geoh5py.ui_json.forms import (
     FileForm,
     FloatForm,
     IntegerForm,
+    MultiChoiceForm,
     ObjectForm,
     StringForm,
 )
@@ -145,19 +146,25 @@ def test_float_form():
 def test_choice_form():
     form = ChoiceForm(label="name", value="test", choice_list=["test"])
     assert form.label == "name"
-    assert form.value == ["test"]
+    assert form.value == "test"
     assert form.choice_list == ["test"]
-    assert not form.multi_select
     assert '"value":"test"' in form.json_string
-    msg = r"Provided value\(s\): \['nope'\] are not valid choices"
+    msg = r"Provided value: 'nope' is not a valid choice"
     with pytest.raises(ValidationError, match=msg):
         _ = ChoiceForm(label="name", value="nope", choice_list=["test"])
 
-    form = ChoiceForm(
-        label="name", value=["test", "other"], choice_list=["test", "other"]
+
+def test_multi_choice_form():
+    form = MultiChoiceForm(
+        label="names", value=["test", "other"], choice_list=["test", "other", "another"]
     )
     assert form.value == ["test", "other"]
+    assert form.choice_list == ["test", "other", "another"]
     assert '"value":["test","other"]' in form.json_string
+
+    form = MultiChoiceForm(label="names", value="test", choice_list=["test", "other"])
+    assert form.value == ["test"]
+    assert '"value":["test"]' in form.json_string
 
 
 def test_file_form(tmp_path):
