@@ -21,7 +21,6 @@ import logging
 
 import numpy as np
 import pytest
-from numpy.lib import recfunctions as rfn
 
 from geoh5py.objects import Points, Surface
 from geoh5py.workspace import Workspace
@@ -35,21 +34,22 @@ def test_colour_data(tmp_path, caplog):
         points = Points.create(workspace, vertices=np.random.rand(3, 3))
 
         values = np.array(
-            [(10, 50, 90), (60, 100, 40), (210, 150, 120)],
-            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
+            [(10, 50, 90), (60, 100, 40), (210, 150, 120)], dtype=np.uint8
         )
 
-        result0 = rfn.append_fields(
-            values, "a", np.full(values.shape[0], 255, dtype=np.uint8), usemask=False
+        result0 = np.array(
+            [(10, 50, 90, 255), (60, 100, 40, 255), (210, 150, 120, 255)],
+            dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
         # create a colour object
-        points.add_data({"colour1": {"values": values, "association": "Vertex"}})
+        points.add_data({"colour1": {"values": values}})
 
     # reopen
     with Workspace(h5file_path) as workspace:
         points = workspace.get_entity("Points")[0]
         colour_data = points.get_data("colour1")[0]
+
         assert all(colour_data.values == result0)
 
         # create values1: a float np array
@@ -119,6 +119,8 @@ def test_colour_errors():
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
         )
 
+        from geoh5py.shared.utils import array_is_colour
+
         surface = Surface.create(workspace)
 
         with pytest.raises(TypeError, match="Parent 'Surface' is not allowed"):
@@ -146,10 +148,17 @@ def test_colour_errors():
         with pytest.raises(ValueError, match="Values must be a 2D numpy array"):
             data_colour.values = np.array([1, 2, 3])
 
+        no_colour = np.array(
+            [(10, 50, 90), (60, 100, 40), (210, 150, 120)],
+            dtype=[("a", np.uint8), ("b", np.uint8), ("c", np.uint8)],
+        )
+
         with pytest.raises(
             ValueError, match="Values must be a 2D numpy array containing RGB bands"
         ):
-            data_colour.values = np.array(
-                [(10, 50, 90), (60, 100, 40), (210, 150, 120)],
-                dtype=[("a", np.uint8), ("b", np.uint8), ("c", np.uint8)],
-            )
+            data_colour.values = no_colour
+
+        with pytest.raises(
+            NotImplementedError, match="Only add_data values of type FLOAT,"
+        ):
+            points.add_data({"colour_false": {"values": no_colour}})

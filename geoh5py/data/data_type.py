@@ -379,14 +379,6 @@ class DataType(EntityType):
         """
         return self._units
 
-    @units.setter
-    def units(self, unit: str | None):
-        if not isinstance(unit, (str, type(None))):
-            raise TypeError(f"Attribute 'units' must be a string, not {type(unit)}")
-        self._units = unit
-
-        self.workspace.update_attribute(self, "attributes")
-
     @staticmethod
     def primitive_type_from_values(values: np.ndarray | None) -> PrimitiveTypeEnum:
         """
@@ -396,11 +388,13 @@ class DataType(EntityType):
 
         :return: The equivalent primitive type of the data.
         """
+
+        if utils.array_is_colour(values):
+            return PrimitiveTypeEnum.COLOUR
         if values is None or (
             isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
         ):
             return PrimitiveTypeEnum.FLOAT
-
         if isinstance(values, np.ndarray) and (np.issubdtype(values.dtype, np.integer)):
             return PrimitiveTypeEnum.INTEGER
         if isinstance(values, str) or (
@@ -410,17 +404,18 @@ class DataType(EntityType):
         if isinstance(values, np.ndarray) and (values.dtype == bool):
             return PrimitiveTypeEnum.BOOLEAN
 
-        if (
-            isinstance(values, np.ndarray)
-            and (values.dtype.names in ("r", "g", "b"), ("r", "g", "b", "a"))
-            and all(dtype[0] == np.uint8 for dtype in values.dtype.fields.values())
-        ):
-            return PrimitiveTypeEnum.COLOUR
-
         raise NotImplementedError(
             "Only add_data values of type FLOAT, INTEGER,"
-            "BOOLEAN and TEXT have been implemented"
+            "BOOLEAN, TEXT and COLOUR have been implemented"
         )
+
+    @units.setter
+    def units(self, unit: str | None):
+        if not isinstance(unit, (str, type(None))):
+            raise TypeError(f"Attribute 'units' must be a string, not {type(unit)}")
+        self._units = unit
+
+        self.workspace.update_attribute(self, "attributes")
 
     @property
     def scale(self) -> str | None:

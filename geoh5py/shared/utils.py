@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
@@ -985,3 +985,29 @@ def min_max_scaler(
     )
 
     return scaled
+
+
+def array_is_colour(values: np.ndarray) -> bool:
+    """
+    Check if the values are RGB or RGBA.
+    The function does not consider the type as we are formatting it.
+
+    :param values: The values to check.
+
+    :return: True if the values are RGB or RGBA.
+    """
+    if not isinstance(values, np.ndarray):
+        return False
+
+    if values.dtype.names:
+        if values.dtype.names in (("r", "g", "b"), ("r", "g", "b", "a")) and all(
+            np.issubdtype(values.dtype[name], np.number) for name in values.dtype.names
+        ):
+            return True
+        return False
+
+    return (
+        values.ndim == 2
+        and values.shape[1] in (3, 4)
+        and np.issubdtype(values.dtype, np.number)
+    )
