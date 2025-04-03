@@ -41,6 +41,7 @@ from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
 from ..shared.utils import (
+    array_is_colour,
     box_intersect,
     clear_array_attributes,
     mask_by_extent,
@@ -401,9 +402,11 @@ class ObjectBase(EntityContainer):
         :return: The name of the association.
         """
         if isinstance(values, np.ndarray):
-            if values.ravel().shape[0] == getattr(self, "n_cells", None):
+            values = values if array_is_colour(values) else values.ravel()
+
+            if values.shape[0] == getattr(self, "n_cells", None):
                 return "CELL"
-            if values.ravel().shape[0] == getattr(self, "n_vertices", None):
+            if values.shape[0] == getattr(self, "n_vertices", None):
                 return "VERTEX"
 
         return "OBJECT"

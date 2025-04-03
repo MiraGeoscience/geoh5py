@@ -45,6 +45,7 @@ class PrimitiveTypeEnum(Enum):
     GEOMETRIC = 9
     MULTI_TEXT = 10
     BOOLEAN = 11
+    COLOUR = 12
 
 
 class DataTypeEnum(Enum):

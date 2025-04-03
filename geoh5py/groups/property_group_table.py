@@ -90,6 +90,9 @@ class PropertyGroupTable(ABC):
 
         for key, name in zip(keys, names, strict=False):  # type: ignore
             data = self.property_group.parent.get_data(key)[0]
+
+            if data.values is None:
+                continue
             if isinstance(data, ReferencedData) and mapped:
                 output_array[str(name)] = decode_byte_array(data.mapped_values, str)
             else:
