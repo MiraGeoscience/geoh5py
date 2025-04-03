@@ -41,7 +41,7 @@ class Colour(Data):
     To mimic this behavior, works with RGB only (and drop A if exists).
     """
 
-    allowed_parent = [
+    _allowed_parent = [
         "Points",
         "Curve",
         "BlockModel",
@@ -49,13 +49,15 @@ class Colour(Data):
         "Grid2D",
     ]
 
+    _formats = [("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")]
+
     def __init__(self, *args, **kwargs):
         self._verify_parents(kwargs.get("parent", None))
 
         super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def _array_to_rgb(values: np.ndarray) -> np.ndarray:
+    @classmethod
+    def _array_to_rgb(cls, values: np.ndarray) -> np.ndarray:
         """
         Convert a 2D numpy array to RGB.
 
@@ -74,12 +76,7 @@ class Colour(Data):
                 (values, np.full(values.shape[0], 255, dtype=np.uint8))
             )
 
-        values = (
-            values[:, :4]
-            .astype(np.uint8)
-            .view([("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")])
-            .reshape(-1)
-        )
+        values = values.astype(np.uint8).view(cls._formats).reshape(-1)
 
         return values
 
@@ -131,20 +128,15 @@ class Colour(Data):
         if parent is not None:
             # use name to avoid circular import
             parent_classes = parent.__class__.__name__
-            if parent_classes not in cls.allowed_parent:
+            if parent_classes not in cls._allowed_parent:
                 raise TypeError(
                     f"Parent '{parent_classes}' is not allowed for Colour data.\n"
-                    f"The allowed parents are {cls.allowed_parent}"
+                    f"The allowed parents are {cls._allowed_parent}"
                 )
 
     @property
     def nan_value(self):
-        return np.array(
-            [
-                (90, 90, 90, 0),
-            ],
-            dtype=[("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")],
-        )
+        return np.array([(90, 90, 90, 0)], dtype=self._formats)
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:

@@ -54,7 +54,7 @@ def test_colour_data(tmp_path, caplog):
 
         # create values1: a float np array
         values1 = np.array(
-            [[0.1, 0.5, 0.4], [0.6, 1.0, 0.4]],
+            [[np.nan, 0.5, 0.4], [0.6, 1.0, 0.4]],
         )
 
         colour_data.values = values1
@@ -69,7 +69,7 @@ def test_colour_data(tmp_path, caplog):
         # create values2, a structured float array rgb
         values2 = np.array(
             [
-                (0.1, 0.5, 0.9, 0.2),
+                (np.nan, 0.5, 0.9, 0.2),
                 (0.6, 1.0, 0.4, 0.1),
                 (2.1, 1.5, 1.2, 0.6),
                 (2.1, 1.5, 0.4, 0.9),
@@ -88,7 +88,7 @@ def test_colour_data(tmp_path, caplog):
         assert "Input 'values' of shape" in caplog.text
 
         result2 = np.array(
-            [(0, 0, 159, 31), (63, 127, 0, 0), (255, 255, 255, 159)],
+            [(0, 0, 159, 31), (72, 127, 0, 0), (255, 255, 255, 159)],
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 

@@ -972,8 +972,12 @@ def min_max_scaler(
     :param min_scaler: The minimum value to scale to.
     :param max_scaler: The maximum value to scale to.
     :param axis: Axis to apply scaling (eg. 0 for columns, 1 for rows).
+
     :return: The scaled array.
     """
+    # replace NaN with min_scaler
+    values = np.nan_to_num(values, nan=min_scaler)
+
     v_min = values.min(axis=axis, keepdims=True)
     v_max = values.max(axis=axis, keepdims=True)
     v_range = v_max - v_min
