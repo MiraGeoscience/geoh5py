@@ -158,6 +158,7 @@ def test_multi_choice_form():
     form = MultiChoiceForm(
         label="names", value=["test", "other"], choice_list=["test", "other", "another"]
     )
+    assert form.multi_select
     assert form.value == ["test", "other"]
     assert form.choice_list == ["test", "other", "another"]
     assert '"value":["test","other"]' in form.json_string
@@ -165,6 +166,14 @@ def test_multi_choice_form():
     form = MultiChoiceForm(label="names", value="test", choice_list=["test", "other"])
     assert form.value == ["test"]
     assert '"value":["test"]' in form.json_string
+
+    with pytest.raises(ValidationError, match="multi_select: True."):
+        _ = MultiChoiceForm(
+            label="names",
+            value="test",
+            choice_list=["test", "other"],
+            multi_select=False,
+        )
 
 
 def test_file_form(tmp_path):
