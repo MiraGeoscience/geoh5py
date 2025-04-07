@@ -60,7 +60,7 @@ def test_colour_data(tmp_path, caplog):
         colour_data.values = values1
 
         result1 = np.array(
-            [(0, 0, 0, 255), (255, 255, 0, 255), (90, 90, 90, 0)],
+            [(90, 90, 90, 0), (255, 255, 0, 255), (90, 90, 90, 0)],
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
@@ -88,7 +88,7 @@ def test_colour_data(tmp_path, caplog):
         assert "Input 'values' of shape" in caplog.text
 
         result2 = np.array(
-            [(0, 0, 159, 31), (72, 127, 0, 0), (255, 255, 255, 159)],
+            [(90, 90, 90, 0), (72, 127, 0, 0), (255, 255, 255, 159)],
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
@@ -105,7 +105,7 @@ def test_colour_data(tmp_path, caplog):
         )
 
         result3 = np.array(
-            [(0, 0, 0, 255), (255, 255, 0, 255)],
+            [(90, 90, 90, 0), (255, 255, 0, 255)],
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8), ("a", np.uint8)],
         )
 
