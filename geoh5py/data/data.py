@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from abc import abstractmethod
 from typing import Any
@@ -31,6 +32,9 @@ from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
 from .data_type import DataType, ReferenceDataType
 from .primitive_type_enum import PrimitiveTypeEnum
+
+
+logger = logging.getLogger(__name__)
 
 
 class Data(Entity):
@@ -154,6 +158,39 @@ class Data(Entity):
     def default_type_uid(cls) -> uuid.UUID | None:
         """Abstract method to return the default type uid for the class."""
         return None
+
+    def format_length(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check for possible mismatch between the length of values
+        :param values: the values to check.
+        :return: the values with the right length.
+        """
+        if self.n_values is None:
+            return values
+
+        if self.primitive_type is not PrimitiveTypeEnum.COLOUR:
+            values = np.ravel(values)
+
+        if len(values) < self.n_values:
+            full_vector = np.empty(self.n_values, dtype=values.dtype)
+            full_vector[:] = self.nan_value
+            full_vector[: len(values)] = values
+
+            return full_vector
+
+        if (
+            len(values) > self.n_values
+            and self.association is not DataAssociationEnum.OBJECT
+        ):
+            logger.warning(
+                "Input 'values' of shape (%s,) expected. Array of shape %s provided for data %s.",
+                self.n_values,
+                values.shape,
+                self.name,
+            )
+            return values[: self.n_values]
+
+        return values
 
     @property
     def formatted_values(self):

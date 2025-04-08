@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.11.0-alpha.1"
+version = "0.12.0-alpha.1"
 
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
@@ -41,20 +41,20 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.10"
 
-pydantic = "^2.5.2"
 h5py = "^3.2.1"
 numpy = "~1.26.0"
 Pillow = "~10.3.0"
+pydantic = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
-Pygments = "*"
+jinja2 = '*'
 lockfile = "^0.12.2"
+packaging = '*'
+Pygments = "*"
 pylint = ">=3.3.1"
 pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
-jinja2 = '*'
-packaging = '*'
 scipy = "~1.14.0"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"

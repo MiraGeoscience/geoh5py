@@ -95,7 +95,6 @@ repos:
         exclude_types: [jupyter]
     -   id: check-toml
     -   id: check-yaml
-        exclude: ^recipe.yaml$
     -   id: check-added-large-files
     -   id: check-case-conflict
     -   id: check-merge-conflict
