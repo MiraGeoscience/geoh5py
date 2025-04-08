@@ -180,7 +180,14 @@ class MultiChoiceForm(BaseForm):
 
     value: list[str]
     choice_list: list[str]
-    multi_select: bool = False
+    multi_select: bool = True
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value):
+        if not value:
+            raise ValueError("MultiChoiceForm must have multi_select: True.")
+        return value
 
     @field_validator("value", mode="before")
     @classmethod
