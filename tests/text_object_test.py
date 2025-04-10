@@ -25,6 +25,8 @@ import string
 from pathlib import Path
 
 import numpy as np
+import pytest
+from pydantic_core import ValidationError
 
 from geoh5py.objects import TextObject
 from geoh5py.objects.text import TextData
@@ -55,3 +57,27 @@ def test_create_text_object(tmp_path: Path):
         ):
             assert entry.text == label
             assert entry.color == color
+
+
+def test_text_data_length_mismatch(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as workspace:
+        # Create a TextObject with 5 vertices
+        vertices = np.random.rand(5, 3)
+        text_object = TextObject.create(workspace, vertices=vertices)
+
+        with pytest.raises(ValidationError, match="Field required"):
+            text_object.text_mesh_data = '{"abc":{"label": "a"}}'
+
+        # Create invalid text_mesh_data with mismatched length
+        invalid_text_mesh_data = {
+            "text_data": [
+                {"text": "Label1", "starting_point": "{0,0,0}"},
+                {"text": "Label2", "starting_point": "{1,1,1}"},
+            ]
+        }
+
+        with pytest.raises(
+            ValueError,
+            match="The 'Text Data' dictionary must contain a list of len\\('n_vertices'\\).",
+        ):
+            text_object.text_mesh_data = invalid_text_mesh_data

@@ -168,7 +168,7 @@ class TextObject(Points):
         """
         return None
 
-    def _validate_text_data(self, value: str | None) -> TextData:
+    def _validate_text_data(self, value: str | dict | None) -> TextData:
         """
         Validate the text data.
         """
@@ -180,13 +180,13 @@ class TextObject(Points):
                 ]
             )
 
-        try:
-            mesh_data = TextData(**loads(value))
+        if isinstance(value, str):
+            value = loads(value)
 
-        except (TypeError, ValueError) as e:
-            raise ValueError(
-                "Attribute 'text_mesh_data' must be a list of text or a JSON string."
-            ) from e
+        if not isinstance(value, dict):
+            raise TypeError("The 'Text Data' must be a dictionary or a JSON string.")
+
+        mesh_data = TextData(**value)
 
         if len(mesh_data.text_data) != self.n_vertices:
             raise ValueError(
