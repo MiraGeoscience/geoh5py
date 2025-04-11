@@ -25,7 +25,15 @@ from json import loads
 from typing import TYPE_CHECKING
 
 import numpy as np
-from pydantic import AliasChoices, BaseModel, Field, field_validator
+from pydantic import (
+    AliasChoices,
+    AliasGenerator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+)
+from pydantic.alias_generators import to_pascal, to_snake
 
 from .points import Points
 
@@ -39,65 +47,24 @@ class TextEntry(BaseModel):
     Core parameters for text mesh data.
     """
 
-    starting_point: str = Field(
-        validation_alias=AliasChoices("starting_point", "StartingPoint"),
-        serialization_alias="StartingPoint",
+    model_config = ConfigDict(
+        alias_generator=AliasGenerator(  # type: ignore
+            validation_alias=to_snake,
+            serialization_alias=to_pascal,
+        )
     )
-    annotation: int = Field(
-        validation_alias=AliasChoices("annotation", "Annotation"),
-        serialization_alias="Annotation",
-        default=0,
-    )
-    color: str | None = Field(
-        validation_alias=AliasChoices("color", "Color"),
-        serialization_alias="Color",
-        default="#ffffff",
-    )
-    direction: str | None = Field(
-        validation_alias=AliasChoices("direction", "Direction"),
-        serialization_alias="Direction",
-        default="{1,0,0}",
-    )
-    font: str | None = Field(
-        validation_alias=AliasChoices("font", "Font"),
-        serialization_alias="Font",
-        default="builtin_simple",
-    )
-    font_size: int | None = Field(
-        validation_alias=AliasChoices("font_size", "FontSize"),
-        serialization_alias="FontSize",
-        default=10,
-    )
-    layer_name: str | None = Field(
-        validation_alias=AliasChoices("layer_name", "LayerName"),
-        serialization_alias="LayerName",
-        default="",
-    )
-    normal: str | None = Field(
-        validation_alias=AliasChoices("normal", "Normal"),
-        serialization_alias="Normal",
-        default="{0,0,1}",
-    )
-    obliquing_angle: int | None = Field(
-        validation_alias=AliasChoices("obliquing_angle", "ObliquingAngle"),
-        serialization_alias="ObliquingAngle",
-        default=0,
-    )
-    rotation_angle: int | None = Field(
-        validation_alias=AliasChoices("rotation_angle", "RotationAngle"),
-        serialization_alias="RotationAngle",
-        default=0,
-    )
-    text: str | None = Field(
-        validation_alias=AliasChoices("text", "Text"),
-        serialization_alias="Text",
-        default="<no-data>",
-    )
-    width_scale_factor: float | None = Field(
-        validation_alias=AliasChoices("width_scale_factor", "WidthScaleFactor"),
-        serialization_alias="WidthScaleFactor",
-        default=1.0,
-    )
+    starting_point: str
+    annotation: int = 0
+    color: str = "#ffffff"
+    direction: str = "{1,0,0}"
+    font: str = "builtin_simple"
+    font_size: int = 10
+    layer_name: str = ""
+    normal: str = "{0,0,1}"
+    obliquing_angle: int = 0
+    rotation_angle: int = 0
+    text: str = "<no-data>"
+    width_scale_factor: float = 1.0
 
     @field_validator("starting_point", "normal", "direction", mode="before")
     @classmethod
@@ -127,7 +94,7 @@ class TextObject(Points):
     _attribute_map: dict = Points._attribute_map.copy()
     _attribute_map.update({"TextMesh Data": "text_mesh_data"})
     _default_name = "Text Object"
-    _TYPE_UID: uuid.UUID | None = uuid.UUID("{c00905d1-bc3b-4d12-9f93-07fcf1450270}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{c00905d1-bc3b-4d12-9f93-07fcf1450270}")
 
     def __init__(
         self,
