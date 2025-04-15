@@ -96,15 +96,15 @@ class TextEntry(BaseModel):
         return float_list
 
 
-class TextData(BaseModel):
+class TextMesh(BaseModel):
     """
     Text mesh data.
 
-    :param text_data: List of text entries with parameters.
+    :param data: List of text entries with parameters.
     """
 
-    text_data: list[TextEntry] = Field(
-        validation_alias=AliasChoices("text_data", "Text Data"),
+    data: list[TextEntry] = Field(
+        validation_alias=AliasChoices("data", "Text Data"),
         serialization_alias="Text Data",
     )
 
@@ -128,7 +128,7 @@ class TextObject(Points):
         text_mesh_data: str | None = None,
         **kwargs,
     ):
-        self._text_mesh_data: TextData
+        self._text_mesh_data: TextMesh
 
         super().__init__(vertices=vertices, text_mesh_data=text_mesh_data, **kwargs)
 
@@ -146,12 +146,10 @@ class TextObject(Points):
         """
         mask = self.validate_mask(mask)
         if mask is not None:
-            text_data = TextData(
-                text_data=[
+            text_data = TextMesh(
+                data=[
                     elem
-                    for elem, logic in zip(
-                        self.text_mesh_data.text_data, mask, strict=False
-                    )
+                    for elem, logic in zip(self.text_mesh_data.data, mask, strict=False)
                     if logic
                 ]
             )
@@ -167,7 +165,7 @@ class TextObject(Points):
         return new_entity
 
     @property
-    def text_mesh_data(self) -> TextData:
+    def text_mesh_data(self) -> TextMesh:
         """
         Text mesh data.
         """
@@ -175,30 +173,31 @@ class TextObject(Points):
         return self._text_mesh_data
 
     @text_mesh_data.setter
-    def text_mesh_data(self, value: str | dict | TextData | None):
+    def text_mesh_data(self, value: str | dict | TextMesh | None):
         """
         Set the text mesh data.
         """
-        t_m_data = None
         if value is None:
-            t_m_data = TextData(
-                text_data=[
+            self._text_mesh_data = TextMesh(
+                data=[
                     TextEntry(text="<no-data>", starting_point=vert)
                     for vert in self.vertices
                 ]
             )
-        elif isinstance(value, str):
+            return
+
+        if isinstance(value, str):
             t_m_data = loads(value)
-        elif isinstance(value, TextData):
+        else:
             t_m_data = value
 
         if isinstance(t_m_data, dict):
-            t_m_data = TextData(**t_m_data)
+            t_m_data = TextMesh(**t_m_data)
 
-        if not isinstance(t_m_data, TextData):
+        if not isinstance(t_m_data, TextMesh):
             raise TypeError("The 'Text Data' must be a dictionary or a JSON string.")
 
-        if len(t_m_data.text_data) != self.n_vertices:
+        if len(t_m_data.data) != self.n_vertices:
             raise ValueError(
                 "The 'Text Data' dictionary must contain a list of len('n_vertices')."
             )
@@ -227,7 +226,7 @@ class TextObject(Points):
         if key in TextEntry.model_fields:
             value = self._validate_value_length(value)
 
-            for entry, elem in zip(self.text_mesh_data.text_data, value, strict=False):
+            for entry, elem in zip(self.text_mesh_data.data, value, strict=False):
                 setattr(entry, key, elem)
 
             if self.on_file:

@@ -29,7 +29,7 @@ import pytest
 from pydantic_core import ValidationError
 
 from geoh5py.objects import TextObject
-from geoh5py.objects.text import TextData
+from geoh5py.objects.text import TextMesh
 from geoh5py.workspace import Workspace
 
 
@@ -51,10 +51,8 @@ def test_create_text_object(tmp_path: Path):
             workspace, vertices=xyz, text=random_labels, name="Text Object", color=color
         )
 
-        assert isinstance(text.text_mesh_data, TextData)
-        for entry, label in zip(
-            text.text_mesh_data.text_data, random_labels, strict=False
-        ):
+        assert isinstance(text.text_mesh_data, TextMesh)
+        for entry, label in zip(text.text_mesh_data.data, random_labels, strict=False):
             assert entry.text == label
             assert entry.color == color
 
@@ -77,11 +75,11 @@ def test_text_data_length_mismatch(tmp_path):
 
         text_object.direction = ([1.5, 0.5, 0.5],)
 
-        assert text_object.text_mesh_data.text_data[0].direction == "{1.5,0.5,0.5}"
+        assert text_object.text_mesh_data.data[0].direction == "{1.5,0.5,0.5}"
 
         # Create invalid text_mesh_data with mismatched length
         invalid_text_mesh_data = {
-            "text_data": [
+            "data": [
                 {"text": "Label1", "starting_point": "{0,0,0}"},
                 {"text": "Label2", "starting_point": "{1,1,1}"},
             ]
@@ -114,4 +112,4 @@ def test_copy_extent(tmp_path):
         mask = np.array([True, False, True, False, True])
         new_copy = text_object.copy(mask=mask)
 
-        assert len(new_copy.text_mesh_data.text_data) == 3
+        assert len(new_copy.text_mesh_data.data) == 3
