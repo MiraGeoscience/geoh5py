@@ -66,6 +66,12 @@ def test_text_data_length_mismatch(tmp_path):
         with pytest.raises(ValidationError, match="Field required"):
             text_object.text_mesh_data = '{"abc":{"label": "a"}}'
 
+        # Test setting text_mesh_data with bad type
+        with pytest.raises(
+            TypeError, match="The 'Text Data' must be a dictionary or a JSON string."
+        ):
+            text_object.text_mesh_data = 123
+
         # Test setting value to the text_mesh_data property through setattr
         with pytest.raises(
             ValueError,
