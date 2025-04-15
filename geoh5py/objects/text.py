@@ -64,8 +64,10 @@ class TextEntry(BaseModel):
         alias_generator=AliasGenerator(  # type: ignore
             validation_alias=to_snake,
             serialization_alias=to_pascal,
-        )
+        ),
+        validate_assignment=True,
     )
+
     starting_point: str
     annotation: int = 0
     color: str = "#ffffff"
@@ -85,6 +87,9 @@ class TextEntry(BaseModel):
         """
         Convert a list of floats to a string representation.
         """
+        if isinstance(float_list, tuple) and len(float_list) == 1:
+            float_list = float_list[0]
+
         if isinstance(float_list, np.ndarray | list):
             float_list = "{" + ",".join([str(val) for val in float_list]) + "}"
 
@@ -201,7 +206,7 @@ class TextObject(Points):
             value = self._validate_value_length(value)
 
             for entry, elem in zip(self.text_mesh_data.text_data, value, strict=False):
-                entry.__setattr__(key, elem)
+                setattr(entry, key, elem)
 
             if self.on_file:
                 self.workspace.update_attribute(self, "attributes")

@@ -68,6 +68,17 @@ def test_text_data_length_mismatch(tmp_path):
         with pytest.raises(ValidationError, match="Field required"):
             text_object.text_mesh_data = '{"abc":{"label": "a"}}'
 
+        # Test setting value to the text_mesh_data property through setattr
+        with pytest.raises(
+            ValueError,
+            match="The 'Text Data' entries must contain a list of len\\('n_vertices'\\).",
+        ):
+            text_object.color = ["#ff00f1ff", "#00ff1fff", "#0000ffff"]
+
+        text_object.direction = ([1.5, 0.5, 0.5],)
+
+        assert text_object.text_mesh_data.text_data[0].direction == "{1.5,0.5,0.5}"
+
         # Create invalid text_mesh_data with mismatched length
         invalid_text_mesh_data = {
             "text_data": [
