@@ -140,8 +140,30 @@ class TextObject(Points):
         """
         Set the text mesh data.
         """
+        mesh_data = None
+        if value is None:
+            mesh_data = TextData(
+                text_data=[
+                    TextEntry(text="<no-data>", starting_point=vert)
+                    for vert in self.vertices
+                ]
+            )
+        elif isinstance(value, str):
+            if isinstance(value, str):
+                value = loads(value)
 
-        self._text_mesh_data = self._validate_text_data(value)
+        if isinstance(value, dict):
+            mesh_data = TextData(**value)
+
+        if not isinstance(mesh_data, TextData):
+            raise TypeError("The 'Text Data' must be a dictionary or a JSON string.")
+
+        if len(mesh_data.text_data) != self.n_vertices:
+            raise ValueError(
+                "The 'Text Data' dictionary must contain a list of len('n_vertices')."
+            )
+
+        self._text_mesh_data = mesh_data
 
     @property
     def extent(self):
@@ -155,35 +177,6 @@ class TextObject(Points):
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
         """
         return None
-
-    def _validate_text_data(self, value: str | dict | None) -> TextData:
-        """
-        Validate the text data.
-
-        :param value: Text data as a JSON string or dictionary.
-        """
-        if value is None:
-            return TextData(
-                text_data=[
-                    TextEntry(text="<no-data>", starting_point=vert)
-                    for vert in self.vertices
-                ]
-            )
-
-        if isinstance(value, str):
-            value = loads(value)
-
-        if not isinstance(value, dict):
-            raise TypeError("The 'Text Data' must be a dictionary or a JSON string.")
-
-        mesh_data = TextData(**value)
-
-        if len(mesh_data.text_data) != self.n_vertices:
-            raise ValueError(
-                "The 'Text Data' dictionary must contain a list of len('n_vertices')."
-            )
-
-        return mesh_data
 
     def _validate_value_length(self, values) -> list:
         """
