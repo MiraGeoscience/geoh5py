@@ -92,3 +92,26 @@ def test_text_data_length_mismatch(tmp_path):
             match="The 'Text Data' dictionary must contain a list of len\\('n_vertices'\\).",
         ):
             text_object.text_mesh_data = invalid_text_mesh_data
+
+
+def test_copy_extent(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as workspace:
+        # Create a TextObject with 5 vertices
+        vertices = np.random.rand(5, 3)
+        text_object = TextObject.create(workspace, vertices=vertices)
+
+        # Create a copy of the TextObject
+        copied_text_object = text_object.copy_from_extent(
+            np.c_[[-np.inf, np.inf], [-np.inf, np.inf]]
+        )
+
+        # Check if the copied object has the same extent as the original
+        assert np.array_equal(
+            copied_text_object.extent, text_object.extent, equal_nan=True
+        )
+
+        # Test copy by mask
+        mask = np.array([True, False, True, False, True])
+        new_copy = text_object.copy(mask=mask)
+
+        assert len(new_copy.text_mesh_data.text_data) == 3
