@@ -45,6 +45,19 @@ if TYPE_CHECKING:
 class TextEntry(BaseModel):
     """
     Core parameters for text mesh data.
+
+    :param starting_point: Starting point of the text.
+    :param annotation: Annotation ID.
+    :param color: Color of the text stored as a hex string.
+    :param direction: Normal vector defining the direction of the text.
+    :param font: Font type.
+    :param font_size: Font size.
+    :param layer_name: Layer name.
+    :param normal: Normal vector of the text.
+    :param obliquing_angle: Obliquing angle of the text.
+    :param rotation_angle: Rotation angle of the text.
+    :param text: Text string displayed.
+    :param width_scale_factor: Width scale factor of the text.
     """
 
     model_config = ConfigDict(
@@ -68,7 +81,10 @@ class TextEntry(BaseModel):
 
     @field_validator("starting_point", "normal", "direction", mode="before")
     @classmethod
-    def array_to_str(cls, float_list: np.ndarray | list):
+    def array_to_str(cls, float_list: np.ndarray | list) -> str:
+        """
+        Convert a list of floats to a string representation.
+        """
         if isinstance(float_list, np.ndarray | list):
             float_list = "{" + ",".join([str(val) for val in float_list]) + "}"
 
@@ -78,6 +94,8 @@ class TextEntry(BaseModel):
 class TextData(BaseModel):
     """
     Text mesh data.
+
+    :param text_data: List of text entries with parameters.
     """
 
     text_data: list[TextEntry] = Field(
@@ -89,6 +107,9 @@ class TextData(BaseModel):
 class TextObject(Points):
     """
     Text object for annotated text labels in viewport.
+
+    :param vertices: Vertices of the text object.
+    :param text_mesh_data: Text mesh data as a JSON string or dictionary.
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
@@ -138,6 +159,8 @@ class TextObject(Points):
     def _validate_text_data(self, value: str | dict | None) -> TextData:
         """
         Validate the text data.
+
+        :param value: Text data as a JSON string or dictionary.
         """
         if value is None:
             return TextData(
@@ -165,6 +188,8 @@ class TextObject(Points):
     def _validate_value_length(self, values) -> list:
         """
         Validate the length of the values.
+
+        :param values: Values to validate stored as a list or numpy array.
         """
         if not isinstance(values, (list, np.ndarray)):
             values = [values] * self.n_vertices
