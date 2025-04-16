@@ -51,6 +51,8 @@ class Colour(Data):
 
     _formats = [("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")]
 
+    _nan_value = np.array([(90, 90, 90, 0)], dtype=_formats)
+
     def __init__(self, *args, **kwargs):
         self._verify_parents(kwargs.get("parent", None))
 
@@ -68,6 +70,8 @@ class Colour(Data):
         if values.ndim != 2 or values.shape[1] not in (3, 4):
             raise ValueError("Values must be a 2D numpy array containing RGB bands.")
 
+        nan_mask = np.isnan(values).any(axis=1)
+
         if values.dtype != np.uint8:
             values = min_max_scaler(values, 0, 255, axis=0)
 
@@ -78,10 +82,12 @@ class Colour(Data):
 
         values = values.astype(np.uint8).view(cls._formats).reshape(-1)
 
+        values[nan_mask] = cls._nan_value
+
         return values
 
-    @staticmethod
-    def _structured_to_rgb(values: np.ndarray) -> np.ndarray:
+    @classmethod
+    def _structured_to_rgb(cls, values: np.ndarray) -> np.ndarray:
         """
         Convert a structured array to RGB.
 
@@ -94,6 +100,8 @@ class Colour(Data):
         values = values.astype(
             [(name.lower(), values.dtype[name]) for name in values.dtype.names]
         )
+
+        nan_mask = np.zeros(values.shape[0], dtype=bool)
 
         for band in ["r", "g", "b", "a"]:
             if band not in values.dtype.names:
@@ -111,7 +119,10 @@ class Colour(Data):
 
             # ensure the min and the max are between 0 and 255
             if values[band].dtype != np.uint8:
+                nan_mask = np.logical_or(nan_mask, np.isnan(values[band]))
                 values[band] = min_max_scaler(values[band], 0, 255).astype(np.uint8)
+
+        values[nan_mask] = cls._nan_value
 
         return values[["r", "g", "b", "a"]]
 
@@ -136,7 +147,7 @@ class Colour(Data):
 
     @property
     def nan_value(self):
-        return np.array([(90, 90, 90, 0)], dtype=self._formats)
+        return self._nan_value
 
     @classmethod
     def primitive_type(cls) -> PrimitiveTypeEnum:
