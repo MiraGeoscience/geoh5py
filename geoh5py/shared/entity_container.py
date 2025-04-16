@@ -166,7 +166,7 @@ class EntityContainer(Entity):
     @property
     def comments(self):
         """
-        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        Fetch a :obj:`~geoh5py.data.data.CommentsData` entity from children.
         """
         for child in self.children:
             if isinstance(child, CommentsData):

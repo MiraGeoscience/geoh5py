@@ -111,6 +111,7 @@ INV_KEY_MAP = {
     "Scientific notation": "scientific_notation",
     "Surveys": "surveys",
     "Text": "TEXT",
+    "TextMesh Data": "text_mesh_data",
     "Trace": "trace",
     "TraceDepth": "trace_depth",
     "Transparent no data": "transparent_no_data",
