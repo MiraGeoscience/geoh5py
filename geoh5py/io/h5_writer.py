@@ -31,6 +31,7 @@ from warnings import warn
 
 import h5py
 import numpy as np
+from pydantic import BaseModel
 
 from ..data import (
     CommentsData,
@@ -414,6 +415,12 @@ class H5Writer:
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
                     entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
+                elif isinstance(value, BaseModel):
+                    entity_handle.attrs.create(
+                        key,
+                        value.model_dump_json(by_alias=True),
+                        dtype=H5Writer.str_type,
+                    )
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
