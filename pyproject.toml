@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geoh5py"
-version = "0.11.0-alpha.4"
+version = "0.11.0-alpha.5"
 
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
