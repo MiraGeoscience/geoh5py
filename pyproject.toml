@@ -1,5 +1,4 @@
 [tool.poetry]
-version = "0.12.0-alpha.1"
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -27,6 +26,11 @@ requires-poetry = '>=2.0,<3.0'
 
 [tool.poetry.dependencies]
 python = "^3.10"
+
+h5py = "^3.2.1"
+numpy = "~1.26.0"
+Pillow = "~10.3.0"
+pydantic = "^2.5.2"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -137,7 +141,8 @@ name = "geoh5py"
 description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
 keywords = ["geology", "geophysics", "data", "interoperability"]
-dynamic = ["version", "classifiers", "requires-python"]
+version = "0.12.0-alpha.1"
+dynamic = ["classifiers", "requires-python"]
 readme = "package.rst"
 authors = [{name = "Mira Geoscience", email = "support@mirageoscience.com"}]
 maintainers = [{name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com"}, {name = "Dominique Fournier", email = "dominiquef@mirageoscience.com"}, {name = "Benjamin Kary", email = "benjamink@mirageoscience.com"}]
