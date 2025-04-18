@@ -26,7 +26,7 @@ from pathlib import Path
 import tomli as toml
 import yaml
 from jinja2 import Template
-from packaging import version
+from packaging.version import Version, InvalidVersion
 
 import geoh5py
 
@@ -66,12 +66,12 @@ def test_conda_version_is_pep440():
     assert version is not None
 
 
+def validate_version(version_str):
+    try:
+        version = Version(version_str)
+        return (version.major, version.minor, version.micro, version.pre, version.post)
+    except InvalidVersion:
+        return None
+
 def test_version_is_valid():
-    semver_re = (
-        r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
-        r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-        r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
-        r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-    )
-    version_re = r"^\s*" + version.VERSION_PATTERN + r"\s*$"
-    assert re.search(version_re, geoh5py.__version__) is not None
+    assert validate_version(geoh5py.__version__) is not None
