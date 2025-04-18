@@ -1,20 +1,27 @@
-[tool.poetry]
-name = "geoh5py"
-version = "0.12.0-alpha.1"
+[build-system]
+requires = ["poetry-core>=1.0.0", "setuptools"]
+build-backend = "poetry.core.masonry.api"
 
-license = "LGPL-3.0-or-later"
+[project]
+name = "geoh5py"
 description = "Python API for geoh5, an open file format for geoscientific data"
-authors = ["Mira Geoscience <support@mirageoscience.com>"]
-repository = "https://github.com/MiraGeoscience/geoh5py"
-maintainers = [
-    "Benjamin Kary <benjamink@mirageoscience.com>",
-    "Dominique Fournier <dominiquef@mirageoscience.com>",
-    "Matthieu Cedou <matthieuc@mirageoscience.com>",
-]
-documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
-homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
-readme = "package.rst"
+license = "LGPL-3.0-or-later"
 keywords = ["geology", "geophysics", "data", "interoperability"]
+version = "0.12.0a1"
+dynamic = ["dependencies", "classifiers", "requires-python"]
+readme = "package.rst"
+authors = [{name = "Mira Geoscience", email = "support@mirageoscience.com"}]
+maintainers = [{name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com"}, {name = "Dominique Fournier", email = "dominiquef@mirageoscience.com"}, {name = "Benjamin Kary", email = "benjamink@mirageoscience.com"}]
+
+[project.urls]
+homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
+repository = "https://github.com/MiraGeoscience/geoh5py"
+documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+
+[project.optional-dependencies]
+
+[tool.poetry]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -37,6 +44,7 @@ include = [
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
 ]
+requires-poetry = '>=2.0,<3.0'
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -45,6 +53,7 @@ h5py = "^3.2.1"
 numpy = "~1.26.0"
 Pillow = "~10.3.0"
 pydantic = "^2.5.2"
+
 
 [tool.poetry.group.dev.dependencies]
 jinja2 = '*'
@@ -60,8 +69,6 @@ sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
 tomli = "*"
-
-[tool.poetry.extras]
 
 [tool.ruff]
 target-version = "py310"
@@ -146,7 +153,3 @@ fail_under = 90
 [tool.coverage.html]
 skip_empty = true
 skip_covered = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0", "setuptools"]
-build-backend = "poetry.core.masonry.api"
