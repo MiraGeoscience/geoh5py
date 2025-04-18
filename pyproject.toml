@@ -142,11 +142,10 @@ description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
 keywords = ["geology", "geophysics", "data", "interoperability"]
 version = "0.12.0a1"
-dynamic = ["classifiers", "requires-python"]
+dynamic = ["dependencies", "classifiers", "requires-python"]
 readme = "package.rst"
 authors = [{name = "Mira Geoscience", email = "support@mirageoscience.com"}]
 maintainers = [{name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com"}, {name = "Dominique Fournier", email = "dominiquef@mirageoscience.com"}, {name = "Benjamin Kary", email = "benjamink@mirageoscience.com"}]
-dependencies = ['h5py (>=3.2.1,<4.0.0)', 'numpy (>=1.26.0,<1.27.0)', 'Pillow (>=10.3.0,<10.4.0)', 'pydantic (>=2.5.2,<3.0.0)']
 
 [project.urls]
 homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
