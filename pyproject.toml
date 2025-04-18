@@ -1,3 +1,25 @@
+[project]
+name = "geoh5py"
+description = "Python API for geoh5, an open file format for geoscientific data"
+license = "LGPL-3.0-or-later"
+keywords = ["geology", "geophysics", "data", "interoperability"]
+version = "0.12.0a1"
+dynamic = ["dependencies", "classifiers", "requires-python"]
+readme = "package.rst"
+authors = [{name = "Mira Geoscience", email = "support@mirageoscience.com"}]
+maintainers = [{name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com"}, {name = "Dominique Fournier", email = "dominiquef@mirageoscience.com"}, {name = "Benjamin Kary", email = "benjamink@mirageoscience.com"}]
+
+[project.urls]
+homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
+repository = "https://github.com/MiraGeoscience/geoh5py"
+documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+
+[project.optional-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "setuptools"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry]
 
 classifiers = [
@@ -132,24 +154,3 @@ fail_under = 90
 skip_empty = true
 skip_covered = true
 
-[build-system]
-requires = ["poetry-core>=1.0.0", "setuptools"]
-build-backend = "poetry.core.masonry.api"
-
-[project]
-name = "geoh5py"
-description = "Python API for geoh5, an open file format for geoscientific data"
-license = "LGPL-3.0-or-later"
-keywords = ["geology", "geophysics", "data", "interoperability"]
-version = "0.12.0a1"
-dynamic = ["dependencies", "classifiers", "requires-python"]
-readme = "package.rst"
-authors = [{name = "Mira Geoscience", email = "support@mirageoscience.com"}]
-maintainers = [{name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com"}, {name = "Dominique Fournier", email = "dominiquef@mirageoscience.com"}, {name = "Benjamin Kary", email = "benjamink@mirageoscience.com"}]
-
-[project.urls]
-homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
-repository = "https://github.com/MiraGeoscience/geoh5py"
-documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
-
-[project.optional-dependencies]
