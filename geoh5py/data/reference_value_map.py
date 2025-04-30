@@ -79,7 +79,7 @@ class ReferenceValueMap:
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype("U25"), "utf-8"
+                value_map["Value"].astype("U50"), "utf-8"
             )
 
         if not isinstance(value_map, np.ndarray):
