@@ -38,8 +38,9 @@ def generate_value_map(workspace, n_data=12, n_class=8):
     refs = np.unique(values)
     value_map = {}
     for ref in refs:
+        random_len = random.randint(1, n_class)
         value_map[ref] = "".join(
-            random.choice(string.ascii_lowercase) for i in range(n_class)
+            random.choice(string.ascii_lowercase) for i in range(random_len)
         )
 
     points = Points.create(
@@ -56,7 +57,7 @@ def generate_value_map(workspace, n_data=12, n_class=8):
         }
     )
     data.entity_type.name = "abc"
-    return points, data
+    return points, data, value_map
 
 
 def test_reference_value_map():
@@ -86,7 +87,7 @@ def test_create_reference_data(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        points, data = generate_value_map(workspace)
+        points, data, _ = generate_value_map(workspace)
 
         with pytest.raises(
             TypeError, match="entity_type must be of type ReferenceDataType"
@@ -114,7 +115,7 @@ def test_add_data_map(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
-        _, data = generate_value_map(workspace)
+        _, data, _ = generate_value_map(workspace)
 
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
@@ -175,7 +176,7 @@ def test_copy_data_map(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
-        _, data = generate_value_map(workspace)
+        _, data, _ = generate_value_map(workspace)
 
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
@@ -198,7 +199,7 @@ def test_create_bytes_reference(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
-        points, data = generate_value_map(workspace)
+        points, data, _ = generate_value_map(workspace)
 
         value_map = data.entity_type.value_map()
         for key, value in value_map.items():
@@ -225,7 +226,7 @@ def test_value_map_from_values(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
-        points, data = generate_value_map(workspace)
+        points, data, _ = generate_value_map(workspace)
 
         new = points.add_data(
             {
@@ -236,3 +237,42 @@ def test_value_map_from_values(tmp_path):
             }
         )
         assert len(new.entity_type.value_map.map) == len(np.unique(data.values)) + 1
+
+
+def test_variable_string_length(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        n_class = 10
+        n_data = 12
+        values = np.random.randint(1, high=n_class, size=n_data)
+        refs = np.unique(values)
+        value_map = {}
+        for ref in refs:
+            value_map[ref] = random.randint(1, 10000)
+
+        points = Points.create(
+            workspace, vertices=np.random.randn(n_data, 3), allow_move=False
+        )
+
+        data = points.add_data(
+            {
+                "DataValues": {
+                    "type": "referenced",
+                    "values": values,
+                    "value_map": value_map,
+                }
+            }
+        )
+
+        np.testing.assert_allclose(
+            [int(val) for val in data.value_map.map["Value"] if val != b"Unknown"],
+            list(value_map.values()),
+        )
+
+        _, data, orig = generate_value_map(workspace, n_class=100)
+
+        values = [
+            val.decode() for val in data.value_map.map["Value"] if val != b"Unknown"
+        ]
+        assert len(set(values).difference(set(orig.values()))) == 0
