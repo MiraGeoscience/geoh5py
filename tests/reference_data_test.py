@@ -249,7 +249,7 @@ def test_variable_string_length(tmp_path):
         refs = np.unique(values)
         value_map = {}
         for ref in refs:
-            value_map[ref] = random.randint(1, 1e6)
+            value_map[ref] = random.randint(1, 10000)
 
         points = Points.create(
             workspace, vertices=np.random.randn(n_data, 3), allow_move=False
