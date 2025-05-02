@@ -23,6 +23,7 @@ documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 [project.optional-dependencies]
 
 [tool.poetry]
+requires-poetry = '>=2.0,<3.0'
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,8 +47,6 @@ include = [
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
 ]
-requires-poetry = '>=2.0,<3.0'
-
 
 [tool.poetry.dependencies]
 h5py = "^3.2.1"
