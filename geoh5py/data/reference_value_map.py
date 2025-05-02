@@ -78,8 +78,15 @@ class ReferenceValueMap:
             value_map = np.array(
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
+
+            # TODO: Replace with numpy.dtypes.StringDType instead for support of variable
+            # length string after moving to numpy >=2.0
+            str_len = max(
+                len(val) if isinstance(val, str) else len(str(val))
+                for val in value_map["Value"]
+            )
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype("U25"), "utf-8"
+                value_map["Value"].astype(f"U{str_len}"), "utf-8"
             )
 
         if not isinstance(value_map, np.ndarray):
