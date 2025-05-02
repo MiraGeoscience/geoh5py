@@ -129,7 +129,7 @@ def test_create_survey_mt(tmp_path):
                     ),
                 ):
                     mt_survey.add_components_data(
-                        {component: {ind: values for ind in mt_survey.channels}}
+                        {component: dict.fromkeys(mt_survey.channels, values)}
                     )
 
             # Give well-formed dictionary
