@@ -69,7 +69,7 @@ class BaseUIJson(BaseModel):
     run_command: str
     monitoring_directory: OptionalPath
     conda_environment: str
-    workspace_geoh5: OptionalPath
+    workspace_geoh5: OptionalPath | None = None
 
     @field_validator("geoh5", mode="after")
     @classmethod
