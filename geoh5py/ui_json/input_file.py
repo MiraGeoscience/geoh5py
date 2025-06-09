@@ -131,7 +131,7 @@ class InputFile:
             if self._ui_json is None:
                 raise AttributeError("'ui_json' must be set before setting data.")
 
-            if len(value) != len(self._ui_json):
+            if set(value).difference(set(self._ui_json)):
                 warnings.warn(
                     "The number of input values for 'data' differs from "
                     "the number of parameters in 'ui_json'."
