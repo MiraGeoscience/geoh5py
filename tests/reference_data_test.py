@@ -28,6 +28,7 @@ import pytest
 
 from geoh5py.data import GeometricDataConstants, ReferenceValueMap
 from geoh5py.data.data_type import ReferencedValueMapType
+from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -117,6 +118,10 @@ def test_add_data_map(tmp_path):
     with Workspace.create(h5file_path) as workspace:
         _, data, _ = generate_value_map(workspace)
 
+        # create a property group to test GEOPY-2256 bug
+        parent = data.parent
+        _ = PropertyGroup(parent, properties=[data])
+
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
@@ -166,6 +171,7 @@ def test_add_data_map(tmp_path):
         geo_data = rec_data.data_maps["test2"]
         assert geo_data.entity_type.value_map is not None
         assert geo_data.entity_type.value_map.name == "test2"
+
         np.testing.assert_array_almost_equal(
             np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
             data_map[:, 1],
