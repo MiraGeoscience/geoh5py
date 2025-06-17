@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -928,11 +929,14 @@ def find_unique_name(name: str, names: list[str]) -> str:
     if name not in names:
         return name
 
-    count = 1
-    while f"{name}({count})" in names:
+    match = re.match(r"^(.*?)(?:\((\d+)\))?$", name)
+    base = match.group(1)
+    count = int(match.group(2)) if match.group(2) else 1
+
+    while f"{base}({count})" in names:
         count += 1
 
-    return f"{name}({count})"
+    return f"{base}({count})"
 
 
 def remove_duplicates_in_list(input_list: list) -> list:

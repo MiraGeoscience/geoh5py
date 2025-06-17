@@ -76,7 +76,8 @@ class ReferencedData(IntegerData):
 
         if self.data_maps is not None:
             for name, child in self.data_maps.items():
-                new_data.add_data_map(name, child.entity_type.value_map.map)
+                if child.entity_type.value_map is not None:
+                    new_data.add_data_map(name, child.entity_type.value_map.map)
 
         return new_data
 
@@ -207,7 +208,6 @@ class ReferencedData(IntegerData):
         #     set(self.entity_type.value_map.map["Key"])
         # ):
         #     raise KeyError("Data map keys must be a subset of the value map keys.")
-        #
 
         data_type = GeometricDataValueMapType(
             self.workspace,
