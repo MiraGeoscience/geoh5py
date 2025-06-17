@@ -27,7 +27,7 @@ from contextlib import contextmanager
 from io import BytesIO
 from json import loads
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 from warnings import warn
 
@@ -932,9 +932,9 @@ def find_unique_name(name: str, names: list[str]) -> str:
     match = re.match(r"^(.*?)(?:\((\d+)\))?$", name)
 
     # group 1 cannot be None
-    base = cast(re.Match[str], match).group(1)
+    base = match.group(1)  # type: ignore
     # mypy doesn't recognize match.group(2) can't be None...
-    count = int(cast(re.Match[str], match).group(2)) if match.group(2) else 1
+    count = int(match.group(2)) if match.group(2) else 1  # type: ignore
 
     while f"{base}({count})" in names:
         count += 1
