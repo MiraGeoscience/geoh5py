@@ -31,6 +31,10 @@ def test_find_unique_name():
 
     assert find_unique_name(name, names) == "test(2)"
 
+    name = "test(1)"
+
+    assert find_unique_name(name, names) == "test(2)"
+
 
 def test_dip_azimuth_to_vector():
     dip = -45
