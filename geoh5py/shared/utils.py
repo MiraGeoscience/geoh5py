@@ -932,9 +932,9 @@ def find_unique_name(name: str, names: list[str]) -> str:
     match = re.match(r"^(.*?)(?:\((\d+)\))?$", name)
 
     # group 1 cannot be None
-    base = cast(str, match.group(1))
+    base = cast(re.Match[str], match).group(1)
     # mypy doesn't recognize match.group(2) can't be None...
-    count = int(cast(str, match.group(2))) if match.group(2) else 1
+    count = int(cast(re.Match[str], match).group(2)) if match.group(2) else 1
 
     while f"{base}({count})" in names:
         count += 1
