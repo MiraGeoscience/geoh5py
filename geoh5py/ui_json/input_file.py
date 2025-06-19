@@ -285,6 +285,8 @@ class InputFile:
             else:
                 self.ui_json[key] = value
 
+        self._data = None
+
     @property
     def validate(self):
         """Option to run validations."""
