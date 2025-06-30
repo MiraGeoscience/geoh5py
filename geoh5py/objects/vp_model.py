@@ -177,9 +177,11 @@ class VPModel(GridObject, DrapeModel):
         if getattr(self, "_centroids", None) is None:
             rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
 
-            u_grid, v_grid = np.meshgrid(
-                np.cumsum(np.ones(self._u_count) * self.u_cell_size),
-                np.cumsum(np.ones(self._v_count) * self.v_cell_size),
+            v_grid, u_grid = np.meshgrid(
+                np.cumsum(np.ones(self._v_count) * self.v_cell_size)
+                - self.v_cell_size / 2,
+                np.cumsum(np.ones(self._u_count) * self.u_cell_size)
+                - self.u_cell_size / 2,
             )
             xyz = (
                 rotation_matrix
@@ -194,11 +196,15 @@ class VPModel(GridObject, DrapeModel):
             )
             centroids = xyz[indices, :]
 
-            elevation = self.prisms[:, 0]
-            top_ind = np.r_[0, np.cumsum(self.prisms[:-1, 2])].astype(int)
-            for count in range(int(self.prisms[:, 2].max()) - 1):
-                mask = self.prisms[:, 2] > (count + 1)
-
+            elevation = (
+                self.prisms[:, 0].reshape((self.v_count, self.u_count)).T.flatten()
+            )
+            ind_colm = (
+                self.prisms[:, 2].reshape((self.v_count, self.u_count)).T.flatten()
+            )
+            top_ind = np.r_[0, np.cumsum(ind_colm[:-1])].astype(int)
+            for count in range(int(ind_colm.max()) - 1):
+                mask = ind_colm > (count + 1)
                 centroids[top_ind, 2] = np.mean(
                     [elevation, self.layers[top_ind, 2]], axis=0
                 )
