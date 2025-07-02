@@ -927,28 +927,35 @@ def str2none(value):
 
 def find_unique_name(name: str, names: list[str]) -> str:
     """
-    Get a unique name not in a list of names.
+    Generate a unique name not in `names`.
+    If the name ends with (n), increment n until unique.
+    For files with extensions, insert the counter before all extensions.
 
-    :param name: The name to check.
-    :param names: The list of names to avoid.
-
-    :return: a unique name.
+    :param name: Proposed name.
+    :param names: List of names to avoid.
+    :return: A unique name.
     """
-
     if name not in names:
         return name
 
-    match = re.match(r"^(.*?)(?:\((\d+)\))?$", name)
+    # Split only once from the right to get all suffixes correctly
+    if "." in name:
+        base_part, suffixes = name.split(".", maxsplit=1)
+        suffixes = f".{suffixes}"
+    else:
+        base_part = name
+        suffixes = ""
 
-    # group 1 cannot be None
+    # Extract and increment count if '(n)' is present
+    match = re.match(r"^(.*?)(?:\((\d+)\))?$", base_part)
     base = match.group(1)  # type: ignore
-    # mypy doesn't recognize match.group(2) can't be None...
-    count = int(match.group(2)) if match.group(2) else 1  # type: ignore
+    count = int(match.group(2)) + 1 if match.group(2) else 1  # type: ignore
 
-    while f"{base}({count})" in names:
+    while True:
+        candidate = f"{base}({count}){suffixes}"
+        if candidate not in names:
+            return candidate
         count += 1
-
-    return f"{base}({count})"
 
 
 def remove_duplicates_in_list(input_list: list) -> list:
