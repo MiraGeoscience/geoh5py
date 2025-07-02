@@ -1,4 +1,7 @@
 name: Python analysis
+permissions:
+  contents: read
+  pull-requests: read
 
 on:
   pull_request:
@@ -25,6 +28,9 @@ jobs:
   call-workflow-static-analysis:
     name: Static analysis
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@DEVOPS-690-poetry2
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       package-manager: 'poetry'
       app-name: 'geoh5py'
@@ -32,6 +38,9 @@ jobs:
   call-workflow-pytest:
     name: Pytest
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@DEVOPS-690-poetry2
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       package-manager: 'poetry'
       python-versions: '["3.10", "3.11", "3.12"]'
@@ -41,3 +50,11 @@ jobs:
       codecov-reference-os: '["windows-latest"]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      call-workflow-zizmor:
+    name: Zizmor analysis
+    permissions:
+      contents: read
+      actions: read
+    uses: MiraGeoscience/CI-tools/.github/workflows/zizmor_security.yml@feature_zizmor_security
+    with:
+      app-name: 'geoh5py'
