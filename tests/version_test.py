@@ -36,7 +36,7 @@ def get_pyproject_version():
     with open(str(path), encoding="utf-8") as file:
         pyproject = toml.loads(file.read())
 
-    return pyproject["project"]["version"]
+    return pyproject["tool"]["poetry"]["version"]
 
 
 def get_conda_recipe_version():
