@@ -36,6 +36,17 @@ def test_find_unique_name():
     assert find_unique_name(name, names) == "test(2)"
 
 
+def test_find_unique_name_files():
+    name = "test.ui.json"
+    names = ["test.ui.json", "test(1).ui.json", "bidon"]
+
+    assert find_unique_name(name, names) == "test(2).ui.json"
+
+    name = "test(1).ui.json"
+
+    assert find_unique_name(name, names) == "test(2).ui.json"
+
+
 def test_dip_azimuth_to_vector():
     dip = -45
     azimuth = 90
