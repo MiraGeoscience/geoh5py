@@ -17,6 +17,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+# pylint: disable=too-many-instance-attributes, too-many-arguments
 
 from __future__ import annotations
 
@@ -42,6 +43,11 @@ class VPModel(GridObject, DrapeModel):
     :param u_count: Number of cells along the u-axis.
     :param v_cell_size: Cell size along the v-axis.
     :param v_count: Number of cells along the v-axis.
+    :param flag_property_id: UUID or name of the flag property.
+    :param heterogeneous_property_id: UUID or name of the heterogeneous property.
+    :param physical_data_name: Name of the physical data.
+    :param unit_property_id: UUID or name of the unit property.
+    :param weight_property_id: UUID or name of the weight property.
     """
 
     _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
@@ -76,9 +82,10 @@ class VPModel(GridObject, DrapeModel):
         u_count: int = 1,
         v_cell_size: float = 1.0,
         v_count: int = 1,
+        *,
         flag_property_id: str | uuid.UUID | None = None,
         heterogeneous_property_id: str | uuid.UUID | None = None,
-        physical_data_name: str | None = None,
+        physical_data_name: str | None = "Property",
         unit_property_id: str | uuid.UUID | None = None,
         weight_property_id: str | uuid.UUID | None = None,
         **kwargs,
@@ -277,6 +284,21 @@ class VPModel(GridObject, DrapeModel):
             )
 
         return np.int32(value)
+
+    def validate_metadata(self, value) -> dict | None:
+        """
+        Validate and format type of metadata value.
+        """
+
+        value = super().validate_metadata(value)
+
+        if value is None:
+            value = {}
+
+        if value.get("VP", None) is None:
+            value["VP"] = {"Base of model elevation (m)": self.layers[:, 2].min()}
+
+        return value
 
     @staticmethod
     def validate_size(value: float, axis: str) -> float:
