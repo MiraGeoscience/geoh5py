@@ -22,7 +22,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from geoh5py.shared.utils import dip_azimuth_to_vector, find_unique_name
+from geoh5py.shared.utils import (
+    dip_azimuth_to_vector,
+    find_unique_name,
+    format_numeric_values,
+)
 
 
 def test_find_unique_name():
@@ -61,3 +65,12 @@ def test_dip_azimuth_to_vector():
     np.testing.assert_almost_equal(
         dip_azimuth_to_vector(dip, azimuth), np.c_[-0.641, -0.299, 0.707], decimal=3
     )
+
+
+def test_format_values_for_display():
+    test = np.array([1145.199999, 0.01452145, 0.001452145, 741254125.74125, 0.0000145])
+
+    expected = ["1145.2", "0.014521", "1.45214e-03", "7.41254e+08", "1.45e-05"]
+    result = format_numeric_values(test, 5, 8).tolist()
+
+    assert result == expected
