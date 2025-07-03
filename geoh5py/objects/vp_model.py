@@ -131,13 +131,7 @@ class VPModel(GridObject, DrapeModel):
         value = str2uuid(value)
 
         if isinstance(value, uuid.UUID):
-            data_list = self.get_data(value)
-            if not data_list:
-                raise ValueError(
-                    f"Input value for attribute '{name}' is not a valid UUID."
-                )
-
-            return data_list[0].uid
+            return value
 
         if not isinstance(value, np.ndarray):
             raise TypeError(

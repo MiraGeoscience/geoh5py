@@ -1,0 +1,99 @@
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#                                                                              '
+#  This file is part of geoh5py.                                               '
+#                                                                              '
+#  geoh5py is free software: you can redistribute it and/or modify             '
+#  it under the terms of the GNU Lesser General Public License as published by '
+#  the Free Software Foundation, either version 3 of the License, or           '
+#  (at your option) any later version.                                         '
+#                                                                              '
+#  geoh5py is distributed in the hope that it will be useful,                  '
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of              '
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               '
+#  GNU Lesser General Public License for more details.                         '
+#                                                                              '
+#  You should have received a copy of the GNU Lesser General Public License    '
+#  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
+# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from geoh5py.data import NumericData
+from geoh5py.objects import Points, VPModel
+from geoh5py.shared.utils import compare_entities
+from geoh5py.workspace import Workspace
+
+
+# pylint: disable=too-many-locals
+
+
+def create_mesh_parameters():
+    """
+    Utility function to generate basic drape model
+    """
+    n_col, n_row = 64, 32
+    j, i = np.meshgrid(np.arange(n_row), np.arange(n_col))
+
+    n_cells = n_row * n_col
+    top = np.random.randn(n_cells) * 10.0 + 100.0
+
+    indices = ((i * n_row + j).T * 2).flatten()
+    prisms = np.c_[top, indices, np.ones(n_cells, dtype=int) * 2]
+    layers = np.c_[
+        np.kron(i.flatten(), np.ones(2)),
+        np.kron(j.flatten(), np.ones(2)),
+        np.kron(np.ones(n_cells, dtype=int), np.r_[0, -1000]),
+    ]
+    units = (layers[:, 2] < 0).astype(int) * 99999
+    units += 1
+    return layers, prisms, units
+
+
+def test_create_vp_model(tmp_path: Path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        with pytest.raises(TypeError, match="Attribute 'u_count' "):
+            VPModel.validate_count("abc", "u")
+
+        layers, prisms, units = create_mesh_parameters()
+
+        drape = VPModel.create(
+            workspace,
+            u_count=64,
+            u_cell_size=25,
+            v_count=32,
+            v_cell_size=25,
+            layers=layers,
+            prisms=prisms,
+            unit_property_id=units,
+        )
+
+        assert drape.n_cells == layers.shape[0]
+
+        with pytest.raises(
+            TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
+        ):
+            VPModel.create(
+                workspace, layers=layers, prisms=prisms, unit_property_id="abc"
+            )
+
+    with pytest.raises(TypeError, match="Attribute 'flag_property_id' should be"):
+        drape.flag_property_id = "abc"
+
+    with pytest.raises(
+        TypeError, match="Attribute 'heterogeneous_property_id' should be"
+    ):
+        drape.heterogeneous_property_id = "abc"
+
+    with pytest.raises(TypeError, match="Attribute 'physical_data_name' should be"):
+        drape.physical_data_name = 1.0
+
+    with pytest.raises(TypeError, match="Attribute 'weight_property_id' should be"):
+        drape.weight_property_id = "abc"
