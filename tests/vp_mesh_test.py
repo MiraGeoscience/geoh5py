@@ -76,6 +76,7 @@ def test_create_vp_model(tmp_path: Path):
         )
 
         assert drape.n_cells == layers.shape[0]
+        assert drape.centroids.shape == (drape.n_cells, 3)
 
         with pytest.raises(
             TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
