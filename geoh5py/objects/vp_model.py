@@ -155,6 +155,9 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def flag_property_id(self) -> uuid.UUID:
+        """
+        VPmg flag property.
+        """
         return self._flag_property_id
 
     @flag_property_id.setter
@@ -168,6 +171,9 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def heterogeneous_property_id(self) -> uuid.UUID:
+        """
+        VPmg heterogenenous model id.
+        """
         return self._heterogeneous_property_id
 
     @heterogeneous_property_id.setter
@@ -184,6 +190,9 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def physical_data_name(self) -> str:
+        """
+        VPmg physical property model data map name.
+        """
         return self._physical_data_name
 
     @physical_data_name.setter
@@ -198,6 +207,9 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def unit_property_id(self) -> uuid.UUID | str | None:
+        """
+        VPmg unit model id.
+        """
         return self._unit_property_id
 
     @unit_property_id.setter
@@ -212,6 +224,9 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def weight_property_id(self) -> uuid.UUID | str | None:
+        """
+        VPmg weight model id.
+        """
         return self._weight_property_id
 
     @weight_property_id.setter
