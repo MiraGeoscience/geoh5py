@@ -22,13 +22,14 @@
 from __future__ import annotations
 
 import uuid
+from typing import cast
 
 import numpy as np
 
-from geoh5py.shared.utils import str2uuid, xy_rotation_matrix
-
-from .drape_model import DrapeModel
-from .grid_object import GridObject
+from geoh5py.data import Data, PrimitiveTypeEnum, ReferencedData
+from geoh5py.objects import DrapeModel, Grid2D
+from geoh5py.objects.grid_object import GridObject
+from geoh5py.shared.utils import KEY_MAP, str2uuid, xy_rotation_matrix
 
 
 class VPModel(GridObject, DrapeModel):
@@ -50,6 +51,9 @@ class VPModel(GridObject, DrapeModel):
     :param weight_property_id: UUID or name of the weight property.
     """
 
+    _VALUE_MAP = {
+        100000: "VP_basement",
+    }
     _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
     _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("J", "<i4"), ("Bottom elevation", "<f8")])
     _PRISM_DTYPE = np.dtype(
@@ -83,11 +87,11 @@ class VPModel(GridObject, DrapeModel):
         v_cell_size: float = 1.0,
         v_count: int = 1,
         *,
-        flag_property_id: str | uuid.UUID | None = None,
-        heterogeneous_property_id: str | uuid.UUID | None = None,
-        physical_data_name: str | None = "Property",
-        unit_property_id: str | uuid.UUID | None = None,
-        weight_property_id: str | uuid.UUID | None = None,
+        flag_property_id: str | uuid.UUID | np.ndarray = np.asarray([]),
+        heterogeneous_property_id: str | uuid.UUID | np.ndarray = np.asarray([]),
+        physical_data_name: str | np.ndarray = "Property",
+        unit_property_id: str | uuid.UUID | np.ndarray = np.asarray([]),
+        weight_property_id: str | uuid.UUID | np.ndarray = np.asarray([]),
         **kwargs,
     ):
         self._u_count: np.int32 = self.validate_count(u_count, "u")
@@ -97,76 +101,135 @@ class VPModel(GridObject, DrapeModel):
 
         self.u_cell_size: float = u_cell_size
         self.v_cell_size: float = v_cell_size
-        self.flag_property_id = flag_property_id
-        self.heterogeneous_property_id = heterogeneous_property_id
+        self.unit_property_id = self._promote_uuid_attribute(
+            unit_property_id,
+            "unit_property_id",
+            PrimitiveTypeEnum.REFERENCED,
+        )
+        self.flag_property_id = self._promote_uuid_attribute(
+            flag_property_id, "flag_property_id", PrimitiveTypeEnum.INTEGER
+        )
+        self.heterogeneous_property_id = self._promote_uuid_attribute(
+            heterogeneous_property_id,
+            "heterogeneous_property_id",
+            PrimitiveTypeEnum.FLOAT,
+        )
         self.physical_data_name = physical_data_name
-        self.unit_property_id = unit_property_id
-        self.weight_property_id = weight_property_id
+        self.weight_property_id = self._promote_uuid_attribute(
+            weight_property_id, "weight_property_id", PrimitiveTypeEnum.FLOAT
+        )
+
+    def _promote_uuid_attribute(
+        self,
+        value: str | uuid.UUID | np.ndarray,
+        name: str,
+        primitive_type: PrimitiveTypeEnum,
+    ) -> uuid.UUID:
+        """
+        Promote a string or UUID to a UUID.
+        """
+        value = str2uuid(value)
+
+        if isinstance(value, uuid.UUID):
+            data_list = self.get_data(value)
+            if not data_list:
+                raise ValueError(
+                    f"Input value for attribute '{name}' is not a valid UUID."
+                )
+
+            return data_list[0].uid
+
+        if not isinstance(value, np.ndarray):
+            raise TypeError(
+                f"Attribute '{name}' should be a 'uuid.UUID' or an array of values."
+            )
+
+        kwargs = {"association": "CELL", "type": primitive_type, "values": value}
+        data = cast(
+            Data,
+            self.add_data(
+                {KEY_MAP[name]: kwargs},
+            ),
+        )
+
+        if isinstance(data, ReferencedData) and data.value_map is not None:
+            value_map = data.value_map()
+            value_map.update(self._VALUE_MAP)
+            data.entity_type.value_map = data.entity_type.validate_value_map(value_map)
+
+        return data.uid
 
     @property
-    def flag_property_id(self) -> uuid.UUID | str | None:
+    def flag_property_id(self) -> uuid.UUID:
         return self._flag_property_id
 
     @flag_property_id.setter
-    def flag_property_id(self, value: uuid.UUID | str | None):
-        value = str2uuid(value)
-
-        if not isinstance(value, uuid.UUID | type(None)):
-            raise TypeError("Attribute 'flag_property_id' should be a uuid or None")
-
+    def flag_property_id(self, value: uuid.UUID):
+        if not isinstance(value, uuid.UUID):
+            raise TypeError("Attribute 'flag_property_id' should be a 'uuid.UUID'.")
         self._flag_property_id = value
 
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
     @property
-    def heterogeneous_property_id(self) -> uuid.UUID | str | None:
+    def heterogeneous_property_id(self) -> uuid.UUID:
         return self._heterogeneous_property_id
 
     @heterogeneous_property_id.setter
-    def heterogeneous_property_id(self, value: uuid.UUID | str | None):
-        value = str2uuid(value)
-
-        if not isinstance(value, uuid.UUID | type(None)):
+    def heterogeneous_property_id(self, value: uuid.UUID):
+        if not isinstance(value, uuid.UUID):
             raise TypeError(
-                "Attribute 'heterogeneous_property_id' should be a uuid or None"
+                "Attribute 'heterogeneous_property_id' should be a 'uuid.UUID'."
             )
 
         self._heterogeneous_property_id = value
 
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
     @property
-    def physical_data_name(self) -> str | None:
+    def physical_data_name(self) -> str:
         return self._physical_data_name
 
     @physical_data_name.setter
-    def physical_data_name(self, value: str | None):
-        if not isinstance(value, str | type(None)):
-            raise TypeError("Attribute 'physical_data_name' should be a str or None")
+    def physical_data_name(self, value: str):
+        if not isinstance(value, str):
+            raise TypeError("Attribute 'physical_data_name' should be a 'str'")
 
         self._physical_data_name = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def unit_property_id(self) -> uuid.UUID | str | None:
         return self._unit_property_id
 
     @unit_property_id.setter
-    def unit_property_id(self, value: uuid.UUID | str | None):
-        value = str2uuid(value)
-
-        if not isinstance(value, uuid.UUID | type(None)):
-            raise TypeError("Attribute 'unit_property_id' should be a uuid or None")
+    def unit_property_id(self, value: uuid.UUID):
+        if not isinstance(value, uuid.UUID):
+            raise TypeError("Attribute 'unit_property_id' should be a 'uuid.UUID'.")
 
         self._unit_property_id = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def weight_property_id(self) -> uuid.UUID | str | None:
         return self._weight_property_id
 
     @weight_property_id.setter
-    def weight_property_id(self, value: uuid.UUID | str | None):
-        value = str2uuid(value)
-
-        if not isinstance(value, uuid.UUID | type(None)):
-            raise TypeError("Attribute 'weight_property_id' should be a uuid or None")
-
+    def weight_property_id(self, value: uuid.UUID):
+        if not isinstance(value, uuid.UUID):
+            raise TypeError(
+                "Attribute 'weight_property_id' should be a 'uuid.UUID' or None"
+            )
         self._weight_property_id = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def centroids(self) -> np.ndarray:
@@ -223,11 +286,18 @@ class VPModel(GridObject, DrapeModel):
         return self._centroids
 
     @property
+    def n_cells(self) -> int:
+        """
+        Total number of cells
+        """
+        return int(self.shape[2])
+
+    @property
     def shape(self) -> np.ndarray:
         """
         Shape of the drape model in terms of number of prisms and layers.
         """
-        return np.array([self._u_count, self._v_count, self.layers.shape[1]])
+        return np.array([self._u_count, self._v_count, self.layers.shape[0]])
 
     @property
     def u_cell_size(self) -> float:
@@ -238,7 +308,7 @@ class VPModel(GridObject, DrapeModel):
 
     @u_cell_size.setter
     def u_cell_size(self, value: float):
-        self._u_cell_size = self.validate_size(value, "u")
+        self._u_cell_size = Grid2D.validate_cell_size(value, "u")
         self._centroids = None
 
         if self.on_file:
@@ -260,7 +330,7 @@ class VPModel(GridObject, DrapeModel):
 
     @v_cell_size.setter
     def v_cell_size(self, value: float):
-        self._v_cell_size = self.validate_size(value, "v")
+        self._v_cell_size = Grid2D.validate_cell_size(value, "v")
         self._centroids = None
 
         if self.on_file:
@@ -299,15 +369,3 @@ class VPModel(GridObject, DrapeModel):
             value["VP"] = {"Base of model elevation (m)": self.layers[:, 2].min()}
 
         return value
-
-    @staticmethod
-    def validate_size(value: float, axis: str) -> float:
-        """
-        Validate and format type of count value.
-        """
-        if not isinstance(value, float) or value <= 0:
-            raise TypeError(
-                f"Attribute '{axis}_count' must be a type(float) greater than 0."
-            )
-
-        return float(value)

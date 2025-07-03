@@ -66,7 +66,7 @@ class ReferenceValueMap:
             if value_map.ndim == 1:
                 unique_set = set(value_map)
                 unique_set.discard(0)
-                value_map = {i + 1: str(val) for i, val in enumerate(unique_set)}
+                value_map = {int(val): f"Unit {val}" for val in unique_set}
 
             value_map = dict(value_map)
 

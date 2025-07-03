@@ -304,7 +304,7 @@ class Grid2D(GridObject):
         if isinstance(value, np.ndarray):
             if not len(value) == 1:
                 raise ValueError(
-                    "Attribute 'v_cell_size' must be a float of shape (1,)"
+                    f"Attribute '{axis}_cell_size' must be a float of shape (1,)"
                 )
 
             return np.r_[value].astype(float).item()
