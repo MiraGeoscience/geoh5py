@@ -1039,3 +1039,48 @@ def array_is_colour(values: np.ndarray) -> bool:
         and values.shape[1] in (3, 4)
         and np.issubdtype(values.dtype, np.number)
     )
+
+
+def format_numeric_values(
+    input_values: np.ndarray, n_decimals: int, max_chars: int
+) -> np.ndarray:
+    """
+    Format numeric values for display.
+
+    For values that are too long, scientific notation is used.
+    If the value is less than 1, it is rounded to a number of decimals depending on its magnitude.
+    Trailing zeros and decimal points are removed.
+
+    :param input_values: The array of values to format.
+    :param n_decimals: The number of decimal places to round to.
+    :param max_chars: The maximum number of characters for each formatted value.
+
+    :return: An array of formatted strings.
+    """
+    nan_mask = np.isnan(input_values)
+    values = input_values[~nan_mask]
+
+    # prepare "normal format" strings
+    mask = (np.abs(values) < 1) & (values != 0)
+    decimals = np.full(values.shape, n_decimals, dtype=int)
+    if np.any(mask):
+        log_abs = np.log10(np.abs(values[mask]))
+        decimals[mask] = n_decimals - np.floor(log_abs).astype(int) - 1
+
+    formats = np.char.add(np.char.add("%.", decimals.astype(str)), "f")
+    normal_str = np.char.rstrip(np.char.mod(formats, values), "0")
+
+    # prepare the scientific notation strings
+    sci_str = np.char.mod(f"%.{n_decimals}e", values)
+    man_exp = np.array(np.char.split(sci_str, "e").tolist())
+    man = np.char.rstrip(np.char.rstrip(man_exp[:, 0], "0"), ".")
+    sci_str = np.char.add(np.char.add(man, "e"), man_exp[:, 1])
+
+    # choose between normal and scientific notation
+    result = np.where(np.char.str_len(normal_str) > max_chars, sci_str, normal_str)
+
+    # replace NaN values with empty strings
+    final_result = np.full(input_values.shape, "", dtype=object)
+    final_result[~nan_mask] = result
+
+    return final_result
