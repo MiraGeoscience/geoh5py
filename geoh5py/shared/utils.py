@@ -1071,7 +1071,7 @@ def format_numeric_values(
     result = np.where(np.char.str_len(normal_str) > max_chars, sci_str, normal_str)
 
     # replace NaN values with empty strings
-    final_result = np.full(input.shape, "", dtype=object)
+    final_result = np.full(input_values.shape, "", dtype=object)
     final_result[~nan_mask] = result
 
     return final_result
