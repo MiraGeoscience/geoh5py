@@ -68,9 +68,11 @@ def test_dip_azimuth_to_vector():
 
 
 def test_format_values_for_display():
-    test = np.array([1145.199999, 0.01452145, 0.001452145, 741254125.74125, 0.0000145])
+    test = np.array(
+        [1145.199999, 0.01452145, 0.001452145, 741254125.74125, 0.0000145, np.nan]
+    )
 
-    expected = ["1145.2", "0.014521", "1.45214e-03", "7.41254e+08", "1.45e-05"]
+    expected = ["1145.2", "0.014521", "1.45214e-03", "7.41254e+08", "1.45e-05", ""]
     result = format_numeric_values(test, 5, 8).tolist()
 
     assert result == expected
