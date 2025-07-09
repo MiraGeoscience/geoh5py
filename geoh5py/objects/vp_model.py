@@ -26,7 +26,7 @@ from typing import cast
 
 import numpy as np
 
-from geoh5py.data import Data, PrimitiveTypeEnum, ReferencedData
+from geoh5py.data import Data, FloatData, IntegerData, PrimitiveTypeEnum, ReferencedData
 from geoh5py.objects import DrapeModel, Grid2D
 from geoh5py.objects.grid_object import GridObject
 from geoh5py.shared.utils import KEY_MAP, str2uuid, xy_rotation_matrix
@@ -121,13 +121,24 @@ class VPModel(GridObject, DrapeModel):
 
     def _promote_uuid_attribute(
         self,
-        value: str | uuid.UUID | np.ndarray,
+        value: str | uuid.UUID | np.ndarray | Data,
         name: str,
         primitive_type: PrimitiveTypeEnum,
     ) -> uuid.UUID:
         """
         Promote a string or UUID to a UUID.
+
+        :param value: The value provided in the constructor.
+        :param name: The name of the attribute validated.
+        :param primitive_type: The primitive type of the attribute.
         """
+        if isinstance(value, Data):
+            if value not in self.children:
+                raise ValueError(
+                    f"Data '{value.name}' is not a child of the VPModel object."
+                )
+            return value.uid
+
         value = str2uuid(value)
 
         if isinstance(value, uuid.UUID):
@@ -161,7 +172,10 @@ class VPModel(GridObject, DrapeModel):
         return self._flag_property_id
 
     @flag_property_id.setter
-    def flag_property_id(self, value: uuid.UUID):
+    def flag_property_id(self, value: uuid.UUID | IntegerData):
+        if isinstance(value, IntegerData):
+            value = value.uid
+
         if not isinstance(value, uuid.UUID):
             raise TypeError("Attribute 'flag_property_id' should be a 'uuid.UUID'.")
         self._flag_property_id = value
@@ -177,7 +191,10 @@ class VPModel(GridObject, DrapeModel):
         return self._heterogeneous_property_id
 
     @heterogeneous_property_id.setter
-    def heterogeneous_property_id(self, value: uuid.UUID):
+    def heterogeneous_property_id(self, value: uuid.UUID | FloatData):
+        if isinstance(value, FloatData):
+            value = value.uid
+
         if not isinstance(value, uuid.UUID):
             raise TypeError(
                 "Attribute 'heterogeneous_property_id' should be a 'uuid.UUID'."
@@ -213,7 +230,10 @@ class VPModel(GridObject, DrapeModel):
         return self._unit_property_id
 
     @unit_property_id.setter
-    def unit_property_id(self, value: uuid.UUID):
+    def unit_property_id(self, value: uuid.UUID | ReferencedData):
+        if isinstance(value, ReferencedData):
+            value = value.uid
+
         if not isinstance(value, uuid.UUID):
             raise TypeError("Attribute 'unit_property_id' should be a 'uuid.UUID'.")
 
@@ -230,7 +250,10 @@ class VPModel(GridObject, DrapeModel):
         return self._weight_property_id
 
     @weight_property_id.setter
-    def weight_property_id(self, value: uuid.UUID):
+    def weight_property_id(self, value: uuid.UUID | FloatData):
+        if isinstance(value, FloatData):
+            value = value.uid
+
         if not isinstance(value, uuid.UUID):
             raise TypeError(
                 "Attribute 'weight_property_id' should be a 'uuid.UUID' or None"
