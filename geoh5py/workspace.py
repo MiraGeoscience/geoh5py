@@ -42,11 +42,11 @@ from weakref import ReferenceType
 import h5py
 import numpy as np
 
-from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType, PrimitiveTypeEnum, TypeEnum
-from ..data.text_data import TextData
-from ..data.visual_parameters import VisualParameters
-from ..groups import (
+from . import data, groups, objects
+from .data import CommentsData, Data, DataType, PrimitiveTypeEnum, TypeEnum
+from .data.text_data import TextData
+from .data.visual_parameters import VisualParameters
+from .groups import (
     CustomGroup,
     DrillholeGroup,
     Group,
@@ -54,11 +54,11 @@ from ..groups import (
     PropertyGroup,
     RootGroup,
 )
-from ..io import H5Reader, H5Writer
-from ..io.utils import str_from_subtype, str_from_type
-from ..objects import Drillhole, ObjectBase
-from ..shared import weakref_utils
-from ..shared.concatenation import (
+from .io import H5Reader, H5Writer
+from .io.utils import str_from_subtype, str_from_type
+from .objects import Drillhole, ObjectBase
+from .shared import weakref_utils
+from .shared.concatenation import (
     Concatenated,
     ConcatenatedData,
     ConcatenatedDrillhole,
@@ -66,10 +66,10 @@ from ..shared.concatenation import (
     ConcatenatedPropertyGroup,
     Concatenator,
 )
-from ..shared.entity import Entity
-from ..shared.entity_type import EntityType
-from ..shared.exceptions import Geoh5FileClosedError
-from ..shared.utils import (
+from .shared.entity import Entity
+from .shared.entity_type import EntityType
+from .shared.exceptions import Geoh5FileClosedError
+from .shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
     get_attributes,
@@ -88,6 +88,22 @@ NETWORK_DRIVES = [
     "Box",
     "iCloud",
 ]
+
+
+def get_type_uid_classes():
+    members = []
+    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
+            members.append(member)
+
+    return members
+
+
+TYPE_UID_TO_CLASS = {
+    k.default_type_uid(): k
+    for k in get_type_uid_classes()
+    if k.default_type_uid() is not None
+}
 
 
 # pylint: disable=too-many-instance-attributes
@@ -484,7 +500,7 @@ class Workspace(AbstractContextManager):
             return created_data
 
         created_entity = self.create_object_or_group(entity_class, entity, entity_type)
-        if save_on_creation and self.h5file is not None:
+        if created_entity is not None and save_on_creation and self.h5file is not None:
             self.save_entity(created_entity, compression=compression)
         return created_entity
 
@@ -507,7 +523,7 @@ class Workspace(AbstractContextManager):
 
     def create_object_or_group(
         self, entity_class, entity: dict, entity_type: dict | EntityType
-    ) -> Group | ObjectBase:
+    ) -> Group | ObjectBase | None:
         """
         Create an object or a group with attributes.
 
@@ -533,41 +549,34 @@ class Workspace(AbstractContextManager):
             else:
                 entity_type_uid = uuid.uuid4()
 
-        for name, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class.__bases__)
-                and member is not entity_class.__bases__
-                and not member == CustomGroup
-                and member.default_type_uid() == entity_type_uid
+        member = TYPE_UID_TO_CLASS.get(entity_type_uid, None)
+
+        if member is None:
+            # Special case for CustomGroup without uuid
+            if entity_class == Group:
+                entity_type = CustomGroup.find_or_create_type(self, **entity_type)
+                return CustomGroup(entity_type=entity_type, **entity)
+
+            logger.warning(
+                "Entity class type %s not recognized for uid %s. Skipping.",
+                entity_class,
+                entity_type_uid,
+            )
+            return None
+
+        if self.version > 1.0:
+            if member in (DrillholeGroup, IntegratorDrillholeGroup):
+                member = type(
+                    "Concatenator" + member.__name__, (Concatenator, member), {}
+                )
+            elif member is Drillhole and isinstance(
+                entity.get("parent"),
+                (DrillholeGroup, IntegratorDrillholeGroup),
             ):
-                if self.version > 1.0:
-                    if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        member = type("Concatenator" + name, (Concatenator, member), {})
-                    elif member is Drillhole and isinstance(
-                        entity.get("parent"),
-                        (DrillholeGroup, IntegratorDrillholeGroup),
-                    ):
-                        member = ConcatenatedDrillhole
+                member = ConcatenatedDrillhole
 
-                entity_type = member.find_or_create_type(self, **entity_type)
-
-                created_entity = member(entity_type=entity_type, **entity)
-
-                return created_entity
-
-        # Special case for CustomGroup without uuid
-        if entity_class == Group:
-            entity_type = groups.custom.CustomGroup.find_or_create_type(
-                self, **entity_type
-            )
-            created_entity = groups.custom.CustomGroup(
-                entity_type=entity_type, **entity
-            )
-
-            return created_entity
-
-        raise TypeError(f"Entity class type {entity_class} not recognized.")
+        entity_type = member.find_or_create_type(self, **entity_type)
+        return member(entity_type=entity_type, **entity)
 
     def create_root(
         self, entity_attributes: dict | None = None, type_attributes: dict | None = None
