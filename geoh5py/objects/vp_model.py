@@ -387,6 +387,8 @@ class VPModel(GridObject, DrapeModel):
     def validate_metadata(self, value) -> dict | None:
         """
         Validate and format type of metadata value.
+
+        :param value: Dictionary of values to be augmented with the "VP" field.
         """
 
         value = super().validate_metadata(value)
