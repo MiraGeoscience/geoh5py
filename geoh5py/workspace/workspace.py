@@ -43,7 +43,7 @@ import h5py
 import numpy as np
 
 from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType, PrimitiveTypeEnum
+from ..data import CommentsData, Data, DataType, PrimitiveTypeEnum, TypeEnum
 from ..data.text_data import TextData
 from ..data.visual_parameters import VisualParameters
 from ..groups import (
@@ -423,39 +423,30 @@ class Workspace(AbstractContextManager):
                 f"got {type(entity_type)}."
             )
 
-        for name, member in inspect.getmembers(data):
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class)
-                and member is not entity_class
-                and hasattr(member, "primitive_type")
-                and inspect.ismethod(member.primitive_type)
-                and entity_type.primitive_type is member.primitive_type()
-            ):
-                if member is CommentsData and not any(
-                    isinstance(val, str) and val == "UserComments"
-                    for val in entity.values()
-                ):
-                    continue
+        type_enum = getattr(TypeEnum, entity_type.primitive_type.name, None)
 
-                if self.version > 1.0 and isinstance(
-                    entity["parent"], ConcatenatedObject
-                ):
-                    member = type("Concatenated" + name, (ConcatenatedData, member), {})
+        if type_enum is None or not issubclass(type_enum.value, Data):
+            raise TypeError(
+                f"Data type {entity_class} not found in {entity_type.primitive_type}."
+            )
 
-                if member is TextData and any(
-                    isinstance(val, str) and "Visual Parameters" == val
-                    for val in entity.values()
-                ):
-                    member = VisualParameters
+        member = type_enum.value
 
-                created_entity = member(entity_type=entity_type, **entity)
+        if self.version > 1.0 and isinstance(entity["parent"], ConcatenatedObject):
+            member = type(
+                "Concatenated" + member.__name__, (ConcatenatedData, member), {}
+            )
 
-                return created_entity
+        if member is TextData:
+            if entity.get("name", None) == "Visual Parameters":
+                member = VisualParameters
 
-        raise TypeError(
-            f"Data type {entity_class} not found in {entity_type.primitive_type}."
-        )
+            if entity.get("name", None) == "UserComments":
+                member = CommentsData
+
+        created_entity = member(entity_type=entity_type, **entity)
+
+        return created_entity
 
     def create_entity(
         self,

@@ -21,6 +21,7 @@
 # pylint: disable=unused-import
 # flake8: noqa
 
+from enum import Enum
 from .blob_data import BlobData
 from .boolean_data import BooleanData
 from .data import Data
@@ -45,3 +46,21 @@ from .referenced_data import ReferencedData
 from .text_data import CommentsData, MultiTextData, TextData
 from .unknown_data import UnknownData
 from .visual_parameters import VisualParameters
+
+
+class TypeEnum(Enum):
+    """Enum for data types."""
+
+    BLOB = BlobData
+    BOOLEAN = BooleanData
+    COMMENTS = CommentsData
+    COLOUR = Colour
+    DATETIME = DatetimeData
+    FILENAME = FilenameData
+    FLOAT = FloatData
+    GEOMETRIC = GeometricDataConstants
+    INTEGER = IntegerData
+    MULTI_TEXT = MultiTextData
+    REFERENCED = ReferencedData
+    TEXT = TextData
+    UNKNOWN = UnknownData
