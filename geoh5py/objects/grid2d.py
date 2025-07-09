@@ -132,7 +132,7 @@ class Grid2D(GridObject):
 
             xyz_dipped = dip_matrix @ xyz.T
             centroids = (rotation_matrix @ xyz_dipped).T
-            centroids += self.origin[None, :]
+            centroids += np.asarray(self._origin.tolist())[None, :]
 
             self._centroids = centroids
 
@@ -185,7 +185,7 @@ class Grid2D(GridObject):
 
             kwargs.update(
                 {
-                    "origin": self.origin + delta_orig,
+                    "origin": np.asarray(self._origin.tolist()) + delta_orig,
                     "u_count": np.sum(u_ind),
                     "v_count": np.sum(v_ind),
                 }

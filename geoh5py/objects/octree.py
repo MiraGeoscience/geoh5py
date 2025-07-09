@@ -154,7 +154,7 @@ class Octree(GridObject):
             ) * self.w_cell_size
             xyz = np.c_[u_grid, v_grid, w_grid]
             self._centroids = np.dot(rot, xyz.T).T
-            self._centroids += self.origin[None, :]
+            self._centroids += np.asarray(self._origin.tolist())[None, :]
 
         return self._centroids
 

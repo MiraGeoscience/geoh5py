@@ -101,7 +101,7 @@ class BlockModel(GridObject):
             xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
             self._centroids = np.dot(rot, xyz.T).T
 
-            self._centroids += self.origin[None, :]
+            self._centroids += np.asarray(self._origin.tolist())[None, :]
 
         return self._centroids
 
