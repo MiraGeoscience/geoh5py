@@ -223,7 +223,7 @@ class VPModel(GridObject, DrapeModel):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def unit_property_id(self) -> uuid.UUID | str | None:
+    def unit_property_id(self) -> uuid.UUID:
         """
         VPmg unit model id.
         """
@@ -243,7 +243,7 @@ class VPModel(GridObject, DrapeModel):
             self.workspace.update_attribute(self, "attributes")
 
     @property
-    def weight_property_id(self) -> uuid.UUID | str | None:
+    def weight_property_id(self) -> uuid.UUID:
         """
         VPmg weight model id.
         """
