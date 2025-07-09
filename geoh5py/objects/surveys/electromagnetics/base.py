@@ -26,8 +26,7 @@ from __future__ import annotations
 import json
 import uuid
 from abc import ABC, abstractmethod
-from logging import getLogger
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -38,7 +37,9 @@ from geoh5py.objects.surveys.base import BaseSurvey
 from geoh5py.shared.utils import str2uuid, str_json_to_dict
 
 
-logger = getLogger()
+if TYPE_CHECKING:
+    from geoh5py.groups import Group
+    from geoh5py.workspace import Workspace
 
 
 class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
@@ -189,7 +190,8 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
         """
         List of measured channels.
         """
-        return self.metadata["EM Dataset"].get("Channels", None)
+        channels = self.metadata["EM Dataset"]["Channels"]
+        return channels
 
     @channels.setter
     def channels(self, values: list | np.ndarray):
@@ -521,8 +523,8 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
                 missing_keys += [key]
 
         if missing_keys:
-            logger.warning(
-                "Argument(s) missing from the input metadata: %s.", missing_keys
+            raise KeyError(
+                f"'{missing_keys}' argument(s) missing from the input metadata."
             )
 
         for key, value in values["EM Dataset"].items():

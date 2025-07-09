@@ -24,7 +24,6 @@
 
 from __future__ import annotations
 
-import logging
 import re
 
 import numpy as np
@@ -36,7 +35,7 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def test_create_survey_mt(tmp_path, caplog):
+def test_create_survey_mt(tmp_path):
     name = "TestMT"
     h5file_path = tmp_path / r"testMT.geoh5"
 
@@ -75,12 +74,12 @@ def test_create_survey_mt(tmp_path, caplog):
         with pytest.raises(TypeError, match="'metadata' must be of type 'dict'"):
             mt_survey.metadata = "Hello World"
 
-        metadata = mt_survey.default_metadata.copy()
-        metadata["EM Dataset"].pop("Unit")
-        with caplog.at_level(logging.WARNING):
-            mt_survey.metadata = metadata
+        with pytest.raises(
+            KeyError, match=f"{list(mt_survey.default_metadata['EM Dataset'].keys())}"
+        ):
+            mt_survey.metadata = {"EM Dataset": {}}
 
-        assert "Unit" in caplog.text
+        assert mt_survey.type == "Receivers"
 
         with pytest.raises(
             TypeError, match="Values provided as 'channels' must be a list"

@@ -18,13 +18,7 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-from geoh5py import TYPE_UID_TO_CLASS, get_type_uid_classes
-from geoh5py.groups import ContainerGroup, SimPEGGroup, UIJsonGroup
-from geoh5py.objects import Curve, Points, Surface
+# pylint: disable=unused-import
+# flake8: noqa
 
-
-def test_get_objects_with_type_uid():
-    members = get_type_uid_classes()
-    checks = [Points, Curve, Surface, UIJsonGroup, SimPEGGroup, ContainerGroup]
-    assert all(k in members for k in checks)
-    assert all(k in TYPE_UID_TO_CLASS.values() for k in checks)
+from .workspace import Workspace, active_workspace
