@@ -94,7 +94,7 @@ class GridObject(ObjectBase, ABC):
         """
         Coordinates of the origin, shape (3, ).
         """
-        return self._origin
+        return np.asarray(self._origin.tolist())
 
     @origin.setter
     def origin(self, values: np.ndarray | list | tuple):

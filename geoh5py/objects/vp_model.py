@@ -289,10 +289,7 @@ class VPModel(GridObject, DrapeModel):
                 rotation_matrix
                 @ np.c_[np.ravel(u_grid), np.ravel(v_grid), self.prisms[:, 0]].T
             ).T
-
-            for ind, axis in enumerate(["x", "y", "z"]):
-                xyz[:, ind] += self.origin[axis]
-
+            xyz += self.origin[None, :]
             indices = (self.layers[:, 0] * self._v_count + self.layers[:, 1]).astype(
                 int
             )
