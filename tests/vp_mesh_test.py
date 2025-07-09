@@ -78,13 +78,6 @@ def test_create_vp_model(tmp_path: Path):
         assert drape.n_cells == layers.shape[0]
         assert drape.centroids.shape == (drape.n_cells, 3)
 
-        with pytest.raises(
-            TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
-        ):
-            VPModel.create(
-                workspace, layers=layers, prisms=prisms, unit_property_id="abc"
-            )
-
     with pytest.raises(TypeError, match="Attribute 'flag_property_id' should be"):
         drape.flag_property_id = "abc"
 
@@ -98,3 +91,10 @@ def test_create_vp_model(tmp_path: Path):
 
     with pytest.raises(TypeError, match="Attribute 'weight_property_id' should be"):
         drape.weight_property_id = "abc"
+
+    ws = Workspace()
+
+    with pytest.raises(
+        TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
+    ):
+        VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")

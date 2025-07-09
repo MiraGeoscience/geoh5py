@@ -255,9 +255,7 @@ class VPModel(GridObject, DrapeModel):
             value = value.uid
 
         if not isinstance(value, uuid.UUID):
-            raise TypeError(
-                "Attribute 'weight_property_id' should be a 'uuid.UUID' or None"
-            )
+            raise TypeError("Attribute 'weight_property_id' should be a 'uuid.UUID'.")
         self._weight_property_id = value
 
         if self.on_file:
@@ -266,7 +264,7 @@ class VPModel(GridObject, DrapeModel):
     @property
     def centroids(self) -> np.ndarray:
         """
-        Cell center locations in world coordinates, shape(*, 3).
+        Cell center locations of each prism in world coordinates, shape(*, 3).
 
         .. code-block:: python
 
@@ -275,10 +273,13 @@ class VPModel(GridObject, DrapeModel):
                 ...,
                 [x_N, y_N, z_N]
             ]
+
+        The positions are computed from the u, v cell sizes and rotation angle
+        to determine the horizontal position. The vertical position is determined
+        by the mean of elevation of the top and bottom of the prism.
         """
         if getattr(self, "_centroids", None) is None:
             rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
-
             v_grid, u_grid = np.meshgrid(
                 np.cumsum(np.ones(self._v_count) * self.v_cell_size)
                 - self.v_cell_size / 2,
@@ -294,7 +295,6 @@ class VPModel(GridObject, DrapeModel):
                 int
             )
             centroids = xyz[indices, :]
-
             elevation = (
                 self.prisms[:, 0].reshape((self.v_count, self.u_count)).T.flatten()
             )
@@ -302,6 +302,8 @@ class VPModel(GridObject, DrapeModel):
                 self.prisms[:, 2].reshape((self.v_count, self.u_count)).T.flatten()
             )
             top_ind = np.r_[0, np.cumsum(ind_colm[:-1])].astype(int)
+
+            # Loop down the layers and compute the center, up to the deepest layer
             for count in range(int(ind_colm.max()) - 1):
                 mask = ind_colm > (count + 1)
                 centroids[top_ind, 2] = np.mean(
@@ -379,12 +381,12 @@ class VPModel(GridObject, DrapeModel):
         """
         if not isinstance(value, (np.integer, int)) or value < 1:
             raise TypeError(
-                f"Attribute '{axis}_count' must be a type(int32) greater than 1."
+                f"Attribute '{axis}_count' must be a type(int32) greater than 0."
             )
 
         return np.int32(value)
 
-    def validate_metadata(self, value) -> dict | None:
+    def validate_metadata(self, value: np.ndarray | dict | None) -> dict | None:
         """
         Validate and format type of metadata value.
 
