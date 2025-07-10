@@ -17,7 +17,9 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
-__version__ = "0.12.0a1"
-
-from geoh5py.workspace.workspace import Workspace, active_workspace
+from .workspace import (
+    TYPE_UID_TO_CLASS,
+    Workspace,
+    active_workspace,
+    get_type_uid_classes,
+)

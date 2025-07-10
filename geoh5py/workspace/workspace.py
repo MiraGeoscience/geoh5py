@@ -42,11 +42,11 @@ from weakref import ReferenceType
 import h5py
 import numpy as np
 
-from . import data, groups, objects
-from .data import CommentsData, Data, DataType, PrimitiveTypeEnum, TypeEnum
-from .data.text_data import TextData
-from .data.visual_parameters import VisualParameters
-from .groups import (
+from geoh5py import data, groups, objects
+from geoh5py.data import CommentsData, Data, DataType, PrimitiveTypeEnum, TypeEnum
+from geoh5py.data.text_data import TextData
+from geoh5py.data.visual_parameters import VisualParameters
+from geoh5py.groups import (
     CustomGroup,
     DrillholeGroup,
     Group,
@@ -54,11 +54,11 @@ from .groups import (
     PropertyGroup,
     RootGroup,
 )
-from .io import H5Reader, H5Writer
-from .io.utils import str_from_subtype, str_from_type
-from .objects import Drillhole, ObjectBase
-from .shared import weakref_utils
-from .shared.concatenation import (
+from geoh5py.io import H5Reader, H5Writer
+from geoh5py.io.utils import str_from_subtype, str_from_type
+from geoh5py.objects import Drillhole, ObjectBase
+from geoh5py.shared import weakref_utils
+from geoh5py.shared.concatenation import (
     Concatenated,
     ConcatenatedData,
     ConcatenatedDrillhole,
@@ -66,10 +66,10 @@ from .shared.concatenation import (
     ConcatenatedPropertyGroup,
     Concatenator,
 )
-from .shared.entity import Entity
-from .shared.entity_type import EntityType
-from .shared.exceptions import Geoh5FileClosedError
-from .shared.utils import (
+from geoh5py.shared.entity import Entity
+from geoh5py.shared.entity_type import EntityType
+from geoh5py.shared.exceptions import Geoh5FileClosedError
+from geoh5py.shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
     get_attributes,
