@@ -248,7 +248,7 @@ class Data(Entity):
 
     @entity_type.setter
     def entity_type(self, data_type: DataType | ReferenceDataType):
-        self._entity_type = data_type
+        self._entity_type = self.validate_entity_type(data_type)
 
         if self.on_file:
             self.workspace.update_attribute(self, "entity_type")
@@ -307,8 +307,8 @@ class Data(Entity):
             type(self), entity_type.primitive_type.value
         ):
             raise TypeError(
-                f"Input 'entity_type' with primitive_type '{primitive_type}'"
-                "does not match the data type of the object."
+                f"Input 'entity_type' with primitive_type '{primitive_type}' "
+                f"does not match the data type {type(self)}."
             )
 
         if entity_type.name == "Entity":

@@ -128,25 +128,6 @@ class ReferencedData(IntegerData):
             self.workspace.update_attribute(self, "data_map")
 
     @property
-    def entity_type(self) -> ReferenceDataType:
-        """
-        The associated reference data type.
-        """
-        return self._entity_type
-
-    @entity_type.setter
-    def entity_type(self, data_type: ReferenceDataType):
-        if not hasattr(data_type, "primitive_type") or not issubclass(
-            type(self), data_type.primitive_type.value
-        ):
-            raise TypeError("entity_type must be of type ReferenceDataType")
-
-        self._entity_type = data_type
-
-        if self.on_file:
-            self.workspace.update_attribute(self, "entity_type")
-
-    @property
     def mapped_values(self) -> np.ndarray:
         """
         The values mapped from the reference data.
