@@ -473,6 +473,13 @@ class DataType(EntityType):
             raise ValueError(
                 f"Attribute 'primitive_type' should be one of {PrimitiveTypeEnum.__members__}"
             )
+
+        if primitive_type in [
+            PrimitiveTypeEnum.COMMENTS,
+            PrimitiveTypeEnum.VISUAL_PARAMETERS,
+        ]:
+            return primitive_type.TEXT
+
         return primitive_type
 
 

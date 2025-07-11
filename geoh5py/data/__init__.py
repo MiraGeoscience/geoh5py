@@ -18,9 +18,6 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
-# pylint: disable=unused-import
-# flake8: noqa
-
 from enum import Enum
 from pathlib import Path
 
@@ -28,9 +25,9 @@ import numpy as np
 
 from .blob_data import BlobData
 from .boolean_data import BooleanData
+from .colour import Colour
 from .data import Data
 from .data_association_enum import DataAssociationEnum
-from .colour import Colour
 from .data_unit import DataUnit
 from .datetime_data import DatetimeData
 from .filename_data import FilenameData
@@ -38,7 +35,6 @@ from .float_data import FloatData
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .numeric_data import NumericData
-
 from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData
 from .text_data import CommentsData, MultiTextData, TextData
@@ -63,6 +59,7 @@ class PrimitiveTypeEnum(Enum):
     REFERENCED = ReferencedData
     TEXT = TextData
     UNKNOWN = UnknownData
+    VISUAL_PARAMETERS = VisualParameters
     VECTOR = type(None)
 
 
@@ -91,9 +88,9 @@ class DataTypeEnum(Enum):
         return DataTypeEnum[primitive_type.name].value
 
 
-from .data_type import (
-    DataType,
-    GeometricDataValueMapType,
-    GeometricDynamicDataType,
-    ReferenceDataType,
-)
+# from .data_type import (
+#     DataType,
+#     GeometricDataValueMapType,
+#     GeometricDynamicDataType,
+#     ReferenceDataType,
+# )

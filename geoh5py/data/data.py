@@ -33,7 +33,7 @@ from .data_association_enum import DataAssociationEnum
 
 
 if TYPE_CHECKING:
-    from .data_type import DataType, ReferenceDataType
+    from geoh5py.data.data_type import DataType, ReferenceDataType
 
 logger = logging.getLogger(__name__)
 
@@ -296,17 +296,19 @@ class Data(Entity):
 
         return None
 
-    def validate_entity_type(self, entity_type: DataType | None) -> DataType:
+    def validate_entity_type(self, entity_type: DataType) -> DataType:
         """
         Validate the entity type.
 
         :param entity_type: Entity type to validate.
         """
-        if not hasattr(entity_type, "primitive_type") or not issubclass(
+        primitive_type = getattr(entity_type, "primitive_type", None)
+        if not primitive_type or not issubclass(
             type(self), entity_type.primitive_type.value
         ):
             raise TypeError(
-                "Input 'entity_type' must be a DataType object of primitive_type 'TEXT'."
+                f"Input 'entity_type' with primitive_type '{primitive_type}'"
+                "does not match the data type of the object."
             )
 
         if entity_type.name == "Entity":

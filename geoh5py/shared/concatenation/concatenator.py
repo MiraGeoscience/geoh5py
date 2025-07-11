@@ -28,7 +28,8 @@ import warnings
 import numpy as np
 from h5py import special_dtype
 
-from ...data import Data, DataAssociationEnum, DataType
+from ...data import Data, DataAssociationEnum
+from ...data.data_type import DataType
 from ...groups import Group
 from ..entity import Entity
 from ..entity_type import EntityType

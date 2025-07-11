@@ -83,7 +83,7 @@ class TextData(Data):
         return values
 
 
-class CommentsData(Data):
+class CommentsData(TextData):
     """
     Comments added to an Object or Group.
     Stored as a list of dictionaries with the following keys:
@@ -134,7 +134,7 @@ class CommentsData(Data):
         return values
 
 
-class MultiTextData(Data):
+class MultiTextData(TextData):
     _values: np.ndarray | str | None
 
     @property

@@ -29,10 +29,9 @@ from geoh5py import data
 from geoh5py.data import (
     Data,
     DataAssociationEnum,
-    DataType,
     NumericData,
-    PrimitiveTypeEnum,
 )
+from geoh5py.data.data_type import DataType
 from geoh5py.objects import ObjectType, Points
 from geoh5py.shared import FLOAT_NDV, INTEGER_NDV
 from geoh5py.workspace import Workspace
@@ -65,7 +64,7 @@ def test_data_instantiation(data_class, tmp_path):
         assert data_type.uid.int != 0
         assert data_type.name == "Entity"
         assert data_type.units is None
-        assert data_type.primitive_type == PrimitiveTypeEnum(data_class)
+        assert issubclass(data_class, data_type.primitive_type.value)
         assert workspace.find_type(data_type.uid, DataType) is data_type
         assert DataType.find(workspace, data_type.uid) is data_type
 
@@ -112,7 +111,7 @@ def test_data_instantiation(data_class, tmp_path):
             # no more reference on data_type, so it should be gone from the workspace
             assert workspace.find_type(data_type_uid, DataType) is None
 
-        with pytest.raises(TypeError, match="Input 'entity_type' must be "):
+        with pytest.raises(TypeError, match="Input 'entity_type' with primitive_type"):
             data.TextData(data_type="bidon")
 
         with pytest.raises(NotImplementedError, match="Only add_data"):

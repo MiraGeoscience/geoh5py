@@ -43,7 +43,8 @@ import h5py
 import numpy as np
 
 from geoh5py import data, groups, objects
-from geoh5py.data import CommentsData, Data, DataType, PrimitiveTypeEnum
+from geoh5py.data import CommentsData, Data, PrimitiveTypeEnum
+from geoh5py.data.data_type import DataType
 from geoh5py.data.text_data import TextData
 from geoh5py.data.visual_parameters import VisualParameters
 from geoh5py.groups import (

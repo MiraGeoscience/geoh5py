@@ -708,7 +708,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
             value_map[0] = "Unknown"
             attributes.update(
                 {
-                    "primitive_type": "REFERENCED",
+                    "type": "REFERENCED",
                     "value_map": value_map,
                     "association": "VERTEX",
                 }

@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 from warnings import warn
 
@@ -34,11 +34,11 @@ from ..data import (
     Data,
     DataAssociationEnum,
     GeometricDataConstants,
-    GeometricDataValueMapType,
     ReferencedData,
     ReferenceValueMap,
     VisualParameters,
 )
+from ..data.data_type import GeometricDataValueMapType
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
@@ -258,13 +258,16 @@ class ObjectBase(EntityContainer):
             parent=self,
             name=data.entity_type.name + f": {name}",
         )
-        geom_data = self.parent.add_data(
-            {
-                name: {
-                    "association": data.association,
-                    "entity_type": data_type,
+        geom_data = cast(
+            GeometricDataConstants,
+            self.add_data(
+                {
+                    name: {
+                        "association": data.association,
+                        "entity_type": data_type,
+                    }
                 }
-            }
+            ),
         )
         data_maps[name] = geom_data
         data.data_maps = data_maps

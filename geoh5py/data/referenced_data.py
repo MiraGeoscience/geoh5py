@@ -92,9 +92,7 @@ class ReferencedData(IntegerData):
             data_maps = {}
             for name, uid in self.metadata.items():
                 child = self.workspace.get_entity(uid)[0]
-                if isinstance(child, GeometricDataConstants) and hasattr(
-                    child.entity_type, "value_map"
-                ):
+                if isinstance(child, GeometricDataConstants):
                     data_maps[name] = child
 
             if data_maps:
