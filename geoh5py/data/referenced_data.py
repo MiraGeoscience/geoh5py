@@ -138,7 +138,9 @@ class ReferencedData(IntegerData):
 
     @entity_type.setter
     def entity_type(self, data_type: ReferenceDataType):
-        if not hasattr(data_type, "primitive_type") or not issubclass(type(self), data_type.primitive_type.value):
+        if not hasattr(data_type, "primitive_type") or not issubclass(
+            type(self), data_type.primitive_type.value
+        ):
             raise TypeError("entity_type must be of type ReferenceDataType")
 
         self._entity_type = data_type
