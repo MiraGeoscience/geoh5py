@@ -91,9 +91,7 @@ class DataType(EntityType):
         self,
         workspace: Workspace,
         *,
-        primitive_type: (
-            type[Data] | PrimitiveTypeEnum | str
-        ) = PrimitiveTypeEnum.INVALID,
+        primitive_type: (type[Data] | PrimitiveTypeEnum | str) = "UNKNOWN",
         color_map: ColorMap | None = None,
         duplicate_on_copy: bool = False,
         duplicate_type_on_copy: bool = False,
@@ -478,7 +476,7 @@ class DataType(EntityType):
             PrimitiveTypeEnum.COMMENTS,
             PrimitiveTypeEnum.VISUAL_PARAMETERS,
         ]:
-            return primitive_type.TEXT
+            return PrimitiveTypeEnum.TEXT
 
         return primitive_type
 

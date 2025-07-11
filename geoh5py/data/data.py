@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 import uuid
 from abc import abstractmethod
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -295,6 +296,14 @@ class Data(Entity):
                 return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
         return None
+
+    def primitive_type(self) -> Enum:
+        """Deprecated method to return the primitive type of the class."""
+        logger.warning(
+            "The method `primitive_type` will be deprecated. "
+            "Use `entity_type.primitive_type` instead."
+        )
+        return self.entity_type.primitive_type
 
     def validate_entity_type(self, entity_type: DataType) -> DataType:
         """
