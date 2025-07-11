@@ -23,16 +23,17 @@ from __future__ import annotations
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from ..shared import Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType, ReferenceDataType
-from .primitive_type_enum import PrimitiveTypeEnum
 
+
+if TYPE_CHECKING:
+    from .data_type import DataType, ReferenceDataType
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ class Data(Entity):
         if self.n_values is None:
             return values
 
-        if self.primitive_type is not PrimitiveTypeEnum.COLOUR:
+        if self.entity_type.primitive_type.name != "COLOUR":
             values = np.ravel(values)
 
         if len(values) < self.n_values:
@@ -266,11 +267,6 @@ class Data(Entity):
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
 
-    @classmethod
-    @abstractmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        """Abstract method to return the primitive type of the class."""
-
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
     ) -> np.ndarray | None:
@@ -306,9 +302,8 @@ class Data(Entity):
 
         :param entity_type: Entity type to validate.
         """
-        if (
-            not isinstance(entity_type, DataType)
-            or entity_type.primitive_type != self.primitive_type()
+        if not hasattr(entity_type, "primitive_type") or not issubclass(
+            type(self), entity_type.primitive_type.value
         ):
             raise TypeError(
                 "Input 'entity_type' must be a DataType object of primitive_type 'TEXT'."

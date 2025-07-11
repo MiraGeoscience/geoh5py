@@ -23,7 +23,6 @@ from __future__ import annotations
 from uuid import UUID
 
 from .data import Data
-from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class GeometricDataConstants(Data):
@@ -51,10 +50,6 @@ class GeometricDataConstants(Data):
             visible=visible,
             **kwargs,
         )
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.GEOMETRIC
 
     def validate_values(self, values: None) -> None:
         """

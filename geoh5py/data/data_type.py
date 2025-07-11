@@ -29,8 +29,8 @@ from uuid import UUID
 import numpy as np
 
 from ..shared import EntityType, utils
+from . import DataTypeEnum, PrimitiveTypeEnum
 from .color_map import ColorMap
-from .primitive_type_enum import DataTypeEnum, PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 
@@ -466,10 +466,8 @@ class DataType(EntityType):
                 PrimitiveTypeEnum, utils.INV_KEY_MAP.get(primitive_type, primitive_type)
             )
 
-        if isinstance(primitive_type, type) and hasattr(
-            primitive_type, "primitive_type"
-        ):
-            primitive_type = primitive_type.primitive_type()
+        if isinstance(primitive_type, type):
+            primitive_type = PrimitiveTypeEnum(primitive_type)
 
         if not isinstance(primitive_type, PrimitiveTypeEnum):
             raise ValueError(

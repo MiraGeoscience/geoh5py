@@ -20,11 +20,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from .data import PrimitiveTypeEnum
-from .data_type import ReferencedBooleanType
 from .referenced_data import ReferencedData
+
+
+if TYPE_CHECKING:
+    from .data_type import ReferencedBooleanType
 
 
 class BooleanData(ReferencedData):
@@ -41,7 +45,7 @@ class BooleanData(ReferencedData):
 
     @entity_type.setter
     def entity_type(self, data_type: ReferencedBooleanType):
-        if not isinstance(data_type, ReferencedBooleanType):
+        if data_type.primitive_type.value != type(self):
             raise TypeError("'entity_type' must be of type ReferencedBooleanType")
 
         self._entity_type = data_type
@@ -65,10 +69,6 @@ class BooleanData(ReferencedData):
     @property
     def formatted_values(self):
         return super().formatted_values.astype("int8")
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.BOOLEAN
 
     @property
     def ndv(self) -> int:

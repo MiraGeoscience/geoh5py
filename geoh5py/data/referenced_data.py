@@ -20,17 +20,19 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 from ..shared.utils import find_unique_name
 from .data import Data
-from .data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
-from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
+
+
+if TYPE_CHECKING:
+    from .data_type import GeometricDataValueMapType, ReferenceDataType
 
 
 class ReferencedData(IntegerData):
@@ -71,7 +73,7 @@ class ReferencedData(IntegerData):
         # Always overwrite the entity type name to protect the GeometricDataValueMapType
         new_data.entity_type.name = find_unique_name(
             self.entity_type.name,
-            [tp.name for tp in self.workspace.types if isinstance(tp, DataType)],
+            [tp.name for tp in self.workspace.types if hasattr(tp, "primitive_type")],
         )
 
         if self.data_maps is not None:
@@ -136,7 +138,7 @@ class ReferencedData(IntegerData):
 
     @entity_type.setter
     def entity_type(self, data_type: ReferenceDataType):
-        if not isinstance(data_type, ReferenceDataType):
+        if not hasattr(data_type, "primitive_type") or not issubclass(type(self), data_type.primitive_type.value):
             raise TypeError("entity_type must be of type ReferenceDataType")
 
         self._entity_type = data_type
@@ -153,10 +155,6 @@ class ReferencedData(IntegerData):
             raise ValueError("Entity type must have a value map.")
 
         return self.value_map.map_values(self.values)
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.REFERENCED
 
     @property
     def value_map(self) -> ReferenceValueMap | None:

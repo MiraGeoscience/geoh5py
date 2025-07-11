@@ -203,7 +203,7 @@ def test_concatenated_entities(tmp_path):
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
             dtype = data_type.DataType.find_or_create(
-                workspace, primitive_type=FloatData.primitive_type()
+                workspace, primitive_type=FloatData
             )
             class_type(entity_type=dtype)
 
