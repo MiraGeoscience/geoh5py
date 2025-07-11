@@ -191,7 +191,7 @@ class TipperSurvey(FEMSurvey):
             value_map[0] = "Unknown"
             attributes.update(
                 {
-                    "type": "REFERENCED",
+                    "primitive_type": "REFERENCED",
                     "value_map": value_map,
                     "association": "VERTEX",
                 }

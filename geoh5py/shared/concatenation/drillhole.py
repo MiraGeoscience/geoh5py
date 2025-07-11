@@ -269,7 +269,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"DEPTH{label}": {
                     "association": "DEPTH",
                     "values": depth,
-                    "type": "FLOAT",
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -363,7 +363,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"FROM{label}": {
                     "association": "DEPTH",
                     "values": from_to[:, 0],
-                    "type": "FLOAT",
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
@@ -371,7 +371,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 f"TO{label}": {
                     "association": "DEPTH",
                     "values": from_to[:, 1],
-                    "type": "FLOAT",
+                    "primitive_type": "FLOAT",
                     "parent": self,
                     "allow_move": False,
                     "allow_delete": False,
