@@ -108,7 +108,7 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
                     value_map[0] = "Unknown"
                     attributes.update(
                         {  # type: ignore
-                            "type": "REFERENCED",
+                            "primitive_type": "REFERENCED",
                             "value_map": value_map,
                         }
                     )
@@ -385,7 +385,7 @@ class CurrentElectrode(BaseElectrode):
                 "A-B Cell ID": {
                     "values": data,
                     "association": "CELL",
-                    "type": "REFERENCED",
+                    "primitive_type": "REFERENCED",
                     "value_map": value_map,
                 }
             }
