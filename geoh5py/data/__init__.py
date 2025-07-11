@@ -86,11 +86,3 @@ class DataTypeEnum(Enum):
         :return: The data type.
         """
         return DataTypeEnum[primitive_type.name].value
-
-
-# from .data_type import (
-#     DataType,
-#     GeometricDataValueMapType,
-#     GeometricDynamicDataType,
-#     ReferenceDataType,
-# )
