@@ -1,3 +1,8 @@
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0", "setuptools"]
+build-backend = "poetry.core.masonry.api"
+
 [project]
 name = "geoh5py"
 version = "0.12.0a1"
@@ -7,6 +12,11 @@ description = "Python API for geoh5, an open file format for geoscientific data"
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
+
+dynamic = ["dependencies"]
+
+requires-python = ">=3.10,<4.0"
+
 repository = "https://github.com/MiraGeoscience/geoh5py"
 maintainers = [
     { name = "Benjamin Kary", email = "benjamink@mirageoscience.com" },
@@ -16,6 +26,8 @@ maintainers = [
 documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 readme = "package.rst"
+
+
 keywords = ["geology", "geophysics", "data", "interoperability"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -40,7 +52,6 @@ include = [
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
 ]
 
-requires-python = ">=3.10"
 
 dependencies = [
   "h5py >=3.2.1",
@@ -149,7 +160,3 @@ fail_under = 90
 [tool.coverage.html]
 skip_empty = true
 skip_covered = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0", "setuptools"]
-build-backend = "poetry.core.masonry.api"
