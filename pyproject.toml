@@ -7,6 +7,7 @@ build-backend = "poetry.core.masonry.api"
 name = "geoh5py"
 version = "0.12.0a1"
 
+dynamic = ["dependencies"]
 
 requires-python = ">=3.10,<4.0"
 
