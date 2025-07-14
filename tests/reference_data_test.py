@@ -91,7 +91,7 @@ def test_create_reference_data(tmp_path):
         points, data, _ = generate_value_map(workspace)
 
         with pytest.raises(
-            TypeError, match="entity_type must be of type ReferenceDataType"
+            TypeError, match="Input 'entity_type' with primitive_type 'None'"
         ):
             data.entity_type = "abc"
 

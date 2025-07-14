@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 from warnings import warn
 
-from .data import Data, PrimitiveTypeEnum
+from .data import Data
 
 
 class FilenameData(Data):
@@ -46,10 +46,6 @@ class FilenameData(Data):
         super().__init__(values=values, name=name, public=public, **kwargs)
 
         self.file_bytes = file_bytes
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.FILENAME
 
     @property
     def file_bytes(self):
