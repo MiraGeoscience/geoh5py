@@ -178,6 +178,10 @@ class VPModel(GridObject, DrapeModel):
 
         if not isinstance(value, uuid.UUID):
             raise TypeError("Attribute 'flag_property_id' should be a 'uuid.UUID'.")
+
+        # TODO: Check that the UUID belong to a child of the VPModel.
+        # Requires to change the loading mechanisms such that data
+        # are loaded at the same time as the object.
         self._flag_property_id = value
 
         if self.on_file:
@@ -200,6 +204,9 @@ class VPModel(GridObject, DrapeModel):
                 "Attribute 'heterogeneous_property_id' should be a 'uuid.UUID'."
             )
 
+        # TODO: Check that the UUID belong to a child of the VPModel.
+        # Requires to change the loading mechanisms such that data
+        # are loaded at the same time as the object.
         self._heterogeneous_property_id = value
 
         if self.on_file:
@@ -237,6 +244,9 @@ class VPModel(GridObject, DrapeModel):
         if not isinstance(value, uuid.UUID):
             raise TypeError("Attribute 'unit_property_id' should be a 'uuid.UUID'.")
 
+        # TODO: Check that the UUID belong to a child of the VPModel.
+        # Requires to change the loading mechanisms such that data
+        # are loaded at the same time as the object.
         self._unit_property_id = value
 
         if self.on_file:
@@ -256,6 +266,10 @@ class VPModel(GridObject, DrapeModel):
 
         if not isinstance(value, uuid.UUID):
             raise TypeError("Attribute 'weight_property_id' should be a 'uuid.UUID'.")
+
+        # TODO: Check that the UUID belong to a child of the VPModel.
+        # Requires to change the loading mechanisms such that data
+        # are loaded at the same time as the object.
         self._weight_property_id = value
 
         if self.on_file:
