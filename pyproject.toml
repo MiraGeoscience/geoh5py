@@ -1,31 +1,30 @@
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0", "setuptools"]
+requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "geoh5py"
 version = "0.12.0a1"
 
+dynamic = ["dependencies"]
+
+requires-python = ">=3.10,<4.0"
+
+
 license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
-
-dynamic = ["dependencies"]
-
-requires-python = ">=3.10,<4.0"
-
-repository = "https://github.com/MiraGeoscience/geoh5py"
 maintainers = [
     { name = "Benjamin Kary", email = "benjamink@mirageoscience.com" },
     { name = "Dominique Fournier", email = "dominiquef@mirageoscience.com" },
     { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
 ]
-documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
-homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
+
 readme = "package.rst"
+
 
 
 keywords = ["geology", "geophysics", "data", "interoperability"]
@@ -59,6 +58,11 @@ dependencies = [
   "Pillow >=10.3.0,<10.4.0",
   "pydantic >=2.5.2"
 ]
+
+[project.urls]
+"Homepage" = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
+"Documentation" = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+"Repository" = "https://github.com/MiraGeoscience/geoh5py"
 
 [tool.poetry.group.dev.dependencies]
 jinja2 = '*'
