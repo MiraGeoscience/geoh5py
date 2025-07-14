@@ -153,3 +153,29 @@ def test_vp_valiations(name, dtype: DataType, tmp_path: Path):
             setattr(vp, name, "abc")
 
         setattr(vp, name, kwargs[name])
+
+
+def test_modify_vp_model(tmp_path: Path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        layers, prisms, units = create_mesh_parameters()
+
+        drape = VPModel.create(
+            workspace,
+            u_count=64,
+            u_cell_size=25,
+            v_count=32,
+            v_cell_size=25,
+            layers=layers,
+            prisms=prisms,
+            unit_property_id=units,
+        )
+        drape.u_cell_size = 50
+        drape.v_cell_size = 50
+
+    with workspace.open():
+        vp = workspace.get_entity(drape.uid)[0]
+        with Workspace.create(tmp_path / f"{__name__}_copy.geoh5") as new_ws:
+            vp_copy = vp.copy(parent=new_ws)
+
+            np.testing.assert_almost_equal(vp_copy.u_cell_size, 50)
