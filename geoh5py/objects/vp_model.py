@@ -279,6 +279,7 @@ class VPModel(GridObject, DrapeModel):
         by the mean of elevation of the top and bottom of the prism.
         """
         if getattr(self, "_centroids", None) is None:
+            # Create a grid of u, v coordinates based on the cell sizes
             rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
             v_grid, u_grid = np.meshgrid(
                 np.cumsum(np.ones(self._v_count) * self.v_cell_size)
@@ -291,10 +292,16 @@ class VPModel(GridObject, DrapeModel):
                 @ np.c_[np.ravel(u_grid), np.ravel(v_grid), self.prisms[:, 0]].T
             ).T
             xyz += np.asarray(self._origin.tolist())[None, :]
+
+            # Instantiate an array of centroids, one for each prism
             indices = (self.layers[:, 0] * self._v_count + self.layers[:, 1]).astype(
                 int
             )
             centroids = xyz[indices, :]
+
+            # Loop down the layers and compute the center, up to the deepest layer
+            # Values for centroids are only updated if the layer is deeper than
+            # the previous one. Elevation is the top of the prism of the nth layer.
             elevation = (
                 self.prisms[:, 0].reshape((self.v_count, self.u_count)).T.flatten()
             )
@@ -302,8 +309,6 @@ class VPModel(GridObject, DrapeModel):
                 self.prisms[:, 2].reshape((self.v_count, self.u_count)).T.flatten()
             )
             top_ind = np.r_[0, np.cumsum(ind_colm[:-1])].astype(int)
-
-            # Loop down the layers and compute the center, up to the deepest layer
             for count in range(int(ind_colm.max()) - 1):
                 mask = ind_colm > (count + 1)
                 centroids[top_ind, 2] = np.mean(
