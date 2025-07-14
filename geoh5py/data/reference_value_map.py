@@ -79,12 +79,14 @@ class ReferenceValueMap:
 
             # TODO: Replace with numpy.dtypes.StringDType instead for support of variable
             # length string after moving to numpy >=2.0
-            str_len = max(
+            str_len = [
                 len(val) if isinstance(val, str) else len(str(val))
                 for val in value_map["Value"]
-            )
+            ]
+
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype(f"U{str_len}"), "utf-8"
+                value_map["Value"].astype(f"U{max(str_len) if str_len else 32}"),
+                "utf-8",
             )
 
         if not isinstance(value_map, np.ndarray):

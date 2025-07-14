@@ -25,8 +25,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.data import NumericData
-from geoh5py.objects import Points, VPModel
+from geoh5py.data import (
+    DataAssociationEnum,
+    FloatData,
+    IntegerData,
+    PrimitiveTypeEnum,
+    ReferencedData,
+)
+from geoh5py.data.data_type import DataType
+from geoh5py.objects import VPModel
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -98,3 +105,51 @@ def test_create_vp_model(tmp_path: Path):
         TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
     ):
         VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")
+
+
+@pytest.mark.parametrize(
+    ("name", "dtype"),
+    [
+        ("flag_property_id", IntegerData),
+        ("heterogeneous_property_id", FloatData),
+        ("unit_property_id", ReferencedData),
+        ("weight_property_id", FloatData),
+    ],
+)
+def test_vp_valiations(name, dtype: DataType, tmp_path: Path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        layers, prisms, units = create_mesh_parameters()
+
+        entity_type = DataType.find_or_create_type(workspace, PrimitiveTypeEnum(dtype))
+
+        kwargs = {
+            name: dtype(association=DataAssociationEnum.OBJECT, entity_type=entity_type)
+        }
+        with pytest.raises(ValueError, match="not a child of the VPModel"):
+            VPModel.create(
+                workspace,
+                u_count=64,
+                u_cell_size=25,
+                v_count=32,
+                v_cell_size=25,
+                layers=layers,
+                prisms=prisms,
+                **kwargs,
+            )
+
+        vp = VPModel.create(
+            workspace,
+            u_count=64,
+            u_cell_size=25,
+            v_count=32,
+            v_cell_size=25,
+            layers=layers,
+            prisms=prisms,
+        )
+
+        with pytest.raises(
+            TypeError, match=f"Attribute '{name}' should be a 'uuid.UUID'."
+        ):
+            setattr(vp, name, "abc")
+
+        setattr(vp, name, kwargs[name])

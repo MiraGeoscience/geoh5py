@@ -52,6 +52,7 @@ class VPModel(GridObject, DrapeModel):
     """
 
     _VALUE_MAP = {
+        0: "Unknown",
         100000: "VP_basement",
     }
     _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
