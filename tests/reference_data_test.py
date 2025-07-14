@@ -249,7 +249,7 @@ def test_value_map_from_str_values(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
-        points, _, _ = generate_value_map(workspace)
+        points, _, _ = generate_value_map(workspace, n_data=100)
 
         value_map = []
         for _ in range(4):
