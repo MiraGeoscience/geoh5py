@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 from warnings import warn
 
@@ -34,8 +34,11 @@ from ..data import (
     Data,
     DataAssociationEnum,
     GeometricDataConstants,
+    ReferencedData,
+    ReferenceValueMap,
     VisualParameters,
 )
+from ..data.data_type import GeometricDataValueMapType
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
@@ -221,6 +224,54 @@ class ObjectBase(EntityContainer):
             return data_objects[0]
 
         return data_objects
+
+    def add_data_map(self, data: ReferencedData, name: str, values: dict):
+        """
+        Add a data map to the reference data under the object.
+
+        :param data: The referenced data to add the map to.
+        :param name: The name of the data map.
+        :param values: The values to add to the data map.
+        """
+        data_maps = data.data_maps or {}
+
+        if name in data_maps:
+            raise KeyError(f"Data map '{name}' already exists.")
+
+        if not isinstance(values, dict | np.ndarray):
+            raise TypeError("Data map values must be a numpy array or dict")
+
+        if data.entity_type.value_map is None:
+            raise ValueError("Entity type must have a value map.")
+
+        reference_data = ReferenceValueMap(values, name=name)
+        # TODO: Enforce that the keys of the data map are a subset
+        #  of the value map keys once GA changes its behavior
+        # if not set(reference_data.map["Key"]).issubset(
+        #     set(self.entity_type.value_map.map["Key"])
+        # ):
+        #     raise KeyError("Data map keys must be a subset of the value map keys.")
+
+        data_type = GeometricDataValueMapType(
+            self.workspace,
+            value_map=reference_data,
+            parent=self,
+            name=data.entity_type.name + f": {name}",
+        )
+        geom_data = cast(
+            GeometricDataConstants,
+            self.add_data(
+                {
+                    name: {
+                        "association": data.association,
+                        "entity_type": data_type,
+                    }
+                }
+            ),
+        )
+        data_maps[name] = geom_data
+        data.data_maps = data_maps
+        return geom_data
 
     def add_data_to_group(
         self,

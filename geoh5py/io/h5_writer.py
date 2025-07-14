@@ -36,13 +36,11 @@ from pydantic import BaseModel
 from ..data import (
     CommentsData,
     Data,
-    DataType,
     FilenameData,
-    GeometricDataValueMapType,
-    ReferenceDataType,
     ReferencedData,
     ReferenceValueMap,
 )
+from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
