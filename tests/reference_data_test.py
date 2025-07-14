@@ -245,6 +245,32 @@ def test_value_map_from_values(tmp_path):
         assert len(new.entity_type.value_map.map) == len(np.unique(data.values)) + 1
 
 
+def test_value_map_from_str_values(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        points, _, _ = generate_value_map(workspace)
+
+        value_map = []
+        for _ in range(4):
+            value_map.append(
+                "".join(random.choice(string.ascii_lowercase) for _ in range(8))
+            )
+
+        values = np.random.randint(1, 5, size=points.n_vertices)
+
+        new = points.add_data(
+            {
+                "auto_map": {
+                    "type": "referenced",
+                    "values": values,
+                    "value_map": np.asarray(value_map),
+                }
+            }
+        )
+        assert len(new.entity_type.value_map.map) == len(np.unique(values)) + 1
+
+
 def test_variable_string_length(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 

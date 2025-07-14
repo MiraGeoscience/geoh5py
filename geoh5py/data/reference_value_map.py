@@ -64,9 +64,7 @@ class ReferenceValueMap:
 
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
             if value_map.ndim == 1:
-                unique_set = set(value_map)
-                unique_set.discard(0)
-                value_map = {int(val): f"Unit {val}" for val in unique_set}
+                value_map = cls._dict_map_from_value_array(value_map)
 
             value_map = dict(value_map)
 
@@ -117,6 +115,23 @@ class ReferenceValueMap:
         mapper = np.sort(self.map, order="Key")
         indices = np.searchsorted(mapper["Key"], values)
         return mapper["Value"][indices]
+
+    @staticmethod
+    def _dict_map_from_value_array(value_array: np.ndarray) -> dict:
+        """
+        Create a map from an array of values.
+
+        :param value_array: The array of values to map.
+
+        :return: A dictionary mapping indices to values.
+        """
+        unique_set = set(value_array)
+
+        if np.issubdtype(value_array.dtype, np.number):
+            unique_set.discard(0)
+            return {int(val): f"Unit {val}" for val in unique_set}
+
+        return {i + 1: str(value) for i, value in enumerate(value_array)}
 
 
 BOOLEAN_VALUE_MAP = np.array(
