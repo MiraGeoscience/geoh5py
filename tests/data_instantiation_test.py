@@ -225,3 +225,29 @@ def test_data_type_attributes():
 
     with pytest.raises(TypeError, match=r"Attribute 'scientific_notation'"):
         data_type.scientific_notation = "bidon"
+
+
+def test_add_data_increment_names(tmp_path):
+    """
+    Test that adding data with incrementing names works correctly.
+    """
+    h5file_path = tmp_path / r"testAddDataIncrementNames.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        points = Points.create(
+            workspace,
+            vertices=np.vstack((np.arange(20), np.arange(20), np.zeros(20))).T,
+            allow_move=False,
+        )
+
+        # Add data with the same name multiple times
+        for _ in range(3):
+            points.add_data(
+                {"DataValues": {"association": "VERTEX", "values": np.random.randn(20)}}
+            )
+
+        # Check that the names are incremented correctly
+        assert points.get_data_list() == [
+            "DataValues",
+            "DataValues(1)",
+            "DataValues(2)",
+        ]

@@ -47,6 +47,7 @@ from ..shared.utils import (
     array_is_colour,
     box_intersect,
     clear_array_attributes,
+    find_unique_name,
     mask_by_extent,
     str2uuid,
 )
@@ -177,12 +178,23 @@ class ObjectBase(EntityContainer):
 
         property_groups: dict[PropertyGroup | None, list[Data]] = {}
         data_objects = []
+
+        names = [
+            child.name
+            for child in self.children
+            if isinstance(child, Data) and child.name != "Visual Parameters"
+        ]
+
         for name, attr in data.items():
             if not isinstance(attr, dict):
                 raise TypeError(
                     f"Given value to data {name} should of type {dict}. "
                     f"Type {type(attr)} given instead."
                 )
+
+            name = find_unique_name(name, names)
+            if name != "Visual Parameters":
+                names.append(name)
 
             attr, validate_property_group = self.validate_association(
                 {**attr, "name": name}, property_group=property_group, **kwargs
@@ -235,8 +247,10 @@ class ObjectBase(EntityContainer):
         """
         data_maps = data.data_maps or {}
 
-        if name in data_maps:
-            raise KeyError(f"Data map '{name}' already exists.")
+        names = [
+            child.name for child in self.children if isinstance(child, ReferencedData)
+        ]
+        name = find_unique_name(name, names)
 
         if not isinstance(values, dict | np.ndarray):
             raise TypeError("Data map values must be a numpy array or dict")
@@ -271,7 +285,7 @@ class ObjectBase(EntityContainer):
         )
         data_maps[name] = geom_data
         data.data_maps = data_maps
-        return geom_data
+        return data_type
 
     def add_data_to_group(
         self,
