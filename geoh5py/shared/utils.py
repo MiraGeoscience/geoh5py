@@ -90,7 +90,9 @@ INV_KEY_MAP = {
     "Name": "name",
     "Number of bins": "number_of_bins",
     "NU": "u_count",
+    "Nu": "u_count",
     "NV": "v_count",
+    "Nv": "v_count",
     "NW": "w_count",
     "options": "options",
     "Object": "OBJECT",
@@ -123,9 +125,11 @@ INV_KEY_MAP = {
     "U Cell Size": "u_cell_size",
     "U Count": "u_count",
     "U Size": "u_cell_size",
+    "U size": "u_cell_size",
     "V Cell Size": "v_cell_size",
     "V Count": "v_count",
     "V Size": "v_cell_size",
+    "V size": "v_cell_size",
     "Vector": "VECTOR",
     "Version": "version",
     "Vertical": "vertical",
@@ -133,6 +137,11 @@ INV_KEY_MAP = {
     "Vertex": "VERTEX",
     "Visible": "visible",
     "W Cell Size": "w_cell_size",
+    "Flag property ID": "flag_property_id",
+    "Heterogeneous property ID": "heterogeneous_property_id",
+    "Physical data name": "physical_data_name",
+    "Unit property ID": "unit_property_id",
+    "Weight property ID": "weight_property_id",
 }
 
 KEY_MAP = {value: key for key, value in INV_KEY_MAP.items()}

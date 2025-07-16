@@ -69,3 +69,4 @@ from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.magnetics import AirborneMagnetics
 from .text import TextObject
+from .vp_model import VPModel
