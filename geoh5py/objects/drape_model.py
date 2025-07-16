@@ -40,8 +40,8 @@ class DrapeModel(ObjectBase):
     """
 
     _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
-    __LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
-    __PRISM_DTYPE = np.dtype(
+    _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
+    _PRISM_DTYPE = np.dtype(
         [
             ("Top easting", "<f8"),
             ("Top northing", "<f8"),
@@ -170,23 +170,21 @@ class DrapeModel(ObjectBase):
             )
 
         if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 5:
+            if values.shape[1] != len(cls._PRISM_DTYPE):
                 raise ValueError(
-                    "Array of 'prisms' must be of shape (*, 5). "
+                    f"Array of 'prisms' must be of shape (*, {len(cls._PRISM_DTYPE)}). "
                     f"Array of shape {values.shape} provided."
                 )
 
             values = np.asarray(
                 np.core.records.fromarrays(
                     values.T.tolist(),
-                    dtype=cls.__PRISM_DTYPE,
+                    dtype=cls._PRISM_DTYPE,
                 )
             )
 
-        if values.dtype != cls.__PRISM_DTYPE:
-            raise ValueError(
-                f"Array of 'prisms' must be of dtype = {cls.__PRISM_DTYPE}"
-            )
+        if values.dtype != cls._PRISM_DTYPE:
+            raise ValueError(f"Array of 'prisms' must be of dtype = {cls._PRISM_DTYPE}")
 
         return values
 
@@ -208,9 +206,9 @@ class DrapeModel(ObjectBase):
             )
 
         if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 3:
+            if values.shape[1] != len(cls._LAYERS_DTYPE):
                 raise ValueError(
-                    "Array of 'layers' must be of shape (*, 3). "
+                    f"Array of 'layers' must be of shape (*, {len(cls._LAYERS_DTYPE)}). "
                     f"Array of shape {values.shape} provided."
                 )
 
@@ -221,13 +219,13 @@ class DrapeModel(ObjectBase):
             values = np.asarray(
                 np.core.records.fromarrays(
                     values.T.tolist(),
-                    dtype=cls.__LAYERS_DTYPE,
+                    dtype=cls._LAYERS_DTYPE,
                 )
             )
 
-        if values.dtype != cls.__LAYERS_DTYPE:
+        if values.dtype != cls._LAYERS_DTYPE:
             raise ValueError(
-                f"Array of 'layers' must be of dtype = {cls.__LAYERS_DTYPE}"
+                f"Array of 'layers' must be of dtype = {cls._LAYERS_DTYPE}"
             )
 
         return values
