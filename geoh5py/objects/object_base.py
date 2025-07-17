@@ -179,11 +179,7 @@ class ObjectBase(EntityContainer):
         property_groups: dict[PropertyGroup | None, list[Data]] = {}
         data_objects = []
 
-        names = [
-            child.name
-            for child in self.children
-            if isinstance(child, Data) and child.name != "Visual Parameters"
-        ]
+        names = [child.name for child in self.children if isinstance(child, Data)]
 
         for name, attr in data.items():
             if not isinstance(attr, dict):
@@ -192,9 +188,15 @@ class ObjectBase(EntityContainer):
                     f"Type {type(attr)} given instead."
                 )
 
+            if name == "Visual Parameters":
+                logger.warning(
+                    "Visual Parameters should not be added as data. "
+                    "Use the 'visual_parameters' property instead."
+                )
+                continue
+
             name = find_unique_name(name, names)
-            if name != "Visual Parameters":
-                names.append(name)
+            names.append(name)
 
             attr, validate_property_group = self.validate_association(
                 {**attr, "name": name}, property_group=property_group, **kwargs
