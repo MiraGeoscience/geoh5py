@@ -230,10 +230,6 @@ def test_property_group_errors(tmp_path):
             {"Period1": {"values": np.random.rand(12)}}, property_group="myGroup"
         )
 
-        # not possible anymore, removing?
-        # with pytest.raises(ValueError, match="Multiple data 'Period1'"):
-        #     prop_group._validate_data("Period1")  # pylint: disable=protected-access
-
         curve.add_data(
             {"TestAssociation": {"values": np.random.rand(11), "association": "CELL"}},
         )

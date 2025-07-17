@@ -237,7 +237,9 @@ class ObjectBase(EntityContainer):
 
         return data_objects
 
-    def add_data_map(self, data: ReferencedData, name: str, values: dict):
+    def add_data_map(
+        self, data: ReferencedData, name: str, values: dict
+    ) -> GeometricDataConstants:
         """
         Add a data map to the reference data under the object.
 
@@ -285,7 +287,8 @@ class ObjectBase(EntityContainer):
         )
         data_maps[name] = geom_data
         data.data_maps = data_maps
-        return data_type
+
+        return geom_data
 
     def add_data_to_group(
         self,
