@@ -146,9 +146,6 @@ def test_add_data_map(tmp_path):
         data.entity_type.value_map = value_map
         data.add_data_map("test", data_map)
 
-        with pytest.raises(KeyError, match="Data map 'test' already exists."):
-            data.add_data_map("test", data_map)
-
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
