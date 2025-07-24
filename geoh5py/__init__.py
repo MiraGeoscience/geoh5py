@@ -18,15 +18,16 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-
 import logging
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 
+
 try:
-    from simpeg_drivers._version import __version__, __version_tuple__
+    from geoh5py.version import __version__, __version_tuple__
 except PackageNotFoundError:
     from datetime import datetime
+
     __version__ = "unknown-" + datetime.today().strftime("%Y%m%d")
     __version_tuple__ = (0, 0, 0, "unknown", "unknown")
 
