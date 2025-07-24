@@ -5,7 +5,6 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
 name = "geoh5py"
-version = "0.0.0"
 dynamic = ["version"]
 
 dependencies = [
