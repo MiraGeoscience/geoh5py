@@ -27,7 +27,6 @@ from numpy.lib import recfunctions as rfn
 
 from ..shared.utils import min_max_scaler
 from .data import Data
-from .primitive_type_enum import PrimitiveTypeEnum
 
 
 logger = logging.getLogger(__name__)
@@ -148,10 +147,6 @@ class Colour(Data):
     @property
     def nan_value(self):
         return self._nan_value
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.COLOUR
 
     def validate_values(self, values: np.ndarray | None) -> Any:
         """
