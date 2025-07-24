@@ -30,15 +30,8 @@ from packaging.version import InvalidVersion, Version
 import geoh5py
 
 
-def get_pyproject_version():
-    from geoh5py.version import __version__ as injected_version
-
-    return injected_version
-
-
 def get_conda_recipe_version():
     path = Path(__file__).resolve().parents[1] / "recipe.yaml"
-
     with open(str(path), encoding="utf-8") as file:
         content = file.read()
 
@@ -51,10 +44,12 @@ def get_conda_recipe_version():
 
 
 def test_version_is_consistent():
-    assert geoh5py.__version__ == get_pyproject_version()
-    normalized_conda_version = Version(get_conda_recipe_version())
-    normalized_version = Version(geoh5py.__version__)
-    assert normalized_conda_version == normalized_version
+    project_version = Version(geoh5py.__version__)
+    conda_version = Version(get_conda_recipe_version())
+    assert conda_version.base_version == project_version.base_version
+    assert conda_version.is_prerelease == project_version.is_prerelease
+    assert conda_version.is_postrelease == project_version.is_postrelease
+    assert project_version == conda_version
 
 
 def test_conda_version_is_pep440():
