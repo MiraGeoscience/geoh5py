@@ -32,6 +32,7 @@ import geoh5py
 
 def get_pyproject_version():
     from geoh5py.version import __version__ as injected_version
+
     return injected_version
 
 

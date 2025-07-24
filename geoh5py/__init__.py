@@ -18,6 +18,4 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 from geoh5py.version import __version__, __version_tuple__
-
-
 from geoh5py.workspace.workspace import Workspace, active_workspace
