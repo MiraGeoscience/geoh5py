@@ -24,7 +24,7 @@ from pathlib import Path
 
 
 try:
-    from simpeg_drivers._version import __version__, __version_tuple__
+    from geoh5py.version import __version__, __version_tuple__
 except PackageNotFoundError:
     from datetime import datetime
 
