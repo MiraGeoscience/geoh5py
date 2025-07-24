@@ -5,7 +5,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
 name = "geoh5py"
-
+version = "0.0.0"
 dynamic = ["dependencies", "version"]
 
 requires-python = ">=3.10,<4.0"
@@ -105,6 +105,7 @@ sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
 tomli = "*"
+h5py = "^3.14.0"
 
 [project.optional-dependencies]
 
