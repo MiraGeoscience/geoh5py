@@ -18,25 +18,16 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-# flake8: noqa
 
-__version__ = "0.12.0a1"
+import logging
+from importlib.metadata import PackageNotFoundError
+from pathlib import Path
 
-import inspect
+try:
+    from simpeg_drivers._version import __version__, __version_tuple__
+except PackageNotFoundError:
+    from datetime import datetime
+    __version__ = "unknown-" + datetime.today().strftime("%Y%m%d")
+    __version_tuple__ = (0, 0, 0, "unknown", "unknown")
 
-from geoh5py.workspace import Workspace
-
-from . import groups, objects
-from .groups import CustomGroup
-
-
-def get_type_uid_classes():
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
-
-    return members
-
-
-TYPE_UID_TO_CLASS = {k.default_type_uid(): k for k in get_type_uid_classes()}
+from geoh5py.workspace.workspace import Workspace, active_workspace

@@ -1,13 +1,12 @@
 
 [build-system]
-requires = ["poetry-core>=1.8.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
 name = "geoh5py"
-version = "0.12.0a1"
 
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "version"]
 
 requires-python = ">=3.10,<4.0"
 
@@ -40,6 +39,31 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["geoh5py/version.py", "recipe.yaml"]
+patterns = [
+    { value = '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''', mode = "str" },
+    { value = '''(^\s*version\s*(?::.*?)?:\s*['"])[^'"]*(['"])''', mode = "str" },
+    { value = '''(^__version_tuple__\s*(?::.*?)?=\s*\()[^)]*(\))''', mode = "tuple" },
+]
+
+[tool.poetry-dynamic-versioning.files."geoh5py/version.py"]
+persistent-substitution = true
+initial-content = """
+  # These version placeholders will be replaced later during substitution.
+  __version__ = "0.0.0"
+  __version_tuple__ = (0, 0, 0)
+"""
+
+[tool.poetry-dynamic-versioning.files."recipe.yaml"]
+persistent-substitution = true
+
+
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 include = [
@@ -63,6 +87,9 @@ dependencies = [
 "Homepage" = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 "Documentation" = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 "Repository" = "https://github.com/MiraGeoscience/geoh5py"
+
+[tool.poetry]
+version = "0.0.0"
 
 [tool.poetry.group.dev.dependencies]
 jinja2 = '*'
