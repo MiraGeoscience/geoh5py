@@ -78,3 +78,21 @@ def test_add_file(tmp_path: Path):
         AttributeError, match="FilenameData requires the 'values' to be set."
     ):
         file_data.file_bytes = b"abc"
+
+
+def test_add_file_increment_names(tmp_path: Path):
+    """
+    Test that adding files with the same name increments the name.
+    """
+    workspace = Workspace(tmp_path / "test.geoh5")
+    group = ContainerGroup.create(workspace)
+
+    file_name = "test.txt"
+    names = []
+    for _ in range(3):
+        xyz = np.random.randn(32)
+        np.savetxt(tmp_path / file_name, xyz)
+        file_data = group.add_file(tmp_path / file_name)
+        names.append(file_data.values)
+
+    assert names == ["test.txt", "test(1).txt", "test(2).txt"]

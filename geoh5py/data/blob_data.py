@@ -22,14 +22,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .data import Data, PrimitiveTypeEnum
+from .data import Data
 
 
 class BlobData(Data):
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.BLOB
-
     def validate_values(self, values: Any | None) -> Any:
         """
         Validate values for BlobData.

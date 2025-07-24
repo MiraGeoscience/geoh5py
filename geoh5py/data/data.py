@@ -23,16 +23,18 @@ from __future__ import annotations
 import logging
 import uuid
 from abc import abstractmethod
-from typing import Any
+from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from ..shared import Entity
 from ..shared.utils import mask_by_extent
 from .data_association_enum import DataAssociationEnum
-from .data_type import DataType, ReferenceDataType
-from .primitive_type_enum import PrimitiveTypeEnum
 
+
+if TYPE_CHECKING:
+    from geoh5py.data.data_type import DataType, ReferenceDataType
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +170,7 @@ class Data(Entity):
         if self.n_values is None:
             return values
 
-        if self.primitive_type is not PrimitiveTypeEnum.COLOUR:
+        if self.entity_type.primitive_type.name != "COLOUR":
             values = np.ravel(values)
 
         if len(values) < self.n_values:
@@ -247,7 +249,7 @@ class Data(Entity):
 
     @entity_type.setter
     def entity_type(self, data_type: DataType | ReferenceDataType):
-        self._entity_type = data_type
+        self._entity_type = self.validate_entity_type(data_type)
 
         if self.on_file:
             self.workspace.update_attribute(self, "entity_type")
@@ -265,11 +267,6 @@ class Data(Entity):
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
-
-    @classmethod
-    @abstractmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        """Abstract method to return the primitive type of the class."""
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
@@ -300,18 +297,27 @@ class Data(Entity):
 
         return None
 
-    def validate_entity_type(self, entity_type: DataType | None) -> DataType:
+    def primitive_type(self) -> Enum:
+        """Deprecated method to return the primitive type of the class."""
+        logger.warning(
+            "The method `primitive_type` will be deprecated. "
+            "Use `entity_type.primitive_type` instead."
+        )
+        return self.entity_type.primitive_type
+
+    def validate_entity_type(self, entity_type: DataType) -> DataType:
         """
         Validate the entity type.
 
         :param entity_type: Entity type to validate.
         """
-        if (
-            not isinstance(entity_type, DataType)
-            or entity_type.primitive_type != self.primitive_type()
+        primitive_type = getattr(entity_type, "primitive_type", None)
+        if not primitive_type or not issubclass(
+            type(self), entity_type.primitive_type.value
         ):
             raise TypeError(
-                "Input 'entity_type' must be a DataType object of primitive_type 'TEXT'."
+                f"Input 'entity_type' with primitive_type '{primitive_type}' "
+                f"does not match the data type {type(self)}."
             )
 
         if entity_type.name == "Entity":
