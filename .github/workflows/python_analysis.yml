@@ -40,4 +40,4 @@ jobs:
       codecov-reference-python-version: '3.10'
       codecov-reference-os: '["windows-latest"]'
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}   #dummy commit 
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
