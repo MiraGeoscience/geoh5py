@@ -43,7 +43,7 @@ classifiers = [
 enable = true
 vcs = "git"
 style = "pep440"
-fallback-version = "0.0.0"
+
 
 [tool.poetry-dynamic-versioning.substitution]
 files = ["geoh5py/version.py", "recipe.yaml"]
