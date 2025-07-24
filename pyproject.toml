@@ -1,24 +1,17 @@
-
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+requires = ["poetry-core>=1.8.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
 name = "geoh5py"
-dynamic = ["version"]
-
-dependencies = [
-  "h5py >=3.2.1",
-  "numpy >=1.26.0,<1.27.0",
-  "Pillow >=10.3.0,<10.4.0",
-  "pydantic >=2.5.2"
-]
-
 requires-python = ">=3.10,<4.0"
 
 
-license = "LGPL-3.0-or-later"
 description = "Python API for geoh5, an open file format for geoscientific data"
+license = "LGPL-3.0-or-later"
+keywords = ["geology", "geophysics", "data", "interoperability"]
+readme = "package.rst"
+dynamic = ["version", "dependencies", "classifiers"]
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
@@ -28,11 +21,15 @@ maintainers = [
     { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
 ]
 
-readme = "package.rst"
+[project.urls]
+homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
+repository = "https://github.com/MiraGeoscience/geoh5py"
+documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 
+[tool.poetry]
+requires-poetry = '>=2.0,<3.0'
+version = "0.0.0"
 
-
-keywords = ["geology", "geophysics", "data", "interoperability"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -45,11 +42,46 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
+exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
+
+include = [
+    { path = "COPYING" },
+    { path = "COPYING.LESSER" },
+    { path = "LICENSE" },
+    { path = "README.rst" },
+    { path = "THIRD_PARTY_SOFTWARE.rst" },
+    { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
+]
+
+[tool.poetry.dependencies]
+h5py = "^3.2.1"
+numpy = "~1.26.0"
+Pillow = "~10.3.0"
+pydantic = "^2.5.2"
+
+[tool.poetry.group.dev.dependencies]
+jinja2 = '*'
+lockfile = "^0.12.2"
+packaging = '*'
+Pygments = "*"
+pylint = ">=3.3.1"
+pytest = "*"
+pytest-cov = "*"
+pyyaml = '*'
+scipy = "~1.14.0"
+sphinx = "^3.0"
+sphinx-autodoc-typehints = "^1.10"
+sphinx-rtd-theme = "^0.4.3"
+tomli = "*"
+h5py = "^3.14.0"
+
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
 style = "pep440"
-
 
 [tool.poetry-dynamic-versioning.substitution]
 files = ["geoh5py/version.py", "recipe.yaml"]
@@ -69,47 +101,6 @@ initial-content = """
 
 [tool.poetry-dynamic-versioning.files."recipe.yaml"]
 persistent-substitution = true
-
-
-exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
-
-include = [
-    { path = "COPYING" },
-    { path = "COPYING.LESSER" },
-    { path = "LICENSE" },
-    { path = "README.rst" },
-    { path = "THIRD_PARTY_SOFTWARE.rst" },
-    { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
-]
-
-
-
-
-[project.urls]
-"Homepage" = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
-"Documentation" = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
-"Repository" = "https://github.com/MiraGeoscience/geoh5py"
-
-[tool.poetry]
-version = "0.0.0"
-
-[tool.poetry.group.dev.dependencies]
-jinja2 = '*'
-lockfile = "^0.12.2"
-packaging = '*'
-Pygments = "*"
-pylint = ">=3.3.1"
-pytest = "*"
-pytest-cov = "*"
-pyyaml = '*'
-scipy = "~1.14.0"
-sphinx = "^3.0"
-sphinx-autodoc-typehints = "^1.10"
-sphinx-rtd-theme = "^0.4.3"
-tomli = "*"
-h5py = "^3.14.0"
-
-[project.optional-dependencies]
 
 [tool.ruff]
 target-version = "py310"
@@ -194,6 +185,3 @@ fail_under = 90
 [tool.coverage.html]
 skip_empty = true
 skip_covered = true
-
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
