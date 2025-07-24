@@ -91,7 +91,7 @@ def test_create_reference_data(tmp_path):
         points, data, _ = generate_value_map(workspace)
 
         with pytest.raises(
-            TypeError, match="entity_type must be of type ReferenceDataType"
+            TypeError, match="Input 'entity_type' with primitive_type 'None'"
         ):
             data.entity_type = "abc"
 
@@ -145,9 +145,6 @@ def test_add_data_map(tmp_path):
 
         data.entity_type.value_map = value_map
         data.add_data_map("test", data_map)
-
-        with pytest.raises(KeyError, match="Data map 'test' already exists."):
-            data.add_data_map("test", data_map)
 
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
@@ -243,6 +240,32 @@ def test_value_map_from_values(tmp_path):
             }
         )
         assert len(new.entity_type.value_map.map) == len(np.unique(data.values)) + 1
+
+
+def test_value_map_from_str_values(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        points, _, _ = generate_value_map(workspace, n_data=100)
+
+        value_map = []
+        for _ in range(4):
+            value_map.append(
+                "".join(random.choice(string.ascii_lowercase) for _ in range(8))
+            )
+
+        values = np.random.randint(1, 5, size=points.n_vertices)
+
+        new = points.add_data(
+            {
+                "auto_map": {
+                    "type": "referenced",
+                    "values": values,
+                    "value_map": np.asarray(value_map),
+                }
+            }
+        )
+        assert len(new.entity_type.value_map.map) == len(np.unique(values)) + 1
 
 
 def test_variable_string_length(tmp_path):

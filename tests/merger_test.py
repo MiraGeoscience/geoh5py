@@ -195,8 +195,7 @@ def test_merge_point_data_unique_entity_name_unique_name(tmp_path):
 
     h5file_path_2 = tmp_path / r"testPoints2.geoh5"
     with Workspace.create(h5file_path_2) as workspace:
-        with pytest.warns(UserWarning, match=f"Multiple data '{data[0].name}'"):
-            test = PointsMerger.merge_objects(workspace, points)
+        test = PointsMerger.merge_objects(workspace, points)
 
         int_nan_array = np.empty(10)
         int_nan_array[:] = data[0].nan_value

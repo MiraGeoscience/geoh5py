@@ -16,22 +16,18 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+from __future__ import annotations
 
+from enum import Enum
+from pathlib import Path
 
-# pylint: disable=unused-import
-# flake8: noqa
+import numpy as np
 
 from .blob_data import BlobData
 from .boolean_data import BooleanData
+from .colour import Colour
 from .data import Data
 from .data_association_enum import DataAssociationEnum
-from .data_type import (
-    DataType,
-    GeometricDataValueMapType,
-    GeometricDynamicDataType,
-    ReferenceDataType,
-)
-from .colour import Colour
 from .data_unit import DataUnit
 from .datetime_data import DatetimeData
 from .filename_data import FilenameData
@@ -39,9 +35,54 @@ from .float_data import FloatData
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .numeric_data import NumericData
-from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData
 from .text_data import CommentsData, MultiTextData, TextData
 from .unknown_data import UnknownData
 from .visual_parameters import VisualParameters
+
+
+class PrimitiveTypeEnum(Enum):
+    """Enum for data types."""
+
+    BLOB = BlobData
+    BOOLEAN = BooleanData
+    COMMENTS = CommentsData
+    COLOUR = Colour
+    DATETIME = DatetimeData
+    FILENAME = FilenameData
+    FLOAT = FloatData
+    GEOMETRIC = GeometricDataConstants
+    INTEGER = IntegerData
+    INVALID = type(None)
+    MULTI_TEXT = MultiTextData
+    REFERENCED = ReferencedData
+    TEXT = TextData
+    UNKNOWN = UnknownData
+    VISUAL_PARAMETERS = VisualParameters
+    VECTOR = type(None)
+
+
+class DataTypeEnum(Enum):
+    INVALID = type(None)
+    INTEGER = np.int32
+    FLOAT = np.float32
+    TEXT = str
+    REFERENCED = np.uint32  # Could represent a reference type
+    FILENAME = Path
+    BLOB = bytes
+    VECTOR = type(None)  # Assuming a vector is a list
+    DATETIME = str  # Could use datetime
+    GEOMETRIC = type(None)  # For custom geometric type
+    MULTI_TEXT = str
+    BOOLEAN = bool
+
+    @classmethod
+    def from_primitive_type(cls, primitive_type: PrimitiveTypeEnum) -> type:
+        """
+        Get the data type from the primitive type.
+
+        :param primitive_type: The primitive type.
+        :return: The data type.
+        """
+        return DataTypeEnum[primitive_type.name].value

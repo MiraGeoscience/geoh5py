@@ -53,15 +53,6 @@ class Grid2DConversion(CellObjectConversion):
         :param input_entity: the Grid2D object to convert.
         :return tag: the tag dictionary.
         """
-        if not isinstance(input_entity.origin, np.ndarray):
-            raise AttributeError("The Grid2D has no origin.")
-
-        if input_entity.v_cell_size is None or input_entity.u_cell_size is None:
-            raise AttributeError("The Grid2D has no cell size information.")
-
-        if input_entity.u_count is None or input_entity.v_count is None:
-            raise AttributeError("The Grid2D has no number of cells.")
-
         u_origin, v_origin, z_origin = input_entity.origin.tolist()
         v_oposite = v_origin + input_entity.v_cell_size * input_entity.v_count
 
