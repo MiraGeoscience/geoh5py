@@ -5,8 +5,15 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
 name = "geoh5py"
+version = "0.0.0"
+dynamic = ["version"]
 
-dynamic = ["dependencies", "version"]
+dependencies = [
+  "h5py >=3.2.1",
+  "numpy >=1.26.0,<1.27.0",
+  "Pillow >=10.3.0,<10.4.0",
+  "pydantic >=2.5.2"
+]
 
 requires-python = ">=3.10,<4.0"
 
@@ -77,12 +84,7 @@ include = [
 ]
 
 
-dependencies = [
-  "h5py >=3.2.1",
-  "numpy >=1.26.0,<1.27.0",
-  "Pillow >=10.3.0,<10.4.0",
-  "pydantic >=2.5.2"
-]
+
 
 [project.urls]
 "Homepage" = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
