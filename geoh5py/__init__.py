@@ -17,7 +17,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+from geoh5py.version import __version__, __version_tuple__
 
-__version__ = "0.12.0a1"
 
 from geoh5py.workspace.workspace import Workspace, active_workspace

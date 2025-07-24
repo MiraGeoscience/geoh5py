@@ -31,12 +31,8 @@ import geoh5py
 
 
 def get_pyproject_version():
-    path = Path(__file__).resolve().parents[1] / "pyproject.toml"
-
-    with open(str(path), encoding="utf-8") as file:
-        pyproject = toml.loads(file.read())
-
-    return pyproject["tool"]["poetry"]["version"]
+    from geoh5py.version import __version__ as injected_version
+    return injected_version
 
 
 def get_conda_recipe_version():
