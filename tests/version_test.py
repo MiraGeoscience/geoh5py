@@ -33,7 +33,7 @@ import geoh5py
 def get_pyproject_version():
     from geoh5py.version import __version__ as injected_version
 
-    return injected_version
+    return v0.11.0-98-gaf2991b8
 
 
 def get_conda_recipe_version():
