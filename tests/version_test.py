@@ -56,9 +56,10 @@ def test_version_is_consistent():
 )
 def test_fallback_version_is_zero():
     project_version = Version(geoh5py.__version__)
-    fallback_version = Version("0.0.0")
+    fallback_version = Version("0.0.0.dev0")
     assert project_version.base_version == fallback_version.base_version
     assert project_version.is_devrelease
+    assert project_version.dev == fallback_version.dev
 
 
 @pytest.mark.skipif(
