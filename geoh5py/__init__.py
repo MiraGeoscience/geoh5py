@@ -17,6 +17,20 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+from __future__ import annotations
 
-from geoh5py.version import __version__, __version_tuple__
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
+
+
+try:
+    from geoh5py._version import __version__, __version_tuple__
+except ModuleNotFoundError:
+    from datetime import datetime
+
+    __date_str = datetime.today().strftime("%Y%m%d")
+    __version__ = "0.0.0.dev0+" + __date_str
+    __version_tuple__ = (0, 0, 0, "dev0", "", __date_str)
+
+
 from geoh5py.workspace.workspace import Workspace, active_workspace
