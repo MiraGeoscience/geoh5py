@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import tomli as toml
 import yaml
 from jinja2 import Template
@@ -48,11 +49,30 @@ def test_version_is_consistent():
     conda_version = Version(get_conda_recipe_version())
     assert conda_version.base_version == project_version.base_version
 
-    if project_version.base_version != Version("0.0.0").base_version:
-        assert conda_version.is_devrelease == project_version.is_devrelease
-        assert conda_version.is_prerelease == project_version.is_prerelease
-        assert conda_version.is_postrelease == project_version.is_postrelease
-        assert conda_version == project_version
+
+@pytest.mark.skipif(
+    (Path(__file__).resolve().parents[1] / "geoh5py" / "_version.py").exists(),
+    reason="_version.py file exists: package is built",
+)
+def test_fallback_version_is_zero():
+    project_version = Version(geoh5py.__version__)
+    fallback_version = Version("0.0.0")
+    assert project_version.base_version == fallback_version.base_version
+    assert project_version.is_devrelease
+
+
+@pytest.mark.skipif(
+    not (Path(__file__).resolve().parents[1] / "geoh5py" / "_version.py").exists(),
+    reason="_version.py file does not exist: package was not built",
+)
+def test_conda_version_is_consistent():
+    project_version = Version(geoh5py.__version__)
+    conda_version = Version(get_conda_recipe_version())
+
+    assert conda_version.is_devrelease == project_version.is_devrelease
+    assert conda_version.is_prerelease == project_version.is_prerelease
+    assert conda_version.is_postrelease == project_version.is_postrelease
+    assert conda_version == project_version
 
 
 def test_conda_version_is_pep440():
