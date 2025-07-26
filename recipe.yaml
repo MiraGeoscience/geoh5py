@@ -35,6 +35,12 @@ tests:
       imports:
         - geoh5py
   - script:
+      - >-
+        python -c "
+        import os;
+        assert os.path.exists('geoh5py/_version.py'),
+        '_version.py file not found - poetry-dynamic-versioning plugin may not have run'
+        "
       - pytest --ignore=tests/version_test.py
     requirements:
       run:
