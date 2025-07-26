@@ -81,6 +81,7 @@ poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 [tool.poetry-dynamic-versioning]
 enable = true
 dirty = true
+ignore-untracked = true
 bump = true
 strict = true
 vcs = "git"
