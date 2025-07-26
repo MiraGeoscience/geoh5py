@@ -50,9 +50,18 @@ def test_version_is_consistent():
     assert conda_version.base_version == project_version.base_version
 
 
+def _can_import_version():
+    try:
+        import geoh5py._version
+
+        return True
+    except ImportError:
+        return False
+
+
 @pytest.mark.skipif(
-    (Path(__file__).resolve().parents[1] / "geoh5py" / "_version.py").exists(),
-    reason="_version.py file exists: package is built",
+    _can_import_version(),
+    reason="geoh5py._version can be imported: package is built",
 )
 def test_fallback_version_is_zero():
     project_version = Version(geoh5py.__version__)
@@ -64,8 +73,8 @@ def test_fallback_version_is_zero():
 
 
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[1] / "geoh5py" / "_version.py").exists(),
-    reason="_version.py file does not exist: package was not built",
+    not _can_import_version(),
+    reason="geoh5py._version cannot be imported: uses a fallback version",
 )
 def test_conda_version_is_consistent():
     project_version = Version(geoh5py.__version__)
