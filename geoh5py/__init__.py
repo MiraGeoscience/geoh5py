@@ -30,7 +30,7 @@ except ModuleNotFoundError:
 
     __date_str = datetime.today().strftime("%Y%m%d")
     __version__ = "0.0.0.dev0+" + __date_str
-    __version_tuple__ = (0, 0, 0, "dev0", "", __date_str)
+    __version_tuple__ = (0, 0, 0, "dev0", __date_str)
 
 
 from geoh5py.workspace.workspace import Workspace, active_workspace
