@@ -55,6 +55,7 @@ from .validation import InputValidation
 
 
 # pylint: disable=simplifiable-if-expression, too-many-instance-attributes
+DEFAULT_UI_JSON_NAME = "quick_run.ui.json"
 
 
 class InputFile:
@@ -155,15 +156,24 @@ class InputFile:
     def name(self) -> str | None:
         """
         Name of ui.json file.
+
+        If the name is the default name, it get overridden by the title if exists.
         """
         if getattr(self, "_name", None) is None and self.ui_json is not None:
             self.name = self.ui_json["title"]
+
+        if (
+            self._name == DEFAULT_UI_JSON_NAME
+            and self.ui_json is not None
+            and "title" in self.ui_json
+        ):
+            self.name = self.ui_json["title"].replace(" ", "_")
 
         return self._name
 
     @name.setter
     def name(self, name: str):
-        if ".ui.json" not in name:
+        if not name.endswith(".ui.json"):
             name += ".ui.json"
 
         self._name = name
