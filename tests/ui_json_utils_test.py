@@ -28,10 +28,8 @@ import pytest
 from geoh5py.shared.utils import dict_mapper
 from geoh5py.ui_json import templates
 from geoh5py.ui_json.constants import default_ui_json
-from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import (
     collect,
-    dependency_requires_value,
     flatten,
     group_enabled,
     group_optional,

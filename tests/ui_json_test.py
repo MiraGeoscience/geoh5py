@@ -30,7 +30,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
-from geoh5py.objects import Drillhole, Points
+from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -44,7 +44,7 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import InputValidation, templates
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
-from geoh5py.ui_json.input_file import InputFile
+from geoh5py.ui_json.input_file import DEFAULT_UI_JSON_NAME, InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
@@ -942,3 +942,16 @@ def test_range_label(tmp_path):
         "value": [0.2, 0.8],
         "property": data.uid,
     }
+
+
+def test_default_naming(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+
+    in_file = InputFile(ui_json=ui_json)
+
+    in_file.name = DEFAULT_UI_JSON_NAME
+
+    assert in_file.name == "Custom_UI.ui.json"
