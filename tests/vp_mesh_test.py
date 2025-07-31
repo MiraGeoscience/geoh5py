@@ -106,6 +106,8 @@ def test_create_vp_model(tmp_path: Path):
     ):
         VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")
 
+    assert isinstance(drape.visual_parameters.filter_basement, float)
+
 
 @pytest.mark.parametrize(
     ("name", "dtype"),

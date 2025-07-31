@@ -110,6 +110,30 @@ class VisualParameters(TextData):
 
         self.set_tag("Colour", str(value))
 
+    @property
+    def filter_basement(self) -> None | float:
+        """
+        Filter basement tag for VPmodel.
+        """
+        element = self.get_tag("Filterbasement")
+
+        if element is None or not element.text:
+            return None
+
+        return float(element.text)
+
+    @filter_basement.setter
+    def filter_basement(self, value: float):
+        """
+        Set the filter basement value.
+
+        :param value: The filter basement value.
+        """
+        if not isinstance(value, (int, float)):
+            raise TypeError("Input 'filter_basement' must be a number.")
+
+        self.set_tag("Filterbasement", str(value))
+
     def get_tag(self, tag: str) -> None | ET.Element:
         """
         Recover the tag element.
