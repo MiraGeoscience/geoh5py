@@ -36,6 +36,14 @@ class VisualParameters(TextData):
     _xml: ET.Element | None = None
     _association = DataAssociationEnum.OBJECT
 
+    def __init__(
+        self,
+        association: DataAssociationEnum = DataAssociationEnum.OBJECT,
+        public: bool = False,
+        **kwargs,
+    ):
+        super().__init__(association=association, public=public, **kwargs)
+
     @property
     def xml(self) -> ET.Element:
         """
