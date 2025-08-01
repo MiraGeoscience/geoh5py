@@ -182,7 +182,7 @@ class VPModel(GridObject, DrapeModel):
 
         viz_params = new_object.add_default_visual_parameters()
         viz_params.filter_basement = (
-            new_object.prisms[:, 0].min() - new_object.layers[:, 2].min()
+            new_object.prisms[:, 0].max() - new_object.layers[:, 2].min()
         ) * 0.05
 
         return new_object
