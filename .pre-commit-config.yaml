@@ -22,7 +22,7 @@ repos:
     -   id: pycln
         args: [--config=pyproject.toml]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.5
+    rev: v0.12.7
     hooks:
     -   id: ruff
         args:
@@ -31,7 +31,7 @@ repos:
 #        -   --unsafe-fixes
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.17.1
     hooks:
     -   id: mypy
         additional_dependencies: [
