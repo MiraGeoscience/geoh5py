@@ -106,6 +106,12 @@ def test_create_vp_model(tmp_path: Path):
     ):
         VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")
 
+    assert isinstance(drape.visual_parameters.filter_basement, float)
+    np.testing.assert_almost_equal(
+        drape.visual_parameters.filter_basement,
+        (prisms[:, 0].max() - layers[:, 2].min()) * 0.05,
+    )
+
 
 @pytest.mark.parametrize(
     ("name", "dtype"),

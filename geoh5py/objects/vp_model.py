@@ -165,6 +165,28 @@ class VPModel(GridObject, DrapeModel):
 
         return data.uid
 
+    @classmethod
+    def create(cls, workspace, **kwargs):
+        """
+        Function to create an entity.
+
+        The visual parameters are set to default values, and the filter_basement
+        is set to 5% of the vertical extent of the model.
+
+        :param workspace: Workspace to be added to.
+        :param kwargs: List of keyword arguments defining the properties of a class.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        new_object = super().create(workspace, **kwargs)
+
+        viz_params = new_object.add_default_visual_parameters()
+        viz_params.filter_basement = (
+            new_object.prisms[:, 0].max() - new_object.layers[:, 2].min()
+        ) * 0.05
+
+        return new_object
+
     @property
     def flag_property_id(self) -> uuid.UUID:
         """

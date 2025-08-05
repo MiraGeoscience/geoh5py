@@ -36,6 +36,14 @@ class VisualParameters(TextData):
     _xml: ET.Element | None = None
     _association = DataAssociationEnum.OBJECT
 
+    def __init__(
+        self,
+        association: DataAssociationEnum = DataAssociationEnum.OBJECT,
+        public: bool = False,
+        **kwargs,
+    ):
+        super().__init__(association=association, public=public, **kwargs)
+
     @property
     def xml(self) -> ET.Element:
         """
@@ -109,6 +117,30 @@ class VisualParameters(TextData):
         value = int.from_bytes(bytes.fromhex(byte_string), "little")
 
         self.set_tag("Colour", str(value))
+
+    @property
+    def filter_basement(self) -> None | float:
+        """
+        Filter basement tag for VPmodel.
+        """
+        element = self.get_tag("Filterbasement")
+
+        if element is None or not element.text:
+            return None
+
+        return float(element.text)
+
+    @filter_basement.setter
+    def filter_basement(self, value: float):
+        """
+        Set the filter basement value.
+
+        :param value: The filter basement value.
+        """
+        if not isinstance(value, (int, float)):
+            raise TypeError("Input 'filter_basement' must be a number.")
+
+        self.set_tag("Filterbasement", str(value))
 
     def get_tag(self, tag: str) -> None | ET.Element:
         """
