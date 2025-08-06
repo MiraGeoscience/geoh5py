@@ -153,6 +153,9 @@ def test_add_data_map(tmp_path):
 
         data.add_data_map("test2", data_map)
 
+        # test duplicate
+        data.add_data_map("test2", data_map, public=False)
+
         assert isinstance(data.data_maps["test"], GeometricDataConstants)
 
     with Workspace(h5file_path) as workspace:
@@ -172,6 +175,17 @@ def test_add_data_map(tmp_path):
         np.testing.assert_array_almost_equal(
             np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
             data_map[:, 1],
+        )
+
+        geo_data_2 = rec_data.data_maps["test2(1)"]
+        assert geo_data_2.entity_type.value_map.name == "test2(1)"
+
+        assert geo_data.public == 1
+        assert geo_data_2.public == 0
+
+        assert np.array_equal(
+            np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
+            np.asarray(list(geo_data_2.entity_type.value_map().values()), dtype=float),
         )
 
 

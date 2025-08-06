@@ -162,12 +162,13 @@ class ReferencedData(IntegerData):
         del self.data_maps[name]
         self.data_maps = self._data_maps
 
-    def add_data_map(self, name: str, values: np.ndarray | dict):
+    def add_data_map(self, name: str, values: np.ndarray | dict, public: bool = True):
         """
         Add a data map to the value map.
 
         :param name: The name of the data map.
         :param values: The data map to add.
+        :param public: Whether the data map should be public.
         """
-        data = self.parent.add_data_map(self, name, values)
+        data = self.parent.add_data_map(self, name, values, public)
         return data
