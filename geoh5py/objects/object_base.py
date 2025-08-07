@@ -255,7 +255,7 @@ class ObjectBase(EntityContainer):
         names = [
             child.name
             for child in self.children
-            if isinstance(child,  GeometricDataConstants)
+            if isinstance(child, GeometricDataConstants)
         ]
         name = find_unique_name(name, names)
 
