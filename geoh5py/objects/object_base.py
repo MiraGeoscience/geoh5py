@@ -240,7 +240,7 @@ class ObjectBase(EntityContainer):
         return data_objects
 
     def add_data_map(
-        self, data: ReferencedData, name: str, values: dict
+        self, data: ReferencedData, name: str, values: dict, public: bool = True
     ) -> GeometricDataConstants:
         """
         Add a data map to the reference data under the object.
@@ -248,11 +248,14 @@ class ObjectBase(EntityContainer):
         :param data: The referenced data to add the map to.
         :param name: The name of the data map.
         :param values: The values to add to the data map.
+        :param public: Whether the data map is public or not.
         """
         data_maps = data.data_maps or {}
 
         names = [
-            child.name for child in self.children if isinstance(child, ReferencedData)
+            child.name
+            for child in self.children
+            if isinstance(child, GeometricDataConstants)
         ]
         name = find_unique_name(name, names)
 
@@ -283,6 +286,7 @@ class ObjectBase(EntityContainer):
                     name: {
                         "association": data.association,
                         "entity_type": data_type,
+                        "public": public,
                     }
                 }
             ),
