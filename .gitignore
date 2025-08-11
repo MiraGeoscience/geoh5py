@@ -144,3 +144,6 @@ dmypy.json
 
 # geoh5 locks
 *.geoh5.lock
+
+#version ignore
+geoh5py/_version.py
