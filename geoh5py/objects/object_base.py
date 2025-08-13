@@ -48,6 +48,7 @@ from ..shared.utils import (
     box_intersect,
     clear_array_attributes,
     find_unique_name,
+    find_unique_name_in_object,
     mask_by_extent,
     str2uuid,
 )
@@ -252,20 +253,11 @@ class ObjectBase(EntityContainer):
         """
         data_maps = data.data_maps or {}
 
-        names = [
-            child.name
-            for child in self.children
-            if isinstance(child, GeometricDataConstants)
-        ]
-        name = find_unique_name(name, names)
-
-        if not isinstance(values, dict | np.ndarray):
-            raise TypeError("Data map values must be a numpy array or dict")
+        name = find_unique_name_in_object(name, self, GeometricDataConstants)
 
         if data.entity_type.value_map is None:
             raise ValueError("Entity type must have a value map.")
 
-        reference_data = ReferenceValueMap(values, name=name)
         # TODO: Enforce that the keys of the data map are a subset
         #  of the value map keys once GA changes its behavior
         # if not set(reference_data.map["Key"]).issubset(
@@ -273,12 +265,8 @@ class ObjectBase(EntityContainer):
         # ):
         #     raise KeyError("Data map keys must be a subset of the value map keys.")
 
-        data_type = GeometricDataValueMapType(
-            self.workspace,
-            value_map=reference_data,
-            parent=self,
-            name=data.entity_type.name + f": {name}",
-        )
+        data_type = self.add_data_map_type(name, values, data.entity_type.name)
+
         geom_data = cast(
             GeometricDataConstants,
             self.add_data(
@@ -295,6 +283,32 @@ class ObjectBase(EntityContainer):
         data.data_maps = data_maps
 
         return geom_data
+
+    def add_data_map_type(
+        self,
+        name: str,
+        values: np.ndarray | dict,
+        entity_type_name: str,
+    ) -> GeometricDataValueMapType:
+        """
+        Add a data map type to the object.
+
+        :param name: The name of the data map type.
+        :param values: The values to add to the data map type.
+        :param entity_type_name: The name of the entity type for the data map type.
+
+        :return: The created Data object.
+        """
+        reference_data = ReferenceValueMap(values, name=name)
+
+        data_type = GeometricDataValueMapType(
+            self.workspace,
+            value_map=reference_data,
+            parent=self,
+            name=entity_type_name + f": {name}",
+        )
+
+        return data_type
 
     def add_data_to_group(
         self,

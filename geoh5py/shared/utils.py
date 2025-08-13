@@ -1084,3 +1084,24 @@ def format_numeric_values(
     final_result[~nan_mask] = result
 
     return final_result
+
+
+def find_unique_name_in_object(
+    name: str, parent: Entity, by_type: type | tuple[type] | None = None
+) -> str:
+    """
+    Find a unique name in an object, optionally filtering by type.
+
+    :param name: Proposed name.
+    :param parent: The object to search in.
+    :param by_type: Optional type or tuple of types to filter by.
+
+    :return: A unique name.
+    """
+    names = [
+        child.name
+        for child in parent.children
+        if (by_type is None or isinstance(child, by_type))
+    ]
+
+    return find_unique_name(name, names)

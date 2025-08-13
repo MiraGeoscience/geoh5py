@@ -24,6 +24,8 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
+from geoh5py.shared.utils import find_unique_name_in_object
+
 from ..shared.utils import find_unique_name
 from .data import Data
 from .geometric_data import GeometricDataConstants
@@ -77,9 +79,26 @@ class ReferencedData(IntegerData):
         )
 
         if self.data_maps is not None:
+            data_maps = {}
             for name, child in self.data_maps.items():
                 if child.entity_type.value_map is not None:
-                    new_data.add_data_map(name, child.entity_type.value_map.map)
+                    name = find_unique_name_in_object(
+                        name,
+                        new_data.parent,
+                        GeometricDataConstants,
+                    )
+                    geometric_data = cast(
+                        GeometricDataConstants,
+                        child.copy(new_data.parent, name=name, clear_cache=clear_cache),
+                    )
+                    data_type = new_data.parent.add_data_map_type(
+                        name, child.entity_type.value_map.map, new_data.entity_type.name
+                    )
+                    geometric_data.entity_type = data_type
+                    data_maps[name] = geometric_data
+
+            if data_maps:
+                new_data.data_maps = data_maps
 
         return new_data
 
