@@ -1092,7 +1092,7 @@ def get_unique_name_from_entities(
     name: str,
     entities: list[Any],
     key: str = "name",
-    func: Callable[list[str], bool] | None = None,
+    func: Callable[[str], bool] | None = None,
 ) -> str:
     """
     Find a unique name in an object, optionally filtering by type.
