@@ -1092,7 +1092,7 @@ def get_unique_name_from_entities(
     name: str,
     entities: list[Any],
     key: str = "name",
-    func: Callable[str, bool] | None = None,
+    func: Callable[list[str], bool] | None = None,
 ) -> str:
     """
     Find a unique name in an object, optionally filtering by type.
@@ -1105,8 +1105,11 @@ def get_unique_name_from_entities(
 
     :return: A unique name.
     """
-    names = [
-        getattr(child, key, None) for child in entities if (func is None or func(child))
-    ]
+    names = []
+    for child in entities:
+        if func is None or func(child):
+            sub_name = getattr(child, key, None)
+            if isinstance(sub_name, str):
+                names.append(sub_name)
 
     return find_unique_name(name, names)
