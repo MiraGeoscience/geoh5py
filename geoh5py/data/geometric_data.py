@@ -20,9 +20,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
+from geoh5py.shared.utils import get_unique_name_from_entities
+
 from .data import Data
+
+
+if TYPE_CHECKING:
+    from geoh5py.data import ReferencedData
 
 
 class GeometricDataConstants(Data):
@@ -61,3 +68,49 @@ class GeometricDataConstants(Data):
             )
 
         return values
+
+    def copy(
+        self,
+        parent: ReferencedData | None = None,
+        *,
+        clear_cache: bool = False,
+        name: str | None = None,
+        **kwargs,
+    ) -> GeometricDataConstants:
+        """
+        Copy the GeometricDataConstants to a new parent with a unique name.
+
+        Note the parent must be a ReferencedData instance that is associated with a
+        GeometricDataValueMapType. If the parent is None, it will return None.
+
+        :param parent: The ReferencedData parent to copy to.
+        :param clear_cache: The flag to clear the cache.
+        :param name: The name of the new GeometricDataConstants.
+
+        :return: A new GeometricDataConstants instance or None.
+        """
+        if self.entity_type.value_map is None or parent is None:
+            raise AttributeError("GeometricDataConstants must have a value_map")
+
+        if parent is None or not hasattr(parent, "data_maps"):
+            raise TypeError(
+                "Parent must have a 'data_maps' attribute, typically a ReferencedData."
+            )
+
+        name = get_unique_name_from_entities(
+            name or self.name,
+            parent.parent.children,
+            func=lambda x: isinstance(x, GeometricDataConstants),
+        )
+
+        geometric_data = cast(
+            GeometricDataConstants,
+            super().copy(parent.parent, name=name, clear_cache=clear_cache),
+        )
+        data_type = parent.parent.add_data_map_type(
+            name, self.entity_type.value_map.map, parent.entity_type.name
+        )
+
+        geometric_data.entity_type = data_type
+
+        return geometric_data

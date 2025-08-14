@@ -38,8 +38,10 @@ from .exceptions import Geoh5FileClosedError
 
 
 if TYPE_CHECKING:
+    from ..groups import PropertyGroup
     from ..workspace import Workspace
     from .entity import Entity
+    from .entity_type import EntityType
 
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
@@ -1086,22 +1088,25 @@ def format_numeric_values(
     return final_result
 
 
-def find_unique_name_in_object(
-    name: str, parent: Entity, by_type: type | tuple[type] | None = None
+def get_unique_name_from_entities(
+    name: str,
+    entities: list[Any],
+    key: str = "name",
+    func: Callable[str, bool] | None = None,
 ) -> str:
     """
     Find a unique name in an object, optionally filtering by type.
 
     :param name: Proposed name.
-    :param parent: The object to search in.
-    :param by_type: Optional type or tuple of types to filter by.
+    :param entities: The list of entities to search in.
+    :param key: The key of the object to extract
+    :param func: Optional function to filter children by type.
+        The function must take a single argument and return a boolean.
 
     :return: A unique name.
     """
     names = [
-        child.name
-        for child in parent.children
-        if (by_type is None or isinstance(child, by_type))
+        getattr(child, key, None) for child in entities if (func is None or func(child))
     ]
 
     return find_unique_name(name, names)

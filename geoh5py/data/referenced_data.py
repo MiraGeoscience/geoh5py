@@ -20,21 +20,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import numpy as np
 
-from geoh5py.shared.utils import find_unique_name_in_object
+from geoh5py.shared.utils import get_unique_name_from_entities
 
-from ..shared.utils import find_unique_name
 from .data import Data
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .reference_value_map import ReferenceValueMap
-
-
-if TYPE_CHECKING:
-    from .data_type import ReferenceDataType
 
 
 class ReferencedData(IntegerData):
@@ -73,29 +68,20 @@ class ReferencedData(IntegerData):
         )
 
         # Always overwrite the entity type name to protect the GeometricDataValueMapType
-        new_data.entity_type.name = find_unique_name(
+        new_data.entity_type.name = get_unique_name_from_entities(
             self.entity_type.name,
-            [tp.name for tp in self.workspace.types if hasattr(tp, "primitive_type")],
+            self.workspace.types,
+            func=lambda x: hasattr(x, "primitive_type"),
         )
 
         if self.data_maps is not None:
             data_maps = {}
-            for name, child in self.data_maps.items():
+            for child in self.data_maps.values():
                 if child.entity_type.value_map is not None:
-                    name = find_unique_name_in_object(
-                        name,
-                        new_data.parent,
-                        GeometricDataConstants,
+                    geometric_data = child.copy(
+                        parent=new_data, clear_cache=clear_cache
                     )
-                    geometric_data = cast(
-                        GeometricDataConstants,
-                        child.copy(new_data.parent, name=name, clear_cache=clear_cache),
-                    )
-                    data_type = new_data.parent.add_data_map_type(
-                        name, child.entity_type.value_map.map, new_data.entity_type.name
-                    )
-                    geometric_data.entity_type = data_type
-                    data_maps[name] = geometric_data
+                    data_maps[geometric_data.name] = geometric_data
 
             if data_maps:
                 new_data.data_maps = data_maps

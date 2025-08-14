@@ -48,7 +48,7 @@ from ..shared.utils import (
     box_intersect,
     clear_array_attributes,
     find_unique_name,
-    find_unique_name_in_object,
+    get_unique_name_from_entities,
     mask_by_extent,
     str2uuid,
 )
@@ -253,7 +253,9 @@ class ObjectBase(EntityContainer):
         """
         data_maps = data.data_maps or {}
 
-        name = find_unique_name_in_object(name, self, GeometricDataConstants)
+        name = get_unique_name_from_entities(
+            name, self.children, func=lambda x: isinstance(x, GeometricDataConstants)
+        )
 
         if data.entity_type.value_map is None:
             raise ValueError("Entity type must have a value map.")

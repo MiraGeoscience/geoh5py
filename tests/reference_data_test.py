@@ -212,6 +212,7 @@ def test_copy_data_map(tmp_path):
 
         # test with copying data on the same parent
         data_copy = data.copy()
+
         assert (
             list(data.data_maps.keys())[0]
             != list(data_copy.data_maps.keys())[0]
