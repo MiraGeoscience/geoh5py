@@ -32,7 +32,7 @@ import numpy as np
 
 from geoh5py.data import CommentsData, Data
 from geoh5py.shared.entity import Entity
-from geoh5py.shared.utils import find_unique_name
+from geoh5py.shared.utils import get_unique_name_from_entities
 
 
 if TYPE_CHECKING:
@@ -142,10 +142,12 @@ class EntityContainer(Entity):
                 f"Input file must be a path or BytesIO object, not {type(file)}"
             )
 
-        file_names = [
-            child.values for child in self.children if hasattr(child, "file_bytes")
-        ]
-        name = find_unique_name(name, file_names)
+        name = get_unique_name_from_entities(
+            name,
+            self.children,
+            key="values",
+            func=lambda x: hasattr(x, "file_bytes"),
+        )
 
         attributes = {
             "name": name,

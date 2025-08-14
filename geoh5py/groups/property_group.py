@@ -28,6 +28,7 @@ from warnings import warn
 from ..data import Data, DataAssociationEnum
 from ..shared.utils import (
     find_unique_name,
+    get_unique_name_from_entities,
     remove_duplicates_in_list,
 )
 from .property_group_table import PropertyGroupTable
@@ -296,10 +297,8 @@ class PropertyGroup:
             property_groups = (
                 self.parent.property_groups if self.parent.property_groups else []
             )
-            new_name = find_unique_name(
-                new_name,
-                [prop_group.name for prop_group in property_groups],
-            )
+            new_name = get_unique_name_from_entities(new_name, property_groups)
+
             if original_name != new_name:
                 warn(
                     f"Name '{original_name}' already exists in the parent object. "
