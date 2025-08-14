@@ -32,6 +32,14 @@ from geoh5py.shared import FLOAT_NDV, INTEGER_NDV
 from geoh5py.workspace import Workspace
 
 
+COLOUR_NO_DATA = np.array(
+    [
+        (90, 90, 90, 0),
+    ],
+    dtype=[("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")],
+)
+
+
 def all_data_types():
     for _, obj in inspect.getmembers(data):
         if (
@@ -69,7 +77,17 @@ def test_data_instantiation(data_class, tmp_path):
 
         _can_find(workspace, created_data)
 
-        assert created_data.nan_value in [None, 0, np.nan, INTEGER_NDV, FLOAT_NDV, ""]
+        if isinstance(created_data.nan_value, np.ndarray):
+            assert all(created_data.nan_value == COLOUR_NO_DATA)
+        else:
+            assert created_data.nan_value in [
+                None,
+                0,
+                np.nan,
+                INTEGER_NDV,
+                FLOAT_NDV,
+                "",
+            ]
 
         # now, make sure that unused data and types do not remain reference in the workspace
         data_type_uid = data_type.uid

@@ -30,7 +30,7 @@ import numpy as np
 
 from ..shared import EntityType, utils
 from .color_map import ColorMap
-from .primitive_type_enum import PrimitiveTypeEnum
+from .primitive_type_enum import DataTypeEnum, PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 
@@ -165,6 +165,13 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "color_map")
 
     @property
+    def dtype(self) -> type:
+        """
+        The data type of the data.
+        """
+        return DataTypeEnum.from_primitive_type(self.primitive_type)
+
+    @property
     def duplicate_on_copy(self) -> bool:
         """
         If the data type should be duplicated on copy.
@@ -204,6 +211,7 @@ class DataType(EntityType):
         cls,
         workspace: Workspace,
         primitive_type: PrimitiveTypeEnum | str,
+        *,
         dynamic_implementation_id: str | UUID | None = None,
         uid: UUID | None = None,
         **kwargs,
@@ -388,27 +396,26 @@ class DataType(EntityType):
 
         :return: The equivalent primitive type of the data.
         """
+
+        if utils.array_is_colour(values):
+            return PrimitiveTypeEnum.COLOUR
         if values is None or (
             isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.floating)
         ):
-            primitive_type = PrimitiveTypeEnum.FLOAT
-
-        elif isinstance(values, np.ndarray) and (
-            np.issubdtype(values.dtype, np.integer)
-        ):
-            primitive_type = PrimitiveTypeEnum.INTEGER
-        elif isinstance(values, str) or (
+            return PrimitiveTypeEnum.FLOAT
+        if isinstance(values, np.ndarray) and (np.issubdtype(values.dtype, np.integer)):
+            return PrimitiveTypeEnum.INTEGER
+        if isinstance(values, str) or (
             isinstance(values, np.ndarray) and values.dtype.kind in ["U", "S"]
         ):
-            primitive_type = PrimitiveTypeEnum.TEXT
-        elif isinstance(values, np.ndarray) and (values.dtype == bool):
-            primitive_type = PrimitiveTypeEnum.BOOLEAN
-        else:
-            raise NotImplementedError(
-                "Only add_data values of type FLOAT, INTEGER,"
-                "BOOLEAN and TEXT have been implemented"
-            )
-        return primitive_type
+            return PrimitiveTypeEnum.TEXT
+        if isinstance(values, np.ndarray) and (values.dtype == bool):
+            return PrimitiveTypeEnum.BOOLEAN
+
+        raise NotImplementedError(
+            "Only add_data values of type FLOAT, INTEGER,"
+            "BOOLEAN, TEXT and COLOUR have been implemented"
+        )
 
     @property
     def scale(self) -> str | None:

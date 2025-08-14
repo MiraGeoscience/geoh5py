@@ -1,6 +1,14 @@
 geoh5py.ui\_json package
 ========================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   geoh5py.ui_json.validations
+
 Submodules
 ----------
 

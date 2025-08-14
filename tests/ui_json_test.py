@@ -30,7 +30,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
-from geoh5py.objects import Points
+from geoh5py.objects import Drillhole, Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -48,6 +48,8 @@ from geoh5py.ui_json.input_file import InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
+from .drillhole_v4_0_test import create_drillholes
+
 
 def get_workspace(directory: str | Path):
     file = Path(directory).parent / "testPoints.geoh5"
@@ -59,7 +61,7 @@ def get_workspace(directory: str | Path):
 
     if len(workspace.objects) == 0:
         group = ContainerGroup.create(workspace)
-        DrillholeGroup.create(workspace, parent=group)
+        DrillholeGroup.create(workspace, name="drh_group", parent=group)
         points = Points.create(
             workspace, vertices=np.random.randn(12, 3), parent=group, name="Points_A"
         )
@@ -139,6 +141,7 @@ def test_input_file_name_path(tmp_path: Path):
     test = InputFile()
     test.name = "test.ui.json"
     assert test.name == "test.ui.json"  # usual behaviour
+
     test._name = None
     ui_json = deepcopy(default_ui_json)
     ui_json["title"] = "Jarrod"
@@ -218,9 +221,9 @@ def test_integer_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["integer"] == 123
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["integer"] == 123, (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.integer_parameter(optional="enabled")
     assert test["optional"]
@@ -248,9 +251,9 @@ def test_float_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["float_parameter"] == 123.0
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["float_parameter"] == 123.0, (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.float_parameter(optional="enabled")
     assert test["optional"]
@@ -278,9 +281,9 @@ def test_string_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["string_parameter"] == "goodtogo"
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["string_parameter"] == "goodtogo", (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.string_parameter(optional="enabled")
     assert test["optional"]
@@ -310,9 +313,9 @@ def test_choice_string_parameter(tmp_path: Path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert (
-        reload_input.data["choice_string_parameter"] == "Option A"
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["choice_string_parameter"] == "Option A", (
+        "IntegerParameter did not properly save to file."
+    )
 
     test = templates.choice_string_parameter(optional="enabled")
     assert test["optional"]
@@ -350,9 +353,9 @@ def test_multi_choice_string_parameter(tmp_path):
     out_file = in_file.write_ui_json()
     reload_input = InputFile.read_ui_json(out_file)
 
-    assert reload_input.data["choice_string_parameter"] == [
-        "Option A"
-    ], "IntegerParameter did not properly save to file."
+    assert reload_input.data["choice_string_parameter"] == ["Option A"], (
+        "IntegerParameter did not properly save to file."
+    )
 
 
 def test_file_parameter():
@@ -407,9 +410,9 @@ def test_object_promotion(tmp_path: Path):
 
     # Read back in
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
-    assert (
-        new_in_file.data["object"].uid == points.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["object"].uid == points.uid, (
+        "Promotion of entity from uuid string failed."
+    )
 
     with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
         new_in_file.data = 123
@@ -418,7 +421,7 @@ def test_object_promotion(tmp_path: Path):
 def test_group_promotion(tmp_path):
     workspace = get_workspace(tmp_path)
     group = workspace.get_entity("Container Group")[0]
-    dh_group = workspace.get_entity("Drillhole Group")[0]
+    dh_group = workspace.get_entity("drh_group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()
     ui_json["geoh5"] = workspace
@@ -433,13 +436,50 @@ def test_group_promotion(tmp_path):
     in_file.write_ui_json("test.ui.json", path=tmp_path)
 
     new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
-    assert (
-        new_in_file.data["object"].uid == group.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["object"].uid == group.uid, (
+        "Promotion of entity from uuid string failed."
+    )
 
-    assert (
-        new_in_file.data["dh"].uid == dh_group.uid
-    ), "Promotion of entity from uuid string failed."
+    assert new_in_file.data["dh"].uid == dh_group.uid, (
+        "Promotion of entity from uuid string failed."
+    )
+
+
+def test_drillhole_group_promotion(tmp_path):
+    _, workspace = create_drillholes(tmp_path)
+
+    with workspace.open("r+"):
+        dh_group = workspace.get_entity("DH_group")[0]
+        ui_json = deepcopy(default_ui_json)
+        ui_json["object"] = templates.group_parameter()
+        ui_json["geoh5"] = workspace
+        ui_json["object"]["value"] = ["interval_values_a", "text Data"]
+        ui_json["object"]["groupValue"] = dh_group.uid
+        ui_json["object"]["groupType"] = [dh_group.entity_type.uid]
+        ui_json["object"]["multiSelect"] = True
+
+        in_file = InputFile(ui_json=ui_json)
+
+        assert in_file.ui_json["object"]["value"] == ["interval_values_a", "text Data"]
+        data = in_file.data
+        assert in_file.ui_json["object"]["groupValue"] == dh_group.uid
+        assert in_file.ui_json["object"]["value"] == ["interval_values_a", "text Data"]
+        assert data["object"] == {
+            "group_value": dh_group,
+            "value": ["interval_values_a", "text Data"],
+        }
+
+        in_file.write_ui_json("test.ui.json", path=tmp_path)
+
+    new_in_file = InputFile.read_ui_json(tmp_path / "test.ui.json")
+    assert new_in_file.data["object"]["group_value"].uid == dh_group.uid, (
+        "Promotion of entity from uuid string failed."
+    )
+
+    # test_errors specific to drillholes group Values
+    with workspace.open("r"):
+        with pytest.raises(TypeError, match="Input value for 'group_value'"):
+            in_file._update_group_value_ui("object", {"bi": "don"})
 
 
 def test_invalid_uuid_string(tmp_path: Path):
@@ -702,9 +742,9 @@ def test_multi_object_value_parameter(tmp_path: Path):
     reload_input = InputFile.read_ui_json(out_file)
     object_b = reload_input.geoh5.get_entity("Points_B")
 
-    assert (
-        reload_input.data["object"] == object_b
-    ), "IntegerParameter did not properly save to file."
+    assert reload_input.data["object"] == object_b, (
+        "IntegerParameter did not properly save to file."
+    )
 
 
 def test_data_parameter(tmp_path: Path):
@@ -715,6 +755,30 @@ def test_data_parameter(tmp_path: Path):
     ui_json["geoh5"] = workspace
     ui_json["object"] = templates.object_parameter(value=points_b.uid)
     ui_json["data"] = templates.data_parameter(data_group_type="Multi-element")
+
+
+def test_data_object_file_association(tmp_path: Path):
+    workspace = get_workspace(tmp_path)
+    points_b = workspace.get_entity("Points_B")[0]
+    file_path = tmp_path / "test.txt"
+
+    # create a dummy txt file
+    with open(file_path, "w") as file:
+        file.write("Hello World")
+
+    file = points_b.add_file(file_path)
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["object"] = templates.object_parameter(value=points_b.uid)
+    ui_json["data"] = templates.data_parameter(
+        value=file.uid, data_type="Filename", association="Object", parent="object"
+    )
+
+    in_file = InputFile(ui_json=ui_json)
+
+    in_file.write_ui_json(name="test.ui.json", path=tmp_path)
+    assert in_file.data["data"] == file
 
 
 def test_stringify(tmp_path: Path):
@@ -870,4 +934,11 @@ def test_range_label(tmp_path):
     ifile.write_ui_json("test_range_label.ui.json", path=tmp_path)
     new = InputFile.read_ui_json(tmp_path / "test_range_label.ui.json")
 
-    assert new.data["test"] == ifile.data["test"]
+    new_data = new.data["test"]
+    new_data["property"] = new_data["property"].uid
+
+    assert new.data["test"] == {
+        "is_complement": False,
+        "value": [0.2, 0.8],
+        "property": data.uid,
+    }

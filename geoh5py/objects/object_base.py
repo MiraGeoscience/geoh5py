@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 from warnings import warn
@@ -32,6 +33,7 @@ from ..data import (
     CommentsData,
     Data,
     DataAssociationEnum,
+    GeometricDataConstants,
     VisualParameters,
 )
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
@@ -39,6 +41,7 @@ from ..shared import Entity
 from ..shared.conversion import BaseConversion
 from ..shared.entity_container import EntityContainer
 from ..shared.utils import (
+    array_is_colour,
     box_intersect,
     clear_array_attributes,
     mask_by_extent,
@@ -49,6 +52,8 @@ from .object_type import ObjectType
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 
 class ObjectBase(EntityContainer):
@@ -295,21 +300,19 @@ class ObjectBase(EntityContainer):
 
         :return: New copy of the input entity.
         """
-
-        if parent is None:
-            parent = self.parent
-
         new_object = self.workspace.copy_to_parent(
             self,
-            parent,
+            parent or self.parent,
             clear_cache=clear_cache,
             **kwargs,
         )
 
+        mask = self.validate_mask(mask)
+
         if copy_children:
             children_map = {}
             for child in self.children:
-                if isinstance(child, PropertyGroup):
+                if isinstance(child, PropertyGroup | GeometricDataConstants):
                     continue
 
                 child_copy = child.copy(
@@ -344,11 +347,6 @@ class ObjectBase(EntityContainer):
 
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if self._property_groups is not None and name in [
-            pg.name for pg in self._property_groups
-        ]:
-            raise KeyError(f"A Property Group with name '{name}' already exists.")
-
         prop_group = PropertyGroup(
             self, name=name, property_group_type=property_group_type, **kwargs
         )
@@ -404,9 +402,11 @@ class ObjectBase(EntityContainer):
         :return: The name of the association.
         """
         if isinstance(values, np.ndarray):
-            if values.ravel().shape[0] == getattr(self, "n_cells", None):
+            values = values if array_is_colour(values) else values.ravel()
+
+            if values.shape[0] == getattr(self, "n_cells", None):
                 return "CELL"
-            if values.ravel().shape[0] == getattr(self, "n_vertices", None):
+            if values.shape[0] == getattr(self, "n_vertices", None):
                 return "VERTEX"
 
         return "OBJECT"
@@ -620,6 +620,15 @@ class ObjectBase(EntityContainer):
         attributes["association"] = self.find_association(attributes["values"])
 
         return attributes, property_group
+
+    def validate_mask(self, mask: np.ndarray | None) -> np.ndarray | None:
+        """
+        Validate the mask array.
+        """
+        if mask is not None:
+            logger.warning("Masking is not supported for %s objects.", type(self))
+
+        return mask
 
     def remove_data_from_groups(
         self, data: list[Data | UUID | str] | Data | UUID | str

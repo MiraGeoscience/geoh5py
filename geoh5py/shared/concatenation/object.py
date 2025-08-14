@@ -66,11 +66,6 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        if self._property_groups is not None and name in [
-            pg.name for pg in self._property_groups
-        ]:
-            raise KeyError(f"A Property Group with name '{name}' already exists.")
-
         prop_group = ConcatenatedPropertyGroup(
             self, name=name, property_group_type=property_group_type, **kwargs
         )

@@ -17,7 +17,6 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
 from __future__ import annotations
 
 import numpy as np
@@ -81,9 +80,9 @@ def test_create_point_data(tmp_path):
     compare_entities(tag, rec_tag)
     with fetch_h5_handle(h5file_path) as h5file:
         etype_handle = H5Writer.fetch_handle(h5file, rec_data.entity_type)
-        assert (
-            etype_handle.get("StatsCache") is None
-        ), "StatsCache was not properly deleted on update of values"
+        assert etype_handle.get("StatsCache") is None, (
+            "StatsCache was not properly deleted on update of values"
+        )
 
     assert np.allclose(points.vertices, points.locations)
 
@@ -111,9 +110,9 @@ def test_remove_point_data(tmp_path):
 
         points = Points.create(workspace, vertices=np.random.randn(12, 3))
 
-        assert (
-            points.mask_by_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None
-        ), "Error returning None mask."
+        assert points.mask_by_extent(np.vstack([[1000, 1000], [1001, 1001]])) is None, (
+            "Error returning None mask."
+        )
 
         with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
             points.remove_vertices("abc")
@@ -136,9 +135,9 @@ def test_remove_point_data(tmp_path):
 
         assert len(data.values) == 10, "Error removing data values with vertices."
 
-        assert (
-            points.mask_by_extent(np.vstack([[1e6, 1e6], [2e6, 2e6]])) is None
-        ), "Error masking points by extent."
+        assert points.mask_by_extent(np.vstack([[1e6, 1e6], [2e6, 2e6]])) is None, (
+            "Error masking points by extent."
+        )
 
 
 def test_copy_points_data(tmp_path):
@@ -153,10 +152,10 @@ def test_copy_points_data(tmp_path):
         with pytest.raises(ValueError, match="Mask must be an array of shape"):
             points.copy(mask=np.r_[1, 2, 3])
 
-        with pytest.raises(ValueError, match="Mask must be a boolean array of shape"):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             data.copy(mask=np.r_[1, 2, 3])
 
-        with pytest.raises(TypeError, match="Mask must be an array or None."):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             data.copy(mask="abc")
 
         mask = np.zeros(12, dtype=bool)

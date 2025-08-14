@@ -46,45 +46,6 @@ from geoh5py.ui_json.utils import requires_value
 Validation = dict[str, Any]
 
 
-class UIJsonError(Exception):
-    """Exception raised for errors in the UIJson object."""
-
-    def __init__(self, message: str):
-        super().__init__(message)
-
-
-class ErrorPool:  # pylint: disable=too-few-public-methods
-    """Stores validation errors for all UIJson members."""
-
-    def __init__(self, errors: dict[str, ErrorLane]):
-        self.pool = errors
-
-    def throw(self):
-        msg = ""
-        msg += "Collected UIJson errors:\n"
-        for key, lane in self.pool.items():
-            if lane.errors:
-                msg += f"\t{key}:\n"
-                for i, error in enumerate(lane.errors):
-                    msg += f"\t\t{i}. {error}\n"
-
-        raise UIJsonError(msg)
-
-
-class ErrorLane:
-    """Stores validation errors for UIJson members."""
-
-    def __init__(self, error: Exception):
-        self._errors = [error]
-
-    @property
-    def errors(self):
-        return self._errors
-
-    def catch(self, error: Exception):
-        self._errors.append(error)
-
-
 class InputValidation:
     """
     Validations on dictionary of parameters.
@@ -186,13 +147,13 @@ class InputValidation:
                     warn(
                         f"Failed to set association for {key}. {error}",
                     )
-            elif "rangeLabel" in item:
+            elif "rangeLabel" in item and "isComplement" not in item:
                 validations[key] = {
                     "types": [list],
                 }
-            elif "groupValue" in item and "value" in item:
+            elif ("groupValue" in item or "isComplement" in item) and "value" in item:
                 validations[key] = {
-                    "types": [list],
+                    "types": [dict],
                 }
             elif "choiceList" in item:
                 validations[key] = {

@@ -54,9 +54,9 @@ def test_workspace_from_kwargs(tmp_path: Path):
     workspace = Workspace(h5file_tmp)
     for key, value in attr.items():
         if getattr(workspace, key, None) is not None:
-            assert (
-                getattr(workspace, key.lower()) == value
-            ), f"Error changing value for attribute {key}."
+            assert getattr(workspace, key.lower()) == value, (
+                f"Error changing value for attribute {key}."
+            )
 
     workspace.close()
 
@@ -78,9 +78,9 @@ def test_empty_workspace(tmp_path):
     ).close()
 
     with File(tmp_path / r"test.geoh5", "r+") as file:
-        assert (
-            "Types" in file["GEOSCIENCE"]
-        ), "Failed to regenerate the geoh5 structure."
+        assert "Types" in file["GEOSCIENCE"], (
+            "Failed to regenerate the geoh5 structure."
+        )
 
 
 def test_missing_type(tmp_path):
@@ -163,3 +163,10 @@ def test_in_memory_to_disk():
         compare_entities(points, new_points, ignore=["_parent"])
 
     workspace.close()
+
+
+def test_network_drive_warning(tmp_path):
+    network_drive = tmp_path / "Dropbox"
+    network_drive.mkdir()
+    with pytest.warns(match="Opening workspace with write access in a network drive"):
+        _ = Workspace(network_drive / "test.geoh5")

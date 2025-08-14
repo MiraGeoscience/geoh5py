@@ -137,36 +137,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if self.on_file:
             self.workspace.update_attribute(self, "cells")
 
-    def copy(
-        self,
-        parent=None,
-        *,
-        copy_children: bool = True,
-        clear_cache: bool = False,
-        mask: np.ndarray | None = None,
-        **kwargs,
-    ):
-        """
-        Function to copy an entity to a different parent entity.
-
-        :param parent: New parent for the copied object.
-        :param copy_children: Copy children entities.
-        :param clear_cache: Clear cache of data values.
-        :param mask: Array of indices to sub-sample the input entity.
-        :param kwargs: Additional keyword arguments.
-        """
-        if mask is not None:
-            warnings.warn("Masking is not supported for GeoImage objects.")
-
-        new_entity = super().copy(
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            **kwargs,
-        )
-
-        return new_entity
-
     def copy_from_extent(
         self,
         extent: np.ndarray,
@@ -388,8 +358,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     ):
         if self._image_data is not None:
             raise AttributeError(
-                "The 'image' property cannot be reset. "
-                "Consider creating a new object."
+                "The 'image' property cannot be reset. Consider creating a new object."
             )
 
         if isinstance(image, (FilenameData, type(None))):

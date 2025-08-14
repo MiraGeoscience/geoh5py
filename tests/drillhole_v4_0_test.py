@@ -142,9 +142,9 @@ def test_concatenator(tmp_path):
         # Create a workspace
         dh_group = DrillholeGroup.create(workspace, name="DH_group")
         dh_group.add_file(tmp_path / file_name)
-        assert (
-            dh_group.data == {}
-        ), "DrillholeGroup should not have data on instantiation."
+        assert dh_group.data == {}, (
+            "DrillholeGroup should not have data on instantiation."
+        )
 
         with pytest.raises(ValueError) as error:
             dh_group.concatenated_attributes = "123"
@@ -351,9 +351,9 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         assert not log_data.parent.get_data("TO")
         assert log_data.property_group.name == "depth_0"
         assert log_data.property_group.depth_.name == "DEPTH"
-        assert (
-            len(log_data.parent.property_groups[0].properties) == 3
-        ), "Should only have 3 properties (my_log_values, log_wt_tolerance, DEPTH)"
+        assert len(log_data.parent.property_groups[0].properties) == 3, (
+            "Should only have 3 properties (my_log_values, log_wt_tolerance, DEPTH)"
+        )
         assert log_data.property_group.property_group_type == "Depth table"
 
         with fetch_h5_handle(h5file_path) as h5file:
@@ -466,9 +466,9 @@ def test_append_data_to_tables(tmp_path):
             "'interval_values' on well_b should be the second entry.",
         )
 
-        assert (
-            len(well.to_) == len(well.from_) == 3
-        ), "Should have exactly 3 from-to data."
+        assert len(well.to_) == len(well.from_) == 3, (
+            "Should have exactly 3 from-to data."
+        )
 
         with pytest.raises(
             ValueError, match="Data with name 'Depth Data' already present"
@@ -607,9 +607,9 @@ def test_copy_and_append_drillhole_data(tmp_path):
                     ),
                 )
 
-            assert (
-                len(well.property_groups[0].properties) == 4
-            ), "Issue adding data to interval."
+            assert len(well.property_groups[0].properties) == 4, (
+                "Issue adding data to interval."
+            )
 
 
 def test_partial_group_removal(tmp_path):
@@ -702,9 +702,9 @@ def test_create_drillhole_data_v4_2(tmp_path):
     with workspace.open():
         assert dh_group.workspace.ga_version == "4.2"
         assert dh_group.concat_attr_str == "Attributes Jsons"
-        assert (
-            len(workspace.fetch_children(dh_group, recursively=True)) == 3
-        ), "Issue with fetching children recursively"
+        assert len(workspace.fetch_children(dh_group, recursively=True)) == 3, (
+            "Issue with fetching children recursively"
+        )
 
     h5file_path = tmp_path / r"test_create_concatenated_v4_2_v2_0.geoh5"
     dh_group, workspace = create_drillholes(h5file_path, version=2.0, ga_version="4.2")
@@ -1025,7 +1025,7 @@ def test_add_data_to_property(tmp_path):
         verification_map_value = np.random.randint(
             0, 100, verification["interval_values_a"].shape[0], dtype=np.int32
         )
-        value_map = {idx: f"{idx}" for idx in np.unique(verification_map_value)}
+        value_map = {idx: f"abc{idx}" for idx in np.unique(verification_map_value)}
         value_map[0] = "Unknown"
 
         drillholes_table.add_values_to_property_group(
@@ -1035,7 +1035,7 @@ def test_add_data_to_property(tmp_path):
         drillholes_table.add_values_to_property_group(
             "new value",
             verification_map_value,
-            data_type=data_type.DataType(
+            data_type=data_type.ReferencedValueMapType(
                 workspace,
                 primitive_type="REFERENCED",
                 name="new_value",
@@ -1090,6 +1090,12 @@ def test_add_data_to_property(tmp_path):
             verification,
             tolerance=1e-5,
         )
+
+        verificationf = drillhole_group.drillholes_tables[
+            "property_group"
+        ].depth_table_by_name("new value", mapped=True)
+
+        assert verificationf[0][0][:3] == "abc"
 
 
 def test_tables_errors(tmp_path):

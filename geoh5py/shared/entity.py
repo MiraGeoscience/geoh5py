@@ -95,6 +95,8 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.on_file = on_file
         self.name = name or self._default_name or type(self).__name__
         self._entity_type = self.validate_entity_type(entity_type)
+        self._parent = None
+
         self.uid: uuid.UUID = uid or uuid.uuid4()
         self.allow_delete = allow_delete
         self.allow_move = allow_move
@@ -388,6 +390,9 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
 
     @parent.setter
     def parent(self, parent: EntityContainer):
+        self._set_parent(parent)
+
+    def _set_parent(self, parent):
         current_parent: EntityContainer | None = getattr(self, "_parent", None)
 
         self._parent = parent

@@ -39,7 +39,7 @@ default_ui_json = {
     "out_group": None,
 }
 ui_validations = {
-    "association": {"values": ["Vertex", "Cell"]},
+    "association": {"values": ["Vertex", "Cell", "Object"]},
     "dataGroupType": {
         "values": [
             "Multi-element",
@@ -48,7 +48,9 @@ ui_validations = {
             "Strike & dip",
         ],
     },
-    "dataType": {"values": ["Float", "Text", "Integer", "Referenced", "Boolean"]},
+    "dataType": {
+        "values": ["Float", "Text", "Integer", "Referenced", "Boolean", "Filename"]
+    },
     "dependency": {"types": [str, type(None)]},
     "dependencyType": {"values": ["enabled", "disabled"]},
     "enabled": {"types": [bool, type(None)]},

@@ -247,7 +247,7 @@ def test_set_enabled():
         set_enabled(ui_json, "float_parameter", False)
 
     assert (
-        "Non-option parameter 'float_parameter' cannot be set to 'enabled' " "False "
+        "Non-option parameter 'float_parameter' cannot be set to 'enabled' False "
     ) in str(warn[0])
 
     ui_json["float_parameter"]["optional"] = True
@@ -294,11 +294,14 @@ def test_flatten_group_value():
     )
 
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == ["test1"]
+    assert flat["test"] == {
+        "groupValue": ui_json["test"]["groupValue"],
+        "value": ["test1"],
+    }
 
     ui_json = deepcopy(default_ui_json)
     ui_json["test"] = templates.drillhole_group_data(
@@ -307,7 +310,7 @@ def test_flatten_group_value():
         optional="enabled",
     )
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
@@ -322,11 +325,11 @@ def test_range_label():
     )
 
     validators = InputValidation._validations_from_uijson(ui_json)
-    assert validators["test"]["types"] == [list]
+    assert validators["test"]["types"] == [dict]
 
     flat = flatten(ui_json)
 
-    assert flat["test"] == [1, 2]
+    assert flat["test"] == {"isComplement": False, "property": my_uuid, "value": [1, 2]}
 
 
 def test_optional_error():

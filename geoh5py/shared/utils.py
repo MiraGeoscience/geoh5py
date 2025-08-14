@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
+# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
@@ -55,6 +55,7 @@ INV_KEY_MAP = {
     "Clipping IDs": "clipping_ids: list | None",
     "Collar": "collar",
     "Color map": "color_map",
+    "Colour": "COLOUR",
     "Contributors": "contributors",
     "Concatenated object IDs": "concatenated_object_ids",
     "Cost": "cost",
@@ -110,6 +111,7 @@ INV_KEY_MAP = {
     "Scientific notation": "scientific_notation",
     "Surveys": "surveys",
     "Text": "TEXT",
+    "TextMesh Data": "text_mesh_data",
     "Trace": "trace",
     "TraceDepth": "trace_depth",
     "Transparent no data": "transparent_no_data",
@@ -149,6 +151,28 @@ PILLOW_ARGUMENTS = {
     "I": TIF_KWARGS,
     "F": TIF_KWARGS,
 }
+
+
+def copy_no_reference(values: dict) -> dict:
+    """
+    Copy a dictionary without references to objects UUID.
+
+    :param values: The dictionary to copy.
+
+    :return: The copied dictionary.
+    """
+    # Copy metadata except reference to entities UUID
+    output = {}
+    for key, value in values.items():
+        if isinstance(value, dict):
+            value = copy_no_reference(value)
+
+        if isinstance(value, UUID):
+            value = None
+
+        output[key] = value
+
+    return output
 
 
 @contextmanager
@@ -355,9 +379,9 @@ def compare_arrays(object_a, object_b, attribute: str, decimal: int = 6):
         ), f"Error comparing attribute '{attribute}'."
 
     elif len(array_a_values) > 0 and isinstance(array_a_values[0], str):
-        assert all(
-            array_a_values == array_b_values
-        ), f"Error comparing attribute '{attribute}'."
+        assert all(array_a_values == array_b_values), (
+            f"Error comparing attribute '{attribute}'."
+        )
     else:
         np.testing.assert_array_almost_equal(
             array_a_values,
@@ -386,9 +410,9 @@ def compare_list(object_a, object_b, attribute: str, ignore: list[str] | None):
 
 
 def compare_bytes(object_a, object_b):
-    assert (
-        object_a == object_b
-    ), f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
+    assert object_a == object_b, (
+        f"{type(object_a)} objects: {object_a}, {object_b} are not equal."
+    )
 
 
 def compare_entities(
@@ -580,6 +604,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
     for fun in string_funcs:
         val = fun(val, *args)
+
     return val
 
 
@@ -919,3 +944,75 @@ def remove_duplicates_in_list(input_list: list) -> list:
     :return: The sorted list
     """
     return sorted(set(input_list), key=input_list.index)
+
+
+def decode_byte_array(values: np.ndarray, data_type: type) -> np.array:
+    """
+    Decode a byte array to an array of a given data type.
+
+    :param values: The byte array to decode.
+    :param data_type: The data type to convert the values to.
+
+    :return: The decoded array.
+    """
+    return (
+        np.char.decode(values, "utf-8") if values.dtype.kind == "S" else values
+    ).astype(data_type)
+
+
+def min_max_scaler(
+    values: np.ndarray,
+    min_scaler: float = 0.0,
+    max_scaler: float = 1.0,
+    axis: None | int = None,
+) -> np.ndarray:
+    """
+    Min-Max scale an array.
+
+    :param values: The array to scale.
+    :param min_scaler: The minimum value to scale to.
+    :param max_scaler: The maximum value to scale to.
+    :param axis: Axis to apply scaling (eg. 0 for columns, 1 for rows).
+
+    :return: The scaled array.
+    """
+    # replace NaN with min_scaler
+    values = np.nan_to_num(values, nan=min_scaler)
+
+    v_min = values.min(axis=axis, keepdims=True)
+    v_max = values.max(axis=axis, keepdims=True)
+    v_range = v_max - v_min
+
+    scaled = np.where(
+        v_range == 0,
+        min_scaler,
+        (values - v_min) / v_range * (max_scaler - min_scaler) + min_scaler,
+    )
+
+    return scaled
+
+
+def array_is_colour(values: np.ndarray) -> bool:
+    """
+    Check if the values are RGB or RGBA.
+    The function does not consider the type as we are formatting it.
+
+    :param values: The values to check.
+
+    :return: True if the values are RGB or RGBA.
+    """
+    if not isinstance(values, np.ndarray):
+        return False
+
+    if values.dtype.names:
+        if values.dtype.names in (("r", "g", "b"), ("r", "g", "b", "a")) and all(
+            np.issubdtype(values.dtype[name], np.number) for name in values.dtype.names
+        ):
+            return True
+        return False
+
+    return (
+        values.ndim == 2
+        and values.shape[1] in (3, 4)
+        and np.issubdtype(values.dtype, np.number)
+    )

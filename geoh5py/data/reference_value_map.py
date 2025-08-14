@@ -20,13 +20,11 @@
 
 from __future__ import annotations
 
-from abc import ABC
-
 import numpy as np
 from h5py import special_dtype
 
 
-class ReferenceValueMap(ABC):
+class ReferenceValueMap:
     """Maps from reference index to reference value of ReferencedData."""
 
     MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
@@ -66,7 +64,9 @@ class ReferenceValueMap(ABC):
 
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
             if value_map.ndim == 1:
-                value_map = {i: str(val) for i, val in enumerate(set(value_map))}
+                unique_set = set(value_map)
+                unique_set.discard(0)
+                value_map = {i + 1: str(val) for i, val in enumerate(unique_set)}
 
             value_map = dict(value_map)
 
@@ -78,8 +78,15 @@ class ReferenceValueMap(ABC):
             value_map = np.array(
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
+
+            # TODO: Replace with numpy.dtypes.StringDType instead for support of variable
+            # length string after moving to numpy >=2.0
+            str_len = max(
+                len(val) if isinstance(val, str) else len(str(val))
+                for val in value_map["Value"]
+            )
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype("U25"), "utf-8"
+                value_map["Value"].astype(f"U{str_len}"), "utf-8"
             )
 
         if not isinstance(value_map, np.ndarray):
@@ -98,6 +105,18 @@ class ReferenceValueMap(ABC):
         The key '0' is always 'Unknown'.
         """
         return self._map
+
+    def map_values(self, values: np.ndarray) -> np.ndarray:
+        """
+        Map the values to the reference values.
+
+        :param values: The values to map.
+
+        :return: The mapped values.
+        """
+        mapper = np.sort(self.map, order="Key")
+        indices = np.searchsorted(mapper["Key"], values)
+        return mapper["Value"][indices]
 
 
 BOOLEAN_VALUE_MAP = np.array(

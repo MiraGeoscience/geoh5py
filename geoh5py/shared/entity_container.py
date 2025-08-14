@@ -166,7 +166,7 @@ class EntityContainer(Entity):
     @property
     def comments(self):
         """
-        Fetch a :obj:`~geoh5py.data.text_data.CommentsData` entity from children.
+        Fetch a :obj:`~geoh5py.data.data.CommentsData` entity from children.
         """
         for child in self.children:
             if isinstance(child, CommentsData):
@@ -181,7 +181,6 @@ class EntityContainer(Entity):
         *,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -192,7 +191,6 @@ class EntityContainer(Entity):
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy to minimize the
             memory footprint of the workspace.
-        :param mask: Array of indices to sub-sample the input entity.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
 
         :return entity: Registered Entity to the workspace.

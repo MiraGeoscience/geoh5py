@@ -32,6 +32,7 @@ from contextlib import AbstractContextManager, contextmanager
 from gc import collect
 from getpass import getuser
 from io import BytesIO
+from logging import getLogger
 from pathlib import Path
 from shutil import copy, move
 from subprocess import CalledProcessError
@@ -74,6 +75,19 @@ from ..shared.utils import (
     get_attributes,
     str2uuid,
 )
+
+
+logger = getLogger(__name__)
+
+NETWORK_DRIVES = [
+    "Egnyte Connect",
+    "One Drive",
+    "Dropbox",
+    "Google Drive",
+    "googledrive",
+    "Box",
+    "iCloud",
+]
 
 
 # pylint: disable=too-many-instance-attributes
@@ -210,15 +224,17 @@ class Workspace(AbstractContextManager):
             temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
             try:
                 subprocess.run(
-                    f'h5repack --native "{self._h5file}" "{temp_file}"',
+                    ["h5repack", "--native", str(self._h5file), str(temp_file)],
                     check=True,
-                    shell=True,
-                    stdout=subprocess.DEVNULL,
+                    capture_output=True,
+                    encoding="utf8",
                 )
                 Path(self._h5file).unlink()
                 move(temp_file, self._h5file, copy)
-            except CalledProcessError:
+            except FileNotFoundError:
                 pass
+            except CalledProcessError as process_error:
+                logger.error("%s\n%s", process_error.stdout, process_error.stderr)
 
             self.repack = False
 
@@ -272,7 +288,7 @@ class Workspace(AbstractContextManager):
 
         entity_type_kwargs = get_attributes(
             entity.entity_type,
-            omit_list=["_workspace", "_on_file"] + list(omit_list),
+            omit_list=["_workspace", "_on_file", "_parent"] + list(omit_list),
         )
 
         # overwrite kwargs
@@ -756,7 +772,6 @@ class Workspace(AbstractContextManager):
             children_list = self._io_call(
                 H5Reader.fetch_children, entity.uid, entity_type, mode="r"
             )
-
             if isinstance(entity, Concatenator):
                 if any(entity.children):
                     return entity.children
@@ -1239,6 +1254,17 @@ class Workspace(AbstractContextManager):
 
         if mode is None:
             mode = self._mode
+
+        if (
+            mode == "r+"
+            and isinstance(self.h5file, Path)
+            and any(k in str(self.h5file.absolute()) for k in NETWORK_DRIVES)
+        ):
+            warnings.warn(
+                "Opening workspace with write access in a network "
+                "drive may lead to slow operations or access errors. "
+                "Consider copying the file to static local drive."
+            )
 
         try:
             self._geoh5 = h5py.File(self.h5file, mode)

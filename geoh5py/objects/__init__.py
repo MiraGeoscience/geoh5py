@@ -68,3 +68,4 @@ from .surveys.electromagnetics.ground_tem import (
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.magnetics import AirborneMagnetics
+from .text import TextObject

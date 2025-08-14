@@ -29,6 +29,7 @@ import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
+    PlainSerializer,
     field_serializer,
     field_validator,
     model_validator,
@@ -39,13 +40,15 @@ from pydantic.functional_validators import BeforeValidator
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.validators import (
-    empty_string_to_uid,
+    empty_string_to_none,
     to_class,
     to_list,
     to_path,
     to_uuid,
+    types_to_string,
+    uuid_to_string,
+    uuid_to_string_or_numeric,
 )
-from geoh5py.ui_json.validation import UIJsonError
 
 
 class DependencyType(str, Enum):
@@ -80,6 +83,9 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
+    :param verbose: Sets the level at which Geoscience Analyst will make
+        the parameter visible in a ui.json file.  Verbosity level is set
+        within Analyst menu.
     """
 
     model_config = ConfigDict(
@@ -158,21 +164,36 @@ class ChoiceForm(BaseForm):
     Choice list uijson form.
     """
 
+    value: str
+    choice_list: list[str]
+
+    @model_validator(mode="after")
+    def valid_choice(self):
+        if self.value not in self.choice_list:
+            raise ValueError(f"Provided value: '{self.value}' is not a valid choice.")
+
+        return self
+
+
+class MultiChoiceForm(BaseForm):
+    """Multi-choice list uijson form."""
+
     value: list[str]
     choice_list: list[str]
-    multi_select: bool = False
+    multi_select: bool = True
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value):
+        if not value:
+            raise ValueError("MultiChoiceForm must have multi_select: True.")
+        return value
 
     @field_validator("value", mode="before")
     @classmethod
     def to_list(cls, value):
         if not isinstance(value, list):
             value = [value]
-        return value
-
-    @field_serializer("value", when_used="json")
-    def string_if_single(self, value):
-        if len(value) == 1:
-            value = value[0]
         return value
 
     @model_validator(mode="after")
@@ -238,10 +259,17 @@ class FileForm(BaseForm):
 
 
 MeshTypes = Annotated[
-    list[type[ObjectBase] | type[Group]],
+    list[type[ObjectBase]],
     BeforeValidator(to_class),
     BeforeValidator(to_uuid),
     BeforeValidator(to_list),
+    PlainSerializer(types_to_string, when_used="json"),
+]
+
+OptionalUUID = Annotated[
+    UUID | None,  # pylint: disable=unsupported-binary-operation
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(uuid_to_string),
 ]
 
 
@@ -250,10 +278,26 @@ class ObjectForm(BaseForm):
     Geoh5py object uijson form.
     """
 
-    value: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    value: OptionalUUID
     mesh_type: MeshTypes
 
-    _empty_string_to_uid = field_validator("value", mode="before")(empty_string_to_uid)
+
+GroupTypes = Annotated[
+    list[type[Group]],
+    BeforeValidator(to_class),
+    BeforeValidator(to_uuid),
+    BeforeValidator(to_list),
+    PlainSerializer(types_to_string, when_used="json"),
+]
+
+
+class GroupForm(BaseForm):
+    """
+    Geoh5py group uijson form.
+    """
+
+    value: OptionalUUID
+    group_type: GroupTypes
 
 
 class Association(str, Enum):
@@ -281,27 +325,27 @@ class DataType(str, Enum):
     TEXT = "Text"
 
 
+UUIDOrNumber = Annotated[
+    UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(uuid_to_string_or_numeric),
+]
+
+
 class DataForm(BaseForm):
     """
     Geoh5py data uijson form.
     """
 
-    value: UUID | float | int
+    value: UUIDOrNumber
     parent: str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
     is_value: bool = False
-    property: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    property: OptionalUUID = None
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
-
-    @field_validator("property", mode="before")
-    @classmethod
-    def empty_string_to_uid(cls, val):
-        if val == "":
-            return UUID("00000000-0000-0000-0000-000000000000")
-        return val
 
     @model_validator(mode="after")
     def value_if_is_value(self):
@@ -321,25 +365,6 @@ class DataForm(BaseForm):
         ):
             raise ValueError("A property must be provided if is_value is used.")
         return self
-
-    def _validate_parent(self, params: dict[str, Any]):
-        """Validate form uid is a child of the parent object."""
-        child = None
-        if isinstance(self.value, UUID):
-            child = self.value
-        elif "property" in list(self.model_fields_set) and not self.is_value:
-            child = self.property
-
-        if child is not None:
-            if (
-                not isinstance(params[self.parent], ObjectBase)
-                or params[self.parent].get_entity(child)[0] is None
-            ):
-                raise UIJsonError(f"{child} data is not a child of {self.parent}.")
-
-    def validate_data(self, params: dict[str, Any]):
-        """Validate the form data."""
-        self._validate_parent(params)
 
     def flatten(self):
         """Returns the data for the form."""

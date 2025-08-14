@@ -131,16 +131,16 @@ def test_create_property_group(tmp_path):
             if getattr(rec_prop_group, attr) != getattr(prop_group, attr)
         ]
 
-        assert (
-            len(check_list) == 0
-        ), f"Attribute{check_list} of PropertyGroups in output differ from input"
+        assert len(check_list) == 0, (
+            f"Attribute{check_list} of PropertyGroups in output differ from input"
+        )
 
         # Copy an object without children
         new_curve = rec_object.copy(copy_children=False)
 
-        assert (
-            new_curve.property_groups is None
-        ), "Property_groups not properly removed on copy without children."
+        assert new_curve.property_groups is None, (
+            "Property_groups not properly removed on copy without children."
+        )
 
         #
         rec_object.remove_children(rec_prop_group)
@@ -150,9 +150,9 @@ def test_create_property_group(tmp_path):
 
     with Workspace(h5file_path) as workspace:
         rec_object = workspace.get_entity(curve.uid)[0]
-        assert (
-            rec_object.property_groups is None
-        ), "Property_groups not properly removed."
+        assert rec_object.property_groups is None, (
+            "Property_groups not properly removed."
+        )
 
         # test for properties post assignation
         properties = [child for child in rec_object.children if isinstance(child, Data)]
@@ -201,9 +201,6 @@ def test_property_group_errors(tmp_path):
 
         with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
             prop_group.on_file = "bidon"
-
-        with pytest.raises(KeyError, match="A Property Group with name"):
-            curve.create_property_group(name="myGroup")
 
         with pytest.raises(
             ValueError, match="At least one of 'properties' or 'association'"
@@ -287,6 +284,26 @@ def test_copy_property_group(tmp_path):
         )
 
 
+def test_property_group_same_name(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        pg2 = PropertyGroup(parent=curve, name="myGroup", association="VERTEX")
+
+        assert pg2.name == "myGroup(1)"
+
+    with Workspace(h5file_path) as workspace:
+        # error here if a property group has the same name
+        curve = workspace.get_entity(curve.uid)[0]
+
+        assert sorted([pg.name for pg in curve.property_groups]) == [
+            "myGroup",
+            "myGroup(1)",
+        ]
+
+
 def test_clean_out_empty(tmp_path):
     h5file_path = tmp_path / r"prop_group_clean.geoh5"
 
@@ -321,7 +338,15 @@ def test_property_group_table(tmp_path):
         np.testing.assert_almost_equal(curve.locations, produced[:, :3], decimal=6)
 
         curve.add_data(
-            {"TestCell": {"values": np.random.rand(11), "association": "CELL"}},
+            {
+                "TestCell": {"values": np.random.rand(11), "association": "CELL"},
+                "Referenced": {
+                    "values": np.random.randint(0, 3, 11),
+                    "association": "CELL",
+                    "type": "referenced",
+                    "value_map": {1: "A", 2: "B", 3: "C"},
+                },
+            },
             property_group="cellGroup",
         )
 
@@ -331,6 +356,8 @@ def test_property_group_table(tmp_path):
         np.testing.assert_almost_equal(cell_group.table.locations, curve.centroids)
 
         assert cell_group.table.size == curve.n_cells
+
+        assert isinstance(cell_group.table(mapped=True)[0][1], str)
 
 
 def test_property_group_table_error(tmp_path):

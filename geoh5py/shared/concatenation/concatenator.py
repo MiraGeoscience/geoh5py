@@ -438,7 +438,6 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             uid = uuid.UUID(uid)
 
         uid = as_str_if_utf8_bytes(as_str_if_uuid(uid))
-
         if self.attributes_keys is not None and uid in self.attributes_keys:
             index = self.attributes_keys.index(uid)
         else:

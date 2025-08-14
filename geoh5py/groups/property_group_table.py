@@ -26,8 +26,9 @@ from uuid import UUID
 
 import numpy as np
 
-from ..data import DataAssociationEnum
+from ..data import DataAssociationEnum, ReferencedData
 from ..data.primitive_type_enum import DataTypeEnum
+from ..shared.utils import decode_byte_array
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -55,13 +56,14 @@ class PropertyGroupTable(ABC):
         self._property_group: PropertyGroup = property_group
 
     def __call__(
-        self, spatial_index: bool = False, use_uids: bool = False
+        self, spatial_index: bool = False, use_uids: bool = False, mapped: bool = False
     ) -> np.ndarray | None:
         """
         Create a structured array with the data of the properties.
 
         :param spatial_index: If True, the spatial index is added to the table.
         :param use_uids: If True, the uids are used as columns name.
+        :param mapped: If True, the ReferencedData are mapped.
 
         :return: A table with the data of the properties.
         """
@@ -78,7 +80,9 @@ class PropertyGroupTable(ABC):
             else self.property_group.properties_name
         )
 
-        output_array = self._create_empty_structured_array(names, keys, spatial_index)
+        output_array = self._create_empty_structured_array(
+            names, keys, spatial_index, mapped
+        )
 
         if spatial_index:
             for idx, key in enumerate(self.locations_keys):
@@ -86,7 +90,13 @@ class PropertyGroupTable(ABC):
 
         for key, name in zip(keys, names, strict=False):  # type: ignore
             data = self.property_group.parent.get_data(key)[0]
-            output_array[str(name)] = data.values
+
+            if data.values is None:
+                continue
+            if isinstance(data, ReferencedData) and mapped:
+                output_array[str(name)] = decode_byte_array(data.mapped_values, str)
+            else:
+                output_array[str(name)] = data.values
 
         return output_array
 
@@ -95,6 +105,7 @@ class PropertyGroupTable(ABC):
         properties_name: list[str] | list[UUID],
         properties_keys: list[UUID],
         spatial_index: bool = False,
+        mapped: bool = False,
     ) -> np.ndarray:
         """
         Create an empty structured array that can contains the data.
@@ -102,6 +113,7 @@ class PropertyGroupTable(ABC):
         :param properties_name: The names of the properties.
         :param properties_keys: The keys of the properties.
         :param spatial_index: If True, the association is added to the table.
+        :param mapped: If True, the ReferencedData are mapped.
 
         :return: an empty structured array.
         """
@@ -114,7 +126,9 @@ class PropertyGroupTable(ABC):
             dtype: type | str = DataTypeEnum.from_primitive_type(
                 data.entity_type.primitive_type
             )
-            if dtype not in [np.float32, np.int32, np.uint32, bool]:
+            if (dtype not in [np.float32, np.int32, np.uint32, bool]) or (
+                isinstance(data, ReferencedData) and mapped
+            ):
                 dtype = "O"
             dtypes.append((str(name), dtype))
 

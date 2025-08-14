@@ -71,7 +71,7 @@ class PropertyGroup:
         on_file: bool = False,
         uid: UUID | None = None,
         property_group_type: GroupTypeEnum | str = GroupTypeEnum.SIMPLE,
-        properties: list[UUID | Data | str] | None = None,
+        properties: Sequence[UUID | Data | str] | None = None,
         **_,
     ):
         self._parent: ObjectBase = self._validate_parent(parent)
@@ -91,7 +91,7 @@ class PropertyGroup:
         self.parent.workspace.register(self)
 
     def _initialize_properties(
-        self, properties: str | UUID | Data | list[UUID | str | Data] | None
+        self, properties: str | UUID | Data | Sequence[UUID | str | Data] | None
     ) -> list[Data] | None:
         """
         Initialize the properties list.
@@ -214,7 +214,7 @@ class PropertyGroup:
 
         return [data.uid for data in data_list_]
 
-    def add_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
+    def add_properties(self, data: str | Data | Sequence[str | Data | UUID] | UUID):
         """
         Add data to properties.
 
@@ -226,11 +226,11 @@ class PropertyGroup:
                 f"Cannot add properties to '{self._property_group_type}' property group type."
             )
 
-        if not isinstance(data, list):
+        if isinstance(data, (str, UUID, Data)):
             data = [data]
 
         properties = self._validate_properties(
-            data if self.properties is None else self.properties + data
+            data if self.properties is None else self.properties + list(data)
         )
 
         if properties:
@@ -291,6 +291,21 @@ class PropertyGroup:
         if not isinstance(new_name, str):
             raise TypeError("Name must be a string")
 
+        if getattr(self.parent, "_property_groups", None):
+            original_name = new_name
+            property_groups = (
+                self.parent.property_groups if self.parent.property_groups else []
+            )
+            new_name = find_unique_name(
+                new_name,
+                [prop_group.name for prop_group in property_groups],
+            )
+            if original_name != new_name:
+                warn(
+                    f"Name '{original_name}' already exists in the parent object. "
+                    f"Renamed to '{new_name}'."
+                )
+
         self._name = new_name
 
     @property
@@ -345,7 +360,7 @@ class PropertyGroup:
         """
         return self._property_group_type
 
-    def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
+    def remove_properties(self, data: str | Data | Sequence[str | Data | UUID] | UUID):
         """
         Remove data from the properties.
 
@@ -360,7 +375,7 @@ class PropertyGroup:
         if self.properties is None:
             return
 
-        if not isinstance(data, list):
+        if isinstance(data, (str, UUID, Data)):
             data = [data]
 
         properties = self.properties

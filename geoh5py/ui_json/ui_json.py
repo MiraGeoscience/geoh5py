@@ -22,15 +22,29 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    PlainSerializer,
+    field_validator,
+)
 
 from geoh5py import Workspace
 from geoh5py.shared.utils import fetch_active_workspace
+from geoh5py.shared.validators import empty_string_to_none, none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validation import ErrorLane, ErrorPool, UIJsonError
+from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
+
+
+OptionalPath = Annotated[
+    Path | None,  # pylint: disable=unsupported-binary-operation
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(none_to_empty_string),
+]
 
 
 class BaseUIJson(BaseModel):
@@ -47,21 +61,15 @@ class BaseUIJson(BaseModel):
     :params workspace_geoh5: Path to the workspace geoh5 file.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
+    version: str
     title: str
     geoh5: Path | None
     run_command: str
-    monitoring_directory: Path
+    monitoring_directory: OptionalPath
     conda_environment: str
-    workspace_geoh5: Path
-
-    @field_validator("workspace_geoh5", mode="after")
-    @classmethod
-    def current_directory_if_workspace_doesnt_exist(cls, path):
-        if not path.exists():
-            return Path()
-        return path
+    workspace_geoh5: OptionalPath
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -87,6 +95,13 @@ class BaseUIJson(BaseModel):
 
         return cls(**kwargs)
 
+    def write(self, path: Path):
+        """Write the UIJson object to file."""
+
+        with open(path, "w", encoding="utf-8") as file:
+            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
+            file.write(data)
+
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
         Promote, flatten and validate parameter/values dictionary.
@@ -100,6 +115,7 @@ class BaseUIJson(BaseModel):
                 raise ValueError("Workspace cannot be None.")
 
             data = {}
+            errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
             for field in self.model_fields_set:
                 if field == "geoh5":
                     data[field] = geoh5
@@ -111,18 +127,25 @@ class BaseUIJson(BaseModel):
                 if isinstance(value, UUID):
                     value = self._object_or_catch(geoh5, value)
 
+                if isinstance(value, UIJsonError):
+                    errors[field].append(value)
+
                 data[field] = value
 
-            self.validate_data(data)
+            self.validate_data(data, errors)
 
         return data
 
-    def validate_data(self, params: dict[str, Any] | None = None):
+    def validate_data(
+        self, params: dict[str, Any] | None = None, errors: dict[str, Any] | None = None
+    ):
         """
         Validate the UIJson data.
 
-        :param params: promoted and flattened parameters/values dictionary.  The params
+        :param params: Promoted and flattened parameters/values dictionary.  The params
             dictionary will be generated from the model values if not provided.
+        :param errors: Optionally pass existing errors. Primarily for the to_params
+            method.
 
         :raises UIJsonError: If any validations fail.
         """
@@ -131,23 +154,20 @@ class BaseUIJson(BaseModel):
             self.to_params()
             return
 
+        if errors is None:
+            errors = {k: [] for k in params}
+
+        ui_json = self.model_dump(exclude_unset=True)
         for field in self.model_fields_set:
-            value = getattr(self, field)
-            if not isinstance(value, BaseForm):
-                continue
+            form = ui_json[field]
+            validations = get_validations(list(form) if isinstance(form, dict) else [])
+            for validation in validations:
+                try:
+                    validation(field, params, ui_json)
+                except UIJsonError as e:
+                    errors[field].append(e)
 
-            try:
-                value.validate_data(params)
-            except UIJsonError as e:
-                if isinstance(params[field], ErrorLane):
-                    params[field].catch(e)
-                else:
-                    params[field] = ErrorLane(e)
-
-        error_pool = ErrorPool(
-            {k: v for k, v in params.items() if isinstance(v, ErrorLane)}
-        )
-        error_pool.throw()
+        ErrorPool(errors).throw()
 
     def _object_or_catch(
         self,
@@ -165,8 +185,4 @@ class BaseUIJson(BaseModel):
         if obj[0] is not None:
             return obj[0]
 
-        error_lane = ErrorLane(
-            UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")
-        )
-
-        return error_lane
+        return UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")

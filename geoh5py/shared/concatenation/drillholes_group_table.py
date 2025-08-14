@@ -25,13 +25,12 @@ from uuid import UUID
 
 import numpy as np
 
-from ...data import DataType
-from ...data.primitive_type_enum import DataTypeEnum
-from ..utils import str2uuid, to_tuple
+from ...data.data_type import DataType, ReferencedValueMapType
+from ..utils import decode_byte_array, find_unique_name, str2uuid, to_tuple
 from .property_group import ConcatenatedPropertyGroup
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .concatenator import Concatenator
     from .data import ConcatenatedData
     from .drillhole import ConcatenatedDrillhole
@@ -48,8 +47,7 @@ class DrillholesGroupTable(ABC):
     def __init__(self, parent: Concatenator, name: str):
         self._association: tuple | None = None
         self._index_by_drillhole: dict | None = None
-        self._properties: tuple | None = None
-        self._properties_types: tuple | None = None
+        self._properties: dict[str, DataType] | None = None
 
         self._property_groups: dict[UUID, ConcatenatedPropertyGroup] = (
             self._get_property_groups(parent, name)
@@ -61,25 +59,33 @@ class DrillholesGroupTable(ABC):
         self,
         names: tuple[str],
         drillhole: bool = True,
+        mapped: bool = False,
     ) -> np.ndarray:
         """
         Create an empty structured array that can contains the data.
 
         :param names: The names to extract.
         :param drillhole: If True, the drillholes are added to the table.
+        :param mapped: Map the referenced data back to the its descriptions instead of indexes.
 
         :return: an empty structured array.
         """
         dtypes = [("Drillhole", "O")] if drillhole else []
         no_data_values = [None] if drillhole else []
 
-        properties = self.association + self.properties
-        types = (np.float32,) * len(self.association) + self.properties_type
-
-        for name, dtype in zip(properties, types, strict=False):
+        for name in self.association:
             if name in names:
-                if dtype not in [np.float32, np.int32, np.uint32, bool]:
+                dtypes.append((name, np.float32))
+                no_data_values.append(np.nan)
+
+        for name, data_type in self.properties_type.items():
+            if name in names:
+                if (data_type.dtype not in [np.float32, np.int32, np.uint32, bool]) or (
+                    isinstance(data_type, ReferencedValueMapType) and mapped
+                ):
                     dtype = "O"
+                else:
+                    dtype = data_type.dtype
                 dtypes.append((name, dtype))
                 no_data_values.append(self.nan_value_from_name(name))
 
@@ -96,6 +102,7 @@ class DrillholesGroupTable(ABC):
         self,
         names: tuple,
         drillholes: bool = True,
+        mapped: bool = False,
     ) -> np.ndarray:
         """
         Get a table with all the data associated with depth for every drillhole object.
@@ -105,6 +112,7 @@ class DrillholesGroupTable(ABC):
 
         :param names: The names to extract.
         :param drillholes: If True, the drillholes are added to the table.
+        :param mapped: Map the referenced data back.
 
         :return: a structured array with all the data.
         """
@@ -112,14 +120,14 @@ class DrillholesGroupTable(ABC):
             raise ValueError("No drillhole found in the concatenator.")
 
         output_array = self._create_empty_structured_array(
-            names=names, drillhole=drillholes
+            names=names, drillhole=drillholes, mapped=mapped
         )
         current_index = 0
+
         for object_, data_dict in self.index_by_drillhole.items():
             for name, info in data_dict.items():
                 if name in names:
                     temp_array = self.parent.data[name][info[0] : info[0] + info[1]]
-
                     output_array[name][
                         current_index : current_index + temp_array.shape[0]
                     ] = temp_array
@@ -131,7 +139,9 @@ class DrillholesGroupTable(ABC):
 
             current_index += data_dict[self.association[0]][1]
 
-        # transform to a structured array
+        if mapped:
+            return self._replace_referenced_data(output_array)
+
         return output_array
 
     @staticmethod
@@ -167,8 +177,7 @@ class DrillholesGroupTable(ABC):
 
     def _get_properties_names_types(self):
         if not self._properties:
-            properties_name: tuple = ()
-            properties_type: tuple = ()
+            properties: dict[str, DataType] = {}
 
             for property_group in self.property_groups.values():
                 if property_group.properties is None:
@@ -177,22 +186,36 @@ class DrillholesGroupTable(ABC):
                 for property_ in property_group.properties:
                     property_temp = property_group.parent.get_data(property_)[0]
 
-                    if property_temp.name not in self.association + properties_name:
-                        properties_name += (property_temp.name,)
-                        properties_type += (
-                            DataTypeEnum.from_primitive_type(
-                                property_temp.entity_type.primitive_type
-                            ),
-                        )
+                    if (
+                        property_temp.name not in self.association
+                        and property_temp.name not in properties
+                    ):
+                        properties[property_temp.name] = property_temp.entity_type
 
             # sort the properties names and dtypes
-            mapper = dict(zip(properties_name, properties_type, strict=False))
-            properties_name = tuple(sorted(properties_name))
-            properties_type = tuple(mapper[name] for name in properties_name)
 
-            if properties_name:
-                self._properties = properties_name
-                self._properties_types = properties_type
+            if properties:
+                self._properties = dict(sorted(properties.items()))
+
+    def _replace_referenced_data(self, output_array: np.ndarray) -> np.ndarray:
+        """
+        Replace the referenced data in the output array.
+
+        :param output_array: The array to replace the data in.
+
+        :return: The array with the replaced data.
+        """
+        # get the
+        for name in output_array.dtype.names:
+            if name in self.properties_type and isinstance(
+                self.properties_type[name], ReferencedValueMapType
+            ):
+                output_array[name] = decode_byte_array(
+                    self.properties_type[name].value_map.map_values(output_array[name]),
+                    str,
+                )
+
+        return output_array
 
     def add_values_to_property_group(
         self, name: str, values: np.ndarray, data_type: DataType | None = None
@@ -205,6 +228,8 @@ class DrillholesGroupTable(ABC):
         :param data_type: The data type associated to description;
             useful especially for referenced data.
         """
+        name = find_unique_name(name, list(self.parent.data.keys()))
+
         if not isinstance(name, str) or name in self.parent.data:
             raise KeyError("The name must be a string not present in data.")
 
@@ -237,7 +262,7 @@ class DrillholesGroupTable(ABC):
                                     self.association[0]
                                 ][0]
                                 + indices[self.association[0]][1]
-                            ]
+                            ],
                         },
                         "entity_type": data_type,
                     },
@@ -285,15 +310,14 @@ class DrillholesGroupTable(ABC):
         return self._depth_table_by_key(self.association + self.properties, True)
 
     def depth_table_by_name(
-        self,
-        names: tuple[str] | str,
-        spatial_index: bool = False,
+        self, names: tuple[str] | str, spatial_index: bool = False, mapped: bool = False
     ) -> np.ndarray:
         """
         Get a table with specific data associated with depth for every drillhole object.
 
         :param names: The names to extract.
         :param spatial_index: If True, the spatial index is added to the table.
+        :param mapped: Map the referenced data back.
 
         :return: a table containing the Drillholes, the association and the data.
         """
@@ -304,9 +328,9 @@ class DrillholesGroupTable(ABC):
             raise KeyError("The names are not in the list of properties.")
 
         if spatial_index:
-            return self._depth_table_by_key(self.association + names, True)
+            return self._depth_table_by_key(self.association + names, True, mapped)
 
-        return self._depth_table_by_key(names, False)
+        return self._depth_table_by_key(names, False, mapped)
 
     @property
     def index_by_drillhole(
@@ -384,22 +408,20 @@ class DrillholesGroupTable(ABC):
         if self._properties is None:
             return ()
 
-        return self._properties
+        return tuple(self._properties.keys())
 
     @property
-    def properties_type(self) -> tuple:
+    def properties_type(self) -> dict:
         """
-        The dtype of the associated data.
-
-        They are ordered in the same way as the properties.
+        A mapper of the type in function of the properties name
         """
-        if not self._properties_types:
+        if not self._properties:
             self._get_properties_names_types()
 
-        if self._properties_types is None:
-            return ()
+        if self._properties is None:
+            return {}
 
-        return self._properties_types
+        return self._properties
 
     @property
     def property_group_type(self) -> str:
@@ -428,14 +450,10 @@ class DrillholesGroupTable(ABC):
         self.parent.workspace.update_attribute(self.parent, "concatenated_attributes")
         self._property_groups = self._get_property_groups(self.parent, self.name)
 
-        dtype = DataTypeEnum.from_primitive_type(data_type.primitive_type)
-
-        if self._properties is not None and self._properties_types is not None:
-            self._properties += (name,)
-            self._properties_types += (dtype,)
+        if self.properties and self._properties is not None:
+            self._properties[name] = data_type
         else:
-            self._properties = ((name,),)
-            self._properties_types = ((dtype,),)
+            self._properties = {name: data_type}
 
         if self._index_by_drillhole is not None:
             for value in self._index_by_drillhole.values():

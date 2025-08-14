@@ -49,7 +49,6 @@ class Group(EntityContainer):
         *,
         copy_children: bool = True,
         clear_cache: bool = False,
-        mask: np.ndarray | None = None,
         **kwargs,
     ):
         """
@@ -59,7 +58,6 @@ class Group(EntityContainer):
             :obj:`~geoh5py.shared.entity.Entity.parent` if None.
         :param copy_children: (Optional) Create copies of all children entities along with it.
         :param clear_cache: Clear array attributes after copy.
-        :param mask: Array of bool defining the values to keep.
         :param kwargs: Additional keyword arguments to pass to the copy constructor.
 
         :return entity: Registered Entity to the workspace.
@@ -71,16 +69,15 @@ class Group(EntityContainer):
             self, parent, copy_children=False, **kwargs
         )
 
-        if new_entity is None:
-            return None
-
-        if copy_children:
+        if copy_children and new_entity is not None:
             for child in self.children:
+                if hasattr(child, "complement") and child.type != "Receivers":
+                    continue
+
                 child.copy(
                     parent=new_entity,
                     copy_children=True,
                     clear_cache=clear_cache,
-                    mask=mask,
                 )
 
         return new_entity

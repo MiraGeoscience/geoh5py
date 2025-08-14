@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -155,7 +156,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
         parent.workspace.add_or_update_property_group(self)
 
     def _clear_data_list(
-        self, data: str | Data | list[str | Data | UUID] | UUID
+        self, data: str | Data | Sequence[str | Data | UUID] | UUID
     ) -> list[str | Data | UUID]:
         """
         Clear the data list of any data that is a depth or from/to data.
@@ -164,7 +165,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
 
         :return: List of data with depth and from/to data removed.
         """
-        if not isinstance(data, (list, tuple)):
+        if isinstance(data, (str, Data, UUID)):
             data = [data]
 
         # avoid suppressing depth and from-to directly
@@ -206,7 +207,7 @@ class ConcatenatedPropertyGroup(PropertyGroup):
             self._properties.remove(self.from_.uid)
             self.parent.remove_children([self.from_, self])
 
-    def remove_properties(self, data: str | Data | list[str | Data | UUID] | UUID):
+    def remove_properties(self, data: str | Data | Sequence[str | Data | UUID] | UUID):
         """
         Remove data from the properties.
 

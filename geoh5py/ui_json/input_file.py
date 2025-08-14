@@ -278,7 +278,10 @@ class InputFile:
                 if (value is None) and (not self.ui_json[key].get("enabled", False)):
                     continue
 
-                self.ui_json[key][member] = value
+                if isinstance(value, dict) and "value" in value:
+                    self._update_group_value_ui(key, value)
+                else:
+                    self.ui_json[key][member] = value
             else:
                 self.ui_json[key] = value
 
@@ -431,7 +434,9 @@ class InputFile:
         :param key: Parameter name to update.
         :param value: Value to update with.
         """
-        assert self.data is not None
+        if self.data is None:
+            raise ValueError("Input data must be set before setting values. ")
+
         if self.validate and self.validations is not None and key in self.validations:
             if "association" in self.validations[key]:
                 validations = deepcopy(self.validations[key])
@@ -529,7 +534,21 @@ class InputFile:
 
         for key, value in var.items():
             if isinstance(value, dict):
-                var[key] = self.promote(value)
+                if "groupValue" in value and "value" in value:
+                    var[key] = {
+                        "group_value": self._uid_promotion(key, value["groupValue"]),
+                        "value": value["value"],
+                    }
+                elif (
+                    "isComplement" in value and "property" in value and "value" in value
+                ):
+                    var[key] = {
+                        "is_complement": value["isComplement"],
+                        "property": self._uid_promotion(key, value["property"]),
+                        "value": value["value"],
+                    }
+                else:
+                    var[key] = self.promote(value)
             else:
                 if isinstance(value, list):
                     var[key] = [self._uid_promotion(key, val) for val in value]
@@ -567,3 +586,36 @@ class InputFile:
             DeprecationWarning,
         )
         self.geoh5 = value
+
+    def _update_group_value_ui(self, key: str, value: dict):
+        """
+        Update the ui.json values and enabled status from input data.
+
+        :param key: Key to update in the ui_json.
+        :param value: Key and value pairs expected by the ui_json.
+        """
+        if self.ui_json is None:
+            return
+
+        group_value: UUID | Entity | None = None
+        if "group_value" in value or "groupValue" in value:
+            group_value = value.get("group_value", value.get("groupValue", None))
+        if "isComplement" in value or "is_complement" in value:
+            group_value = value.get("property", None)
+
+        if isinstance(group_value, Entity):
+            group_value = group_value.uid
+
+        group_value = str2uuid(group_value)
+
+        if not isinstance(group_value, UUID):
+            raise TypeError(
+                f"Input value for 'group_value' must be of type UUID; {type(group_value)} provided."
+            )
+
+        if "groupValue" in self.ui_json[key]:
+            self.ui_json[key]["groupValue"] = group_value
+        elif "property" in self.ui_json[key]:
+            self.ui_json[key]["property"] = group_value
+
+        self.ui_json[key]["value"] = value["value"]

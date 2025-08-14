@@ -258,6 +258,25 @@ class Octree(GridObject):
         """
         return self._v_count
 
+    @property
+    def cell_volumes(self) -> np.ndarray:
+        """
+        Returns Octree cell volumes.
+
+        Calculates nc * u_cell_size * nc * v_cell_size * nc * w_cell_size
+        where nc is the number of base cells making up the octree cell as
+        defined in the octree_cells array.
+
+        :returns: Array of cell volumes in same order as octree_cells.
+        """
+
+        return (
+            self.octree_cells["NCells"] ** 3
+            * self.u_cell_size
+            * self.v_cell_size
+            * self.w_cell_size
+        )
+
     @staticmethod
     def validate_octree_count(value: int, axis: str) -> np.int32:
         """
@@ -300,9 +319,9 @@ class Octree(GridObject):
             )
 
         if np.issubdtype(array.dtype, np.number):
-            assert (
-                array.shape[1] == 4
-            ), "'octree_cells' requires an ndarray of shape (*, 4)"
+            assert array.shape[1] == 4, (
+                "'octree_cells' requires an ndarray of shape (*, 4)"
+            )
             array = np.asarray(
                 np.core.records.fromarrays(
                     array.T.tolist(),

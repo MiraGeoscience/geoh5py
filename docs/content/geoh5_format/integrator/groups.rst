@@ -1,5 +1,5 @@
-Geoscience INTEGRATOR Groups
-============================
+Groups
+======
 
 Geoscience INTEGRATOR
 ^^^^^^^^^^^^^^^^^^^^^

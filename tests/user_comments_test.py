@@ -37,12 +37,12 @@ def test_user_comments(tmp_path):
         # Read the comments back in
         ws2 = Workspace(h5file_path)
         object_base = ws2.get_entity("myObject")[0]
-        assert (
-            object_base.comments.values["Comments"][0]["Author"] == author
-        ), "Issue with 'Author of object comments"
-        assert (
-            object_base.comments.values["Comments"][0]["Text"] == object_comment
-        ), "Issue with 'Text' of object comments"
+        assert object_base.comments.values["Comments"][0]["Author"] == author, (
+            "Issue with 'Author of object comments"
+        )
+        assert object_base.comments.values["Comments"][0]["Text"] == object_comment, (
+            "Issue with 'Text' of object comments"
+        )
 
         # Repeat with Group comments
         group = ContainerGroup.create(ws2, name="myGroup")
@@ -58,9 +58,9 @@ def test_user_comments(tmp_path):
         assert group_in.comments.values["Comments"][0]["Author"] == ",".join(
             ws3.contributors
         ), "Issue with 'Author of object comments"
-        assert (
-            group_in.comments.values["Comments"][0]["Text"] == group_comment_1
-        ), "Issue with 'Text' of group comments"
-        assert (
-            group_in.comments.values["Comments"][1]["Text"] == group_comment_2
-        ), "Issue with 'Text' of group comments"
+        assert group_in.comments.values["Comments"][0]["Text"] == group_comment_1, (
+            "Issue with 'Text' of group comments"
+        )
+        assert group_in.comments.values["Comments"][1]["Text"] == group_comment_2, (
+            "Issue with 'Text' of group comments"
+        )

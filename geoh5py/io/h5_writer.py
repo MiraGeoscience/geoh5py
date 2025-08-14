@@ -31,6 +31,7 @@ from warnings import warn
 
 import h5py
 import numpy as np
+from pydantic import BaseModel
 
 from ..data import (
     CommentsData,
@@ -152,7 +153,10 @@ class H5Writer:
 
             if ref_type == "Types":
                 for e_type in ["Data types", "Group types", "Object types"]:
-                    if uid_str in base_type_handle[e_type]:
+                    if (
+                        e_type in base_type_handle
+                        and uid_str in base_type_handle[e_type]
+                    ):
                         del base_type_handle[e_type][uid_str]
             else:
                 if uid_str in base_type_handle:
@@ -411,6 +415,12 @@ class H5Writer:
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):
                     entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
+                elif isinstance(value, BaseModel):
+                    entity_handle.attrs.create(
+                        key,
+                        value.model_dump_json(by_alias=True),
+                        dtype=H5Writer.str_type,
+                    )
                 else:
                     entity_handle.attrs.create(
                         key, value, dtype=np.asarray(value).dtype
@@ -656,7 +666,7 @@ class H5Writer:
         """
         if not isinstance(entity, Group):
             raise TypeError(
-                "Entity must be a Group object; " f"got '{type(entity)}' instead."
+                f"Entity must be a Group object; got '{type(entity)}' instead."
             )
         # check type here
         with fetch_h5_handle(file, mode="r+") as h5file:
@@ -718,7 +728,7 @@ class H5Writer:
         """
         if not isinstance(entity, Data):
             raise TypeError(
-                "Entity must be a Data object; " f"got '{type(entity)}' instead."
+                f"Entity must be a Data object; got '{type(entity)}' instead."
             )
 
         with fetch_h5_handle(file, mode="r+") as h5file:
