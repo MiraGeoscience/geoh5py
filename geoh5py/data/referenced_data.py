@@ -69,9 +69,7 @@ class ReferencedData(IntegerData):
 
         # Always overwrite the entity type name to protect the GeometricDataValueMapType
         new_data.entity_type.name = get_unique_name_from_entities(
-            self.entity_type.name,
-            self.workspace.types,
-            attr="primitive_type",
+            self.entity_type.name, self.workspace.types, types=Data
         )
 
         if self.data_maps is not None:

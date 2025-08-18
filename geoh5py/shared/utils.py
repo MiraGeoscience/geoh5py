@@ -1092,8 +1092,7 @@ def get_unique_name_from_entities(
     name: str,
     entities: list[Any],
     key: str = "name",
-    instance: type | None = None,
-    attr: str | None = None,
+    types: type | tuple[type] | None = None,
 ) -> str:
     """
     Find a unique name in an object, optionally filtering by type.
@@ -1101,19 +1100,16 @@ def get_unique_name_from_entities(
     :param name: Proposed name.
     :param entities: The list of entities to search in.
     :param key: The key of the object to extract
-    :param instance: If provided, only entities of this type will be considered.
-    :param attr: If provided, only entities with this attribute will be considered.
+    :param types: If provided, only entities of this type will be considered.
 
     :return: A unique name.
     """
 
     def child_check(child_: Any) -> bool:
         """
-        Function to filter entities based on instance type and attribute presence.
+        Function to filter entities based on instance type.
         """
-        if instance is not None and not isinstance(child_, instance):
-            return False
-        if attr is not None and not hasattr(child_, attr):
+        if types is not None and not isinstance(child_, types):
             return False
         return True
 

@@ -100,7 +100,7 @@ class GeometricDataConstants(Data):
         name = get_unique_name_from_entities(
             name or self.name,
             parent.parent.children,
-            instance=GeometricDataConstants,
+            types=GeometricDataConstants,
         )
 
         geometric_data = cast(

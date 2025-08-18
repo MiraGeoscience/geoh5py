@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from geoh5py.data import CommentsData, Data
+from geoh5py.data import CommentsData, Data, FilenameData
 from geoh5py.shared.entity import Entity
 from geoh5py.shared.utils import get_unique_name_from_entities
 
@@ -143,10 +143,7 @@ class EntityContainer(Entity):
             )
 
         name = get_unique_name_from_entities(
-            name,
-            self.children,
-            key="values",
-            attr="file_bytes",
+            name, self.children, key="values", types=FilenameData
         )
 
         attributes = {
