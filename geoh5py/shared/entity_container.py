@@ -146,7 +146,7 @@ class EntityContainer(Entity):
             name,
             self.children,
             key="values",
-            func=lambda x: hasattr(x, "file_bytes"),
+            attr="file_bytes",
         )
 
         attributes = {

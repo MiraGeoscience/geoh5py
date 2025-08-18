@@ -254,7 +254,7 @@ class ObjectBase(EntityContainer):
         data_maps = data.data_maps or {}
 
         name = get_unique_name_from_entities(
-            name, self.children, func=lambda x: isinstance(x, GeometricDataConstants)
+            name, self.children, instance=GeometricDataConstants
         )
 
         if data.entity_type.value_map is None:

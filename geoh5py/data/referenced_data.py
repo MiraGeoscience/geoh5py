@@ -71,7 +71,7 @@ class ReferencedData(IntegerData):
         new_data.entity_type.name = get_unique_name_from_entities(
             self.entity_type.name,
             self.workspace.types,
-            func=lambda x: hasattr(x, "primitive_type"),
+            attr="primitive_type",
         )
 
         if self.data_maps is not None:
