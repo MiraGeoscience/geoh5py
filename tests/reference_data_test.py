@@ -130,9 +130,7 @@ def test_add_data_map(tmp_path):
         with pytest.raises(TypeError, match="Property maps must be a dictionary"):
             data.data_maps = data_map
 
-        with pytest.raises(
-            TypeError, match="Data map values must be a numpy array or dict"
-        ):
+        with pytest.raises(TypeError, match="Value map must be a numpy array or dict."):
             data.add_data_map("test", "abc")
 
         assert data.remove_data_map("DataValues") is None
@@ -205,10 +203,20 @@ def test_copy_data_map(tmp_path):
         geom_data = workspace.get_entity("test2")
         assert len(geom_data) == 2
 
-        assert geom_data[0].entity_type.name != geom_data[1].entity_type.name
+        assert geom_data[0].parent != geom_data[1].parent
+
         assert np.all(
             geom_data[0].entity_type.value_map.map
             == geom_data[1].entity_type.value_map.map
+        )
+
+        # test with copying data on the same parent
+        data_copy = data.copy()
+
+        assert (
+            list(data.data_maps.keys())[0]
+            != list(data_copy.data_maps.keys())[0]
+            == "test2(1)"
         )
 
 

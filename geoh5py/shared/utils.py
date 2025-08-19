@@ -38,8 +38,10 @@ from .exceptions import Geoh5FileClosedError
 
 
 if TYPE_CHECKING:
+    from ..groups import PropertyGroup
     from ..workspace import Workspace
     from .entity import Entity
+    from .entity_type import EntityType
 
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
@@ -1084,3 +1086,38 @@ def format_numeric_values(
     final_result[~nan_mask] = result
 
     return final_result
+
+
+def get_unique_name_from_entities(
+    name: str,
+    entities: list[Any],
+    key: str = "name",
+    types: type | tuple[type] | None = None,
+) -> str:
+    """
+    Find a unique name in an object, optionally filtering by type.
+
+    :param name: Proposed name.
+    :param entities: The list of entities to search in.
+    :param key: The key of the object to extract
+    :param types: If provided, only entities of this type will be considered.
+
+    :return: A unique name.
+    """
+
+    def child_check(child_: Any) -> bool:
+        """
+        Function to filter entities based on instance type.
+        """
+        if types is not None and not isinstance(child_, types):
+            return False
+        return True
+
+    names = []
+    for child in entities:
+        if child_check(child):
+            sub_name = getattr(child, key, None)
+            if isinstance(sub_name, str):
+                names.append(sub_name)
+
+    return find_unique_name(name, names)
