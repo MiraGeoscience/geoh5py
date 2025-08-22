@@ -9,22 +9,23 @@ build:
     post_checkout:
       # Configure Git LFS
       - echo "[RTD] Configure Git LFS"
-      # Download and install latest Git LFS (update version as needed)
-      # https://git-lfs.github.com/
+      # Update version of Git LFS as needed
+      # Download and install latest Git LFS
       - |
         set -e
         LFS_VERSION="3.4.0"
         wget "https://github.com/git-lfs/git-lfs/releases/download/v${LFS_VERSION}/git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz"
-        tar xzf "git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz"
+        tar xzf "git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz" --strip-components=1 "git-lfs-${LFS_VERSION}/git-lfs"
         rm "git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz"
-
       # Configure Git LFS paths and settings
       - |
         set -e
-        git config filter.lfs.process "`pwd`/git-lfs filter-process"
-        git config filter.lfs.smudge  "`pwd`/git-lfs smudge -- %f"
-        git config filter.lfs.clean "`pwd`/git-lfs clean -- %f"
-
+        git_lfs_path="$(pwd)"
+        git config filter.lfs.process "$git_lfs_path/git-lfs filter-process"
+        git config filter.lfs.smudge  "$git_lfs_path/git-lfs smudge -- %f"
+        git config filter.lfs.clean "$git_lfs_path/git-lfs clean -- %f"
+      # Fetch with Git LFS
+      - |
         # Make LFS available in current repository
         ./git-lfs install
 
