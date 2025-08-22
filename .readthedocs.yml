@@ -38,7 +38,7 @@ build:
       - |
         set -e
         # Fetch version tags
-        git fetch origin --no-tags '+refs/tags/v[0-9]*:refs/tags/v[0-9]*' --depth=1
+        git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*' --depth=1
 
         # Get latest version tag
         latest_tag="$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n1)"
