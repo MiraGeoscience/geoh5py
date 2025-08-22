@@ -1,20 +1,18 @@
 [build-system]
-requires = ["poetry-core>=1.8.0", "poetry-dynamic-versioning>=1.9.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "geoh5py"
+version = "0.12.0a1"
 requires-python = ">=3.10,<4.0"
-
 
 description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
 keywords = ["geology", "geophysics", "data", "interoperability"]
 readme = "package.rst"
-dynamic = ["version", "dependencies", "classifiers"]
-authors = [
-    { name = "Mira Geoscience", email = "support@mirageoscience.com" }
-]
+dynamic = ["dependencies", "classifiers"]
+authors = [{name = "Mira Geoscience", email = "support@mirageoscience.com"}]
 maintainers = [
     { name = "Benjamin Kary", email = "benjamink@mirageoscience.com" },
     { name = "Dominique Fournier", email = "dominiquef@mirageoscience.com" },
@@ -25,6 +23,8 @@ maintainers = [
 homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 repository = "https://github.com/MiraGeoscience/geoh5py"
 documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+
+[project.optional-dependencies]
 
 [tool.poetry]
 requires-poetry = '>=2.0,<3.0'
@@ -51,13 +51,13 @@ include = [
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
 ]
-version = "0.0.0.dev0"
 
 [tool.poetry.dependencies]
 h5py = "^3.2.1"
 numpy = "~1.26.0"
 Pillow = "~10.3.0"
 pydantic = "^2.5.2"
+
 
 [tool.poetry.group.dev.dependencies]
 jinja2 = '*'
@@ -73,36 +73,6 @@ sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
 tomli = "*"
-h5py = "^3.14.0"
-
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
-
-[tool.poetry-dynamic-versioning]
-enable = true
-bump = true
-strict = true
-vcs = "git"
-style = "pep440"
-
-[tool.poetry-dynamic-versioning.substitution]
-files = ["geoh5py/_version.py", "recipe.yaml"]
-patterns = [
-    { value = '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''', mode = "str" },
-    { value = '''(^\s*version\s*(?::.*?)?:\s*['"])[^'"]*(['"])''', mode = "str" },
-    { value = '''(^__version_tuple__\s*(?::.*?)?=\s*\()[^)]*(\))''', mode = "tuple" },
-]
-
-[tool.poetry-dynamic-versioning.files."geoh5py/_version.py"]
-persistent-substitution = true
-initial-content = """
-  # These version placeholders will be replaced later during substitution.
-  __version__ = "0.0.0"
-  __version_tuple__ = (0, 0, 0)
-"""
-
-[tool.poetry-dynamic-versioning.files."recipe.yaml"]
-persistent-substitution = true
 
 [tool.ruff]
 target-version = "py310"
