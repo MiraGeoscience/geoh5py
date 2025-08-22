@@ -20,6 +20,7 @@ build:
       # Configure Git LFS paths and settings
       - |
         set -e
+
         git_lfs_path="$(pwd)"
         git config filter.lfs.process "$git_lfs_path/git-lfs filter-process"
         git config filter.lfs.smudge  "$git_lfs_path/git-lfs smudge -- %f"
@@ -51,12 +52,30 @@ build:
         fi
         echo "[RTD] Current branch: $branch"
 
-        # Unshallow to latest tag
+        # Calculate distance and deepen repository
         if [ -n "$latest_tag" ]; then
-          git fetch origin "$branch" --update-shallow --shallow-exclude="$latest_tag^"
-          echo "[RTD] Repository unshallowed successfully"
+          # Try to get the distance to the latest tag
+          distance=$(git rev-list --count HEAD ^"$latest_tag" 2>/dev/null || echo "")
+
+          if [ -n "$distance" ] && [ "$distance" -gt 0 ]; then
+            # Add some buffer to ensure we get the tag
+            deepen_by=$((distance + 10))
+            echo "[RTD] Distance to latest tag: $distance, deepening by: $deepen_by"
+            git fetch origin "$branch" --deepen="$deepen_by"
+            echo "[RTD] Repository deepened successfully"
+          else
+            # If we can't calculate distance or tag is already reachable, do a modest deepen
+            echo "[RTD] Using default deepen of 50 commits"
+            git fetch origin "$branch" --deepen=50
+
+            # Verify tag is now reachable, if not do full unshallow
+            if ! git rev-parse "$latest_tag" >/dev/null 2>&1; then
+              echo "[RTD] Tag still not reachable, doing full unshallow"
+              git fetch origin "$branch" --unshallow
+            fi
+          fi
         else
-          echo "[RTD] Warning: No version tags found, skipping unshallow"
+          echo "[RTD] Warning: No version tags found !!!"
         fi
 
     pre_build:
