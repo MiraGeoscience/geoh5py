@@ -2,7 +2,7 @@ schema_version: 1
 
 context:
   name: "geoh5py"
-  version: "0.12.0a1"
+  version: "0.0.0.dev0"  # This will be replaced by the actual version in the build process
   python_min: "3.10"
 
 package:
@@ -20,7 +20,8 @@ build:
 requirements:
   host:
     - python 3.10.*
-    - poetry-core >=1.0.0
+    - poetry-core >=1.8.0
+    - poetry-dynamic-versioning >=1.9, <2.0.dev
     - setuptools
     - pip
   run:
@@ -34,6 +35,7 @@ tests:
   - python:
       imports:
         - geoh5py
+        - geoh5py._version
   - script:
       - pytest --ignore=tests/version_test.py
     requirements:
