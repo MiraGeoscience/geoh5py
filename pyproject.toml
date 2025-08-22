@@ -79,11 +79,12 @@ h5py = "^3.14.0"
 poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry-dynamic-versioning]
-enable = true
 bump = true
+enable = true
+fix-shallow-repository = true
 strict = true
-vcs = "git"
 style = "pep440"
+vcs = "git"
 
 [tool.poetry-dynamic-versioning.substitution]
 files = ["geoh5py/_version.py", "recipe.yaml"]
