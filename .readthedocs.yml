@@ -7,6 +7,7 @@ build:
     python: "mambaforge-22.9"
   jobs:
     post_checkout:
+      - echo "[RTD] Configure Git LFS"
       # Download and uncompress the binary
       # https://git-lfs.github.com/
       - wget https://github.com/git-lfs/git-lfs/releases/download/v3.1.4/git-lfs-linux-amd64-v3.1.4.tar.gz
@@ -21,6 +22,16 @@ build:
       - ./git-lfs fetch
       # Make local files to have the real content on them
       - ./git-lfs checkout
+      # unshallow the clone for auto-versioning: deepen from HEAD back to latest version tag
+      - echo "[RTD] Unshallow back to the latest version tag"
+      - git fetch origin --no-tags '+refs/tags/v[0-9]*:refs/tags/v[0-9]*' --depth=1
+      - latest_tag="$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n1)"
+      - branch="$(git rev-parse --abbrev-ref HEAD)"; \
+        if [ "$branch" = "HEAD" ]; then \
+          branch="$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's@^origin/@@')"; \
+        fi; \
+      - git fetch origin "$branch" --update-shallow --shallow-exclude="$latest_tag^"
+
     pre_build:
       # Generate on-the-fly Sphinx configuration from Jupyter Book's _config.yml
       - "jupyter-book config sphinx docs/"
