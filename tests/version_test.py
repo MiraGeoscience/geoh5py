@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 import pytest
@@ -52,7 +53,7 @@ def test_version_is_consistent():
 
 def _can_import_version():
     try:
-        import geoh5py._version
+        importlib.import_module("geoh5py._version")
         return True
     except ImportError:
         return False
