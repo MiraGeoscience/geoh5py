@@ -24,7 +24,7 @@ from pathlib import Path
 
 
 try:
-    from geoh5py._version import __version__, __version_tuple__
+    from ._version import __version__, __version_tuple__
 except ModuleNotFoundError:
     from datetime import datetime
 
