@@ -91,7 +91,6 @@ files = ["geoh5py/_version.py", "recipe.yaml"]
 patterns = [
     { value = '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''', mode = "str" },
     { value = '''(^\s*version\s*(?::.*?)?:\s*['"])[^'"]*(['"])''', mode = "str" },
-    { value = '''(^__version_tuple__\s*(?::.*?)?=\s*\()[^)]*(\))''', mode = "tuple" },
 ]
 
 [tool.poetry-dynamic-versioning.files."geoh5py/_version.py"]
@@ -99,7 +98,6 @@ persistent-substitution = true
 initial-content = """
   # These version placeholders will be replaced later during substitution.
   __version__ = "0.0.0"
-  __version_tuple__ = (0, 0, 0)
 """
 
 [tool.poetry-dynamic-versioning.files."recipe.yaml"]
