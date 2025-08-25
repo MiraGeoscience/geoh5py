@@ -96,7 +96,7 @@ patterns = [
 [tool.poetry-dynamic-versioning.files."geoh5py/_version.py"]
 persistent-substitution = true
 initial-content = """
-  # These version placeholders will be replaced later during substitution.
+  # Version placeholder that will be replaced during substitution
   __version__ = "0.0.0"
 """
 
