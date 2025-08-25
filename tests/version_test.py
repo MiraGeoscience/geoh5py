@@ -53,7 +53,6 @@ def test_version_is_consistent():
 def _can_import_version():
     try:
         import geoh5py._version
-
         return True
     except ImportError:
         return False
