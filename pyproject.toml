@@ -51,7 +51,7 @@ include = [
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
 ]
-version = "0.0.0.dev0"
+version = "0.12.0.a0.dev0"
 
 [tool.poetry.dependencies]
 h5py = "^3.2.1"
