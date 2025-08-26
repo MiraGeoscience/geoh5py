@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 import pytest
@@ -50,18 +51,17 @@ def test_version_is_consistent():
     assert conda_version.base_version == project_version.base_version
 
 
-def _can_import_version():
+def _version_module_exists():
     try:
-        import geoh5py._version
-
+        importlib.import_module("geoh5py._version")
         return True
-    except ImportError:
+    except ModuleNotFoundError:
         return False
 
 
 @pytest.mark.skipif(
-    _can_import_version(),
-    reason="geoh5py._version can be imported: package is built",
+    _version_module_exists(),
+    reason="geoh5py._version can be found: package is built",
 )
 def test_fallback_version_is_zero():
     project_version = Version(geoh5py.__version__)
@@ -73,8 +73,8 @@ def test_fallback_version_is_zero():
 
 
 @pytest.mark.skipif(
-    not _can_import_version(),
-    reason="geoh5py._version cannot be imported: uses a fallback version",
+    not _version_module_exists(),
+    reason="geoh5py._version cannot be found: uses a fallback version",
 )
 def test_conda_version_is_consistent():
     project_version = Version(geoh5py.__version__)
