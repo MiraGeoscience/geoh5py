@@ -1,5 +1,9 @@
 [build-system]
-requires = ["poetry-core>=1.8.0", "poetry-dynamic-versioning>=1.9.0,<2.0.0"]
+requires = [
+  "poetry-core>=1.8.0",
+  "poetry-dynamic-versioning>=1.9.0,<2.0.0",
+  "dunamai>=1.25.0,<2.0.0"
+]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
