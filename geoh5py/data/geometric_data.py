@@ -76,7 +76,7 @@ class GeometricDataConstants(Data):
         clear_cache: bool = False,
         name: str | None = None,
         **kwargs,
-    ) -> GeometricDataConstants:
+    ) -> GeometricDataConstants | None:
         """
         Copy the GeometricDataConstants to a new parent with a unique name.
 
@@ -89,8 +89,8 @@ class GeometricDataConstants(Data):
 
         :return: A new GeometricDataConstants instance or None.
         """
-        if self.entity_type.value_map is None or parent is None:
-            raise AttributeError("GeometricDataConstants must have a value_map")
+        if getattr(self.entity_type, "value_map", None) is None or parent is None:
+            return None
 
         if parent is None or not hasattr(parent, "data_maps"):
             raise TypeError(

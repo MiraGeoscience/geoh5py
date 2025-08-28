@@ -273,7 +273,7 @@ class Workspace(AbstractContextManager):
         omit_list: tuple = (),
         clear_cache: bool = False,
         **kwargs,
-    ):
+    ) -> Entity | None:
         """
         Copy an entity to a different parent with copies of children.
 

@@ -64,6 +64,8 @@ def test_xyz_dataype(tmp_path: Path, obj_type):
 
         assert len(copy_pts.children) == 0
 
+        assert data.copy(parent=copy_pts) is None
+
     ws = Workspace(h5file_path)
     assert all(
         isinstance(data, geometric_data.GeometricDataConstants) for data in ws.data
