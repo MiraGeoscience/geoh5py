@@ -19,9 +19,6 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
-from pathlib import Path
-
 
 try:
     from ._version import __version__
@@ -33,3 +30,6 @@ except ModuleNotFoundError:
 
 
 from geoh5py.workspace.workspace import Workspace, active_workspace
+
+
+__all__ = ["Workspace", "active_workspace"]
