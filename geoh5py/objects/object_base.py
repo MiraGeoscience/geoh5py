@@ -370,7 +370,6 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
-    # todo: think abaout copy to extent after...
     def copy(
         self,
         parent=None,

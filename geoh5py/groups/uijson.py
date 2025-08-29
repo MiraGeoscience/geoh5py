@@ -30,7 +30,6 @@ from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.utils import (
     dict_mapper,
-    entity2uuid,
     str2uuid,
     str_json_to_dict,
     stringify,
@@ -43,11 +42,19 @@ class UIJsonGroup(Group):
     Group for storing ui.json files.
 
     In Geoscience ANALYST, it can be used to store ui.jsons.
+
+    :param options: Dictionary containing the ui.json structure.
     """
 
     _TYPE_UID = UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
     _default_name = "UIJson"
-    _omit_list = ["_uijson_objects", "_uijson_children", "_uijson_groups", "_options"]
+    _omit_list = [
+        "_uijson_objects",
+        "_uijson_children",
+        "_uijson_groups",
+        "_options",
+        "_loaded",
+    ]
 
     def __init__(
         self,
@@ -58,7 +65,8 @@ class UIJsonGroup(Group):
 
         super().__init__(**kwargs)
 
-        self.options = self.format_input_options(options)
+        self.options: dict | None = self.format_input_options(options)
+        self._loaded: bool = False
         self._uijson_objects: list[ObjectBase] | None = None
         self._uijson_children: list[Data | PropertyGroup] | None = None
         self._uijson_groups: list[Group] | None = None
@@ -171,6 +179,63 @@ class UIJsonGroup(Group):
 
         return new_object_mapper
 
+    def _load_options(self, options: dict | None) -> dict | None:
+        """
+        Load the options objects from the workspace.
+
+        It requires self._options to be a dict with uuids as values.
+        and not being previously loaded.
+
+        :param options: The options to load.
+
+        :return: The loaded options.
+        """
+        if self._loaded:
+            return options
+
+        # reset the lists
+        self._uijson_objects = None
+        self._uijson_children = None
+        self._uijson_groups = None
+
+        if self.on_file and options is not None:
+
+            def extract_entities(val: Any):
+                """
+                Extract entities from options.
+
+                It saves the entities in the corresponding lists and returns their uuid.
+
+                :param val: the value to extract entities from
+
+                :return: The uuid of the entity if val is an entity, else returns val
+                """
+                val = uuid2entity(str2uuid(val), self.workspace)
+                if isinstance(val, ObjectBase):
+                    if self._uijson_objects is None:
+                        self._uijson_objects = []
+                    if val not in self._uijson_objects:
+                        self._uijson_objects.append(val)
+                    return val.uid
+                if isinstance(val, Group):
+                    if self._uijson_groups is None:
+                        self._uijson_groups = []
+                    if val not in self._uijson_groups:
+                        self._uijson_groups.append(val)
+                    return val.uid
+                if isinstance(val, Data | PropertyGroup):
+                    if self._uijson_children is None:
+                        self._uijson_children = []
+                    if val not in self._uijson_children:
+                        self._uijson_children.append(val)
+                    return val.uid
+                return val
+
+            options = dict_mapper(options, [extract_entities])
+            self._loaded = True
+
+        return options
+
     def _replace_uuids_in_options(
         self,
         entity_map: dict[UUID, ObjectBase | Data | PropertyGroup | Group],
@@ -198,8 +263,9 @@ class UIJsonGroup(Group):
                 return entity_map[val].uid
             return val
 
-        if self.options:
-            return dict_mapper(self.options, [entity2uuid, replace_uuids])
+        if self._options:
+            options = dict_mapper(self.options, [replace_uuids])
+            return options
         return None
 
     def copy(
@@ -233,61 +299,31 @@ class UIJsonGroup(Group):
             copy_children=copy_children,
             clear_cache=clear_cache,
             omit_list=omit_list,
+            **kwargs,
         )
 
         copied.options = self._replace_uuids_in_options(entity_map, parent)
 
         return copied
 
-    # todo: do the same for copy from extent?
-
     @property
-    def options(self) -> dict:
+    def options(self) -> dict | None:
         """
         Metadata attached to the entity.
+
+        Return a copy of the dictionary to avoid accidental modifications.
         """
-        return self._options
+        if self._options is None:
+            return None
+        return self._load_options(self._options.copy())
 
     @options.setter
-    def options(self, value: dict):
-        def extract_entities(val: Any):
-            """
-            Extract entities from options.
+    def options(self, value: dict | None):
+        if not isinstance(value, dict | None):
+            raise TypeError(f"Input 'options' must be of type {dict}.")
 
-            It saves the entities in the corresponding lists and returns their uuid.
-
-            :param val: the value to extract entities from
-
-            :return: The uuid of the entity if val is an entity, else returns val
-            """
-
-            val = uuid2entity(val, self.workspace)
-
-            if isinstance(val, ObjectBase):
-                if self._uijson_objects is None:
-                    self._uijson_objects = []
-                if val not in self._uijson_objects:
-                    self._uijson_objects.append(val)
-                return val.uid
-            if isinstance(val, Group):
-                if self._uijson_groups is None:
-                    self._uijson_groups = []
-                if val not in self._uijson_groups:
-                    self._uijson_groups.append(val)
-                return val.uid
-            if isinstance(val, Data | PropertyGroup):
-                if self._uijson_children is None:
-                    self._uijson_children = []
-                if val not in self._uijson_children:
-                    self._uijson_children.append(val)
-                return val.uid
-            return val
-
-        if not isinstance(value, dict):
-            raise ValueError(f"Input 'options' must be of type {dict}.")
-
-        self._options = dict_mapper(value, [str2uuid, extract_entities])
-
+        self._loaded = False
+        self._options = self._load_options(value)  # type: ignore
         if self.on_file:
             self.workspace.update_attribute(self, "options")
 
@@ -309,7 +345,7 @@ class UIJsonGroup(Group):
         self.add_file(bytes_data, name=f"{name}.ui.json")
 
     @staticmethod
-    def format_input_options(options: dict | np.ndarray | bytes | None) -> dict:
+    def format_input_options(options: dict | np.ndarray | bytes | None) -> None | dict:
         """
         Format input options to a dictionary.
 
@@ -317,17 +353,13 @@ class UIJsonGroup(Group):
 
         :return: Formatted options.
         """
-
         if options is None:
-            return {}
+            return None
 
         if isinstance(options, np.ndarray):
             options = options[0]
 
         if isinstance(options, bytes):
             options = str_json_to_dict(options)
-
-        if not isinstance(options, dict):
-            raise ValueError(f"Input 'options' must be of type {dict}.")
 
         return options

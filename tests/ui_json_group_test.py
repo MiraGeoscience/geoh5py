@@ -18,6 +18,9 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
+import numpy as np
+import pytest
+
 from geoh5py.groups import UIJsonGroup
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import constants, templates
@@ -27,34 +30,152 @@ from .property_group_test import make_example
 
 
 def test_uijson_group(tmp_path):
-    h5file_path = tmp_path / r"testGroup.geoh5"
+    h5file_path = tmp_path / r"testUIJSONGroup.geoh5"
+
+    # Create a workspace with group
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        # prepare a fancy uijson
+        uijson = constants.default_ui_json.copy()
+        uijson["something"] = templates.float_parameter()
+        uijson["curve"] = curve
+        uijson["data"] = curve.get_data("Period1")[0]
+        uijson["property_group"] = curve.get_property_group("myGroup")[0]
+
+        group = UIJsonGroup.create(workspace, name="test")
+        group.options = uijson
+
+        # Copy on new workspace
+        with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
+            group.copy(parent=new_workspace)
+
+        group.copy(omit_list=["_name"])
+
+    # Read back and compare
+    with Workspace(h5file_path) as workspace:
+        with Workspace(tmp_path / r"testGroup2.geoh5") as new_workspace:
+            group = workspace.get_entity("test")[0]
+            group_copy = workspace.get_entity("UIJson")[0]  # also testing omit _name
+
+            rec_obj = new_workspace.get_entity(group.uid)[0]
+
+            compare_entities(
+                group,
+                group_copy,
+                ignore=[
+                    "_parent",
+                    "_uijson_objects",
+                    "_uijson_children",
+                    "_uijson_groups",
+                    "_loaded",
+                ],
+            )
+
+            compare_entities(
+                group,
+                rec_obj,
+                ignore=[
+                    "_parent",
+                    "_uijson_objects",
+                    "_uijson_children",
+                    "_uijson_groups",
+                    "_loaded",
+                ],
+            )
+
+            rec_obj.add_ui_json("something")
+
+            assert new_workspace.get_entity("something.ui.json")[0]
+
+
+def test_uijson_group_copy_relatives(tmp_path):
+    h5file_path = tmp_path / r"testUIJSONGroupRelatives.geoh5"
+
+    # Create a workspace with group
+    with Workspace.create(h5file_path) as workspace:
+        # create an objects, a property group and
+        curve, _ = make_example(workspace)
+
+        # prepare a fancy uijson
+        uijson = constants.default_ui_json.copy()
+        uijson["something"] = templates.float_parameter()
+        uijson["curve"] = curve
+        uijson["data"] = curve.get_data("Period1")[0]
+        uijson["property_group"] = curve.get_property_group("myGroup")[0]
+        uijson["group"] = UIJsonGroup.create(workspace, name="dummy")
+
+        group = UIJsonGroup.create(workspace)
+        group.options = uijson
+
+        with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
+            group.copy(
+                parent=new_workspace,
+                copy_children=True,
+                copy_relatives=True,
+                name="copy_uijson",
+            )
+
+        # copy on same workspace
+        # todo: are we adding a (1) to the groups too?
+        group.copy(copy_children=True, copy_relatives=True, name="UIJson_2")
+
+    with Workspace(tmp_path / r"testGroup2.geoh5") as new_workspace:
+        rec_obj = new_workspace.get_entity("copy_uijson")[0]
+        options = rec_obj.options
+
+        assert new_workspace.get_entity(options["curve"])[0].name == "curve"
+        assert new_workspace.get_entity(options["data"])[0].name == "Period1"
+        assert new_workspace.get_entity(options["property_group"])[0].name == "myGroup"
+        assert new_workspace.get_entity("Period2")[0] is None
+
+    with Workspace(h5file_path) as workspace:
+        original = workspace.get_entity("UIJson")[0]
+        rec_obj = workspace.get_entity("UIJson_2")[0]
+
+        assert original.options == rec_obj.options
+
+
+def test_copy_uijson_group_no_option(tmp_path):
+    h5file_path = tmp_path / r"testUIJSONGroupRelatives.geoh5"
+
+    # Create a workspace with group
+    with Workspace.create(h5file_path) as workspace:
+        group = UIJsonGroup.create(workspace)
+
+        with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
+            group.copy(
+                parent=new_workspace,
+                copy_children=True,
+                copy_relatives=True,
+                name="copy_uijson",
+            )
+        group.copy(name="UIJson_2", copy_children=True, copy_relatives=True)
+
+    with Workspace(tmp_path / r"testGroup2.geoh5") as new_workspace:
+        rec_obj = new_workspace.get_entity("copy_uijson")[0]
+        assert rec_obj.options is None
+
+    with Workspace(h5file_path) as workspace:
+        rec_obj = workspace.get_entity("UIJson_2")[0]
+        assert rec_obj.options is None
+
+
+def test_uijson_group_errors(tmp_path):
+    h5file_path = tmp_path / r"testUIJSONGroupErrors.geoh5"
 
     # Create a workspace with group
     workspace = Workspace.create(h5file_path)
+    group = UIJsonGroup.create(workspace, name="test")
 
-    # create an objects, a property group and
-    curve, data = make_example(workspace)
+    with pytest.raises(ValueError, match="UIJsonGroup must have options"):
+        group.add_ui_json("something")
 
-    group = UIJsonGroup.create(workspace)
-    group.options = constants.default_ui_json
-    group.options["something"] = templates.float_parameter()
-    group.options["curve"] = curve
+    with pytest.raises(TypeError, match="Input 'options' must be "):
+        group.options = "bidon"
 
-    # Copy
-    new_workspace = Workspace.create(tmp_path / r"testGroup2.geoh5")
-    group.copy(parent=new_workspace)
+    group.options = group.format_input_options(np.array([b'{"name":"bidon"}']))
 
-    # Read back in and compare
-    new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
-    rec_obj = new_workspace.get_entity(group.uid)[0]
+    group.add_ui_json()
 
-    # todo: at some point we should compare the attached_object
-    compare_entities(
-        group,
-        rec_obj,
-        ignore=["_parent", "_uijson_objects", "_uijson_children", "_uijson_groups"],
-    )
-
-    rec_obj.add_ui_json("something")
-
-    assert new_workspace.get_entity("something.ui.json")[0]
+    assert workspace.get_entity("test.ui.json")[0]
