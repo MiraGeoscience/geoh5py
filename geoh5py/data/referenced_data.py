@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Self
 
 import numpy as np
 
@@ -49,23 +49,23 @@ class ReferencedData(IntegerData):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Data:
+    ) -> Self | None:
         """
         Overwrite the copy method to ensure that the uid is set to None and
         transfer the GeometricDataValueMapType to the new entity type.
         """
         kwargs["uid"] = None
 
-        new_data = cast(
-            ReferencedData,
-            super().copy(
-                parent=parent,
-                clear_cache=clear_cache,
-                mask=mask,
-                omit_list=["_metadata", "_data_maps"],
-                **kwargs,
-            ),
+        new_data = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            mask=mask,
+            omit_list=["_metadata", "_data_maps"],
+            **kwargs,
         )
+
+        if not new_data:
+            return None
 
         # Always overwrite the entity type name to protect the GeometricDataValueMapType
         new_data.entity_type.name = get_unique_name_from_entities(
@@ -75,7 +75,7 @@ class ReferencedData(IntegerData):
         if self.data_maps is not None:
             data_maps = {}
             for child in self.data_maps.values():
-                geometric_data = child.copy(parent=new_data, clear_cache=clear_cache)
+                geometric_data = new_data.copy_data_map(child, clear_cache=clear_cache)
                 if geometric_data:
                     data_maps[geometric_data.name] = geometric_data
 
@@ -83,6 +83,41 @@ class ReferencedData(IntegerData):
                 new_data.data_maps = data_maps
 
         return new_data
+
+    def copy_data_map(
+        self,
+        data_map: GeometricDataConstants,
+        name: str | None = None,
+        clear_cache=True,
+    ) -> GeometricDataConstants | None:
+        """
+        Create a copy with unique name of a GeometricDataConstant entity.
+
+        :param data_map: An existing GeometricDataConstant to be copied.
+        :param name: Name assigned to the data_map, or increments the original.
+        :param clear_cache: Clear array attributes after copy.
+        """
+        name = get_unique_name_from_entities(
+            name or data_map.name,
+            self.parent.children,
+            types=GeometricDataConstants,
+        )
+        geometric_data = self.workspace.copy_to_parent(
+            data_map,
+            self.parent,
+            clear_cache=clear_cache,
+            name=name,
+        )
+
+        if not geometric_data:
+            return None
+
+        data_type = self.parent.add_data_map_type(
+            name, data_map.entity_type.value_map.map, data_map.entity_type.name
+        )
+        geometric_data.entity_type = data_type
+
+        return geometric_data
 
     @property
     def data_maps(self) -> dict[str, GeometricDataConstants] | None:
