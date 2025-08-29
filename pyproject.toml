@@ -67,6 +67,7 @@ h5py = "^3.2.1"
 numpy = "~1.26.0"
 Pillow = "~10.3.0"
 pydantic = "^2.5.2"
+pylint = "^3.3.8"
 
 [tool.poetry.group.dev.dependencies]
 jinja2 = '*'

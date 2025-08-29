@@ -370,6 +370,7 @@ class ObjectBase(EntityContainer):
         """
         return self._converter
 
+    # todo: think abaout copy to extent after...
     def copy(
         self,
         parent=None,
@@ -377,6 +378,7 @@ class ObjectBase(EntityContainer):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
+        cherry_pick_uids: list[UUID] | None = None,
         **kwargs,
     ):
         """
@@ -386,6 +388,7 @@ class ObjectBase(EntityContainer):
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
         :param mask: Array of indices to sub-sample the input entity.
+        :param cherry_pick_uids: List of uids to pick out the data values.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
@@ -399,9 +402,12 @@ class ObjectBase(EntityContainer):
 
         mask = self.validate_mask(mask)
 
-        if copy_children:
+        if copy_children or cherry_pick_uids is not None:
             children_map = {}
             for child in self.children:
+                if cherry_pick_uids is not None and child.uid not in cherry_pick_uids:
+                    continue
+
                 if isinstance(child, PropertyGroup | GeometricDataConstants):
                     continue
 
