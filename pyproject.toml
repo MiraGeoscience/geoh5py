@@ -1,5 +1,14 @@
 [build-system]
-requires = ["poetry-core>=1.8.0", "poetry-dynamic-versioning>=1.9.0,<2.0.0"]
+requires = [
+  "poetry-core>=1.8.0",
+  "poetry-dynamic-versioning>=1.9.1,<2.0",
+  # list dependencies to work with PIP_NO_DEPS=1
+  "MarkupSafe>=2.0",
+  "dunamai>=1.25,<2.0",
+  "jinja2>=3.0,<4.0",
+  "packaging>=24.0",
+  "tomlkit>=0.13",
+]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
@@ -76,7 +85,7 @@ tomli = "*"
 h5py = "^3.14.0"
 
 [tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+poetry-dynamic-versioning = { version = ">=1.9.1,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry-dynamic-versioning]
 bump = true
