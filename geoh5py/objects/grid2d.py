@@ -202,6 +202,9 @@ class Grid2D(GridObject):
             **kwargs,
         )
 
+        if not copy:
+            return None
+
         if not inverse:
             for child in copy.children:
                 if isinstance(getattr(child, "values", None), np.ndarray):

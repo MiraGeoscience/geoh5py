@@ -397,6 +397,10 @@ class ObjectBase(EntityContainer):
             **kwargs,
         )
 
+        # TODO: Clean up after GEOPY-2427
+        if not new_object:
+            return None
+
         mask = self.validate_mask(mask)
 
         if copy_children:
@@ -411,11 +415,12 @@ class ObjectBase(EntityContainer):
                     mask=mask,
                 )
 
-                children_map[child.uid] = child_copy.uid
+                if child_copy:
+                    children_map[child.uid] = child_copy.uid
 
             if self.property_groups:
                 self.workspace.copy_property_groups(
-                    new_object, self.property_groups, children_map
+                    cast(ObjectBase, new_object), self.property_groups, children_map
                 )
                 new_object.workspace.update_attribute(new_object, "property_groups")
 

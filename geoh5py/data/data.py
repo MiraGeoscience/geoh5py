@@ -74,7 +74,7 @@ class Data(Entity):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Data:
+    ):
         """
         Function to copy data to a different parent entity.
 
