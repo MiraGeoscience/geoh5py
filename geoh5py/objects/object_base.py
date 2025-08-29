@@ -397,6 +397,7 @@ class ObjectBase(EntityContainer):
             **kwargs,
         )
 
+        # TODO: Clean up after GEOPY-2427
         if not new_object:
             return None
 

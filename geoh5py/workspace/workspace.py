@@ -266,6 +266,7 @@ class Workspace(AbstractContextManager):
     def contributors(self, value: list[str]):
         self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
+    # TODO Simplify return type to Entity on GEOPY-2427
     def copy_to_parent(
         self,
         entity: Entity,

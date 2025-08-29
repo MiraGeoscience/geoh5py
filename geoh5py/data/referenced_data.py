@@ -116,6 +116,7 @@ class ReferencedData(IntegerData):
             ),
         )
 
+        # TODO: Clean up after GEOPY-2427
         if not geometric_data:
             return None
 
