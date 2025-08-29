@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 from geoh5py.shared.utils import get_unique_name_from_entities
@@ -100,21 +102,24 @@ class ReferencedData(IntegerData):
             self.parent.children,
             types=GeometricDataConstants,
         )
-        geometric_data = self.workspace.copy_to_parent(
-            data_map,
-            self.parent,
-            clear_cache=clear_cache,
-            name=name,
+        data_type = self.parent.add_data_map_type(
+            name, data_map.entity_type.value_map.map, self.entity_type.name
+        )
+
+        geometric_data = cast(
+            GeometricDataConstants,
+            self.workspace.copy_to_parent(
+                data_map,
+                self.parent,
+                clear_cache=clear_cache,
+                name=name,
+            ),
         )
 
         if not geometric_data:
             return None
 
-        data_type = self.parent.add_data_map_type(
-            name, data_map.entity_type.value_map.map, data_map.entity_type.name
-        )
         geometric_data.entity_type = data_type
-
         return geometric_data
 
     @property

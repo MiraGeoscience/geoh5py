@@ -331,8 +331,6 @@ class Workspace(AbstractContextManager):
         entity_kwargs["parent"] = parent
 
         entity_type = type(entity)
-        if isinstance(entity, Data):
-            entity_type = Data
 
         entity_kwargs.pop("property_groups", None)
 
