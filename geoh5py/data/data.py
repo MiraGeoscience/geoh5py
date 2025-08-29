@@ -24,7 +24,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -74,7 +74,7 @@ class Data(Entity):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Self | None:
+    ):
         """
         Function to copy data to a different parent entity.
 

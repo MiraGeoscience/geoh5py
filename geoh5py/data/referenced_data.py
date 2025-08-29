@@ -20,8 +20,6 @@
 
 from __future__ import annotations
 
-from typing import Self
-
 import numpy as np
 
 from geoh5py.shared.utils import get_unique_name_from_entities
@@ -49,7 +47,7 @@ class ReferencedData(IntegerData):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Self | None:
+    ):
         """
         Overwrite the copy method to ensure that the uid is set to None and
         transfer the GeometricDataValueMapType to the new entity type.
