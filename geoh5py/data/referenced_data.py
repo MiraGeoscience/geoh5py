@@ -75,10 +75,8 @@ class ReferencedData(IntegerData):
         if self.data_maps is not None:
             data_maps = {}
             for child in self.data_maps.values():
-                if child.entity_type.value_map is not None:
-                    geometric_data = child.copy(
-                        parent=new_data, clear_cache=clear_cache
-                    )
+                geometric_data = child.copy(parent=new_data, clear_cache=clear_cache)
+                if geometric_data:
                     data_maps[geometric_data.name] = geometric_data
 
             if data_maps:

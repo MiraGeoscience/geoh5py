@@ -25,7 +25,7 @@ from uuid import UUID
 
 import numpy as np
 
-from ..data import Data, DataAssociationEnum, GeometricDataConstants
+from ..data import Data, DataAssociationEnum
 from ..groups import PropertyGroup
 from ..shared.utils import box_intersect, mask_by_extent
 from .points import Points
@@ -206,7 +206,7 @@ class CellObject(Points, ABC):
         if copy_children:
             children_map = {}
             for child in self.children:
-                if isinstance(child, PropertyGroup | GeometricDataConstants):
+                if isinstance(child, PropertyGroup):
                     continue
                 if isinstance(child, Data):
                     data_mask = None
@@ -227,7 +227,9 @@ class CellObject(Points, ABC):
                     child_copy = self.workspace.copy_to_parent(
                         child, new_object, clear_cache=clear_cache
                     )
-                children_map[child.uid] = child_copy.uid
+
+                if child_copy:
+                    children_map[child.uid] = child_copy.uid
 
             if self.property_groups:
                 self.workspace.copy_property_groups(

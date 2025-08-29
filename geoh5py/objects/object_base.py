@@ -378,7 +378,7 @@ class ObjectBase(EntityContainer):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ):
+    ) -> ObjectBase | None:
         """
         Function to copy an entity to a different parent entity.
 
@@ -397,12 +397,15 @@ class ObjectBase(EntityContainer):
             **kwargs,
         )
 
+        if not new_object:
+            return None
+
         mask = self.validate_mask(mask)
 
         if copy_children:
             children_map = {}
             for child in self.children:
-                if isinstance(child, PropertyGroup | GeometricDataConstants):
+                if isinstance(child, PropertyGroup):
                     continue
 
                 child_copy = child.copy(
@@ -411,7 +414,8 @@ class ObjectBase(EntityContainer):
                     mask=mask,
                 )
 
-                children_map[child.uid] = child_copy.uid
+                if child_copy:
+                    children_map[child.uid] = child_copy.uid
 
             if self.property_groups:
                 self.workspace.copy_property_groups(

@@ -36,7 +36,7 @@ from logging import getLogger
 from pathlib import Path
 from shutil import copy, move
 from subprocess import CalledProcessError
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar, TypeVar, cast
 from weakref import ReferenceType
 
 import h5py
@@ -77,6 +77,8 @@ from geoh5py.shared.utils import (
     str2uuid,
 )
 
+
+TYPEVAR = TypeVar("InputType")
 
 logger = getLogger(__name__)
 
@@ -268,12 +270,12 @@ class Workspace(AbstractContextManager):
 
     def copy_to_parent(
         self,
-        entity,
+        entity: TYPEVAR,
         parent,
         omit_list: tuple = (),
         clear_cache: bool = False,
         **kwargs,
-    ) -> Entity | None:
+    ) -> TYPEVAR | None:
         """
         Copy an entity to a different parent with copies of children.
 
