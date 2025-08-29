@@ -378,7 +378,7 @@ class ObjectBase(EntityContainer):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ) -> ObjectBase | None:
+    ):
         """
         Function to copy an entity to a different parent entity.
 
@@ -419,7 +419,7 @@ class ObjectBase(EntityContainer):
 
             if self.property_groups:
                 self.workspace.copy_property_groups(
-                    new_object, self.property_groups, children_map
+                    cast(ObjectBase, new_object), self.property_groups, children_map
                 )
                 new_object.workspace.update_attribute(new_object, "property_groups")
 
