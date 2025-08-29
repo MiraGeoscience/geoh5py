@@ -266,14 +266,15 @@ class Workspace(AbstractContextManager):
     def contributors(self, value: list[str]):
         self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
+    # TODO Simplify return type to Entity on GEOPY-2427
     def copy_to_parent(
         self,
-        entity,
+        entity: Entity,
         parent,
         omit_list: tuple = (),
         clear_cache: bool = False,
         **kwargs,
-    ):
+    ) -> Entity | None:
         """
         Copy an entity to a different parent with copies of children.
 
@@ -331,8 +332,6 @@ class Workspace(AbstractContextManager):
         entity_kwargs["parent"] = parent
 
         entity_type = type(entity)
-        if isinstance(entity, Data):
-            entity_type = Data
 
         entity_kwargs.pop("property_groups", None)
 

@@ -227,7 +227,9 @@ class CellObject(Points, ABC):
                     child_copy = self.workspace.copy_to_parent(
                         child, new_object, clear_cache=clear_cache
                     )
-                children_map[child.uid] = child_copy.uid
+
+                if child_copy:
+                    children_map[child.uid] = child_copy.uid
 
             if self.property_groups:
                 self.workspace.copy_property_groups(
