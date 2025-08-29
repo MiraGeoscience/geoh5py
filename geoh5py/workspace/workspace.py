@@ -78,7 +78,7 @@ from geoh5py.shared.utils import (
 )
 
 
-TYPEVAR = TypeVar("InputType")
+TYPEVAR = TypeVar("TYPEVAR")
 
 logger = getLogger(__name__)
 
