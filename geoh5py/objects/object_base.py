@@ -47,6 +47,7 @@ from ..shared.utils import (
     array_is_colour,
     box_intersect,
     clear_array_attributes,
+    extract_uids,
     find_unique_name,
     get_unique_name_from_entities,
     mask_by_extent,
@@ -377,7 +378,7 @@ class ObjectBase(EntityContainer):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
-        cherry_pick_uids: list[UUID] | None = None,
+        cherry_pick_children: list[UUID | Data] | None = None,
         **kwargs,
     ):
         """
@@ -387,7 +388,7 @@ class ObjectBase(EntityContainer):
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
         :param mask: Array of indices to sub-sample the input entity.
-        :param cherry_pick_uids: List of uids to pick out the data values.
+        :param cherry_pick_children: List of uids to pick out the data values.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
@@ -404,6 +405,8 @@ class ObjectBase(EntityContainer):
             return None
 
         mask = self.validate_mask(mask)
+
+        cherry_pick_uids = extract_uids(cherry_pick_children)  # type: ignore
 
         if copy_children or cherry_pick_uids is not None:
             children_map = {}

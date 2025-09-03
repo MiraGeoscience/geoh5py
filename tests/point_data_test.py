@@ -170,3 +170,31 @@ def test_copy_points_data(tmp_path):
         mask = data.mask_by_extent(np.vstack([[0, 0], [2, 2]]))
 
         assert np.all(mask == ind), "Error masking data by extent."
+
+
+def test_copy_cherry_pick(tmp_path):
+    values = np.random.randn(12)
+    h5file_path = tmp_path / r"testPoints.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        points = Points.create(workspace, vertices=np.random.randn(12, 3))
+        data = points.add_data(
+            {
+                f"DataValues({idx})": {"association": "VERTEX", "values": values * idx}
+                for idx in range(5)
+            }
+        )
+        # get 1 data over 2
+        data_to_copy = [d.uid for (i, d) in enumerate(data) if i % 2 == 0]
+
+        with Workspace.create(tmp_path / r"testPoints2.geoh5") as new_workspace:
+            points.copy(
+                parent=new_workspace,
+                cherry_pick_children=data_to_copy,
+                name="copy_points",
+            )
+
+    with Workspace(tmp_path / r"testPoints2.geoh5") as new_workspace:
+        rec_obj = new_workspace.get_entity("copy_points")[0]
+        assert len(rec_obj.get_data_list()) == 3, "Error cherry-picking data on copy."
+        for i, d in enumerate(rec_obj.get_data_list()):
+            assert d == f"DataValues({i * 2})", "Error cherry-picking data on copy."

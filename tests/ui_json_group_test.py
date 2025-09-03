@@ -100,8 +100,12 @@ def test_uijson_group_copy_relatives(tmp_path):
         # prepare a fancy uijson
         uijson = constants.default_ui_json.copy()
         uijson["something"] = templates.float_parameter()
-        uijson["curve"] = curve
-        uijson["data"] = curve.get_data("Period1")[0]
+        uijson["curve"] = {"a nested dict": curve}
+        uijson["data"] = {
+            "another one": {
+                "and a list too": [{"keep swimming": curve.get_data("Period1")[0]}]
+            },
+        }
         uijson["property_group"] = curve.get_property_group("myGroup")[0]
         uijson["group"] = UIJsonGroup.create(workspace, name="dummy")
 
@@ -124,10 +128,19 @@ def test_uijson_group_copy_relatives(tmp_path):
         rec_obj = new_workspace.get_entity("copy_uijson")[0]
         options = rec_obj.options
 
-        assert new_workspace.get_entity(options["curve"])[0].name == "curve"
-        assert new_workspace.get_entity(options["data"])[0].name == "Period1"
+        assert (
+            new_workspace.get_entity(options["curve"]["a nested dict"])[0].name
+            == "curve"
+        )
+        assert (
+            new_workspace.get_entity(
+                options["data"]["another one"]["and a list too"][0]["keep swimming"]
+            )[0].name
+            == "Period1"
+        )
         assert new_workspace.get_entity(options["property_group"])[0].name == "myGroup"
-        assert new_workspace.get_entity("Period2")[0] is None
+        # all children are getting copied
+        assert new_workspace.get_entity("Period2")[0].name == "Period2"
 
     with Workspace(h5file_path) as workspace:
         original = workspace.get_entity("UIJson")[0]
@@ -154,11 +167,11 @@ def test_copy_uijson_group_no_option(tmp_path):
 
     with Workspace(tmp_path / r"testGroup2.geoh5") as new_workspace:
         rec_obj = new_workspace.get_entity("copy_uijson")[0]
-        assert rec_obj.options is None
+        assert len(rec_obj.options) == 0
 
     with Workspace(h5file_path) as workspace:
         rec_obj = workspace.get_entity("UIJson_2")[0]
-        assert rec_obj.options is None
+        assert len(rec_obj.options) == 0
 
 
 def test_uijson_group_errors(tmp_path):
