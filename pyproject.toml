@@ -116,8 +116,8 @@ lockfile = "==0.12.2"
 packaging = '*'
 Pygments = "*"
 pylint = ">=3.3.1"
-pytest = "*"
-pytest-cov = "*"
+pytest = "^8"
+pytest-cov = "^5"
 pyyaml = '*'
 scipy = ">=1.14.0,<1.15.0"
 sphinx = ">=3.0,<4.0"
@@ -133,6 +133,9 @@ default    = {features = ["test", "dev-git"], solve-group = "default"}
 
 [tool.pixi.feature.test.tasks]
 test = "pytest --cov --cov-report=xml"
+
+[tool.pixi.pypi-dependencies]
+uv = "*"
 
 [tool.pixi.tasks.show-pip-source]
 args = [{ arg = "packages", "default" = "geoh5py" }]
