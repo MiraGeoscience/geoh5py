@@ -65,10 +65,6 @@ def test_uijson_group(tmp_path):
                 group_copy,
                 ignore=[
                     "_parent",
-                    "_uijson_objects",
-                    "_uijson_children",
-                    "_uijson_groups",
-                    "_loaded",
                 ],
             )
 
@@ -77,10 +73,6 @@ def test_uijson_group(tmp_path):
                 rec_obj,
                 ignore=[
                     "_parent",
-                    "_uijson_objects",
-                    "_uijson_children",
-                    "_uijson_groups",
-                    "_loaded",
                 ],
             )
 

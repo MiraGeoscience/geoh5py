@@ -1124,7 +1124,7 @@ def get_unique_name_from_entities(
     return find_unique_name(name, names)
 
 
-def extract_uids(values: list[UUID | Entity | str] | None) -> list[UUID] | None:
+def extract_uids(values) -> list[UUID] | None:
     """
     Extract the UUIDs from a list of UUIDs, Data objects or strings.
 

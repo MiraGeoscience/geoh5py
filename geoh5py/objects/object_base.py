@@ -406,7 +406,7 @@ class ObjectBase(EntityContainer):
 
         mask = self.validate_mask(mask)
 
-        cherry_pick_uids = extract_uids(cherry_pick_children)  # type: ignore
+        cherry_pick_uids = extract_uids(cherry_pick_children)
 
         if copy_children or cherry_pick_uids is not None:
             children_map = {}

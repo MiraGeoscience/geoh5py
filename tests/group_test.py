@@ -63,10 +63,6 @@ def test_simpeg_group(tmp_path):
         rec_obj,
         ignore=[
             "_parent",
-            "_uijson_objects",
-            "_uijson_children",
-            "_uijson_groups",
-            "_loaded",
         ],
     )
 
