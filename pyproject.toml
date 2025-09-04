@@ -129,7 +129,7 @@ h5py = ">=3.14,<4"
 default    = {features = ["test"], solve-group = "default"}
 
 [tool.pixi.feature.test.tasks]
-test = "pytest --cov --cov-report=xml"
+test = "python -m pytest --cov --cov-report=xml"
 
 [tool.pixi.tasks.show-pip-source]
 args = [{ arg = "packages", "default" = "geoh5py" }]
