@@ -140,6 +140,8 @@ class UIJsonGroup(Group):
             raise TypeError(f"Input 'options' must be of type {dict}.")
 
         self._options = dict_mapper(value, [str2uuid, entity2uuid])
+        self._options["geoh5"] = str(self.workspace.h5file)
+
         if self.on_file:
             self.workspace.update_attribute(self, "options")
 

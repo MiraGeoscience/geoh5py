@@ -18,6 +18,8 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -43,8 +45,7 @@ def test_uijson_group(tmp_path):
         uijson["data"] = curve.get_data("Period1")[0]
         uijson["property_group"] = curve.get_property_group("myGroup")[0]
 
-        group = UIJsonGroup.create(workspace, name="test")
-        group.options = uijson
+        group = UIJsonGroup.create(workspace, name="test", options=uijson)
 
         # Copy on new workspace
         with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
@@ -79,6 +80,8 @@ def test_uijson_group(tmp_path):
             rec_obj.add_ui_json("something")
 
             assert new_workspace.get_entity("something.ui.json")[0]
+            assert Path(group.options["geoh5"]).stem == "testUIJSONGroup"
+            assert Path(rec_obj.options["geoh5"]).stem == "testGroup2"
 
 
 def test_uijson_group_copy_relatives(tmp_path):
