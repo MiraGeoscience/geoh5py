@@ -20,7 +20,7 @@ description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
 keywords = ["geology", "geophysics", "data", "interoperability"]
 readme = "package.rst"
-dynamic = ["version", "dependencies", "classifiers"]
+dynamic = ["version","classifiers"]
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
@@ -28,6 +28,13 @@ maintainers = [
     { name = "Benjamin Kary", email = "benjamink@mirageoscience.com" },
     { name = "Dominique Fournier", email = "dominiquef@mirageoscience.com" },
     { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
+]
+
+dependencies = [
+    "h5py>=3.2.1,<4.0.0",
+    "numpy~=1.26.0",
+    "Pillow~=10.3.0",
+    "pydantic>=2.5.2,<3.0.0"
 ]
 
 [project.urls]
@@ -62,28 +69,6 @@ include = [
 ]
 version = "0.0.0.dev0"
 
-[tool.poetry.dependencies]
-h5py = "^3.2.1"
-numpy = "~1.26.0"
-Pillow = "~10.3.0"
-pydantic = "^2.5.2"
-
-[tool.poetry.group.dev.dependencies]
-jinja2 = '*'
-lockfile = "^0.12.2"
-packaging = '*'
-Pygments = "*"
-pylint = ">=3.3.1"
-pytest = "*"
-pytest-cov = "*"
-pyyaml = '*'
-scipy = "~1.14.0"
-sphinx = "^3.0"
-sphinx-autodoc-typehints = "^1.10"
-sphinx-rtd-theme = "^0.4.3"
-tomli = "*"
-h5py = "^3.14.0"
-
 [tool.poetry.requires-plugins]
 poetry-dynamic-versioning = { version = ">=1.9.1,<2.0.0", extras = ["plugin"] }
 
@@ -111,6 +96,59 @@ initial-content = """
 
 [tool.poetry-dynamic-versioning.files."recipe.yaml"]
 persistent-substitution = true
+
+[tool.pixi.project]
+channels = ["https://repo.prefix.dev/conda-forge"]
+platforms = ["win-64", "linux-64"]
+
+[tool.pixi.dependencies]
+numpy = ">=1.26.0,<1.27.0"
+h5py = ">=3.14,<4"
+Pillow = ">=10.3.0, <10.4.0"
+pydantic = ">=2.5.2, <2.6.0"
+
+[tool.pixi.feature.test.dependencies]
+jinja2 = '*'
+lockfile = "==0.12.2"
+packaging = '*'
+Pygments = "*"
+pylint = ">=3.3.1"
+pytest = "*"
+pytest-cov = "*"
+pyyaml = '*'
+scipy = ">=1.14.0,<1.15.0"
+sphinx = ">=3.0,<4.0"
+sphinx-autodoc-typehints = ">=1.10"
+sphinx-rtd-theme = ">=0.4.3"
+tomli = "*"
+h5py = ">=3.14,<4"
+
+[tool.pixi.environments]
+#prod = {features = [], solve-group = "prod"}
+#test-prod = {features = ["test], solve-group = "prod"}
+default    = {features = ["test"], solve-group = "default"}
+
+[tool.pixi.feature.test.tasks]
+test = "pytest --cov --cov-report=xml"
+
+[tool.pixi.tasks.show-pip-source]
+args = [{ arg = "packages", "default" = "geoh5py" }]
+cmd = "uv pip show {{packages}}"
+
+[tool.pixi.tasks.use-local-deps]
+args = [{ arg = "packages", default = "geoh5py" }]
+cmd = """
+uv pip install --no-deps --force-reinstall \
+{% for package in packages | split %} -e ../{{ package | trim }}{% endfor %}
+"""
+
+[tool.pixi.feature.test.tasks.test-local]
+args = [{ arg = "packages", default = "geoh5py" }]
+depends-on = [
+    {task = "use-local-deps", args = [ "{{ packages }}" ]},
+    {task = "show-pip-source", args =  [ "{{ packages }}" ]},
+    {task = "test"}
+]
 
 [tool.ruff]
 target-version = "py310"
@@ -195,3 +233,4 @@ fail_under = 90
 [tool.coverage.html]
 skip_empty = true
 skip_covered = true
+
