@@ -91,7 +91,9 @@ class UIJsonGroup(Group):
 
             return val
 
-        dict_mapper(self.options, [copy_obj_and_group])
+        options = self.options.copy()
+        options.pop("out_group", None)
+        dict_mapper(options, [copy_obj_and_group])
 
     def copy(
         self,
@@ -140,7 +142,10 @@ class UIJsonGroup(Group):
             raise TypeError(f"Input 'options' must be of type {dict}.")
 
         self._options = dict_mapper(value, [str2uuid, entity2uuid])
-        self._options["geoh5"] = str(self.workspace.h5file)
+
+        if len(self._options) > 0:
+            self._options["geoh5"] = str(self.workspace.h5file)
+            self._options["out_group"] = str(self.uid)
 
         if self.on_file:
             self.workspace.update_attribute(self, "options")
