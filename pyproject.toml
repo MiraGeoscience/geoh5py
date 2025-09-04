@@ -107,6 +107,9 @@ h5py = ">=3.14,<4"
 Pillow = ">=10.3.0, <10.4.0"
 pydantic = ">=2.5.2, <2.6.0"
 
+[tool.pixi.feature.dev-git.dependencies]
+# for later use
+
 [tool.pixi.feature.test.dependencies]
 jinja2 = '*'
 lockfile = "==0.12.2"
@@ -126,7 +129,7 @@ h5py = ">=3.14,<4"
 [tool.pixi.environments]
 #prod = {features = [], solve-group = "prod"}
 #test-prod = {features = ["test], solve-group = "prod"}
-default    = {features = ["test"], solve-group = "default"}
+default    = {features = ["test", "dev-git"], solve-group = "default"}
 
 [tool.pixi.feature.test.tasks]
 test = "pytest --cov --cov-report=xml"
