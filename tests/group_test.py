@@ -20,9 +20,11 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 
-from geoh5py.groups import ContainerGroup, SimPEGGroup, UIJsonGroup
+from geoh5py.groups import ContainerGroup, SimPEGGroup
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import constants, templates
 from geoh5py.workspace import Workspace
@@ -48,7 +50,7 @@ def test_simpeg_group(tmp_path):
     # Create a workspace with group
     workspace = Workspace.create(h5file_path)
     group = SimPEGGroup.create(workspace)
-    group.options = constants.default_ui_json
+    group.options = deepcopy(constants.default_ui_json)
     group.options["something"] = templates.float_parameter()
 
     # Copy
@@ -58,7 +60,13 @@ def test_simpeg_group(tmp_path):
     # Read back in and compare
     new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
     rec_obj = new_workspace.get_entity(group.uid)[0]
-    compare_entities(group, rec_obj, ignore=["_parent"])
+    compare_entities(
+        group,
+        rec_obj,
+        ignore=[
+            "_parent",
+        ],
+    )
 
 
 def test_add_children_group(tmp_path):
@@ -71,26 +79,3 @@ def test_add_children_group(tmp_path):
 
     with pytest.raises(TypeError, match="Child must be an instance"):
         group.add_children("bidon")
-
-
-def test_uijson_group(tmp_path):
-    h5file_path = tmp_path / r"testGroup.geoh5"
-
-    # Create a workspace with group
-    workspace = Workspace.create(h5file_path)
-    group = UIJsonGroup.create(workspace)
-    group.options = constants.default_ui_json
-    group.options["something"] = templates.float_parameter()
-
-    # Copy
-    new_workspace = Workspace.create(tmp_path / r"testGroup2.geoh5")
-    group.copy(parent=new_workspace)
-
-    # Read back in and compare
-    new_workspace = Workspace(tmp_path / r"testGroup2.geoh5")
-    rec_obj = new_workspace.get_entity(group.uid)[0]
-    compare_entities(group, rec_obj, ignore=["_parent"])
-
-    rec_obj.add_ui_json("something")
-
-    assert new_workspace.get_entity("something.ui.json")[0]

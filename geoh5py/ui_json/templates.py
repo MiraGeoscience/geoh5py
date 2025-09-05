@@ -258,7 +258,7 @@ def group_parameter(
     *,
     main: bool = True,
     label: str = "Object",
-    group_type: tuple = tuple(known_group_types),
+    group_type: tuple | str = tuple(known_group_types),
     value: str | None = None,
     optional: str | None = None,
 ) -> dict:

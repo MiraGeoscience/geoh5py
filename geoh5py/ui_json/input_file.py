@@ -270,6 +270,8 @@ class InputFile:
 
         for key, value in data.items():
             if key in self.ui_json and isinstance(self.ui_json[key], dict):
+                if key == "out_group":
+                    continue
                 enabled = self.ui_json[key].get("enabled", None)
                 if enabled is not None:
                     if self.validation_options.get("update_enabled", True):
@@ -543,7 +545,6 @@ class InputFile:
         """Convert uuids to entities from the workspace."""
         if self._geoh5 is None:
             return var
-
         for key, value in var.items():
             if isinstance(value, dict):
                 if "groupValue" in value and "value" in value:

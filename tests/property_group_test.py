@@ -35,6 +35,7 @@ def make_example(workspace, add_str_column=False):
     curve = Curve.create(
         workspace,
         vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+        name="curve",
     )
 
     # Add data
