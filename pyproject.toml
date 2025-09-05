@@ -34,7 +34,7 @@ dependencies = [
     "h5py>=3.2.1,<4.0.0",
     "numpy~=1.26.0",
     "Pillow~=10.3.0",
-    "pydantic>=2.5.2,<3.0.0"
+    "pydantic>=2.7.0,<3.0.0"
 ]
 
 [project.urls]
@@ -105,7 +105,7 @@ platforms = ["win-64", "linux-64"]
 numpy = ">=1.26.0,<1.27.0"
 h5py = ">=3.14,<4"
 Pillow = ">=10.3.0, <10.4.0"
-pydantic = ">=2.5.2, <2.6.0"
+pydantic = ">=2.7,<3.0"
 
 [tool.pixi.feature.dev-git.dependencies]
 # for later use
