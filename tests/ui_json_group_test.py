@@ -100,11 +100,18 @@ def test_uijson_group_copy_relatives(tmp_path):
         uijson["curve"] = {"a nested dict": curve}
         uijson["data"] = {
             "another one": {
-                "and a list too": [{"keep swimming": curve.get_data("Period1")[0]}]
+                "and a list too": [
+                    {
+                        "keep swimming": curve.get_data("Period1")[0],
+                    }
+                ]
             },
         }
         uijson["property_group"] = curve.get_property_group("myGroup")[0]
-        uijson["group"] = UIJsonGroup.create(workspace, name="dummy")
+        uijson["group"] = {
+            "value": UIJsonGroup.create(workspace, name="dummy"),
+            "groupType": UIJsonGroup.default_type_uid(),
+        }
 
         group = UIJsonGroup.create(workspace)
         group.options = uijson
@@ -124,6 +131,8 @@ def test_uijson_group_copy_relatives(tmp_path):
     with Workspace(tmp_path / r"testGroup2.geoh5") as new_workspace:
         rec_obj = new_workspace.get_entity("copy_uijson")[0]
         options = rec_obj.options
+
+        assert options["group"]["groupType"] == UIJsonGroup.default_type_uid()
 
         assert (
             new_workspace.get_entity(options["curve"]["a nested dict"])[0].name

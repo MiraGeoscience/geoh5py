@@ -85,9 +85,9 @@ class UIJsonGroup(Group):
 
             :return: The same value
             """
-            val = uuid2entity(str2uuid(val), self.workspace)
-            if isinstance(val, Group | ObjectBase):
-                val.copy(parent, copy_children=True, clear_cache=clear_cache)
+            val_entity = uuid2entity(str2uuid(val), self.workspace)
+            if isinstance(val_entity, Group | ObjectBase):
+                val_entity.copy(parent, copy_children=True, clear_cache=clear_cache)
 
             return val
 

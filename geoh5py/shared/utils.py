@@ -606,7 +606,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
             val[key] = dict_mapper(values, short_list)
 
-    if isinstance(val, list):
+    if isinstance(val, (list, tuple)):
         return [dict_mapper(elem, string_funcs) for elem in val]
 
     for fun in string_funcs:
