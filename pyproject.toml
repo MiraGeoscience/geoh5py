@@ -139,6 +139,15 @@ py310    = {features = ["py310", "test", "dev-git"], solve-group = "dev-py310"}
 py311    = {features = ["py311", "test", "dev-git"], solve-group = "dev-py311"}
 py312    = {features = ["py312", "test", "dev-git"], solve-group = "dev-py312"}
 
+[tool.pixi.feature.py310.dependencies]
+python = "~=3.10.0"
+
+[tool.pixi.feature.py311.dependencies]
+python = "~=3.11.0"
+
+[tool.pixi.feature.py312.dependencies]
+python = "~=3.12.0"
+
 [tool.pixi.feature.test.tasks]
 test = "pytest --cov --cov-report=xml"
 
