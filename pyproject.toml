@@ -117,6 +117,7 @@ pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
 scipy = '*'
+jinja2 = '*'
 
 [tool.pixi.feature.dev.dependencies]
 Pygments = '*'
@@ -138,6 +139,7 @@ default  = {features = ["py310", "test", "dev"], solve-group = "dev-py310"}
 py310    = {features = ["py310", "test"], solve-group = "dev-py310"}
 py311    = {features = ["py311", "test"], solve-group = "dev-py311"}
 py312    = {features = ["py312", "test"], solve-group = "dev-py312"}
+docs    = {features = ["doc"], solve-group = "dev-py310"}
 
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"
