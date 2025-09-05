@@ -20,7 +20,7 @@ description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
 keywords = ["geology", "geophysics", "data", "interoperability"]
 readme = "package.rst"
-dynamic = ["version","classifiers"]
+dynamic = ["version", "classifiers"]
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
