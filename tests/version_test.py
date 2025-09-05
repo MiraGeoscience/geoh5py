@@ -26,7 +26,6 @@ from pathlib import Path
 import pytest
 import tomli as toml
 import yaml
-
 from packaging.version import InvalidVersion, Version
 
 import geoh5py
