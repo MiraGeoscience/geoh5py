@@ -127,9 +127,17 @@ tomli = "*"
 h5py = '*'
 
 [tool.pixi.environments]
-#prod = {features = [], solve-group = "prod"}
-#test-prod = {features = ["test], solve-group = "prod"}
-default    = {features = ["test", "dev-git"], solve-group = "default"}
+#prod-py310 = {features = ["py310"], solve-group = "prod-py310"}
+#prod-py311 = {features = ["py311"], solve-group = "prod-py311"}
+#prod-py312 = {features = ["py312"], solve-group = "prod-py312"}
+#test-prod-py310 = {features = ["py310", "test"], solve-group = "prod-py310"}
+#test-prod-py311 = {features = ["py311", "test"], solve-group = "prod-py311"}
+#test-prod-py312 = {features = ["py312", "test"], solve-group = "prod-py312"}
+
+default  = {features = ["py310", "test", "dev-git"], solve-group = "dev-py310"}
+py310    = {features = ["py310", "test", "dev-git"], solve-group = "dev-py310"}
+py311    = {features = ["py311", "test", "dev-git"], solve-group = "dev-py311"}
+py312    = {features = ["py312", "test", "dev-git"], solve-group = "dev-py312"}
 
 [tool.pixi.feature.test.tasks]
 test = "pytest --cov --cov-report=xml"
