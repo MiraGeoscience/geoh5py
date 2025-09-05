@@ -149,3 +149,5 @@ dmypy.json
 geoh5py/_version.py
 # pixi environments
 .pixi/*
+# poetry
+poetry.lock
