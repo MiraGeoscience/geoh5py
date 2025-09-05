@@ -95,6 +95,27 @@ class UIJsonGroup(Group):
         options.pop("out_group", None)
         dict_mapper(options, [copy_obj_and_group])
 
+    def _prepare_options(self, options: dict) -> dict:
+        """
+        Prepare the out_group entry in the options dictionary.
+
+        It added the geoh5 file path, and an out_group entry.
+        Templates cannot be used due to circular import.
+
+        :param options: The options dictionary to prepare.
+
+        :return: The prepared options dictionary.
+        """
+        options["geoh5"] = str(self.workspace.h5file)
+
+        out_group = options.get("out_group", {}) or {}
+        out_group["value"] = str(self.uid)
+        out_group["label"] = out_group.get("label", self.name)
+        out_group["groupType"] = str(self.default_type_uid())
+        options["out_group"] = out_group
+
+        return options
+
     def copy(
         self,
         parent=None,
@@ -144,8 +165,7 @@ class UIJsonGroup(Group):
         self._options = dict_mapper(value, [str2uuid, entity2uuid])
 
         if len(self._options) > 0:
-            self._options["geoh5"] = str(self.workspace.h5file)
-            self._options["out_group"] = str(self.uid)
+            self._options = self._prepare_options(self._options)
 
         if self.on_file:
             self.workspace.update_attribute(self, "options")

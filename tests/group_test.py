@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 
 from geoh5py.groups import ContainerGroup, SimPEGGroup
@@ -48,7 +50,7 @@ def test_simpeg_group(tmp_path):
     # Create a workspace with group
     workspace = Workspace.create(h5file_path)
     group = SimPEGGroup.create(workspace)
-    group.options = constants.default_ui_json
+    group.options = deepcopy(constants.default_ui_json)
     group.options["something"] = templates.float_parameter()
 
     # Copy

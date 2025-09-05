@@ -18,6 +18,7 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -39,7 +40,7 @@ def test_uijson_group(tmp_path):
         curve, _ = make_example(workspace)
 
         # prepare a fancy uijson
-        uijson = constants.default_ui_json.copy()
+        uijson = deepcopy(constants.default_ui_json)
         uijson["something"] = templates.float_parameter()
         uijson["curve"] = curve
         uijson["data"] = curve.get_data("Period1")[0]
@@ -82,7 +83,7 @@ def test_uijson_group(tmp_path):
             assert new_workspace.get_entity("something.ui.json")[0]
             assert Path(group.options["geoh5"]).stem == "testUIJSONGroup"
             assert Path(rec_obj.options["geoh5"]).stem == "testGroup2"
-            assert rec_obj.options["out_group"] == str(group.uid)
+            assert rec_obj.options["out_group"]["value"] == str(group.uid)
 
 
 def test_uijson_group_copy_relatives(tmp_path):
@@ -94,7 +95,7 @@ def test_uijson_group_copy_relatives(tmp_path):
         curve, _ = make_example(workspace)
 
         # prepare a fancy uijson
-        uijson = constants.default_ui_json.copy()
+        uijson = deepcopy(constants.default_ui_json)
         uijson["something"] = templates.float_parameter()
         uijson["curve"] = {"a nested dict": curve}
         uijson["data"] = {
