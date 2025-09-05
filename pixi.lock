@@ -3,8 +3,6 @@ environments:
   default:
     channels:
     - url: https://repo.prefix.dev/conda-forge/
-    indexes:
-    - https://pypi.org/simple
     packages:
       linux-64:
       - conda: https://repo.prefix.dev/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -133,7 +131,6 @@ environments:
       - conda: https://repo.prefix.dev/conda-forge/linux-64/yaml-0.2.5-h280c20c_3.conda
       - conda: https://repo.prefix.dev/conda-forge/linux-64/zstandard-0.24.0-py312h3fa7853_1.conda
       - conda: https://repo.prefix.dev/conda-forge/linux-64/zstd-1.5.7-hb8e6e7a_2.conda
-      - pypi: https://files.pythonhosted.org/packages/13/fc/e0da45ee179367dcc1e1040ad00ed8a99b78355d43024b0b5fc2edf5c389/uv-0.8.15-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       win-64:
       - conda: https://repo.prefix.dev/conda-forge/win-64/_openmp_mutex-4.5-2_gnu.conda
       - conda: https://repo.prefix.dev/conda-forge/noarch/alabaster-0.7.16-pyhd8ed1ab_0.conda
@@ -254,7 +251,6 @@ environments:
       - conda: https://repo.prefix.dev/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://repo.prefix.dev/conda-forge/win-64/zstandard-0.24.0-py312ha680012_1.conda
       - conda: https://repo.prefix.dev/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
-      - pypi: https://files.pythonhosted.org/packages/2b/9d/081a0af395c0e307c0c930e80161a2aa551c25064cfb636d060574566fa4/uv-0.8.15-py3-none-win_amd64.whl
 packages:
 - conda: https://repo.prefix.dev/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   sha256: fe51de6107f9edc7aa4f786a70f4a883943bc9d39b3bb7307c04c41410990726
@@ -2543,16 +2539,6 @@ packages:
   - pkg:pypi/urllib3?source=hash-mapping
   size: 101735
   timestamp: 1750271478254
-- pypi: https://files.pythonhosted.org/packages/13/fc/e0da45ee179367dcc1e1040ad00ed8a99b78355d43024b0b5fc2edf5c389/uv-0.8.15-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  name: uv
-  version: 0.8.15
-  sha256: 07765f99fd5fd3b257d7e210e8d0844c0a8fd111612e31fcca66a85656cc728e
-  requires_python: '>=3.8'
-- pypi: https://files.pythonhosted.org/packages/2b/9d/081a0af395c0e307c0c930e80161a2aa551c25064cfb636d060574566fa4/uv-0.8.15-py3-none-win_amd64.whl
-  name: uv
-  version: 0.8.15
-  sha256: 6aa824ab933dfafe11efe32e6541c6bcd65ecaa927e8e834ea6b14d3821020f6
-  requires_python: '>=3.8'
 - conda: https://repo.prefix.dev/conda-forge/win-64/vc-14.3-h41ae7f8_31.conda
   sha256: cb357591d069a1e6cb74199a8a43a7e3611f72a6caed9faa49dbb3d7a0a98e0b
   md5: 28f4ca1e0337d0f27afb8602663c5723
