@@ -41,3 +41,13 @@ jobs:
       codecov-reference-os: '["windows-latest"]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  call-workflow-msdo:
+    name: MSDO analysis
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      id-token: write
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-msdo.yml@DEVOPS-818
+    secrets:
+      sarif_upload_token: ${{ secrets.GITHUB_TOKEN }}
