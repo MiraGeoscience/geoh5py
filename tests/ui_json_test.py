@@ -955,3 +955,27 @@ def test_default_naming(tmp_path):
     in_file.name = DEFAULT_UI_JSON_NAME
 
     assert in_file.name == "Custom_UI.ui.json"
+
+
+def test_copy_relatives(tmp_path):
+    workspace = get_workspace(tmp_path)
+    original_points = workspace.get_entity("Points_A")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+    ui_json["points"] = templates.object_parameter(
+        value=str(original_points.uid),
+    )
+    in_file = InputFile(ui_json=ui_json)
+
+    workspace2 = Workspace()
+
+    in_file.copy_relatives(workspace2)
+
+    # dry run for coverage
+    InputFile().copy_relatives(workspace2)
+
+    copied_points = workspace2.get_entity("Points_A")[0]
+
+    compare_entities(copied_points, original_points, ignore=["_property_groups"])

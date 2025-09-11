@@ -25,7 +25,9 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
+from geoh5py import Workspace
 from geoh5py.shared.utils import (
+    copy_dict_relatives,
     dip_azimuth_to_vector,
     extract_uids,
     find_unique_name,
@@ -95,3 +97,13 @@ def test_extract_uids_errors():
     uid = uuid4()
 
     assert extract_uids(Bidon(uid)) == [uid]  # type: ignore
+
+
+def test_copy_relatives_errors():
+    workspace = Workspace()
+
+    with pytest.raises(TypeError, match="'workspace' must be a Workspace"):
+        copy_dict_relatives({"bidon": 666}, "bidon", workspace)
+
+    with pytest.raises(ValueError, match="Cannot copy "):
+        copy_dict_relatives({"bidon": 666}, workspace, workspace)

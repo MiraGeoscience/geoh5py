@@ -38,10 +38,10 @@ from .exceptions import Geoh5FileClosedError
 
 
 if TYPE_CHECKING:
-    from ..groups import PropertyGroup
+    from ..groups import Group
     from ..workspace import Workspace
     from .entity import Entity
-    from .entity_type import EntityType
+    from .entity_container import EntityContainer
 
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
@@ -1149,3 +1149,51 @@ def extract_uids(values) -> list[UUID] | None:
         uids.append(uid)
 
     return uids
+
+
+def copy_dict_relatives(
+    values: dict,
+    workspace: Workspace,
+    parent: EntityContainer | Workspace,
+    clear_cache: bool = False,
+):
+    """
+    Copy the objects and groups referenced in a dictionary of values to a new parent.
+
+    The input dictionary is not modified.
+
+    :param values: a dictionary of values possibly containing references to objects and groups.
+    :param workspace: The workspace containing the original objects and groups.
+    :param parent: The parent to copy the objects and groups to.
+    :param clear_cache: If True, clear the array attributes of the copied objects and groups.
+    """
+    # 1. check the workspaces
+    output_workspace = getattr(parent, "workspace", None)
+    for name, work in zip(
+        ["workspace", "parent"], [workspace, output_workspace], strict=False
+    ):
+        if not hasattr(work, "h5file"):
+            raise TypeError(
+                f"'{name}' must be a Workspace or associated with one."
+                f"Not {type(parent)}."
+            )
+    if workspace.h5file == output_workspace.h5file:
+        raise ValueError("Cannot copy objects and groups to the same workspace.")
+
+    # 2. do the copy
+    def copy_obj_and_group(val: Any) -> Any:
+        """
+        Function to copy objects and groups found in the options.
+        To be used in dict_mapper for intricate structures.
+
+        :param val: The value to check and possibly copy.
+
+        :return: The same value
+        """
+        val_entity = uuid2entity(str2uuid(val), workspace)
+        if hasattr(val_entity, "children"):
+            val_entity.copy(parent, copy_children=True, clear_cache=clear_cache)
+
+        return val
+
+    dict_mapper(values, [copy_obj_and_group])

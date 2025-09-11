@@ -20,20 +20,18 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 from uuid import UUID
 
 import numpy as np
 
 from geoh5py.groups import Group
-from geoh5py.objects import ObjectBase
 from geoh5py.shared.utils import (
+    copy_dict_relatives,
     dict_mapper,
     entity2uuid,
     str2uuid,
     str_json_to_dict,
     stringify,
-    uuid2entity,
 )
 
 
@@ -76,24 +74,9 @@ class UIJsonGroup(Group):
         ):
             return
 
-        def copy_obj_and_group(val: Any) -> Any:
-            """
-            Function to copy objects and groups found in the options.
-            To be used in dict_mapper for intricate structures.
-
-            :param val: The value to check and possibly copy.
-
-            :return: The same value
-            """
-            val_entity = uuid2entity(str2uuid(val), self.workspace)
-            if isinstance(val_entity, Group | ObjectBase):
-                val_entity.copy(parent, copy_children=True, clear_cache=clear_cache)
-
-            return val
-
         options = self.options.copy()
         options.pop("out_group", None)
-        dict_mapper(options, [copy_obj_and_group])
+        copy_dict_relatives(options, self.workspace, parent, clear_cache=clear_cache)
 
     def _prepare_options(self, options: dict) -> dict:
         """

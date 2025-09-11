@@ -34,6 +34,7 @@ from geoh5py.shared.validators import AssociationValidator
 
 from ..shared.utils import (
     as_str_if_uuid,
+    copy_dict_relatives,
     dict_mapper,
     entity2uuid,
     fetch_active_workspace,
@@ -632,3 +633,24 @@ class InputFile:
             self.ui_json[key]["property"] = group_value
 
         self.ui_json[key]["value"] = value["value"]
+
+    def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
+        """
+        Copy the entities referenced in the input file to a new workspace.
+
+        :param parent: The parent to copy the entities to.
+        :param clear_cache: Indicate whether to clear the cache.
+        """
+        if self.ui_json is None:
+            return
+
+        ui_json = self.ui_json.copy()
+        ui_json.pop("geoh5", None)
+        ui_json.pop("out_group", None)
+
+        copy_dict_relatives(
+            ui_json,
+            self.geoh5,
+            parent,
+            clear_cache=clear_cache,
+        )
