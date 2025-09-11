@@ -1177,7 +1177,7 @@ def copy_dict_relatives(
                 f"'{name}' must be a Workspace or associated with one."
                 f"Not {type(parent)}."
             )
-    if workspace.h5file == output_workspace.h5file:
+    if getattr(workspace, "h5file", None) == getattr(output_workspace, "h5file", None):
         raise ValueError("Cannot copy objects and groups to the same workspace.")
 
     # 2. do the copy
@@ -1192,7 +1192,7 @@ def copy_dict_relatives(
         """
         val_entity = uuid2entity(str2uuid(val), workspace)
         if hasattr(val_entity, "children"):
-            val_entity.copy(parent, copy_children=True, clear_cache=clear_cache)
+            val_entity.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
 
         return val
 
