@@ -31,6 +31,6 @@ jobs:
       actions: read
       security-events: write
       id-token: write
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-msdo.yml@DEVOPS-818
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-msdo.yml@main
     secrets:
       sarif_upload_token: ${{ secrets.GITHUB_TOKEN }}
