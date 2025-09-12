@@ -1162,22 +1162,19 @@ def copy_dict_relatives(
 
     The input dictionary is not modified.
 
-    :param values: a dictionary of values possibly containing references to objects and groups.
+    :param values: A dictionary of values possibly containing references to objects and groups.
     :param workspace: The workspace containing the original objects and groups.
     :param parent: The parent to copy the objects and groups to.
     :param clear_cache: If True, clear the array attributes of the copied objects and groups.
     """
     # 1. check the workspaces
-    output_workspace = getattr(parent, "workspace", None)
-    for name, work in zip(
-        ["workspace", "parent"], [workspace, output_workspace], strict=False
-    ):
-        if not hasattr(work, "h5file"):
-            raise TypeError(
-                f"'{name}' must be a Workspace or associated with one."
-                f"Not {type(parent)}."
-            )
-    if getattr(workspace, "h5file", None) == getattr(output_workspace, "h5file", None):
+    if not hasattr(workspace, "h5file") or not hasattr(parent.workspace, "h5file"):
+        raise TypeError(
+            f"'workspace' and 'parent' must be a Workspace or associated with one."
+            f"Not 'workspace': '{type(workspace)}' ; and 'parent': '{type(parent)}'."
+        )
+
+    if workspace.h5file == parent.workspace.h5file:
         raise ValueError("Cannot copy objects and groups to the same workspace.")
 
     # 2. do the copy

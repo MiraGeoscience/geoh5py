@@ -646,7 +646,6 @@ class InputFile:
 
         ui_json = self.ui_json.copy()
         ui_json.pop("geoh5", None)
-        ui_json.pop("out_group", None)
 
         copy_dict_relatives(
             ui_json,

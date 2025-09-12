@@ -696,14 +696,6 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
             ):
                 ref_data.append(child)
 
-        print(
-            [
-                (child.name, child.entity_type.name)
-                for child in parent.children
-                if hasattr(child, "entity_type")
-            ]
-        )
-
         if len(ref_data) == 0:
             raise ValueError(f"Parent data '{ref_data_name}' not found.")
 

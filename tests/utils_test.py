@@ -102,7 +102,7 @@ def test_extract_uids_errors():
 def test_copy_relatives_errors():
     workspace = Workspace()
 
-    with pytest.raises(TypeError, match="'workspace' must be a Workspace"):
+    with pytest.raises(TypeError, match="'workspace' and 'parent'"):
         copy_dict_relatives({"bidon": 666}, "bidon", workspace)
 
     with pytest.raises(ValueError, match="Cannot copy "):
