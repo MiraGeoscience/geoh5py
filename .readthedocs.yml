@@ -21,11 +21,9 @@ build:
         git config filter.lfs.clean   "$git_lfs_path/git-lfs clean -- %f"
       - |
         set -e
-        ./git-lfs install
-        ./git-lfs fetch
-        ./git-lfs checkout
+        export GIT_LFS_SKIP_SMUDGE=1
+        ./git-lfs install --skip-smudge
 
-    # Use RTD's recommended way to get Pixi
     create_environment:
       - asdf plugin add pixi
       - asdf install pixi latest
@@ -33,4 +31,4 @@ build:
 
     build:
       html:
-      - pixi run build-docs html $READTHEDOCS_OUTPUT/html
+        - pixi run build-docs html $READTHEDOCS_OUTPUT/html
