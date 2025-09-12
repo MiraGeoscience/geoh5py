@@ -32,10 +32,7 @@ build:
       - curl -fsSL https://pixi.sh/install.sh | bash
       - export PATH=$HOME/.pixi/bin:$PATH
       - pixi install -e docs
-      - pixi run -e docs pip install . --no-deps
 
-# Build documentation in the docs/ directory with Sphinx
-sphinx:
-  builder: html
-  configuration: docs/conf.py
-  fail_on_warning: false
+    build:
+      html:
+        - pixi run build-docs
