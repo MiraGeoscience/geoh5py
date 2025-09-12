@@ -126,8 +126,15 @@ sphinx = '*'
 sphinx-autodoc-typehints = '*'
 sphinx-rtd-theme = '*'
 
-[tool.pixi.feature.doc.tasks]
-build-docs = "python -m pip install -e . && sphinx-build -nW -b html docs docs/_build"
+[tool.pixi.feature.doc.tasks.build-docs]
+args = [
+  { arg = "builder",   default = "html" },
+  { arg = "outputdir", default = "docs/_build" }
+]
+cmd = "sphinx-build -T -b {{builder}} docs {{outputdir}}"
+
+[tool.pixi.feature.mirageo-git.pypi-dependencies]
+geoh5py = { path = ".", editable = true }
 
 [tool.pixi.environments]
 #prod-py310 = {features = ["py310"], solve-group = "prod-py310"}
@@ -141,7 +148,7 @@ default  = {features = ["py310", "test", "dev"], solve-group = "dev-py310"}
 py310    = {features = ["py310", "test"], solve-group = "dev-py310"}
 py311    = {features = ["py311", "test"], solve-group = "dev-py311"}
 py312    = {features = ["py312", "test"], solve-group = "dev-py312"}
-docs = { features = ["py310", "doc", "dev"], solve-group = "dev-py310" }
+docs = { features = ["py310", "doc", "mirageo-git"], solve-group = "default" }
 
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"

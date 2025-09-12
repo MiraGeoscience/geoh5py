@@ -180,6 +180,8 @@ environments:
   docs:
     channels:
     - url: https://repo.prefix.dev/conda-forge/
+    indexes:
+    - https://pypi.org/simple
     packages:
       linux-64:
       - conda: https://repo.prefix.dev/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -286,6 +288,7 @@ environments:
       - conda: https://repo.prefix.dev/conda-forge/linux-64/xorg-libxdmcp-1.1.5-hb9d3cd8_0.conda
       - conda: https://repo.prefix.dev/conda-forge/linux-64/zstandard-0.24.0-py310h1d967bf_1.conda
       - conda: https://repo.prefix.dev/conda-forge/linux-64/zstd-1.5.7-hb8e6e7a_2.conda
+      - pypi: ./
       win-64:
       - conda: https://repo.prefix.dev/conda-forge/win-64/_openmp_mutex-4.5-2_gnu.conda
       - conda: https://repo.prefix.dev/conda-forge/noarch/alabaster-1.0.0-pyhd8ed1ab_1.conda
@@ -385,6 +388,7 @@ environments:
       - conda: https://repo.prefix.dev/conda-forge/win-64/xorg-libxdmcp-1.1.5-h0e40799_0.conda
       - conda: https://repo.prefix.dev/conda-forge/win-64/zstandard-0.24.0-py310he058f06_1.conda
       - conda: https://repo.prefix.dev/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
+      - pypi: ./
   py310:
     channels:
     - url: https://repo.prefix.dev/conda-forge/
@@ -1378,6 +1382,17 @@ packages:
   purls: []
   size: 184162
   timestamp: 1745370242683
+- pypi: ./
+  name: geoh5py
+  version: 0.12.0a2.dev98+e37bda21
+  sha256: 4e2d60b8450818ba52610111322afc3644eaad4145ffe5d5a1a710235e922b90
+  requires_dist:
+  - pillow==10.3.*
+  - h5py>=3.2.1,<4.dev0
+  - numpy==1.26.*
+  - pydantic>=2.7,<3.dev0
+  requires_python: '>=3.10,<4.0'
+  editable: true
 - conda: https://repo.prefix.dev/conda-forge/noarch/h2-4.3.0-pyhcf101f3_0.conda
   sha256: 84c64443368f84b600bfecc529a1194a3b14c3656ee2e832d15a20e0329b6da3
   md5: 164fc43f0b53b6e3a7bc7dce5e4f1dc9

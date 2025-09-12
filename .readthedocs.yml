@@ -1,16 +1,12 @@
 version: 2
 
-# Set the version of Python and other tools you might need
 build:
-  os: "ubuntu-22.04"
-  tools:
-    python: "mambaforge-22.9"
+  os: ubuntu-24.04
   jobs:
     post_checkout:
       - echo "[RTD] Configure Git LFS"
       - |
         set -e
-        # Update version of Git LFS as needed here:
         LFS_VERSION="3.4.0"
         wget "https://github.com/git-lfs/git-lfs/releases/download/v${LFS_VERSION}/git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz"
         tar xzf "git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz" --strip-components=1 "git-lfs-${LFS_VERSION}/git-lfs"
@@ -20,19 +16,18 @@ build:
         git_lfs_path="$(pwd)"
         git config filter.lfs.process "$git_lfs_path/git-lfs filter-process"
         git config filter.lfs.smudge  "$git_lfs_path/git-lfs smudge -- %f"
-        git config filter.lfs.clean "$git_lfs_path/git-lfs clean -- %f"
+        git config filter.lfs.clean   "$git_lfs_path/git-lfs clean -- %f"
       - |
         set -e
         ./git-lfs install
         ./git-lfs fetch
         ./git-lfs checkout
 
-    pre_build:
-      # Replace Conda env with Pixi
-      - curl -fsSL https://pixi.sh/install.sh | bash
-      - export PATH=$HOME/.pixi/bin:$PATH
-      - pixi install -e docs
+    # Use RTD's recommended way to get Pixi
+    create_environment:
+      - asdf plugin add pixi
+      - asdf install pixi latest
+      - asdf global pixi latest
 
-    build:
-      html:
-        - pixi run build-docs
+  html:
+    - pixi run build-docs html $READTHEDOCS_OUTPUT/html
