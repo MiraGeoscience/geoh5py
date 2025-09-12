@@ -126,6 +126,9 @@ sphinx = '*'
 sphinx-autodoc-typehints = '*'
 sphinx-rtd-theme = '*'
 
+[tool.pixi.feature.doc.tasks]
+build-docs = "python -m pip install -e . && sphinx-build -nW -b html docs docs/_build"
+
 [tool.pixi.environments]
 #prod-py310 = {features = ["py310"], solve-group = "prod-py310"}
 #prod-py311 = {features = ["py311"], solve-group = "prod-py311"}
