@@ -76,7 +76,10 @@ class UIJsonGroup(Group):
 
         options = self.options.copy()
         options.pop("out_group", None)
-        copy_dict_relatives(options, self.workspace, parent, clear_cache=clear_cache)
+
+        copy_dict_relatives(
+            self.workspace.promote(options), parent, clear_cache=clear_cache
+        )
 
     def _prepare_options(self, options: dict) -> dict:
         """

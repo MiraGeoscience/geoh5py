@@ -73,6 +73,7 @@ from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
+    dict_mapper,
     get_attributes,
     str2uuid,
 )
@@ -1287,6 +1288,37 @@ class Workspace(AbstractContextManager):
         self.fetch_or_create_root()
 
         return self
+
+    def promote(self, value: Any) -> Any:
+        """
+        Promote uuid to entity as it is or in a nested structure.
+
+        :param value: The value to promote.
+
+        :return: The promoted value.
+        """
+
+        def promote_uid(val: Any) -> Any:
+            """
+            Promote a uuid to an entity if it exists in the workspace.
+
+            If not, return the value as is.
+
+            :param val: The value to promote.
+
+            :return: The promoted value if possible or the value as is.
+            """
+            if isinstance(val, uuid.UUID):
+                loaded_val = self.get_entity(val)[0]
+                if loaded_val is not None:
+                    return loaded_val
+
+            return val
+
+        if isinstance(value, dict):
+            value = value.copy()
+
+        return dict_mapper(value, [str2uuid, promote_uid])
 
     def register(self, entity: Entity | EntityType | PropertyGroup):
         """

@@ -578,6 +578,7 @@ class InputFile:
         if isinstance(value, UUID) and self._geoh5 is not None:
             if self.validate:
                 self.association_validator(key, value, self._geoh5)
+            # todo: why uuid2 entity here?
             value = uuid2entity(value, self._geoh5)
 
         return value
@@ -648,8 +649,7 @@ class InputFile:
         ui_json.pop("geoh5", None)
 
         copy_dict_relatives(
-            ui_json,
-            self.geoh5,
+            self.geoh5.promote(ui_json),
             parent,
             clear_cache=clear_cache,
         )

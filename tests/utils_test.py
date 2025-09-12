@@ -26,6 +26,7 @@ import numpy as np
 import pytest
 
 from geoh5py import Workspace
+from geoh5py.objects import Points
 from geoh5py.shared.utils import (
     copy_dict_relatives,
     dip_azimuth_to_vector,
@@ -101,9 +102,7 @@ def test_extract_uids_errors():
 
 def test_copy_relatives_errors():
     workspace = Workspace()
-
-    with pytest.raises(TypeError, match="'workspace' and 'parent'"):
-        copy_dict_relatives({"bidon": 666}, "bidon", workspace)
+    points = Points.create(workspace, name="points", vertices=np.random.rand(10, 3))
 
     with pytest.raises(ValueError, match="Cannot copy "):
-        copy_dict_relatives({"bidon": 666}, workspace, workspace)
+        copy_dict_relatives({"bidon": points}, workspace)

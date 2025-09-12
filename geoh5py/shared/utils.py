@@ -1152,30 +1152,17 @@ def extract_uids(values) -> list[UUID] | None:
 
 
 def copy_dict_relatives(
-    values: dict,
-    workspace: Workspace,
-    parent: EntityContainer | Workspace,
-    clear_cache: bool = False,
+    values: dict, parent: EntityContainer | Workspace, clear_cache: bool = False
 ):
     """
     Copy the objects and groups referenced in a dictionary of values to a new parent.
 
-    The input dictionary is not modified.
+    The input dictionary is not modified. The values must be already promoted.
 
     :param values: A dictionary of values possibly containing references to objects and groups.
-    :param workspace: The workspace containing the original objects and groups.
     :param parent: The parent to copy the objects and groups to.
     :param clear_cache: If True, clear the array attributes of the copied objects and groups.
     """
-    # 1. check the workspaces
-    if not hasattr(workspace, "h5file") or not hasattr(parent.workspace, "h5file"):
-        raise TypeError(
-            f"'workspace' and 'parent' must be a Workspace or associated with one."
-            f"Not 'workspace': '{type(workspace)}' ; and 'parent': '{type(parent)}'."
-        )
-
-    if workspace.h5file == parent.workspace.h5file:
-        raise ValueError("Cannot copy objects and groups to the same workspace.")
 
     # 2. do the copy
     def copy_obj_and_group(val: Any) -> Any:
@@ -1187,9 +1174,10 @@ def copy_dict_relatives(
 
         :return: The same value
         """
-        val_entity = uuid2entity(str2uuid(val), workspace)
-        if hasattr(val_entity, "children"):
-            val_entity.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
+        if hasattr(val, "children"):
+            if val.workspace.h5file == parent.workspace.h5file:
+                raise ValueError("Cannot copy objects within the same workspace.")
+            val.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
 
         return val
 
