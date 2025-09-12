@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import contextmanager
 from io import BytesIO
 from json import loads
@@ -606,13 +606,8 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
             val[key] = dict_mapper(values, short_list)
 
-    if isinstance(val, list):
-        out = []
-        for elem in val:
-            for fun in string_funcs:
-                elem = fun(elem, *args)
-            out += [elem]
-        return out
+    if isinstance(val, (list, tuple)):
+        return [dict_mapper(elem, string_funcs) for elem in val]
 
     for fun in string_funcs:
         val = fun(val, *args)
@@ -820,15 +815,21 @@ def map_attributes(object_, **kwargs):
     set_attributes(object_, **values)
 
 
-def stringify(values: dict[str, Any]) -> dict[str, Any]:
+def stringify(values: dict[str, Any], extra_func: None | list = None) -> dict[str, Any]:
     """
     Convert all values in a dictionary to string.
 
     :param values: Dictionary of values to be converted.
+    :param extra_func: List of extra functions to apply to values.
+
+    :return: Dictionary of string values.
     """
+    mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
+    if extra_func is not None:
+        mappers.extend(extra_func)
+
     string_dict = {}
     for key, value in values.items():
-        mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
         string_dict[key] = dict_mapper(value, mappers)
 
     return string_dict
@@ -1121,3 +1122,30 @@ def get_unique_name_from_entities(
                 names.append(sub_name)
 
     return find_unique_name(name, names)
+
+
+def extract_uids(values) -> list[UUID] | None:
+    """
+    Extract the UUIDs from a list of UUIDs, Data objects or strings.
+
+    :param values: A list of UUIDs, Data objects or strings.
+
+    :return: A list of UUIDs or None if input is None.
+    """
+    if values is None:
+        return None
+
+    if not isinstance(values, Iterable) or isinstance(values, (str, bytes)):
+        values = [values]
+
+    uids = []
+    for child in values:
+        uid = entity2uuid(str2uuid(child))
+        if not isinstance(uid, UUID):
+            raise TypeError(
+                f"'{child}' must be of type UUID, "
+                f"or has 'uid' as attribute, not '{type(child)}'"
+            )
+        uids.append(uid)
+
+    return uids

@@ -20,10 +20,14 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import numpy as np
+import pytest
 
 from geoh5py.shared.utils import (
     dip_azimuth_to_vector,
+    extract_uids,
     find_unique_name,
     format_numeric_values,
 )
@@ -76,3 +80,18 @@ def test_format_values_for_display():
     result = format_numeric_values(test, 5, 8).tolist()
 
     assert result == expected
+
+
+def test_extract_uids_errors():
+    assert extract_uids(None) is None
+
+    with pytest.raises(TypeError, match="'bidon' must be of type"):
+        extract_uids("bidon")
+
+    class Bidon:
+        def __init__(self, uid):
+            self.uid = uid
+
+    uid = uuid4()
+
+    assert extract_uids(Bidon(uid)) == [uid]  # type: ignore

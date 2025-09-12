@@ -360,7 +360,9 @@ class Workspace(AbstractContextManager):
         for prop_group in property_groups:
             properties = None
             if prop_group.properties is not None:
-                properties = [data_map[uid] for uid in prop_group.properties]
+                properties = [
+                    data_map[uid] for uid in prop_group.properties if uid in data_map
+                ]
 
             # prepare the kwargs
             property_group_kwargs = {
