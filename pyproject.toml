@@ -185,7 +185,17 @@ args = [
   { arg = "builder",   default = "html" },
   { arg = "outputdir", default = "docs/_build" }
 ]
-cmd = "sphinx-build -T -b {{builder}} docs {{outputdir}}"
+cmd = "sphinx-build -T -b {{builder}} docs {{outputdir}}/{{builder}}"
+
+[tool.pixi.feature.doc.tasks.build-docs-full]
+args = [
+  { arg = "builder",   default = "html" },
+  { arg = "outputdir", default = "docs/_build" }
+]
+depends-on = [
+    {task = "prebuild-docs"},
+    {task = "build-docs", args = ["{{ builder }}", "{{ outputdir }}"]}
+]
 
 [tool.pixi.tasks.test-pyvers]
 depends-on = [
