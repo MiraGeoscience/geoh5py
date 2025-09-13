@@ -111,14 +111,6 @@ pydantic = ">=2.7, 2.*"
 
 [tool.pixi.pypi-dependencies]
 geoh5py = {path = ".", editable = true}
-sphinxcontrib-googleanalytics = '*'
-
-[tool.pixi.feature.doc.tasks.build-docs]
-args = [
-  { arg = "builder",   default = "html" },
-  { arg = "outputdir", default = "docs/_build" }
-]
-cmd = "sphinx-build -T -b {{builder}} docs {{outputdir}}"
 
 [tool.pixi.feature.mirageo-git.pypi-dependencies]
 geoh5py = { path = ".", editable = true }
@@ -175,6 +167,14 @@ depends-on = [
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
 sphinx-rtd-theme = "*"
+sphinxcontrib-googleanalytics = '*'
+
+[tool.pixi.feature.doc.tasks.build-docs]
+args = [
+  { arg = "builder",   default = "html" },
+  { arg = "outputdir", default = "docs/_build" }
+]
+cmd = "sphinx-build -T -b {{builder}} docs {{outputdir}}"
 
 [tool.pixi.tasks.test-pyvers]
 depends-on = [
