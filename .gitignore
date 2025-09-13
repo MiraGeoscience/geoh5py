@@ -147,7 +147,10 @@ dmypy.json
 
 #version ignore
 geoh5py/_version.py
+
 # pixi environments
 .pixi/*
+!.pixi/config.toml
+
 # poetry
 poetry.lock
