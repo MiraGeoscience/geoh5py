@@ -112,9 +112,6 @@ pydantic = ">=2.7, 2.*"
 [tool.pixi.pypi-dependencies]
 geoh5py = {path = ".", editable = true}
 
-[tool.pixi.feature.mirageo-git.pypi-dependencies]
-geoh5py = { path = ".", editable = true }
-
 [tool.pixi.environments]
 #prod-py310 = {features = ["py310"], solve-group = "prod-py310"}
 #prod-py311 = {features = ["py311"], solve-group = "prod-py311"}
