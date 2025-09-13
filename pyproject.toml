@@ -161,9 +161,20 @@ depends-on = [
 ]
 
 [tool.pixi.feature.doc.dependencies]
+jupyter-book = "*"
+jupyter_client = "*"
+jupytext = "*"
+matplotlib = "*"
+nbsphinx = "*"
+nbstripout = "*"
+notebook = "*"
+numpydoc = "*"
+scipy = "*"
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
 sphinx-rtd-theme = "*"
+sphinx-issues = "*"
+sphinxcontrib-bibtex = "*"
 sphinxcontrib-googleanalytics = '*'
 
 [tool.pixi.feature.doc.tasks.build-docs]
