@@ -177,6 +177,9 @@ sphinx-issues = "*"
 sphinxcontrib-bibtex = "*"
 sphinxcontrib-googleanalytics = '*'
 
+[tool.pixi.feature.doc.tasks.prebuild-docs]
+cmd = "jupyter-book config sphinx docs/"
+
 [tool.pixi.feature.doc.tasks.build-docs]
 args = [
   { arg = "builder",   default = "html" },
