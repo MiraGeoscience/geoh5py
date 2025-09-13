@@ -32,8 +32,8 @@ build:
       - asdf global pixi latest
 
     pre_build:
-      - pixi run --locked prebuild-docs
+      - pixi run --frozen prebuild-docs
 
     build:
       html:
-        - pixi run --locked build-docs html $READTHEDOCS_OUTPUT
+        - pixi run --frozen build-docs html $READTHEDOCS_OUTPUT
