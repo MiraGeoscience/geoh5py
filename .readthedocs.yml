@@ -9,6 +9,7 @@ build:
       - echo "[RTD] Configure Git LFS"
       - |
         set -e
+        # Git LFS version to use. Update this variable when a new version is required.
         LFS_VERSION="3.4.0"
         wget "https://github.com/git-lfs/git-lfs/releases/download/v${LFS_VERSION}/git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz"
         tar xzf "git-lfs-linux-amd64-v${LFS_VERSION}.tar.gz" --strip-components=1 "git-lfs-${LFS_VERSION}/git-lfs"
@@ -18,11 +19,12 @@ build:
         git_lfs_path="$(pwd)"
         git config filter.lfs.process "$git_lfs_path/git-lfs filter-process"
         git config filter.lfs.smudge  "$git_lfs_path/git-lfs smudge -- %f"
-        git config filter.lfs.clean   "$git_lfs_path/git-lfs clean -- %f"
+        git config filter.lfs.clean "$git_lfs_path/git-lfs clean -- %f"
       - |
         set -e
-        export GIT_LFS_SKIP_SMUDGE=1
-        ./git-lfs install --skip-smudge
+        ./git-lfs install
+        ./git-lfs fetch
+        ./git-lfs checkout
 
     create_environment:
       - asdf plugin add pixi
