@@ -33,6 +33,7 @@ build:
 
     pre_build:
       - pixi run --locked prebuild-docs
+
     build:
       html:
-        - pixi run build-docs html $READTHEDOCS_OUTPUT/html
+        - pixi run --locked build-docs html $READTHEDOCS_OUTPUT
