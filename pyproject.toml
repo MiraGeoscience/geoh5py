@@ -15,10 +15,9 @@ build-backend = "poetry_dynamic_versioning.backend"
 name = "geoh5py"
 requires-python = ">=3.10,<4.0"
 
-
 description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
-keywords = ["geology", "geophysics", "data", "interoperability"]
+keywords = ["geology", "geophysics", "data", "interoperability", "geoh5"]
 readme = "package.rst"
 dynamic = ["version", "classifiers"]
 authors = [
@@ -45,18 +44,6 @@ documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 [tool.poetry]
 requires-poetry = '>=2.0,<3.0'
 
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    "Natural Language :: English",
-    "Topic :: Database",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Software Development :: Libraries :: Python Modules"
-]
-
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 include = [
@@ -66,6 +53,18 @@ include = [
     { path = "README.rst" },
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 version = "0.0.0.dev0"
 
@@ -103,28 +102,15 @@ platforms = ["win-64", "linux-64"]
 
 [tool.pixi.dependencies]
 # for pixi to resolve dependencies from conda
-
+## direct dependencies:
+#----------------------
 h5py = ">=3.2.1, 3.*"
 numpy = "1.26.*"
-Pillow = "10.3.*"
+pillow = "10.3.*"
 pydantic = ">=2.7, 2.*"
 
-[tool.pixi.feature.test.dependencies]
-h5py = '*'
-packaging = '*'
-pylint = '*'
-pytest = "*"
-pytest-cov = "*"
-pyyaml = '*'
-scipy = '*'
-
-[tool.pixi.feature.dev.dependencies]
-Pygments = '*'
-
-[tool.pixi.feature.doc.dependencies]
-sphinx = '*'
-sphinx-autodoc-typehints = '*'
-sphinx-rtd-theme = '*'
+[tool.pixi.pypi-dependencies]
+geoh5py = {path = ".", editable = true}
 sphinxcontrib-googleanalytics = '*'
 
 [tool.pixi.feature.doc.tasks.build-docs]
@@ -145,11 +131,12 @@ geoh5py = { path = ".", editable = true }
 #test-prod-py311 = {features = ["py311", "test"], solve-group = "prod-py311"}
 #test-prod-py312 = {features = ["py312", "test"], solve-group = "prod-py312"}
 
-default  = {features = ["py310", "test", "dev"], solve-group = "dev-py310"}
-py310    = {features = ["py310", "test"], solve-group = "dev-py310"}
-py311    = {features = ["py311", "test"], solve-group = "dev-py311"}
-py312    = {features = ["py312", "test"], solve-group = "dev-py312"}
-docs = { features = ["py310", "doc", "mirageo-git"], solve-group = "default" }
+py310 = {features = ["py310", "test"], solve-group = "default"}
+py311 = {features = ["py311", "test"]}
+py312 = {features = ["py312", "test"]}
+
+default = {features = ["py310", "test", "dev"], solve-group = "default"}
+docs = {features = ["py310", "doc"], solve-group = "default"}
 
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"
@@ -160,8 +147,41 @@ python = "3.11.*"
 [tool.pixi.feature.py312.dependencies]
 python = "3.12.*"
 
+[tool.pixi.feature.dev.dependencies]
+Pygments = '*'
+
+[tool.pixi.feature.test.dependencies]
+h5py = '*'
+packaging = '*'
+pylint = '*'
+pytest = "*"
+pytest-cov = "*"
+pyyaml = '*'
+scipy = '*'
+
 [tool.pixi.feature.test.tasks]
 test = "pytest --cov --cov-report=xml"
+
+[tool.pixi.feature.test.tasks.test-local]
+args = ["packages"]
+
+depends-on = [
+    {task = "use-local-deps", args = [ "{{ packages }}" ]},
+    {task = "show-pip-source", args =  [ "{{ packages }}" ]},
+    {task = "test"}
+]
+
+[tool.pixi.feature.doc.dependencies]
+sphinx = "*"
+sphinx-autodoc-typehints = "*"
+sphinx-rtd-theme = "*"
+
+[tool.pixi.tasks.test-pyvers]
+depends-on = [
+    {task = "test", environment = "py310"},
+    {task = "test", environment = "py311"},
+    {task = "test", environment = "py312"},
+]
 
 [tool.pixi.tasks.show-pip-source]
 args = ["packages"]
@@ -173,15 +193,6 @@ cmd = """
 uv pip install --no-deps --force-reinstall \
 {% for package in packages | split %} -e ../{{ package | trim }}{% endfor %}
 """
-
-[tool.pixi.feature.test.tasks.test-local]
-args = ["packages"]
-
-depends-on = [
-    {task = "use-local-deps", args = [ "{{ packages }}" ]},
-    {task = "show-pip-source", args =  [ "{{ packages }}" ]},
-    {task = "test"}
-]
 
 [tool.ruff]
 target-version = "py310"
