@@ -79,8 +79,8 @@ numpydoc = "*"
 scipy = "*"
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
-sphinx-rtd-theme = "*"
 sphinx-issues = "*"
+sphinx-rtd-theme = "*"
 sphinxcontrib-bibtex = "*"
 sphinxcontrib-googleanalytics = '*'
 
