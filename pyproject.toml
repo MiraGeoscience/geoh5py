@@ -17,7 +17,18 @@ requires-python = ">=3.10,<4.0"
 
 description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
-keywords = ["geology", "geophysics", "data", "interoperability", "geoh5"]
+keywords = [
+    "data",
+    "data-format",
+    "data-management",
+    "earth-sciences",
+    "geoh5",
+    "geology",
+    "geophysics",
+    "interoperability",
+    "mining",
+    "open-science",
+]
 readme = "package.rst"
 dynamic = ["version", "classifiers"]
 authors = [
@@ -60,6 +71,10 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
     "Topic :: Database",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Scientific/Engineering :: Physics",
