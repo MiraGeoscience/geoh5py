@@ -2442,8 +2442,8 @@ packages:
   timestamp: 1757518017222
 - pypi: ./
   name: geoh5py
-  version: 0.12.0a2.dev120+1149ca1a
-  sha256: e5fc5c67969ba1142fe09a75cd9c0e8f5a4fc9d6e8d93b3553152077fec9bad5
+  version: 0.12.0a2.dev123+f86c649f
+  sha256: 8a00e7841d6b09580c425b1e190fb605c09246066723e9155b527f8ee60f270c
   requires_dist:
   - pillow==10.3.*
   - h5py>=3.2.1,<4.dev0
