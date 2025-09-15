@@ -84,25 +84,12 @@ sphinx-rtd-theme = "*"
 sphinxcontrib-bibtex = "*"
 sphinxcontrib-googleanalytics = '*'
 
-[feature.doc.tasks.prebuild-docs]
-cmd = "jupyter-book config sphinx docs/"
-
 [feature.doc.tasks.build-docs]
 args = [
   { arg = "builder",   default = "html" },
   { arg = "outputdir", default = "docs/_build" }
 ]
-cmd = "sphinx-build -T -nW -b {{builder}} docs {{outputdir}}/{{builder}}"
-
-[feature.doc.tasks.build-docs-full]
-args = [
-  { arg = "builder",   default = "html" },
-  { arg = "outputdir", default = "docs/_build" }
-]
-depends-on = [
-    {task = "prebuild-docs"},
-    {task = "build-docs", args = ["{{ builder }}", "{{ outputdir }}"]}
-]
+cmd = "jupyter-book build -v -nW --builder {{builder}} docs --path-output {{outputdir}}/{{builder}}"
 
 [tasks.show-pip-source]
 args = ["packages"]

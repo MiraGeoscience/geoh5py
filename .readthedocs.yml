@@ -31,9 +31,6 @@ build:
       - asdf install pixi latest
       - asdf global pixi latest
 
-    pre_build:
-      - pixi run --frozen prebuild-docs
-
     build:
       html:
         - pixi run --frozen build-docs html $READTHEDOCS_OUTPUT
