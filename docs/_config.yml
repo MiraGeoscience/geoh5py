@@ -12,15 +12,10 @@ execute:
   run_in_temp: true
 
 sphinx:
-  local_extensions:
-    type_rewrites: _ext/
   extra_extensions:
     - sphinx.ext.autodoc
     - sphinx.ext.intersphinx
-#    - sphinx_autodoc_typehints
   config:
-    #typehints_use_signature: true
-    #typehints_use_signature_return: true
     autodoc_typehints: signature
     autodoc_typehints_format: short
     suppress_warnings : ["etoc.toctree"]
@@ -33,7 +28,6 @@ sphinx:
         - https://docs.python.org/3/
         - null
     autodoc_type_aliases:
-      np: numpy
       np.ndarray: numpy.ndarray
       UUID: uuid.UUID
 
