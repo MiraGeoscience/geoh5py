@@ -13,10 +13,22 @@ execute:
 
 sphinx:
   extra_extensions:
-  - 'sphinx.ext.autodoc'
+  - sphinx.ext.autodoc
+  - sphinx.ext.intersphinx
   config:
+    autodoc_typehints_format: short
     suppress_warnings : ["etoc.toctree"]
-
+    intersphinx_mapping:
+      # use None to auto‑fetch objects.inv
+      numpy:
+        - https://numpy.org/doc/1.26/
+        - null
+      python:
+        - https://docs.python.org/3/
+        - null
+    autodoc_type_aliases:
+      np.ndarray: numpy.ndarray
+      UUID: uuid.UUID
 
 # Define the name of the latex output file for PDF builds
 latex:

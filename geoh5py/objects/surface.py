@@ -38,11 +38,11 @@ class Surface(CellObject):
     _minimum_vertices = 3
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
-        """
+        r"""
         Validate or generate cells made up of triplets of vertices making
             up triangles.
 
-        :param indices: Array of indices, shape(*, 3). If None provided, the
+        :param indices: Array of indices, shape(\*, 3). If None provided, the
             vertices are connected sequentially.
 
         :return: Array of indices defining connecting vertices.

@@ -34,6 +34,7 @@ from .data_association_enum import DataAssociationEnum
 
 
 if TYPE_CHECKING:
+    import geoh5py
     from geoh5py.data.data_type import DataType, ReferenceDataType
 
 logger = logging.getLogger(__name__)
@@ -305,7 +306,9 @@ class Data(Entity):
         )
         return self.entity_type.primitive_type
 
-    def validate_entity_type(self, entity_type: DataType) -> DataType:
+    def validate_entity_type(
+        self, entity_type: geoh5py.data.data_type.DataType
+    ) -> geoh5py.data.data_type.DataType:
         """
         Validate the entity type.
 

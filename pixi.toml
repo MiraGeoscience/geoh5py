@@ -92,7 +92,7 @@ args = [
   { arg = "builder",   default = "html" },
   { arg = "outputdir", default = "docs/_build" }
 ]
-cmd = "sphinx-build -T -b {{builder}} docs {{outputdir}}/{{builder}}"
+cmd = "sphinx-build -T -nW -b {{builder}} docs {{outputdir}}/{{builder}}"
 
 [feature.doc.tasks.build-docs-full]
 args = [
