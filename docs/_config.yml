@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/config.html
 
 title: Geoh5py
-author: Mira Geoscience
+author: Mira Geoscience Ltd.
 logo: images/geoh5py_logo.png
 
 # Force re-execution of notebooks on each build.
@@ -10,6 +10,40 @@ logo: images/geoh5py_logo.png
 execute:
   execute_notebooks: force
   run_in_temp: true
+
+sphinx:
+  extra_extensions:
+    - sphinx.ext.autodoc
+    - sphinx.ext.intersphinx
+    - sphinx.ext.todo
+    - sphinx_issues
+    - sphinxcontrib.googleanalytics
+    #- sphinx.ext.autosummary  # TODO: restore? for now, tons of error
+    #- sphinx.ext.viewcode  # TODO: restore? for now, tons of error
+  local_extensions:
+    dynamic_config: _ext/
+  recursive_update: true
+  config:
+    project: geoh5py
+    html_static_path:
+      - _static/custom.css
+    html_theme: alabaster
+    autodoc_typehints: signature
+    autodoc_typehints_format: short
+    suppress_warnings:
+      - etoc.toctree
+    googleanalytics_id: G-9EY47HMNZX
+    intersphinx_mapping:
+      # use None to auto‑fetch objects.inv
+      numpy:
+        - https://numpy.org/doc/1.26/
+        - null
+      python:
+        - https://docs.python.org/3/
+        - null
+    autodoc_type_aliases:
+      np.ndarray: numpy.ndarray
+      UUID: uuid.UUID
 
 # Define the name of the latex output file for PDF builds
 latex:
