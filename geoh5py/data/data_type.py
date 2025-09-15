@@ -22,10 +22,9 @@
 
 from __future__ import annotations
 
-import enum
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, get_args
 
 import numpy as np
 
@@ -41,14 +40,14 @@ if TYPE_CHECKING:  # pragma: no cover
     from .data import Data
     from .referenced_data import ReferencedData
 
-
-class ColorMapping(enum.Enum):
-    LINEAR = "linear"
-    EQUAL_AREA = "equal_area"
-    LOGARITHMIC = "logarithmic"
-    CDF = "cdf"
-    CUMULATIVE_DISTRIBUTION_FUNCTION = "cumulative_distribution_function"
-    MISSING = "missing"
+ColorMapping = Literal[
+    "linear",
+    "equal_area",
+    "logarithmic",
+    "cdf",
+    "cumulative_distribution_function",
+    "missing",
+]
 
 
 class DataType(EntityType):
@@ -283,15 +282,13 @@ class DataType(EntityType):
         return self._mapping
 
     @mapping.setter
-    def mapping(self, value: ColorMapping | str):
-        try:
-            value = ColorMapping(value)
-        except ValueError as err:
+    def mapping(self, value: ColorMapping):
+        if value not in get_args(ColorMapping):
             raise ValueError(
-                f"Attribute 'mapping' should be one of {(v.value for v in list(ColorMapping))}. "
+                f"Attribute 'mapping' should be one of {get_args(ColorMapping)}. "
                 f"Value '{value}' was provided."
-            ) from err
-        self._mapping: str = value.value
+            )
+        self._mapping: str = value
 
         self.workspace.update_attribute(self, "attributes")
 
