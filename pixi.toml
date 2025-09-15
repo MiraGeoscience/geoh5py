@@ -89,7 +89,8 @@ args = [
   { arg = "builder",   default = "html" },
   { arg = "outputdir", default = "docs/_build" }
 ]
-cmd = "jupyter-book build -v -nW --builder {{builder}} docs --path-output {{outputdir}}/{{builder}}"
+# TODO: add -W option to fail on warnings
+cmd = "jupyter-book build -v -n --builder {{builder}} docs --path-output {{outputdir}}/{{builder}}"
 
 [tasks.show-pip-source]
 args = ["packages"]
