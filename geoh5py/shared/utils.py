@@ -826,7 +826,7 @@ def stringify(values: dict[str, Any], extra_func: None | list = None) -> dict[st
     """
     mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
     if extra_func is not None:
-        mappers.extend(extra_func)
+        mappers = extra_func + mappers
 
     string_dict = {}
     for key, value in values.items():

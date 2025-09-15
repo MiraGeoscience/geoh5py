@@ -271,8 +271,6 @@ class InputFile:
 
         for key, value in data.items():
             if key in self.ui_json and isinstance(self.ui_json[key], dict):
-                if key == "out_group":
-                    continue
                 enabled = self.ui_json[key].get("enabled", None)
                 if enabled is not None:
                     if self.validation_options.get("update_enabled", True):
