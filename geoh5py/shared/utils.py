@@ -1177,6 +1177,11 @@ def copy_dict_relatives(
         if hasattr(val, "children"):
             if val.workspace.h5file == parent.workspace.h5file:
                 raise ValueError("Cannot copy objects within the same workspace.")
+
+            # do not copy if the uuid already exists in the parent workspace
+            if parent.workspace.get_entity(getattr(val, "uid", None))[0] is not None:
+                return val
+
             val.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
 
         return val

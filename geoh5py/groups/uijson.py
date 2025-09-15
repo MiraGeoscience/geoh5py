@@ -107,7 +107,7 @@ class UIJsonGroup(Group):
         parent=None,
         *,
         copy_children: bool = False,
-        copy_relatives: bool = False,
+        copy_relatives: bool = True,
         clear_cache: bool = False,
         **kwargs,
     ) -> UIJsonGroup | None:

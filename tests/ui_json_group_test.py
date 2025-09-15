@@ -202,3 +202,25 @@ def test_uijson_group_errors(tmp_path):
     group.add_ui_json()
 
     assert workspace.get_entity("test.ui.json")[0]
+
+
+def test_double_uijson_group(tmp_path):
+    h5file_path = tmp_path / r"testDoubleUIJSONGroup.geoh5"
+
+    # Create a workspace with group
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        # prepare a fancy uijson
+        uijson = deepcopy(constants.default_ui_json)
+        uijson["something"] = templates.float_parameter()
+        uijson["curve"] = curve
+
+        group_1 = UIJsonGroup.create(workspace, name="test_1", options=uijson)
+        group_2 = UIJsonGroup.create(workspace, name="test_2", options=uijson)
+
+        with Workspace() as new_workspace:
+            group_1.copy(parent=new_workspace)
+            group_2.copy(parent=new_workspace)
+
+            assert len(new_workspace.get_entity("curve")) == 1
