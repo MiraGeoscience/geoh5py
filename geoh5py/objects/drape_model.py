@@ -113,10 +113,14 @@ class DrapeModel(ObjectBase):
 
         if mask is not None:
             layers = self.layers[mask]
-            mask_prisms = np.intersect1d(
-                np.arange(self.prisms.shape[0]), layers[:, 0]
-            ).astype(int)
-            kwargs.update({"prisms": self.prisms[mask_prisms], "layers": layers})
+            prisms_ids, new_ids, count = np.unique(
+                layers[:, 0], return_inverse=True, return_counts=True
+            )
+            layers[:, 0] = new_ids
+            prisms = self.prisms[prisms_ids.astype(int)]
+            prisms[:, 3] = np.r_[0, np.cumsum(count[:-1])]
+            prisms[:, 4] = count
+            kwargs.update({"prisms": prisms, "layers": layers})
 
         new_entity = super().copy(
             parent=parent,
@@ -127,6 +131,16 @@ class DrapeModel(ObjectBase):
         )
 
         return new_entity
+
+    @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
+        """
+        return np.c_[self.prisms.min(axis=0)[:3], self.prisms.max(axis=0)[:3]].T
 
     @property
     def layers(self) -> np.ndarray:
