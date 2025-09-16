@@ -268,8 +268,6 @@ class InputFile:
 
         for key, value in data.items():
             if key in self.ui_json and isinstance(self.ui_json[key], dict):
-                if key == "out_group":
-                    continue
                 enabled = self.ui_json[key].get("enabled", None)
                 if enabled is not None:
                     if self.validation_options.get("update_enabled", True):
@@ -435,7 +433,7 @@ class InputFile:
             self.update_ui_values(self.data)
 
         with open(self.path_name, "w", encoding="utf-8") as file:
-            json.dump(self.demote(self.ui_json), file, indent=4)
+            json.dump(stringify(demote(self.ui_json)), file, indent=4)
 
         return self.path_name
 
@@ -504,15 +502,6 @@ class InputFile:
             ui_json[key] = dict_mapper(value, mappers)
 
         return ui_json
-
-    @classmethod
-    def demote(cls, var: dict[str, Any]) -> dict[str, Any]:
-        """
-        Converts promoted parameter values to their string representations.
-
-        Other parameters are left unchanged.
-        """
-        return stringify(demote(var))
 
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
         """
