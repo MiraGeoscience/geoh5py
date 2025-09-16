@@ -38,10 +38,10 @@ from .exceptions import Geoh5FileClosedError
 
 
 if TYPE_CHECKING:
-    from ..groups import PropertyGroup
+    from ..groups import Group
     from ..workspace import Workspace
     from .entity import Entity
-    from .entity_type import EntityType
+    from .entity_container import EntityContainer
 
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
@@ -597,6 +597,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     :return val: Transformed values
     """
     if isinstance(val, dict):
+        val = val.copy()
         for key, values in val.items():
             short_list = string_funcs.copy()
             if omit is not None:
@@ -826,24 +827,16 @@ def map_attributes(object_, **kwargs):
     set_attributes(object_, **values)
 
 
-def stringify(values: dict[str, Any], extra_func: None | list = None) -> dict[str, Any]:
+def stringify(values: dict[str, Any]) -> dict[str, Any]:
     """
     Convert all values in a dictionary to string.
 
     :param values: Dictionary of values to be converted.
-    :param extra_func: List of extra functions to apply to values.
 
     :return: Dictionary of string values.
     """
-    mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
-    if extra_func is not None:
-        mappers.extend(extra_func)
-
-    string_dict = {}
-    for key, value in values.items():
-        string_dict[key] = dict_mapper(value, mappers)
-
-    return string_dict
+    mappers = [entity2uuid, nan2str, inf2str, as_str_if_uuid, none2str, path2str]
+    return dict_mapper(values, mappers)
 
 
 def to_list(value: Any) -> list:
@@ -1160,3 +1153,41 @@ def extract_uids(values) -> list[UUID] | None:
         uids.append(uid)
 
     return uids
+
+
+def copy_dict_relatives(
+    values: dict, parent: EntityContainer | Workspace, clear_cache: bool = False
+):
+    """
+    Copy the objects and groups referenced in a dictionary of values to a new parent.
+
+    The input dictionary is not modified. The values must be already promoted.
+
+    :param values: A dictionary of values possibly containing references to objects and groups.
+    :param parent: The parent to copy the objects and groups to.
+    :param clear_cache: If True, clear the array attributes of the copied objects and groups.
+    """
+
+    # 2. do the copy
+    def copy_obj_and_group(val: Any) -> Any:
+        """
+        Function to copy objects and groups found in the options.
+        To be used in dict_mapper for intricate structures.
+
+        :param val: The value to check and possibly copy.
+
+        :return: The same value
+        """
+        if hasattr(val, "children"):
+            if val.workspace.h5file == parent.workspace.h5file:
+                raise ValueError("Cannot copy objects within the same workspace.")
+
+            # do not copy if the uuid already exists in the parent workspace
+            if parent.workspace.get_entity(val.uid)[0] is not None:
+                return val
+
+            val.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
+
+        return val
+
+    dict_mapper(values, [copy_obj_and_group])

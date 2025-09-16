@@ -30,7 +30,12 @@ from typing import Any
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import fetch_active_workspace
+from geoh5py.shared.utils import (
+    as_str_if_uuid,
+    dict_mapper,
+    entity2uuid,
+    fetch_active_workspace,
+)
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -360,3 +365,18 @@ def monitored_directory_copy(
     move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
 
     return str(directory_path / temp_geoh5)
+
+
+def demote(
+    values: Any,
+):
+    """
+    Demote entities to strings or paths.
+
+    :param values: The values to demote.
+
+    :return: the demoted values.
+    """
+    mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
+
+    return dict_mapper(values, mappers)
