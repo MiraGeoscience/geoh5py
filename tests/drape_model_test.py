@@ -136,9 +136,9 @@ def test_copy_extent(tmp_path: Path):
 
         drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
         vals = drape.add_data({"indices": {"values": np.random.randn(drape.n_cells)}})
-        new_drape = drape.copy_from_extent([[0, 0], [2, 2]])
+        new_drape = drape.copy_from_extent([[-2, -2], [-0.2, 0]])
 
-        assert len(new_drape.layers) == 544
+        assert len(new_drape.layers) == 448
         np.testing.assert_array_almost_equal(
-            new_drape.children[0].values, vals.values[:544]
+            new_drape.children[0].values, vals.values[(1568 - 448) : 1568]
         )
