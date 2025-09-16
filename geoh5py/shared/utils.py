@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from io import BytesIO
 from json import loads
@@ -616,21 +616,21 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
 
 def box_intersect(
-    extent_a: np.ndarray | Iterable, extent_b: np.ndarray | tuple
+    extent_a: np.ndarray | Sequence, extent_b: np.ndarray | Sequence
 ) -> bool:
     """
     Compute the intersection of two axis-aligned bounding extents defined by their
     arrays of minimum and maximum bounds in N-D space.
 
-    :param extent_a: First extent or shape (2, N)
-    :param extent_b: Second extent or shape (2, N)
+    :param extent_a: First extent coordinated, array or list of shape (2, N)
+    :param extent_b: Second extent coordinated, array or list of shape (2, N)
 
     :return: Logic if the box extents intersect along all dimensions.
     """
-    if isinstance(extent_a, Iterable):
+    if isinstance(extent_a, Sequence):
         extent_a = np.vstack(extent_a)
 
-    if isinstance(extent_b, Iterable):
+    if isinstance(extent_b, Sequence):
         extent_b = np.vstack(extent_b)
 
     for extent in [extent_a, extent_b]:
@@ -654,7 +654,7 @@ def box_intersect(
 
 
 def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray | Iterable, inverse: bool = False
+    locations: np.ndarray, extent: np.ndarray | Sequence, inverse: bool = False
 ) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
@@ -667,7 +667,7 @@ def mask_by_extent(
 
     :returns: Array of bool for the locations inside or outside the box extent.
     """
-    if isinstance(extent, Iterable):
+    if isinstance(extent, Sequence):
         extent = np.vstack(extent)
 
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
