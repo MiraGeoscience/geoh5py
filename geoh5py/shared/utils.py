@@ -597,6 +597,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     :return val: Transformed values
     """
     if isinstance(val, dict):
+        val = val.copy()
         for key, values in val.items():
             short_list = string_funcs.copy()
             if omit is not None:
@@ -820,17 +821,11 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     Convert all values in a dictionary to string.
 
     :param values: Dictionary of values to be converted.
-    :param extra_func: List of extra functions to apply to values.
 
     :return: Dictionary of string values.
     """
     mappers = [entity2uuid, nan2str, inf2str, as_str_if_uuid, none2str, path2str]
-
-    string_dict = {}
-    for key, value in values.items():
-        string_dict[key] = dict_mapper(value, mappers)
-
-    return string_dict
+    return dict_mapper(values, mappers)
 
 
 def to_list(value: Any) -> list:

@@ -379,4 +379,4 @@ def demote(
     """
     mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
 
-    return dict_mapper(values.copy(), mappers)
+    return dict_mapper(values, mappers)
