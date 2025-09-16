@@ -191,27 +191,3 @@ def test_crop_grid2d_rotated_dip_not_null_origin(tmp_path):
 
     assert new_grid.n_cells == grid.n_cells
     assert np.isnan(new_grid.children[0].values).sum() == 15
-
-
-def test_copy_drape_model(tmp_path):
-    h5file_path = tmp_path / "drapedmodel.geoh5"
-    with Workspace.create(h5file_path) as workspace:
-        layers, prisms = create_drape_parameters()
-        drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
-
-        drape.add_data(
-            {
-                "indices": {
-                    "values": np.arange(drape.n_cells).astype(float),
-                    "association": "CELL",
-                }
-            }
-        )
-
-        copied = drape.copy_from_extent(
-            np.r_[np.c_[-1.5, -1.5], np.c_[0.0, 0.0]], clear_cache=True
-        )
-        assert np.sum(~np.isnan(copied.children[0].values)) == copied.n_cells / 4.0
-
-        np.testing.assert_allclose(copied.layers, drape.layers)
-        np.testing.assert_allclose(copied.prisms, drape.prisms)

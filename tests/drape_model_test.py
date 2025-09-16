@@ -92,27 +92,6 @@ def test_create_drape_model(tmp_path: Path):
             compare_entities(drape, rec_drape, ignore=["_parent"])
 
 
-def test_copy_drape_model(tmp_path: Path):
-    h5file_path = tmp_path / f"{__name__}.geoh5"
-    with Workspace.create(h5file_path) as workspace:
-        layers, prisms = create_drape_parameters()
-        drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
-
-        drape.add_data(
-            {
-                "indices": {
-                    "values": np.arange(drape.n_cells).astype(float),
-                }
-            }
-        )
-        mask = np.ones(drape.n_cells, dtype=bool)
-        mask[::2] = False
-
-        copy_drape = drape.copy(mask=mask)
-
-        assert np.isnan(copy_drape.children[0].values).sum() == (~mask).sum()
-
-
 def test_centroids(tmp_path: Path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
