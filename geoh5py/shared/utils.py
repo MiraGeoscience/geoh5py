@@ -815,7 +815,7 @@ def map_attributes(object_, **kwargs):
     set_attributes(object_, **values)
 
 
-def stringify(values: dict[str, Any], extra_func: None | list = None) -> dict[str, Any]:
+def stringify(values: dict[str, Any]) -> dict[str, Any]:
     """
     Convert all values in a dictionary to string.
 
@@ -824,9 +824,7 @@ def stringify(values: dict[str, Any], extra_func: None | list = None) -> dict[st
 
     :return: Dictionary of string values.
     """
-    mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
-    if extra_func is not None:
-        mappers.extend(extra_func)
+    mappers = [entity2uuid, nan2str, inf2str, as_str_if_uuid, none2str, path2str]
 
     string_dict = {}
     for key, value in values.items():

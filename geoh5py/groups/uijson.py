@@ -165,7 +165,7 @@ class UIJsonGroup(Group):
         if not self._options:
             raise ValueError("UIJsonGroup must have options set.")
 
-        json_str = json.dumps(stringify(self.options, [entity2uuid]), indent=4)
+        json_str = json.dumps(stringify(self.options), indent=4)
         bytes_data = json_str.encode("utf-8")
 
         if name is None:

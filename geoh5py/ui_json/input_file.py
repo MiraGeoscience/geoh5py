@@ -33,10 +33,8 @@ from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidati
 from geoh5py.shared.validators import AssociationValidator
 
 from ..shared.utils import (
-    as_str_if_uuid,
     copy_dict_relatives,
     dict_mapper,
-    entity2uuid,
     fetch_active_workspace,
     str2none,
     str2uuid,
@@ -45,12 +43,11 @@ from ..shared.utils import (
 )
 from .constants import base_validations, ui_validations
 from .utils import (
-    container_group2name,
+    demote,
     flatten,
     path2workspace,
     set_enabled,
     str2inf,
-    workspace2path,
 )
 from .validation import InputValidation
 
@@ -438,7 +435,7 @@ class InputFile:
             self.update_ui_values(self.data)
 
         with open(self.path_name, "w", encoding="utf-8") as file:
-            json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
+            json.dump(self.demote(self.ui_json), file, indent=4)
 
         return self.path_name
 
@@ -471,20 +468,6 @@ class InputFile:
             self.geoh5 = value
 
         self.update_ui_values({key: value})
-
-    @staticmethod
-    def stringify(var: dict[str, Any]) -> dict[str, Any]:
-        """
-        Convert inf, none, and list types to strings within a dictionary
-
-        :param var: Dictionary containing ui.json keys, values, fields
-
-        :return: Dictionary with inf and none types converted to string
-            representations in json format.
-        """
-        var = stringify(var)
-
-        return var
 
     @classmethod
     def numify(cls, ui_json: dict[str, Any]) -> dict[str, Any]:
@@ -529,21 +512,18 @@ class InputFile:
 
         Other parameters are left unchanged.
         """
-        mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
-        demoted: dict[str, Any] = {}
-        for key, value in var.items():
-            if isinstance(value, dict):
-                demoted[key] = cls.demote(value)
-
-            elif isinstance(value, (list, tuple)):
-                demoted[key] = [dict_mapper(val, mappers) for val in value]
-            else:
-                demoted[key] = dict_mapper(value, mappers)
-
-        return demoted
+        return stringify(demote(var))
 
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
-        """Convert uuids to entities from the workspace."""
+        """
+        Convert uuids to entities from the workspace.
+
+        TODO: change validation to use a simpler function here?
+
+        :param var: Dictionary to promote.
+
+        :return: Promoted dictionary.
+        """
         if self._geoh5 is None:
             return var
         for key, value in var.items():
