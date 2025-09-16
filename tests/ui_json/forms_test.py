@@ -233,6 +233,35 @@ def test_file_form(tmp_path):
         )
 
 
+def test_directory_form(tmp_path):
+    form = FileForm(
+        label="working directory",
+        file_description=["Directory"],
+        file_type=["directory"],
+        directory_only=True,
+        value=str(tmp_path),
+    )
+    assert form.value[0] == tmp_path
+
+    with pytest.raises(ValidationError, match="File type must be"):
+        _ = FileForm(
+            label="working directory",
+            file_description=["Directory"],
+            file_type=["ext"],
+            directory_only=True,
+            value=str(tmp_path),
+        )
+
+    with pytest.raises(ValidationError, match="File description must be"):
+        _ = FileForm(
+            label="working directory",
+            file_description=["something else"],
+            file_type=["directory"],
+            directory_only=True,
+            value=str(tmp_path),
+        )
+
+
 def test_object_form():
     obj_uid = str(uuid.uuid4())
     form = ObjectForm(label="name", value=obj_uid, mesh_type=[Points, Surface])

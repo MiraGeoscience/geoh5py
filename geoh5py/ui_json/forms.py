@@ -224,6 +224,7 @@ class FileForm(BaseForm):
     file_description: list[str]
     file_type: list[str]
     file_multi: bool = False
+    directory_only: bool = True
 
     @field_serializer("value", when_used="json")
     def to_string(self, value):
@@ -251,10 +252,26 @@ class FileForm(BaseForm):
     def value_file_type(cls, data):
         bad_paths = []
         for path in data["value"].split(";"):
-            if Path(path).suffix[1:] not in data["file_type"]:
+            if (
+                not data["directory_only"]
+                and Path(path).suffix[1:] not in data["file_type"]
+            ):
                 bad_paths.append(path)
         if any(bad_paths):
             raise ValueError(f"Provided paths {bad_paths} have invalid extensions.")
+        return data
+
+    @model_validator(mode="before")
+    @classmethod
+    def directory_file_type(cls, data):
+        if data["directory_only"] and data["file_type"] != ["directory"]:
+            raise ValueError(
+                "File type must be ['directory'] if directory_only is True."
+            )
+        if data["directory_only"] and data["file_description"] != ["Directory"]:
+            raise ValueError(
+                "File description must be ['Directory'] if directory_only is True."
+            )
         return data
 
 
