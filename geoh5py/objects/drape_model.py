@@ -64,6 +64,18 @@ class DrapeModel(ObjectBase):
         super().__init__(**kwargs)
 
     @property
+    def z_cell_size(self) -> np.ndarray:
+        """Compute z cell sizes of drape model."""
+        grid_z = np.zeros((self.prisms.shape[0], self._layers["K"].max() + 2)) * np.nan
+        grid_z[:, 0] = self._prisms["Top elevation"]
+        grid_z[self._layers["I"], self._layers["K"] + 1] = self._layers[
+            "Bottom elevation"
+        ]
+        hz = (grid_z[:, :-1] - grid_z[:, 1:]).flatten()
+
+        return hz[~np.isnan(hz)]
+
+    @property
     def centroids(self) -> np.ndarray:
         """
         Cell center locations in world coordinates, shape(*, 3).
@@ -77,22 +89,11 @@ class DrapeModel(ObjectBase):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            self._centroids = np.vstack(
-                [
-                    np.ones((int(val), 3)) * self.prisms[ii, :3]
-                    for ii, val in enumerate(self.prisms[:, 4])
-                ]
+            xy = np.repeat(
+                np.c_[self.prisms[:, :2]], self.prisms[:, 4].astype(int), axis=0
             )
-            tops = np.hstack(
-                [
-                    np.r_[
-                        cells[2],
-                        self.layers[int(cells[3]) : int(cells[3] + cells[4] - 1), 2],
-                    ]
-                    for cells in self.prisms.tolist()
-                ]
-            )
-            self._centroids[:, 2] = (tops + self.layers[:, 2]) / 2.0
+            z = self.layers[:, 2] + self.z_cell_size / 2.0
+            self._centroids = np.c_[xy, z]
 
         return self._centroids
 
