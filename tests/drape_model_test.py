@@ -53,7 +53,7 @@ def create_drape_parameters():
 
 
 def test_create_drape_model(tmp_path: Path):
-    h5file_path = tmp_path / "drapedmodel.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
         layers, prisms = create_drape_parameters()
 
@@ -111,3 +111,18 @@ def test_copy_drape_model(tmp_path: Path):
         copy_drape = drape.copy(mask=mask)
 
         assert np.isnan(copy_drape.children[0].values).sum() == (~mask).sum()
+
+
+def test_centroids(tmp_path: Path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        layers, prisms = create_drape_parameters()
+
+        drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)
+        assert drape.centroids.shape[0] == len(layers)
+
+        rand_ind = np.random.randint(0, len(layers), 10)
+        np.testing.assert_array_almost_equal(
+            drape.centroids[rand_ind, 2],
+            layers[rand_ind, 2] + drape.z_cell_size[rand_ind] / 2,
+        )
