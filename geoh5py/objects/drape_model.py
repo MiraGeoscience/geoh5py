@@ -97,6 +97,37 @@ class DrapeModel(ObjectBase):
 
         return self._centroids
 
+    def copy(
+        self,
+        parent=None,
+        *,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ) -> DrapeModel:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
+        """
+        mask = self.validate_mask(mask)
+
+        if mask is not None:
+            layers = self.layers[mask]
+            mask_prisms = np.intersect1d(
+                np.arange(self.prisms.shape[0]), layers[:, 0]
+            ).astype(int)
+            kwargs.update({"prisms": self.prisms[mask_prisms], "layers": layers})
+
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            **kwargs,
+        )
+
+        return new_entity
+
     @property
     def layers(self) -> np.ndarray:
         """
