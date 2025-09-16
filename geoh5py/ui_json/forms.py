@@ -247,19 +247,15 @@ class FileForm(BaseForm):
             raise ValueError("File description and type lists must be the same length.")
         return self
 
-    @model_validator(mode="before")
-    @classmethod
-    def value_file_type(cls, data):
+    @model_validator(mode="after")
+    def value_file_type(self):
         bad_paths = []
-        for path in data["value"].split(";"):
-            if (
-                not data.get("directory_only", False)
-                and Path(path).suffix[1:] not in data["file_type"]
-            ):
+        for path in self.value:
+            if not self.directory_only and Path(path).suffix[1:] not in self.file_type:
                 bad_paths.append(path)
         if any(bad_paths):
             raise ValueError(f"Provided paths {bad_paths} have invalid extensions.")
-        return data
+        return self
 
     @model_validator(mode="before")
     @classmethod
