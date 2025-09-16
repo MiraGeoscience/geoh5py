@@ -65,8 +65,8 @@ class DrapeModel(ObjectBase):
 
     @property
     def z_cell_size(self) -> np.ndarray:
-        """Compute z cell sizes of drape model."""
-        grid_z = np.zeros((self.prisms.shape[0], self._layers["K"].max() + 2)) * np.nan
+        """Compute thickness of every cell in the drape model."""
+        grid_z = np.full((self.prisms.shape[0], self._layers["K"].max() + 2), np.nan)
         grid_z[:, 0] = self._prisms["Top elevation"]
         grid_z[self._layers["I"], self._layers["K"] + 1] = self._layers[
             "Bottom elevation"
