@@ -1,3 +1,5 @@
+import os
+
 from datetime import datetime
 from importlib.metadata import version as get_version
 from packaging.version import Version
@@ -25,5 +27,7 @@ def setup(app):
         "show_relbars": True,
     }
     app.config.rst_epilog = f"\n.. |copyright_notice| replace:: {get_copyright_notice()}\n"
+
+    app.googleanalytics_id = os.environ.get("GOOGLE_ANALYTICS_ID")
 
     return {"version": "0.1", "parallel_read_safe": True}

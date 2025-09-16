@@ -32,7 +32,6 @@ sphinx:
     autodoc_typehints_format: short
     suppress_warnings:
       - etoc.toctree
-    googleanalytics_id: G-9EY47HMNZX
     intersphinx_mapping:
       # use None to auto‑fetch objects.inv
       numpy:
