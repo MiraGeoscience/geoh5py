@@ -28,6 +28,8 @@ def setup(app):
     }
     app.config.rst_epilog = f"\n.. |copyright_notice| replace:: {get_copyright_notice()}\n"
 
-    app.googleanalytics_id = os.environ.get("GOOGLE_ANALYTICS_ID")
+    app.googleanalytics_id = os.environ.get("GOOGLE_ANALYTICS_ID", "")
+    if not app.googleanalytics_id:
+        app.googleanalytics_enabled = False
 
     return {"version": "0.1", "parallel_read_safe": True}
