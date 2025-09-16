@@ -40,6 +40,8 @@ sphinx:
       python:
         - https://docs.python.org/3/
         - null
+    todo_include_todos: true
+    issues_github_path: mirageoscience/geoh5py
     autodoc_type_aliases:
       np.ndarray: numpy.ndarray
       UUID: uuid.UUID
