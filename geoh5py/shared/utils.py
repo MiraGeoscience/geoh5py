@@ -615,7 +615,9 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     return val
 
 
-def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
+def box_intersect(
+    extent_a: np.ndarray | Iterable, extent_b: np.ndarray | tuple
+) -> bool:
     """
     Compute the intersection of two axis-aligned bounding extents defined by their
     arrays of minimum and maximum bounds in N-D space.
@@ -625,6 +627,12 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
 
     :return: Logic if the box extents intersect along all dimensions.
     """
+    if isinstance(extent_a, Iterable):
+        extent_a = np.vstack(extent_a)
+
+    if isinstance(extent_b, Iterable):
+        extent_b = np.vstack(extent_b)
+
     for extent in [extent_a, extent_b]:
         if not isinstance(extent, np.ndarray) or extent.ndim != 2:
             raise TypeError("Input extents must be 2D numpy.ndarrays.")
@@ -646,7 +654,7 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
 
 
 def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray, inverse: bool = False
+    locations: np.ndarray, extent: np.ndarray | Iterable, inverse: bool = False
 ) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
@@ -659,6 +667,9 @@ def mask_by_extent(
 
     :returns: Array of bool for the locations inside or outside the box extent.
     """
+    if isinstance(extent, Iterable):
+        extent = np.vstack(extent)
+
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
 
