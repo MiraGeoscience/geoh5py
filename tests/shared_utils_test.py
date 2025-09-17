@@ -70,11 +70,11 @@ def test_mask_by_extent():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Input 'extent' must be a 2D array-like"),
+        match=re.escape("Input 'locations' must be an array-like of"),
     ):
-        mask_by_extent("abc", corners)
+        mask_by_extent("abc", corners[0])
 
-    assert not mask_by_extent(np.vstack([points]), np.vstack(corners[:2])), (
+    assert not mask_by_extent(np.vstack([points]), corners[:2]), (
         "Point should have been outside."
     )
 
