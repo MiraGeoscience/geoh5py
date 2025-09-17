@@ -260,11 +260,11 @@ class FileForm(BaseForm):
     @model_validator(mode="before")
     @classmethod
     def directory_file_type(cls, data):
-        if data.get("directory_only", False) and data["file_type"] != ["directory"]:
+        if data.get("directoryOnly", False) and data["fileType"] != ["directory"]:
             raise ValueError(
                 "File type must be ['directory'] if directory_only is True."
             )
-        if data.get("directory_only", False) and data["file_description"] != [
+        if data.get("directoryOnly", False) and data["fileDescription"] != [
             "Directory"
         ]:
             raise ValueError(
