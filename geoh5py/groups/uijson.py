@@ -171,7 +171,7 @@ class UIJsonGroup(Group):
         if name is None:
             name = self.name
 
-        self.add_file(bytes_data, name=f"{name}.ui.json")
+        return self.add_file(bytes_data, name=f"{name}.ui.json")
 
     @staticmethod
     def format_input_options(options: dict | np.ndarray | bytes | None) -> dict:
