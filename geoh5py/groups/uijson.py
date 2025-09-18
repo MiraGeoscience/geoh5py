@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from uuid import UUID
 
 import numpy as np
@@ -152,6 +153,21 @@ class UIJsonGroup(Group):
 
         if len(self._options) > 0:
             self._options = self._prepare_options(self._options)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "options")
+
+    def modify_option(self, key: str, value: Any):
+        """
+        Modify a single option in the options dictionary.
+
+        :param key: the key to modify
+        :param value: The value to set
+        """
+        if key in ["geoh5", "out_group"]:
+            raise ValueError(f"Cannot modify the '{key}' entry of the options.")
+
+        self._options[key] = value
 
         if self.on_file:
             self.workspace.update_attribute(self, "options")
