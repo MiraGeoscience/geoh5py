@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from uuid import UUID
 
 import numpy as np
@@ -156,6 +157,21 @@ class UIJsonGroup(Group):
         if self.on_file:
             self.workspace.update_attribute(self, "options")
 
+    def modify_option(self, key: str, value: Any):
+        """
+        Modify a single option in the options dictionary.
+
+        :param key: the key to modify
+        :param value: The value to set
+        """
+        if key in ["geoh5", "out_group"]:
+            raise ValueError(f"Cannot modify the '{key}' entry of the options.")
+
+        self._options[key] = stringify(value)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "options")
+
     def add_ui_json(self, name: str | None = None):
         """
         Add ui.json file to entity.
@@ -171,7 +187,7 @@ class UIJsonGroup(Group):
         if name is None:
             name = self.name
 
-        self.add_file(bytes_data, name=f"{name}.ui.json")
+        return self.add_file(bytes_data, name=f"{name}.ui.json")
 
     @staticmethod
     def format_input_options(options: dict | np.ndarray | bytes | None) -> dict:

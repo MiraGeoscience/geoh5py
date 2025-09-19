@@ -175,11 +175,19 @@ def test_copy_uijson_group_no_option(tmp_path):
             )
         group.copy(name="UIJson_2", copy_children=True, copy_relatives=True)
 
+        # test editing an option
+        group.modify_option("new_option", "bidon")
+
+        assert group.options["new_option"] == "bidon"
+
     with Workspace(tmp_path / r"testGroup2.geoh5") as new_workspace:
         rec_obj = new_workspace.get_entity("copy_uijson")[0]
         assert len(rec_obj.options) == 0
 
     with Workspace(h5file_path) as workspace:
+        original = workspace.get_entity("UIJson")[0]
+        assert original.options["new_option"] == "bidon"
+
         rec_obj = workspace.get_entity("UIJson_2")[0]
         assert len(rec_obj.options) == 0
 
@@ -202,6 +210,9 @@ def test_uijson_group_errors(tmp_path):
     group.add_ui_json()
 
     assert workspace.get_entity("test.ui.json")[0]
+
+    with pytest.raises(ValueError, match="Cannot modify the 'geoh5' entry"):
+        group.modify_option("geoh5", "bidon")
 
 
 def test_double_uijson_group(tmp_path):
