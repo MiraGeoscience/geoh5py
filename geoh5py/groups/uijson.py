@@ -167,7 +167,7 @@ class UIJsonGroup(Group):
         if key in ["geoh5", "out_group"]:
             raise ValueError(f"Cannot modify the '{key}' entry of the options.")
 
-        self._options[key] = value
+        self._options[key] = stringify(value)
 
         if self.on_file:
             self.workspace.update_attribute(self, "options")
