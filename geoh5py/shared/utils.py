@@ -38,7 +38,6 @@ from .exceptions import Geoh5FileClosedError
 
 
 if TYPE_CHECKING:
-    from ..groups import Group
     from ..workspace import Workspace
     from .entity import Entity
     from .entity_container import EntityContainer
@@ -835,7 +834,15 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
 
     :return: Dictionary of string values.
     """
-    mappers = [entity2uuid, nan2str, inf2str, as_str_if_uuid, none2str, path2str]
+    mappers = [
+        entity2uuid,
+        nan2str,
+        inf2str,
+        as_str_if_uuid,
+        none2str,
+        workspace2path,
+        path2str,
+    ]
     return dict_mapper(values, mappers)
 
 
@@ -1191,3 +1198,11 @@ def copy_dict_relatives(
         return val
 
     dict_mapper(values, [copy_obj_and_group])
+
+
+def workspace2path(value):
+    if hasattr(value, "h5file"):
+        if isinstance(value.h5file, BytesIO):
+            return "[in-memory]"
+        return str(value.h5file)
+    return value

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import warnings
 from io import BytesIO
+from logging import getLogger
 from pathlib import Path
 from shutil import copy, move
 from time import time
@@ -30,12 +31,10 @@ from typing import Any
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import (
-    as_str_if_uuid,
-    dict_mapper,
-    entity2uuid,
-    fetch_active_workspace,
-)
+from geoh5py.shared.utils import fetch_active_workspace, stringify
+
+
+logger = getLogger(__name__)
 
 
 def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
@@ -321,6 +320,11 @@ def str2inf(value):
 
 
 def workspace2path(value):
+    logger.warning(
+        "Deprecation Warning - This function has been migrated to "
+        "`geoh5py.shared.utils.workspace2path` and will be removed in"
+        "future versions.",
+    )
     if isinstance(value, Workspace):
         if isinstance(value.h5file, BytesIO):
             return "[in-memory]"
@@ -337,6 +341,9 @@ def path2workspace(value):
 
 
 def container_group2name(value):
+    logger.warning(
+        "Deprecation Warning - This function will be removed in future releases."
+    )
     if isinstance(value, ContainerGroup):
         return value.name
     return value
@@ -377,6 +384,9 @@ def demote(
 
     :return: the demoted values.
     """
-    mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
+    logger.warning(
+        "Deprecation Warning - This function will be removed in future releases. "
+        "Use `geoh5py.shared.utils.stringify` instead.",
+    )
 
-    return dict_mapper(values, mappers)
+    return stringify(values)
