@@ -31,7 +31,7 @@ from typing import Any
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, Group
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import fetch_active_workspace, stringify
+from geoh5py.shared.utils import fetch_active_workspace
 
 
 logger = getLogger(__name__)
@@ -372,21 +372,3 @@ def monitored_directory_copy(
     move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
 
     return str(directory_path / temp_geoh5)
-
-
-def demote(
-    values: Any,
-):
-    """
-    Demote entities to strings or paths.
-
-    :param values: The values to demote.
-
-    :return: the demoted values.
-    """
-    logger.warning(
-        "Deprecation Warning - This function will be removed in future releases. "
-        "Use `geoh5py.shared.utils.stringify` instead.",
-    )
-
-    return stringify(values)
