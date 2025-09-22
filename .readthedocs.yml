@@ -31,5 +31,5 @@ build:
 
     build:
       html:
-        - pixi run --frozen build-docs html $READTHEDOCS_OUTPUT
+        - NO_COLOR=1 pixi run --frozen build-docs html $READTHEDOCS_OUTPUT
         - mv $READTHEDOCS_OUTPUT/_build/html/ $READTHEDOCS_OUTPUT/
