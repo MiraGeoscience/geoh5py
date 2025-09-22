@@ -1,3 +1,4 @@
+import logging
 import os
 
 from datetime import datetime
@@ -28,11 +29,9 @@ def setup(app):
     }
     app.config.rst_epilog = f"\n.. |copyright_notice| replace:: {get_copyright_notice()}\n"
 
-    app.googleanalytics_id = os.environ.get("GOOGLE_ANALYTICS_ID", "")
-    if not app.googleanalytics_id:
-        print("DEBUG: GOOGLE_ANALYTICS_ID is not set")
-        app.googleanalytics_enabled = False
-    else:
-        print(f"DEBUG: GOOGLE_ANALYTICS_ID set to: {app.googleanalytics_id}")
+    app.config.googleanalytics_id = os.environ.get("GOOGLE_ANALYTICS_ID", "")
+    if not app.config.googleanalytics_id:
+        logging.warning("Environment variable GOOGLE_ANALYTICS_ID is not set")
+        app.config.googleanalytics_enabled = False
 
     return {"version": "0.1", "parallel_read_safe": True}
