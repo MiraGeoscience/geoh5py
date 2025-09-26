@@ -43,7 +43,6 @@ from ..shared.utils import (
 )
 from .constants import base_validations, ui_validations
 from .utils import (
-    demote,
     flatten,
     path2workspace,
     set_enabled,
@@ -433,7 +432,7 @@ class InputFile:
             self.update_ui_values(self.data)
 
         with open(self.path_name, "w", encoding="utf-8") as file:
-            json.dump(stringify(demote(self.ui_json)), file, indent=4)
+            json.dump(stringify(self.ui_json), file, indent=4)
 
         return self.path_name
 
