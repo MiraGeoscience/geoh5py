@@ -32,6 +32,7 @@ from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
     BoolForm,
     DataForm,
+    FloatForm,
     IntegerForm,
     ObjectForm,
     StringForm,
@@ -344,3 +345,89 @@ def test_deprecated_annotation(tmp_path, caplog):
             my_parameter="whoopsie",
         )
     assert "Skipping deprecated field: my_parameter." in caplog.text
+
+
+def test_grouped_forms(tmp_path):
+    class MyUIJson(BaseUIJson):
+        my_param: IntegerForm
+        my_grouped_param: FloatForm
+        my_other_grouped_param: FloatForm
+
+    kwargs = {
+        "my_param": {
+            "label": "a",
+            "value": 1,
+        },
+        "my_grouped_param": {
+            "label": "b",
+            "group": "my_group",
+            "value": 1.0,
+        },
+        "my_other_grouped_param": {
+            "label": "c",
+            "group": "my_group",
+            "value": 2.0,
+        },
+    }
+
+    with Workspace(tmp_path / "test.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    groups = uijson.groups
+    assert "my_group" in groups
+    assert "my_grouped_param" in groups["my_group"]
+    assert "my_other_grouped_param" in groups["my_group"]
+
+
+def test_disabled_forms(tmp_path):
+    class MyUIJson(BaseUIJson):
+        my_param: IntegerForm
+        my_other_param: IntegerForm
+        my_grouped_param: FloatForm
+        my_other_grouped_param: FloatForm
+        my_group_disabled_param: FloatForm
+        my_other_group_disabled_param: FloatForm
+
+    kwargs = {
+        "my_param": {
+            "label": "a",
+            "value": 1,
+        },
+        "my_other_param": {
+            "label": "b",
+            "value": 2,
+            "enabled": False,
+        },
+        "my_grouped_param": {
+            "label": "c",
+            "group": "my_group",
+            "value": 1.0,
+        },
+        "my_other_grouped_param": {
+            "label": "d",
+            "group": "my_group",
+            "value": 2.0,
+        },
+        "my_group_disabled_param": {
+            "label": "e",
+            "group": "my_other_group",
+            "group_optional": True,
+            "enabled": False,
+            "value": 3.0,
+        },
+        "my_other_group_disabled_param": {
+            "label": "f",
+            "group": "my_other_group",
+            "value": 4.0,
+        },
+    }
+
+    with Workspace(tmp_path / "test.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    assert not uijson.is_disabled("my_param")
+    assert uijson.is_disabled("my_other_param")
+    assert not uijson.is_disabled("my_grouped_param")
+    assert not uijson.is_disabled("my_other_grouped_param")
+    assert uijson.is_disabled("my_group_disabled_param")
+    assert uijson.is_disabled("my_other_group_disabled_param")
