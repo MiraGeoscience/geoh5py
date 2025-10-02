@@ -116,32 +116,33 @@ class BaseForm(BaseModel):
 
         :param data: Dictionary of form data.
         """
-
+        out = BaseForm(**data)
         if "choice_list" in data:
             if data.get("multi_select", False):
-                return MultiChoiceForm(**data)
-            return ChoiceForm(**data)
+                out = MultiChoiceForm(**data)
+            else:
+                out = ChoiceForm(**data)
         if any(k in data for k in ["file_description", "file_type"]):
-            return FileForm(**data)
+            out = FileForm(**data)
         if "mesh_type" in data:
-            return ObjectForm(**data)
+            out = ObjectForm(**data)
         if "group_type" in data:
-            return GroupForm(**data)
+            out = GroupForm(**data)
         if any(
             k in data
             for k in ["parent", "association", "data_type", "is_value", "property"]
         ):
-            return DataForm(**data)
+            out = DataForm(**data)
         if isinstance(data.get("value"), str):
-            return StringForm(**data)
+            out = StringForm(**data)
         if isinstance(data.get("value"), bool):
-            return BoolForm(**data)
+            out = BoolForm(**data)
         if isinstance(data.get("value"), int):
-            return IntegerForm(**data)
+            out = IntegerForm(**data)
         if isinstance(data.get("value"), float):
-            return FloatForm(**data)
+            out = FloatForm(**data)
 
-        raise ValueError(f"Could not infer form from data: {data}")
+        return out
 
     @property
     def json_string(self):
