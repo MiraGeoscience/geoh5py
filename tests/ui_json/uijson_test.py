@@ -431,3 +431,55 @@ def test_disabled_forms(tmp_path):
     assert not uijson.is_disabled("my_other_grouped_param")
     assert uijson.is_disabled("my_group_disabled_param")
     assert uijson.is_disabled("my_other_group_disabled_param")
+
+
+def test_unknown_uijson(tmp_path):
+    ws = Workspace.create(tmp_path / "test.geoh5")
+    pts = Points.create(ws, name="my points", vertices=np.random.random((10, 3)))
+    data = pts.add_data({"my data": {"values": np.random.random(10)}})
+    kwargs = {
+        "version": "0.1.0",
+        "title": "my application",
+        "geoh5": str(tmp_path / "test.geoh5"),
+        "run_command": "python -m my_module",
+        "monitoring_directory": None,
+        "conda_environment": "test",
+        "workspace_geoh5": None,
+        "my_string_parameter": {
+            "label": "my string parameter",
+            "value": "my string value",
+        },
+        "my_integer_parameter": {
+            "label": "my integer parameter",
+            "value": 10,
+        },
+        "my_object_parameter": {
+            "label": "my object parameter",
+            "mesh_type": [Points],
+            "value": str(pts.uid),
+        },
+        "my_data_parameter": {
+            "label": "my data parameter",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "is_value": False,
+            "property": str(data.uid),
+            "value": 0.0,
+        },
+        "my_optional_parameter": {
+            "label": "my optional parameter",
+            "value": 2.0,
+            "optional": True,
+            "enabled": False,
+        },
+    }
+    uijson = BaseUIJson(**kwargs)
+    assert isinstance(uijson.data["my_string_parameter"], StringForm)
+    assert isinstance(uijson.data["my_integer_parameter"], IntegerForm)
+    assert isinstance(uijson.data["my_object_parameter"], ObjectForm)
+    assert isinstance(uijson.data["my_data_parameter"], DataForm)
+    params = uijson.to_params()
+    assert params["my_object_parameter"].uid == pts.uid
+    assert params["my_data_parameter"].uid == data.uid
+    assert "my_optional_parameter" not in params

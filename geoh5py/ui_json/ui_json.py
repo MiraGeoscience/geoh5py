@@ -70,6 +70,7 @@ class BaseUIJson(BaseModel):
     monitoring_directory: OptionalPath
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
+    _extra: dict[str, Any] | None = None
     _groups: dict[str, list[str]] | None = None
 
     @field_validator("geoh5", mode="after")
@@ -104,6 +105,33 @@ class BaseUIJson(BaseModel):
             file.write(data)
 
     @property
+    def data(self) -> dict[str, Any]:
+        """Returns all data including extra fields with form promotion."""
+        data = {field: getattr(self, field) for field in self.model_fields}
+        data.update(self.extra)
+        return data
+
+    @property
+    def extra(self) -> dict[str, Any]:
+        """Returns extra fields with form promotion."""
+
+        if self.model_extra is None:
+            return {}
+
+        if self._extra is None:
+            extra = {}
+            for field, value in self.model_extra.items():
+                if isinstance(value, dict):
+                    if all(k in value for k in ["label", "value"]):
+                        extra[field] = BaseForm.infer(value)
+                else:
+                    extra[field] = value
+
+            self._extra = extra
+
+        return self._extra
+
+    @property
     def groups(self) -> dict[str, list[str]]:
         """Returns grouped forms."""
         if self._groups is None:
@@ -125,7 +153,7 @@ class BaseUIJson(BaseModel):
     def is_disabled(self, field: str) -> bool:
         """Checks if a field is disabled based on form status."""
 
-        value = getattr(self, field)
+        value = self.data.get(field)
         if not isinstance(value, BaseForm):
             return False
         if value.enabled is False:
@@ -164,7 +192,7 @@ class BaseUIJson(BaseModel):
                     data[field] = geoh5
                     continue
 
-                value = getattr(self, field)
+                value = self.data.get(field)
                 value = value.flatten() if isinstance(value, BaseForm) else value
 
                 if isinstance(value, UUID):

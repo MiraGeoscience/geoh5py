@@ -109,6 +109,40 @@ class BaseForm(BaseModel):
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
 
+    @classmethod
+    def infer(cls, data) -> BaseForm:
+        """
+        Infer and return the appropriate form.
+
+        :param data: Dictionary of form data.
+        """
+
+        if "choice_list" in data:
+            if data.get("multi_select", False):
+                return MultiChoiceForm(**data)
+            return ChoiceForm(**data)
+        if any(k in data for k in ["file_description", "file_type"]):
+            return FileForm(**data)
+        if "mesh_type" in data:
+            return ObjectForm(**data)
+        if "group_type" in data:
+            return GroupForm(**data)
+        if any(
+            k in data
+            for k in ["parent", "association", "data_type", "is_value", "property"]
+        ):
+            return DataForm(**data)
+        if isinstance(data.get("value"), str):
+            return StringForm(**data)
+        if isinstance(data.get("value"), bool):
+            return BoolForm(**data)
+        if isinstance(data.get("value"), int):
+            return IntegerForm(**data)
+        if isinstance(data.get("value"), float):
+            return FloatForm(**data)
+
+        raise ValueError(f"Could not infer form from data: {data}")
+
     @property
     def json_string(self):
         return self.model_dump_json(exclude_unset=True, by_alias=True)
