@@ -51,6 +51,9 @@ from geoh5py.shared.validators import (
 )
 
 
+# pylint: disable=too-many-return-statements
+
+
 class DependencyType(str, Enum):
     ENABLED = "enabled"
     DISABLED = "disabled"
@@ -116,33 +119,32 @@ class BaseForm(BaseModel):
 
         :param data: Dictionary of form data.
         """
-        out = BaseForm(**data)
+
         if "choice_list" in data:
             if data.get("multi_select", False):
-                out = MultiChoiceForm(**data)
-            else:
-                out = ChoiceForm(**data)
+                return MultiChoiceForm(**data)
+            return ChoiceForm(**data)
         if any(k in data for k in ["file_description", "file_type"]):
-            out = FileForm(**data)
+            return FileForm(**data)
         if "mesh_type" in data:
-            out = ObjectForm(**data)
+            return ObjectForm(**data)
         if "group_type" in data:
-            out = GroupForm(**data)
+            return GroupForm(**data)
         if any(
             k in data
             for k in ["parent", "association", "data_type", "is_value", "property"]
         ):
-            out = DataForm(**data)
+            return DataForm(**data)
         if isinstance(data.get("value"), str):
-            out = StringForm(**data)
+            return StringForm(**data)
         if isinstance(data.get("value"), bool):
-            out = BoolForm(**data)
+            return BoolForm(**data)
         if isinstance(data.get("value"), int):
-            out = IntegerForm(**data)
+            return IntegerForm(**data)
         if isinstance(data.get("value"), float):
-            out = FloatForm(**data)
+            return FloatForm(**data)
 
-        return out
+        raise ValueError(f"Could not infer form from data: {data}")
 
     @property
     def json_string(self):
