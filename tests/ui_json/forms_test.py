@@ -451,17 +451,17 @@ def test_flatten():
 
 def test_base_form_infer(tmp_path):
     form = BaseForm.infer({"label": "test", "value": "test"})
-    assert isinstance(form, StringForm)
+    assert form == StringForm
     form = BaseForm.infer({"label": "test", "value": 1})
-    assert isinstance(form, IntegerForm)
+    assert form == IntegerForm
     form = BaseForm.infer({"label": "test", "value": 1.0})
-    assert isinstance(form, FloatForm)
+    assert form == FloatForm
     form = BaseForm.infer({"label": "test", "value": True})
-    assert isinstance(form, BoolForm)
+    assert form == BoolForm
     form = BaseForm.infer(
         {"label": "test", "value": str(uuid.uuid4()), "mesh_type": [Points]}
     )
-    assert isinstance(form, ObjectForm)
+    assert form == ObjectForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -471,11 +471,11 @@ def test_base_form_infer(tmp_path):
             "data_type": "Float",
         }
     )
-    assert isinstance(form, DataForm)
+    assert form == DataForm
     form = BaseForm.infer(
         {"label": "test", "group_type": PropertyGroup, "value": str(uuid.uuid4())}
     )
-    assert isinstance(form, GroupForm)
+    assert form == GroupForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -485,11 +485,11 @@ def test_base_form_infer(tmp_path):
             "file_description": ["something"],
         }
     )
-    assert isinstance(form, FileForm)
+    assert form == FileForm
     form = BaseForm.infer(
         {"label": "test", "value": "test", "choice_list": ["test", "other"]}
     )
-    assert isinstance(form, ChoiceForm)
+    assert form == ChoiceForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -498,4 +498,4 @@ def test_base_form_infer(tmp_path):
             "choice_list": ["test", "other", "another"],
         }
     )
-    assert isinstance(form, MultiChoiceForm)
+    assert form == MultiChoiceForm
