@@ -113,7 +113,12 @@ class BaseUIJson(BaseModel):
 
     @property
     def extra(self) -> dict[str, Any]:
-        """Returns extra fields with form promotion."""
+        """
+        Collect fields not recognized by the UIJson class.
+
+        return: Dictionary of all fields not defined in the model.  If value
+            is a dictionary, it will be promoted to a form with inferred type.
+        """
 
         if self.model_extra is None:
             return {}
