@@ -455,7 +455,7 @@ def test_unknown_uijson(tmp_path):
         },
         "my_object_parameter": {
             "label": "my object parameter",
-            "mesh_type": [Points],
+            "mesh_type": "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
             "value": str(pts.uid),
         },
         "my_data_parameter": {
@@ -474,11 +474,14 @@ def test_unknown_uijson(tmp_path):
             "enabled": False,
         },
     }
-    uijson = BaseUIJson(**kwargs)
-    assert isinstance(uijson.data["my_string_parameter"], StringForm)
-    assert isinstance(uijson.data["my_integer_parameter"], IntegerForm)
-    assert isinstance(uijson.data["my_object_parameter"], ObjectForm)
-    assert isinstance(uijson.data["my_data_parameter"], DataForm)
+    with open(tmp_path / "test.ui.json", mode="w", encoding="utf8") as file:
+        file.write(json.dumps(kwargs))
+    uijson = BaseUIJson.read(tmp_path / "test.ui.json")
+
+    assert isinstance(uijson.my_string_parameter, StringForm)
+    assert isinstance(uijson.my_integer_parameter, IntegerForm)
+    assert isinstance(uijson.my_object_parameter, ObjectForm)
+    assert isinstance(uijson.my_data_parameter, DataForm)
     params = uijson.to_params()
     assert params["my_object_parameter"].uid == pts.uid
     assert params["my_data_parameter"].uid == data.uid

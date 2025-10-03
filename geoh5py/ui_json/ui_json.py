@@ -30,6 +30,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainSerializer,
+    create_model,
     field_validator,
 )
 
@@ -95,6 +96,23 @@ class BaseUIJson(BaseModel):
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
 
+        if cls == BaseUIJson:
+            fields = {}
+            for name, value in kwargs.items():
+                if name in BaseUIJson.model_fields:
+                    continue
+                if isinstance(value, dict):
+                    fields[name] = (BaseForm.infer(value), ...)
+                else:
+                    fields[name] = (type(value), ...)
+
+            model = create_model(  # type: ignore
+                "UnknownUIJson",
+                __base__=BaseUIJson,
+                **fields,
+            )
+            return model(**kwargs)
+
         return cls(**kwargs)
 
     def write(self, path: Path):
@@ -103,38 +121,6 @@ class BaseUIJson(BaseModel):
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
-
-    @property
-    def data(self) -> dict[str, Any]:
-        """Returns all data including extra fields with form promotion."""
-        data = {field: getattr(self, field) for field in self.model_fields}
-        data.update(self.extra)
-        return data
-
-    @property
-    def extra(self) -> dict[str, Any]:
-        """
-        Collect fields not recognized by the UIJson class.
-
-        return: Dictionary of all fields not defined in the model.  If value
-            is a dictionary, it will be promoted to a form with inferred type.
-        """
-
-        if self.model_extra is None:
-            return {}
-
-        if self._extra is None:
-            extra = {}
-            for field, value in self.model_extra.items():
-                if isinstance(value, dict):
-                    if all(k in value for k in ["label", "value"]):
-                        extra[field] = BaseForm.infer(value)
-                else:
-                    extra[field] = value
-
-            self._extra = extra
-
-        return self._extra
 
     @property
     def groups(self) -> dict[str, list[str]]:
@@ -158,7 +144,7 @@ class BaseUIJson(BaseModel):
     def is_disabled(self, field: str) -> bool:
         """Checks if a field is disabled based on form status."""
 
-        value = self.data.get(field)
+        value = getattr(self, field)
         if not isinstance(value, BaseForm):
             return False
         if value.enabled is False:
@@ -197,7 +183,7 @@ class BaseUIJson(BaseModel):
                     data[field] = geoh5
                     continue
 
-                value = self.data.get(field)
+                value = getattr(self, field)
                 value = value.flatten() if isinstance(value, BaseForm) else value
 
                 if isinstance(value, UUID):

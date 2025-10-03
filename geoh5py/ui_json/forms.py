@@ -113,7 +113,7 @@ class BaseForm(BaseModel):
     group_dependency_type: DependencyType = DependencyType.ENABLED
 
     @classmethod
-    def infer(cls, data) -> BaseForm:
+    def infer(cls, data) -> type[BaseForm]:
         """
         Infer and return the appropriate form.
 
@@ -122,27 +122,27 @@ class BaseForm(BaseModel):
 
         if "choice_list" in data:
             if data.get("multi_select", False):
-                return MultiChoiceForm(**data)
-            return ChoiceForm(**data)
+                return MultiChoiceForm
+            return ChoiceForm
         if any(k in data for k in ["file_description", "file_type"]):
-            return FileForm(**data)
+            return FileForm
         if "mesh_type" in data:
-            return ObjectForm(**data)
+            return ObjectForm
         if "group_type" in data:
-            return GroupForm(**data)
+            return GroupForm
         if any(
             k in data
             for k in ["parent", "association", "data_type", "is_value", "property"]
         ):
-            return DataForm(**data)
+            return DataForm
         if isinstance(data.get("value"), str):
-            return StringForm(**data)
+            return StringForm
         if isinstance(data.get("value"), bool):
-            return BoolForm(**data)
+            return BoolForm
         if isinstance(data.get("value"), int):
-            return IntegerForm(**data)
+            return IntegerForm
         if isinstance(data.get("value"), float):
-            return FloatForm(**data)
+            return FloatForm
 
         raise ValueError(f"Could not infer form from data: {data}")
 
