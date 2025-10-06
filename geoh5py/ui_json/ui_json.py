@@ -30,6 +30,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainSerializer,
+    create_model,
     field_validator,
 )
 
@@ -93,6 +94,23 @@ class BaseUIJson(BaseModel):
 
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
+
+        if cls == BaseUIJson:
+            fields = {}
+            for name, value in kwargs.items():
+                if name in BaseUIJson.model_fields:
+                    continue
+                if isinstance(value, dict):
+                    fields[name] = (BaseForm.infer(value), ...)
+                else:
+                    fields[name] = (type(value), ...)
+
+            model = create_model(  # type: ignore
+                "UnknownUIJson",
+                __base__=BaseUIJson,
+                **fields,
+            )
+            return model(**kwargs)
 
         return cls(**kwargs)
 
