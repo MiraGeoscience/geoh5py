@@ -113,26 +113,26 @@ class BaseForm(BaseModel):
     group_dependency_type: DependencyType = DependencyType.ENABLED
 
     @classmethod
-    def infer(cls, data) -> type[BaseForm]:
+    def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
         """
         Infer and return the appropriate form.
 
         :param data: Dictionary of form data.
         """
-
-        if "choice_list" in data:
-            if data.get("multi_select", False):
+        data = {to_camel(k): v for k, v in data.items()}
+        if "choiceList" in data:
+            if data.get("multiSelect", False):
                 return MultiChoiceForm
             return ChoiceForm
-        if any(k in data for k in ["file_description", "file_type"]):
+        if any(k in data for k in ["fileDescription", "file_Type"]):
             return FileForm
-        if "mesh_type" in data:
+        if "meshType" in data:
             return ObjectForm
-        if "group_type" in data:
+        if "groupType" in data:
             return GroupForm
         if any(
             k in data
-            for k in ["parent", "association", "data_type", "is_value", "property"]
+            for k in ["parent", "association", "dataType", "isValue", "property"]
         ):
             return DataForm
         if isinstance(data.get("value"), str):
