@@ -124,7 +124,7 @@ class BaseForm(BaseModel):
             if data.get("multiSelect", False):
                 return MultiChoiceForm
             return ChoiceForm
-        if any(k in data for k in ["fileDescription", "file_Type"]):
+        if any(k in data for k in ["fileDescription", "fileType"]):
             return FileForm
         if "meshType" in data:
             return ObjectForm
