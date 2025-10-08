@@ -60,3 +60,22 @@ def test_attribute_change(parameter):
     setattr(curve, parameter, not default)
 
     assert getattr(curve, parameter) != default
+
+
+def test_single_sibling_visibility(tmp_path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        xyz = np.random.randn(10, 3)
+        curve = Curve.create(workspace, vertices=xyz)
+
+        data = curve.add_data(
+            {
+                "Period1": {"values": np.random.rand(10)},
+                "Period2": {"values": np.random.rand(10)},
+            }
+        )
+
+        data[0].visible = True
+        data[1].visible = True
+
+        assert data[1].visible is True
+        assert data[0].visible is False
