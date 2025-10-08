@@ -25,10 +25,10 @@ from abc import ABC
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from io import BytesIO
-from json import loads
+from json import dumps, loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from uuid import NAMESPACE_DNS, UUID, uuid5
 from warnings import warn
 
 import h5py
@@ -1206,3 +1206,33 @@ def workspace2path(value):
             return "[in-memory]"
         return str(value.h5file)
     return value
+
+
+def dict_to_json_str(data: dict) -> str:
+    """
+    Format all values in a dictionary for json serialization.
+
+    :param data: Dictionary of values to be converted.
+
+    :return: A json string representation of the dictionary.
+    """
+    formatted = stringify(data)
+    formatted = dict_mapper(
+        formatted, [lambda x: f"{x:.4e}" if isinstance(x, float) else x]
+    )
+    return dumps(formatted, indent=4)
+
+
+def uuid_from_values(data: dict | str) -> UUID:
+    """
+    Create a deterministic uuid for values. If values are provided as a dictionary,
+    they are first converted to a json string.
+
+    :param data: Tuple containing the values of a sweep iteration.
+
+    :returns: Unique but recoverable uuid file identifier string.
+    """
+    if isinstance(data, dict):
+        data = dict_to_json_str(data)
+
+    return uuid5(NAMESPACE_DNS, str(data))
