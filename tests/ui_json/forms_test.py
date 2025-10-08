@@ -459,7 +459,11 @@ def test_base_form_infer(tmp_path):
     form = BaseForm.infer({"label": "test", "value": True})
     assert form == BoolForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": [Points]}
+        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]}
+    )
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points}
     )
     assert form == ObjectForm
     form = BaseForm.infer(
@@ -468,32 +472,32 @@ def test_base_form_infer(tmp_path):
             "value": str(uuid.uuid4()),
             "parent": "my_param",
             "association": "Vertex",
-            "data_type": "Float",
+            "dataType": "Float",
         }
     )
     assert form == DataForm
     form = BaseForm.infer(
-        {"label": "test", "group_type": PropertyGroup, "value": str(uuid.uuid4())}
+        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())}
     )
     assert form == GroupForm
     form = BaseForm.infer(
         {
             "label": "test",
             "value": tmp_path,
-            "directory_only": True,
-            "file_type": ["ext"],
-            "file_description": ["something"],
+            "directoryOnly": True,
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
         }
     )
     assert form == FileForm
     form = BaseForm.infer(
-        {"label": "test", "value": "test", "choice_list": ["test", "other"]}
+        {"label": "test", "value": "test", "choiceList": ["test", "other"]}
     )
     assert form == ChoiceForm
     form = BaseForm.infer(
         {
             "label": "test",
-            "multi_select": True,
+            "multiSelect": True,
             "value": ["test", "other"],
             "choice_list": ["test", "other", "another"],
         }

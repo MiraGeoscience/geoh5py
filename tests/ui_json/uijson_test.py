@@ -473,6 +473,18 @@ def test_unknown_uijson(tmp_path):
             "optional": True,
             "enabled": False,
         },
+        "my_group_optional_parameter": {
+            "label": "my group optional parameter",
+            "value": 3.0,
+            "group": "my group",
+            "group_optional": True,
+            "enabled": False,
+        },
+        "my_grouped_parameter": {
+            "label": "my grouped parameter",
+            "value": 4.0,
+            "group": "my group",
+        },
     }
     with open(tmp_path / "test.ui.json", mode="w", encoding="utf8") as file:
         file.write(json.dumps(kwargs))
@@ -486,3 +498,5 @@ def test_unknown_uijson(tmp_path):
     assert params["my_object_parameter"].uid == pts.uid
     assert params["my_data_parameter"].uid == data.uid
     assert "my_optional_parameter" not in params
+    assert "my_group_optional_parameter" not in params
+    assert "my_grouped_parameter" not in params
