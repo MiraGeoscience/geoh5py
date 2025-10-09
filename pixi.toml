@@ -87,10 +87,11 @@ sphinxcontrib-googleanalytics = '*'
 [feature.doc.tasks.build-docs]
 args = [
   { arg = "builder",   default = "html" },
-  { arg = "outputdir", default = "docs" }
+  { arg = "outputdir", default = "docs" },
+  { arg = "extra_args", default = "" }
 ]
 # TODO: add -W option to fail on warnings
-cmd = "jupyter-book build -v -n --builder {{builder}} docs --path-output {{outputdir}}"
+cmd = "jupyter-book build -v -n --builder {{builder}} docs --path-output {{outputdir}} {{extra_args}}"
 
 [tasks.show-pip-source]
 args = ["packages"]
