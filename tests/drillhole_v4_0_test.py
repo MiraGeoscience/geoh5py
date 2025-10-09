@@ -1071,7 +1071,7 @@ def test_add_data_to_property(tmp_path):
             "property_group"
         ].depth_table_by_name("new value", mapped=True)
 
-        assert verificationf[0][0][:3] == "abc"
+        assert verificationf[0][0] == value_map[verification_map_value[0]]
 
 
 def test_tables_errors(tmp_path):

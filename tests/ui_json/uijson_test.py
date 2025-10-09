@@ -32,6 +32,7 @@ from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
     BoolForm,
     DataForm,
+    FloatForm,
     IntegerForm,
     ObjectForm,
     StringForm,
@@ -344,3 +345,158 @@ def test_deprecated_annotation(tmp_path, caplog):
             my_parameter="whoopsie",
         )
     assert "Skipping deprecated field: my_parameter." in caplog.text
+
+
+def test_grouped_forms(tmp_path):
+    class MyUIJson(BaseUIJson):
+        my_param: IntegerForm
+        my_grouped_param: FloatForm
+        my_other_grouped_param: FloatForm
+
+    kwargs = {
+        "my_param": {
+            "label": "a",
+            "value": 1,
+        },
+        "my_grouped_param": {
+            "label": "b",
+            "group": "my_group",
+            "value": 1.0,
+        },
+        "my_other_grouped_param": {
+            "label": "c",
+            "group": "my_group",
+            "value": 2.0,
+        },
+    }
+
+    with Workspace(tmp_path / "test.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    groups = uijson.groups
+    assert "my_group" in groups
+    assert "my_grouped_param" in groups["my_group"]
+    assert "my_other_grouped_param" in groups["my_group"]
+
+
+def test_disabled_forms(tmp_path):
+    class MyUIJson(BaseUIJson):
+        my_param: IntegerForm
+        my_other_param: IntegerForm
+        my_grouped_param: FloatForm
+        my_other_grouped_param: FloatForm
+        my_group_disabled_param: FloatForm
+        my_other_group_disabled_param: FloatForm
+
+    kwargs = {
+        "my_param": {
+            "label": "a",
+            "value": 1,
+        },
+        "my_other_param": {
+            "label": "b",
+            "value": 2,
+            "enabled": False,
+        },
+        "my_grouped_param": {
+            "label": "c",
+            "group": "my_group",
+            "value": 1.0,
+        },
+        "my_other_grouped_param": {
+            "label": "d",
+            "group": "my_group",
+            "value": 2.0,
+        },
+        "my_group_disabled_param": {
+            "label": "e",
+            "group": "my_other_group",
+            "group_optional": True,
+            "enabled": False,
+            "value": 3.0,
+        },
+        "my_other_group_disabled_param": {
+            "label": "f",
+            "group": "my_other_group",
+            "value": 4.0,
+        },
+    }
+
+    with Workspace(tmp_path / "test.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    assert not uijson.is_disabled("my_param")
+    assert uijson.is_disabled("my_other_param")
+    assert not uijson.is_disabled("my_grouped_param")
+    assert not uijson.is_disabled("my_other_grouped_param")
+    assert uijson.is_disabled("my_group_disabled_param")
+    assert uijson.is_disabled("my_other_group_disabled_param")
+
+
+def test_unknown_uijson(tmp_path):
+    ws = Workspace.create(tmp_path / "test.geoh5")
+    pts = Points.create(ws, name="my points", vertices=np.random.random((10, 3)))
+    data = pts.add_data({"my data": {"values": np.random.random(10)}})
+    kwargs = {
+        "version": "0.1.0",
+        "title": "my application",
+        "geoh5": str(tmp_path / "test.geoh5"),
+        "run_command": "python -m my_module",
+        "monitoring_directory": None,
+        "conda_environment": "test",
+        "workspace_geoh5": None,
+        "my_string_parameter": {
+            "label": "my string parameter",
+            "value": "my string value",
+        },
+        "my_integer_parameter": {
+            "label": "my integer parameter",
+            "value": 10,
+        },
+        "my_object_parameter": {
+            "label": "my object parameter",
+            "mesh_type": "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
+            "value": str(pts.uid),
+        },
+        "my_data_parameter": {
+            "label": "my data parameter",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "is_value": False,
+            "property": str(data.uid),
+            "value": 0.0,
+        },
+        "my_optional_parameter": {
+            "label": "my optional parameter",
+            "value": 2.0,
+            "optional": True,
+            "enabled": False,
+        },
+        "my_group_optional_parameter": {
+            "label": "my group optional parameter",
+            "value": 3.0,
+            "group": "my group",
+            "group_optional": True,
+            "enabled": False,
+        },
+        "my_grouped_parameter": {
+            "label": "my grouped parameter",
+            "value": 4.0,
+            "group": "my group",
+        },
+    }
+    with open(tmp_path / "test.ui.json", mode="w", encoding="utf8") as file:
+        file.write(json.dumps(kwargs))
+    uijson = BaseUIJson.read(tmp_path / "test.ui.json")
+
+    assert isinstance(uijson.my_string_parameter, StringForm)
+    assert isinstance(uijson.my_integer_parameter, IntegerForm)
+    assert isinstance(uijson.my_object_parameter, ObjectForm)
+    assert isinstance(uijson.my_data_parameter, DataForm)
+    params = uijson.to_params()
+    assert params["my_object_parameter"].uid == pts.uid
+    assert params["my_data_parameter"].uid == data.uid
+    assert "my_optional_parameter" not in params
+    assert "my_group_optional_parameter" not in params
+    assert "my_grouped_parameter" not in params

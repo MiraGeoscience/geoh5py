@@ -1,0 +1,36 @@
+name: Microsoft DevOps Security Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
+  push:
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  msdo:
+    name: MSDO analysis
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      id-token: write
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-msdo.yml@main
+    secrets:
+      sarif_upload_token: ${{ secrets.GITHUB_TOKEN }}

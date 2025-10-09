@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from io import BytesIO
 from json import loads
@@ -38,10 +38,9 @@ from .exceptions import Geoh5FileClosedError
 
 
 if TYPE_CHECKING:
-    from ..groups import PropertyGroup
     from ..workspace import Workspace
     from .entity import Entity
-    from .entity_type import EntityType
+    from .entity_container import EntityContainer
 
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
@@ -597,6 +596,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     :return val: Transformed values
     """
     if isinstance(val, dict):
+        val = val.copy()
         for key, values in val.items():
             short_list = string_funcs.copy()
             if omit is not None:
@@ -615,16 +615,24 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     return val
 
 
-def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
+def box_intersect(
+    extent_a: np.ndarray | Sequence, extent_b: np.ndarray | Sequence
+) -> bool:
     """
     Compute the intersection of two axis-aligned bounding extents defined by their
     arrays of minimum and maximum bounds in N-D space.
 
-    :param extent_a: First extent or shape (2, N)
-    :param extent_b: Second extent or shape (2, N)
+    :param extent_a: First extent coordinated, array or list of shape (2, N)
+    :param extent_b: Second extent coordinated, array or list of shape (2, N)
 
     :return: Logic if the box extents intersect along all dimensions.
     """
+    if isinstance(extent_a, Sequence):
+        extent_a = np.vstack(extent_a)
+
+    if isinstance(extent_b, Sequence):
+        extent_b = np.vstack(extent_b)
+
     for extent in [extent_a, extent_b]:
         if not isinstance(extent, np.ndarray) or extent.ndim != 2:
             raise TypeError("Input extents must be 2D numpy.ndarrays.")
@@ -646,7 +654,7 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
 
 
 def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray, inverse: bool = False
+    locations: np.ndarray, extent: np.ndarray | Sequence, inverse: bool = False
 ) -> np.ndarray:
     r"""
     Find indices of locations within a rectangular extent.
@@ -659,6 +667,9 @@ def mask_by_extent(
 
     :returns: Array of bool for the locations inside or outside the box extent.
     """
+    if isinstance(extent, Sequence):
+        extent = np.vstack(extent)
+
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
 
@@ -815,24 +826,24 @@ def map_attributes(object_, **kwargs):
     set_attributes(object_, **values)
 
 
-def stringify(values: dict[str, Any], extra_func: None | list = None) -> dict[str, Any]:
+def stringify(values: dict[str, Any]) -> dict[str, Any]:
     """
     Convert all values in a dictionary to string.
 
     :param values: Dictionary of values to be converted.
-    :param extra_func: List of extra functions to apply to values.
 
     :return: Dictionary of string values.
     """
-    mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
-    if extra_func is not None:
-        mappers.extend(extra_func)
-
-    string_dict = {}
-    for key, value in values.items():
-        string_dict[key] = dict_mapper(value, mappers)
-
-    return string_dict
+    mappers = [
+        entity2uuid,
+        nan2str,
+        inf2str,
+        as_str_if_uuid,
+        none2str,
+        workspace2path,
+        path2str,
+    ]
+    return dict_mapper(values, mappers)
 
 
 def to_list(value: Any) -> list:
@@ -1149,3 +1160,49 @@ def extract_uids(values) -> list[UUID] | None:
         uids.append(uid)
 
     return uids
+
+
+def copy_dict_relatives(
+    values: dict, parent: EntityContainer | Workspace, clear_cache: bool = False
+):
+    """
+    Copy the objects and groups referenced in a dictionary of values to a new parent.
+
+    The input dictionary is not modified. The values must be already promoted.
+
+    :param values: A dictionary of values possibly containing references to objects and groups.
+    :param parent: The parent to copy the objects and groups to.
+    :param clear_cache: If True, clear the array attributes of the copied objects and groups.
+    """
+
+    # 2. do the copy
+    def copy_obj_and_group(val: Any) -> Any:
+        """
+        Function to copy objects and groups found in the options.
+        To be used in dict_mapper for intricate structures.
+
+        :param val: The value to check and possibly copy.
+
+        :return: The same value
+        """
+        if hasattr(val, "children"):
+            if val.workspace.h5file == parent.workspace.h5file:
+                raise ValueError("Cannot copy objects within the same workspace.")
+
+            # do not copy if the uuid already exists in the parent workspace
+            if parent.workspace.get_entity(val.uid)[0] is not None:
+                return val
+
+            val.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
+
+        return val
+
+    dict_mapper(values, [copy_obj_and_group])
+
+
+def workspace2path(value):
+    if hasattr(value, "h5file"):
+        if isinstance(value.h5file, BytesIO):
+            return "[in-memory]"
+        return str(value.h5file)
+    return value

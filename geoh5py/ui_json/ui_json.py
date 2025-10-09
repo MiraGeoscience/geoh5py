@@ -30,6 +30,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainSerializer,
+    create_model,
     field_validator,
 )
 
@@ -70,6 +71,7 @@ class BaseUIJson(BaseModel):
     monitoring_directory: OptionalPath
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
+    _groups: dict[str, list[str]] | None = None
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -93,6 +95,23 @@ class BaseUIJson(BaseModel):
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
 
+        if cls == BaseUIJson:
+            fields = {}
+            for name, value in kwargs.items():
+                if name in BaseUIJson.model_fields:
+                    continue
+                if isinstance(value, dict):
+                    fields[name] = (BaseForm.infer(value), ...)
+                else:
+                    fields[name] = (type(value), ...)
+
+            model = create_model(  # type: ignore
+                "UnknownUIJson",
+                __base__=BaseUIJson,
+                **fields,
+            )
+            return model(**kwargs)
+
         return cls(**kwargs)
 
     def write(self, path: Path):
@@ -101,6 +120,45 @@ class BaseUIJson(BaseModel):
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
+
+    @property
+    def groups(self) -> dict[str, list[str]]:
+        """Returns grouped forms."""
+        if self._groups is None:
+            groups: dict[str, list[str]] = {}
+            for field in self.model_fields:
+                form = getattr(self, field)
+                if not isinstance(form, BaseForm):
+                    continue
+                name = getattr(form, "group", "")
+                if name:
+                    groups[name] = (
+                        [field] if name not in groups else groups[name] + [field]
+                    )
+
+            self._groups = groups
+
+        return self._groups
+
+    def is_disabled(self, field: str) -> bool:
+        """Checks if a field is disabled based on form status."""
+
+        value = getattr(self, field)
+        if not isinstance(value, BaseForm):
+            return False
+        if value.enabled is False:
+            return True
+
+        disabled = False
+        if value.group:
+            group = next(v for k, v in self.groups.items() if field in v)
+            for member in group:
+                form = getattr(self, member)
+                if form.group_optional:
+                    disabled = not form.enabled
+                    break
+
+        return disabled
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
@@ -117,6 +175,9 @@ class BaseUIJson(BaseModel):
             data = {}
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
             for field in self.model_fields_set:
+                if self.is_disabled(field):
+                    continue
+
                 if field == "geoh5":
                     data[field] = geoh5
                     continue
