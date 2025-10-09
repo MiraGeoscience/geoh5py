@@ -25,7 +25,6 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.groups import Group
 from geoh5py.shared.utils import (
     copy_dict_relatives,
     dict_mapper,
@@ -34,6 +33,8 @@ from geoh5py.shared.utils import (
     str_json_to_dict,
     stringify,
 )
+
+from .base import Group
 
 
 class UIJsonGroup(Group):
