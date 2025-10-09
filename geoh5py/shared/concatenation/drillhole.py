@@ -305,11 +305,13 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 if from_to.shape[0] == 2:
                     from_to = from_to.T
 
-            assert from_to.shape[0] >= len(values), (
-                f"Mismatch between input 'from_to' shape{from_to.shape} "
-                + f"and 'values' shape{values.shape}"
-            )
-            assert from_to.shape[1] == 2, "The `from-to` values must have shape(*, 2)"
+            if from_to.shape[0] < len(values):
+                raise ValueError(
+                    f"Mismatch between input 'from_to' shape{from_to.shape} "
+                    f"and 'values' shape{values.shape}."
+                )
+            if from_to.shape[1] != 2:
+                raise ValueError("The 'from-to' values must have shape(*, 2).")
 
         if (
             from_to is not None
