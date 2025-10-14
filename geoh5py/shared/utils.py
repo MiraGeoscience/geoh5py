@@ -1227,9 +1227,11 @@ def uuid_from_values(data: dict | str) -> UUID:
     """
     Create a deterministic uuid of a dictionary or its json string representation.
 
-    Floats are formatted to fixed precision scientific notation and objects are converted to uid strings.
+    Floats are formatted to fixed precision scientific notation and objects are
+    converted to uid strings.
 
-    :param data: Dictionary or a string representation of a dictionary containing parameters/values of an application.
+    :param data: Dictionary or a string representation of a dictionary containing
+    parameters/values of an application.
 
     :returns: Unique but recoverable uuid file identifier string.
     """
