@@ -211,7 +211,7 @@ class ObjectBase(EntityContainer):
                     **{
                         key: val
                         for key, val in attr.items()
-                        if key not in ["parent", "entity_type", "type"]
+                        if key not in ["parent", "entity_type", "type", "visible"]
                     },
                 },
                 entity_type=self.workspace.validate_data_type(attr, attr.get("values")),
