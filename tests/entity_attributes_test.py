@@ -79,3 +79,7 @@ def test_single_sibling_visibility(tmp_path):
 
         assert data[1].visible is True
         assert data[0].visible is False
+
+    with Workspace(tmp_path / f"{__name__}.geoh5", mode="r") as workspace:
+        data = workspace.get_entity("Period2")[0]
+        assert data.visible is True
