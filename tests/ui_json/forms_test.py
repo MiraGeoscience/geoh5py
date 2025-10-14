@@ -125,6 +125,15 @@ def test_base_form_serieralization():
     assert "dependencyType" in json
 
 
+def test_hide_dependency_type(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as ws:
+        form = StringForm(
+            label="name", value="test", dependency="my_param", dependency_type="show"
+        )
+        form = setup_from_uijson(ws, form)
+        assert form.dependency_type == "show"
+
+
 def test_string_form():
     form = StringForm(label="name", value="test")
     assert form.label == "name"

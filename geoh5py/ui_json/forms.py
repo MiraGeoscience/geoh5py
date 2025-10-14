@@ -57,6 +57,8 @@ from geoh5py.shared.validators import (
 class DependencyType(str, Enum):
     ENABLED = "enabled"
     DISABLED = "disabled"
+    SHOW = "show"
+    HIDE = "hide"
 
 
 class BaseForm(BaseModel):
