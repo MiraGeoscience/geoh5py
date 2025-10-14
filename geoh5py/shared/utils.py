@@ -1225,7 +1225,7 @@ def dict_to_json_str(data: dict) -> str:
 
 def uuid_from_values(data: dict | str) -> UUID:
     """
-    Create a deterministic uuid for values. If values are provided as a dictionary,
+    Create a deterministic uuid of a dictionary or its json string representation.
     they are first converted to a json string.
 
     :param data: Tuple containing the values of a sweep iteration.
