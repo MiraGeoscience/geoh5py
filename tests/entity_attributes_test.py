@@ -69,13 +69,10 @@ def test_single_sibling_visibility(tmp_path):
 
         data = curve.add_data(
             {
-                "Period1": {"values": np.random.rand(10)},
-                "Period2": {"values": np.random.rand(10)},
+                "Period1": {"values": np.random.rand(10), "visible": True},
+                "Period2": {"values": np.random.rand(10), "visible": True},
             }
         )
-
-        data[0].visible = True
-        data[1].visible = True
 
         assert data[1].visible is True
         assert data[0].visible is False

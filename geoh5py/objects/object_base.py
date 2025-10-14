@@ -222,6 +222,7 @@ class ObjectBase(EntityContainer):
             if isinstance(data_object, VisualParameters):
                 self.visual_parameters = data_object
 
+            data_object.visible = attr.get("visible", False)
             property_groups.setdefault(validate_property_group, []).append(data_object)
             data_objects.append(data_object)
 
