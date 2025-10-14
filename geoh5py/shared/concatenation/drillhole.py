@@ -280,7 +280,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
 
         return out_group
 
-    def validate_interval_data(
+    def validate_interval_data(  # pylint: disable=too-many-branches
         self,
         from_to: list | np.ndarray | None,
         values: np.ndarray,
