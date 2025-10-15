@@ -109,7 +109,7 @@ def test_dependency_type_enum():
     assert form.dependency_type == "enabled"
 
     with pytest.raises(
-        ValidationError, match="Input should be 'enabled' or 'disabled'"
+        ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
         _ = BaseForm(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
