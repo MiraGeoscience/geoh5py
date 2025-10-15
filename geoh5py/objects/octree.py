@@ -317,9 +317,9 @@ class Octree(GridObject):
             )
 
         if np.issubdtype(array.dtype, np.number):
-            assert array.shape[1] == 4, (
-                "'octree_cells' requires an ndarray of shape (*, 4)"
-            )
+            if array.shape[1] != 4:
+                raise ValueError("'octree_cells' requires an ndarray of shape (*, 4).")
+
             array = np.asarray(
                 np.core.records.fromarrays(
                     array.T.tolist(),
