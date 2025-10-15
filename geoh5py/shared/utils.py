@@ -25,10 +25,10 @@ from abc import ABC
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from io import BytesIO
-from json import loads
+from json import dumps, loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from uuid import NAMESPACE_DNS, UUID, uuid5
 from warnings import warn
 
 import h5py
@@ -354,7 +354,8 @@ def are_objects_similar(obj1, obj2, ignore: list[str] | None):
 
     :return: If attributes similar or not.
     """
-    assert isinstance(obj1, type(obj2)), "Objects are not the same type."
+    if not isinstance(obj1, type(obj2)):
+        raise TypeError("Objects are not the same type.")
 
     attributes1 = getattr(obj1, "__dict__", obj1)
     attributes2 = getattr(obj2, "__dict__", obj2)
@@ -1206,3 +1207,36 @@ def workspace2path(value):
             return "[in-memory]"
         return str(value.h5file)
     return value
+
+
+def dict_to_json_str(data: dict) -> str:
+    """
+    Format all values in a dictionary for json serialization.
+
+    :param data: Dictionary of values to be converted.
+
+    :return: A json string representation of the dictionary.
+    """
+    formatted = stringify(data)
+    formatted = dict_mapper(
+        formatted, [lambda x: f"{x:.4e}" if isinstance(x, float) else x]
+    )
+    return dumps(formatted, indent=4)
+
+
+def uuid_from_values(data: dict | str) -> UUID:
+    """
+    Create a deterministic uuid of a dictionary or its json string representation.
+
+    Floats are formatted to fixed precision scientific notation and objects are
+    converted to uid strings.
+
+    :param data: Dictionary or a string representation of a dictionary containing
+    parameters/values of an application.
+
+    :returns: Unique but recoverable uuid file identifier string.
+    """
+    if isinstance(data, dict):
+        data = dict_to_json_str(data)
+
+    return uuid5(NAMESPACE_DNS, str(data))
