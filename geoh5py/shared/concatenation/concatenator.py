@@ -678,7 +678,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         if values is not None and not remove:
             indices = np.hstack(
                 [
-                    np.core.records.fromarrays(
+                    np.rec.fromarrays(
                         (start, len(values), obj_id, data_id),
                         dtype=[
                             ("Start index", "<u4"),
