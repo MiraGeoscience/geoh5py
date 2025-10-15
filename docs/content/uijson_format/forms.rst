@@ -100,6 +100,36 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
     :height: 100
 
 
+Radio Label Parameter
+----------------------
+
+If both ``originalLabel`` and ``alternateLabel`` members are added to a string parameters, the dialog will render a
+two-choice radio button.  The ``value`` will reflect the current choice and all containing one of the selections will be
+updated with the choide of the radio button.
+
+.. code-block:: json
+
+   {
+   "model_type": {
+   "main": true,
+   "label": "Model type",
+   "originalLabel": "Conductivity",
+   "alternateLabel": "Resistivity",
+   "value": "Conductivity",
+   "enabled": true
+   },
+   "conductivity_model": {
+   "main": true,
+   "label": "Conductivity model",
+   "value": 0.1
+   }
+   }
+
+.. figure:: ./images/radio_label_param_before.png
+    :height: 100
+
+.. figure:: ./images/radio_label_param_after.png
+    :height: 100
 
 Multi-choice string Parameter
 -----------------------------
