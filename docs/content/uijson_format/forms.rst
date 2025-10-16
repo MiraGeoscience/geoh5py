@@ -103,9 +103,9 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
 Radio Label Parameter
 ----------------------
 
-If both ``originalLabel`` and ``alternateLabel`` members are added to a string parameters, the dialog will render a
-two-choice radio button.  The ``value`` will reflect the current choice and all containing one of the selections will be
-updated with the choide of the radio button.
+If both ``originalLabel`` and ``alternateLabel`` members are added to a string parameter, the dialog will render a
+two-choice radio button with label choices.  The ``value`` will reflect the current choice and all labels within the
+ui.json containing the string matching the original button will be altered to the reflect the current choice.
 
 .. code-block:: json
 
