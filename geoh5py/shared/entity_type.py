@@ -237,14 +237,14 @@ class EntityType(ABC):
 
         _workspace = self._workspace()
         if _workspace is None:
-            raise AssertionError("Cannot access the workspace, ensure it is open.")
+            raise ValueError("Cannot access the workspace, ensure it is open.")
 
         return _workspace
 
     @workspace.setter
     def workspace(self, workspace: Workspace):
         if hasattr(self, "_workspace"):
-            raise AssertionError("Cannot change the workspace of an entity type.")
+            raise ValueError("Cannot change the workspace of an entity type.")
         if not hasattr(workspace, "create_entity"):
             raise TypeError(f"Workspace must be a Workspace, not {type(workspace)}")
 

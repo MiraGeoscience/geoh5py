@@ -361,7 +361,7 @@ class DrillholesGroupTable(ABC):
             if index_by_drillhole:
                 self._index_by_drillhole = index_by_drillhole
             else:
-                raise AssertionError("No drillhole found in the concatenator.")
+                raise ValueError("No drillhole found in the concatenator.")
 
         return self._index_by_drillhole
 

@@ -67,14 +67,13 @@ h5py = "^3.2.1"
 numpy = "~1.26.0"
 Pillow = "~10.3.0"
 pydantic = "^2.5.2"
-pylint = "^3.3.8"
 
 [tool.poetry.group.dev.dependencies]
 jinja2 = '*'
 lockfile = "^0.12.2"
 packaging = '*'
 Pygments = "*"
-pylint = ">=3.3.1"
+pylint = "^3.3.8"
 pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
