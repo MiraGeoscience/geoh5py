@@ -24,7 +24,7 @@ import json
 import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from geoh5py import Workspace
@@ -602,6 +602,51 @@ class InputFile:
             self.ui_json[key]["property"] = group_value
 
         self.ui_json[key]["value"] = value["value"]
+
+    def copy(
+        self,
+        parent: Workspace | None = None,
+        copy_relatives: bool = True,
+        clear_cache: bool = False,
+        validate: bool = True,
+        **kwargs,
+    ) -> InputFile:
+        """
+        Create a copy of the input file, optionally copying the relatives to a new workspace.
+
+        :param parent: The parent workspace to copy the entities to.
+        :param copy_relatives: Indicate whether to copy the relatives to the new workspace.
+        :param clear_cache: Indicate whether to clear the cache.
+        :param validate: Indicate whether to validate the new input file.
+        :param kwargs: The parameters to update in the new input file ui_json.
+
+        :return: The new input file.
+        """
+        if self.ui_json is None:
+            raise ValueError("InputFile must have a ui_json to create a copy.")
+
+        in_file = InputFile(ui_json=self.ui_json.copy(), validate=validate)
+
+        if "geoh5" in kwargs:
+            parent = kwargs.pop("geoh5")
+
+        temp_data = {
+            key: value
+            for key, value in kwargs.items()
+            if key in cast(dict, in_file.data)
+        }
+        in_file.data = {**(self.data or {}), **temp_data}
+
+        if isinstance(parent, Workspace) and parent.h5file != in_file.geoh5.h5file:
+            ui_json = cast(dict, in_file.ui_json).copy()
+            ui_json["geoh5"] = parent
+
+            if copy_relatives:
+                in_file.copy_relatives(parent, clear_cache=clear_cache)
+
+            return InputFile(ui_json=ui_json, validate=validate)
+
+        return in_file
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """

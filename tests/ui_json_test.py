@@ -952,7 +952,6 @@ def test_default_naming(tmp_path):
     ui_json["workspace_geoh5"] = workspace.h5file
 
     in_file = InputFile(ui_json=ui_json)
-
     in_file.name = DEFAULT_UI_JSON_NAME
 
     assert in_file.name == "Custom_UI.ui.json"
@@ -980,3 +979,31 @@ def test_copy_relatives(tmp_path):
     copied_points = workspace2.get_entity("Points_A")[0]
 
     compare_entities(copied_points, original_points, ignore=["_property_groups"])
+
+
+def test_copy_uijson(tmp_path):
+    workspace = get_workspace(tmp_path)
+    original_points = workspace.get_entity("Points_A")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["points"] = templates.object_parameter(
+        value=str(original_points.uid),
+    )
+    in_file = InputFile(ui_json=ui_json)
+
+    # same workspace
+    copied_in_file = in_file.copy(title="Copied")
+    assert copied_in_file.geoh5.h5file == workspace.h5file
+    assert copied_in_file.data["title"] == "Copied"
+
+    # with new workspace
+    h5file_path_2 = "copied.geoh5"
+    with Workspace(h5file_path_2) as workspace_2:
+        new_in_file = in_file.copy(copy_relative=True, geoh5=workspace_2)
+
+        assert str(new_in_file.geoh5.h5file) == "copied.geoh5"
+        assert workspace_2.get_entity("Points_A")[0].name == "Points_A"
+
+    with pytest.raises(ValueError, match="InputFile must have a ui_json"):
+        InputFile().copy()
