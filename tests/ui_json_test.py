@@ -998,12 +998,15 @@ def test_copy_uijson(tmp_path):
     assert copied_in_file.data["title"] == "Copied"
 
     # with new workspace
-    h5file_path_2 = "copied.geoh5"
-    with Workspace(h5file_path_2) as workspace_2:
-        new_in_file = in_file.copy(copy_relative=True, geoh5=workspace_2)
+    h5file_path_2 = tmp_path / "copied.geoh5"
+    new_in_file = in_file.copy(geoh5=h5file_path_2)
 
-        assert str(new_in_file.geoh5.h5file) == "copied.geoh5"
+    with Workspace(h5file_path_2) as workspace_2:
+        assert str(new_in_file.geoh5.h5file)[-12:] == "copied.geoh5"
         assert workspace_2.get_entity("Points_A")[0].name == "Points_A"
+
+    with pytest.raises(FileExistsError, match="The specified geoh5"):
+        in_file.copy(geoh5=h5file_path_2)
 
     with pytest.raises(ValueError, match="InputFile must have a ui_json"):
         InputFile().copy()
