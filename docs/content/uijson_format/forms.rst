@@ -112,6 +112,7 @@ ui.json containing the string matching the original button will be altered to th
    {
    "model_type": {
    "main": true,
+   "group": "Models",
    "label": "Model type",
    "originalLabel": "Conductivity",
    "alternateLabel": "Resistivity",
@@ -120,6 +121,7 @@ ui.json containing the string matching the original button will be altered to th
    },
    "conductivity_model": {
    "main": true,
+   "group": "Models",
    "label": "Conductivity model",
    "value": 0.1
    }
@@ -296,7 +298,6 @@ In this example, the object parameter *data_mesh* is also given for reference.
    {
    "data_mesh": {
    "main": true,
-   "group": "Models",
     "meshType": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}" ,
       "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}"],
    "main": true,
@@ -305,7 +306,6 @@ In this example, the object parameter *data_mesh* is also given for reference.
    },
    "data_channel": {
    "main": true,
-   "group": "Models",
    "association": "Vertex",
    "dataType": "Float",
    "label": "Data channel",
