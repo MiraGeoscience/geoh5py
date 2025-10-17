@@ -413,6 +413,6 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         elif len(values) == 4 and len(dtype) == 3:
             values = values[:-1]
 
-        array_values = np.core.records.fromarrays(values, dtype=dtype)
+        array_values = np.rec.fromarrays(values, dtype=dtype)
 
         return array_values

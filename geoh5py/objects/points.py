@@ -193,7 +193,7 @@ class Points(ObjectBase):
                 )
 
             xyz = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     xyz.T.tolist(),
                     dtype=cls.__VERTICES_DTYPE,
                 )

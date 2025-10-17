@@ -373,18 +373,20 @@ class Data(Entity):
         """
         Whether the data is visible in camera (checked in ANALYST object tree).
         """
-        return self._visible
+        return bool(self._visible)
 
     @visible.setter
     def visible(self, value: bool):
+        if value and self.on_file:
+            for child in self.parent.children:
+                if child is self:
+                    continue
+                child.visible = False
+
         self._visible = value
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
-
-            if value:
-                for child in self.parent.children:
-                    child.visible = False
 
     def __call__(self):
         return self.values

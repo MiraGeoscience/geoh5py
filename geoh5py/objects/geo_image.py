@@ -658,9 +658,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             )
 
         if np.issubdtype(xyz.dtype, np.number):
-            xyz = np.asarray(
-                np.core.records.fromarrays(xyz.T, dtype=self.__VERTICES_DTYPE)
-            )
+            xyz = np.asarray(np.rec.fromarrays(xyz.T, dtype=self.__VERTICES_DTYPE))
 
         if xyz.dtype != self.__VERTICES_DTYPE:
             raise TypeError(
