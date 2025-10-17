@@ -338,7 +338,7 @@ class Drillhole(Points):
                 raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
 
             array_values = np.asarray(
-                np.core.records.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
+                np.rec.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
             )
         else:
             array_values = values
@@ -455,7 +455,7 @@ class Drillhole(Points):
             xyz = np.vstack([self.vertices, xyz])
 
         self._vertices = np.asarray(
-            np.core.records.fromarrays(
+            np.rec.fromarrays(
                 xyz.T.tolist(),
                 dtype=[("x", "<f8"), ("y", "<f8"), ("z", "<f8")],
             )

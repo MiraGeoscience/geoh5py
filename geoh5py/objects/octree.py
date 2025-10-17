@@ -321,7 +321,7 @@ class Octree(GridObject):
                 raise ValueError("'octree_cells' requires an ndarray of shape (*, 4).")
 
             array = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     array.T.tolist(),
                     dtype=cls.__OCTREE_DTYPE,
                 )

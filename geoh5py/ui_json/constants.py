@@ -52,7 +52,7 @@ ui_validations = {
         "values": ["Float", "Text", "Integer", "Referenced", "Boolean", "Filename"]
     },
     "dependency": {"types": [str, type(None)]},
-    "dependencyType": {"values": ["enabled", "disabled"]},
+    "dependencyType": {"values": ["enabled", "disabled", "show", "hide"]},
     "enabled": {"types": [bool, type(None)]},
     "group": {"types": [str, type(None)]},
     "label": {"required": True, "types": [str]},

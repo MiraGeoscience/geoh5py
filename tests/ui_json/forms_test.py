@@ -110,7 +110,7 @@ def test_dependency_type_enum():
     assert form.dependency_type == "enabled"
 
     with pytest.raises(
-        ValidationError, match="Input should be 'enabled' or 'disabled'"
+        ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
         _ = BaseForm(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
@@ -124,6 +124,15 @@ def test_base_form_serieralization():
     form = BaseForm(label="name", value="test", dependency_type="disabled")
     json = form.json_string
     assert "dependencyType" in json
+
+
+def test_hide_dependency_type(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as ws:
+        form = StringForm(
+            label="name", value="test", dependency="my_param", dependency_type="show"
+        )
+        form = setup_from_uijson(ws, form)
+        assert form.dependency_type == "show"
 
 
 def test_string_form():
