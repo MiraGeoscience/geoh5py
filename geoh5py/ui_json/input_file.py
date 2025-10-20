@@ -603,6 +603,45 @@ class InputFile:
 
         self.ui_json[key]["value"] = value["value"]
 
+    def copy(
+        self,
+        clear_cache: bool = False,
+        validate: bool = True,
+        **kwargs,
+    ) -> InputFile:
+        """
+        Create a copy of the input file, and copying the relatives to a new workspace.
+
+        :param clear_cache: Indicate whether to clear the cache.
+        :param validate: Indicate whether to validate the new input file.
+        :param kwargs: The parameters to update in the new input file ui_json.
+
+        :return: The new input file.
+        """
+        if self.ui_json is None:
+            raise ValueError("InputFile must have a ui_json to create a copy.")
+
+        ui_json = self.ui_json.copy()
+
+        input_file = InputFile(ui_json=ui_json, validate=validate)
+        geoh5_path = kwargs.pop("geoh5", self.geoh5.h5file)
+        input_file.update_ui_values(kwargs)
+
+        if Path(geoh5_path).resolve() == Path(self.geoh5.h5file).resolve():
+            return input_file
+
+        if Path(geoh5_path).exists():
+            raise FileExistsError(
+                f"The specified geoh5 file already exists: {ui_json['geoh5']}"
+            )
+
+        ui_json["geoh5"] = geoh5_path
+
+        with Workspace.create(geoh5_path) as workspace:
+            input_file.copy_relatives(workspace, clear_cache=clear_cache)
+
+        return InputFile(ui_json=stringify(ui_json), validate=validate)
+
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
         Copy the entities referenced in the input file to a new workspace.

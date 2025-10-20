@@ -388,7 +388,7 @@ class ObjectBase(EntityContainer):
         :param parent: New parent for the copied object.
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
-        :param mask: Array of indices to sub-sample the input entity.
+        :param mask: A boolean mask of the data to keep.
         :param cherry_pick_children: List of uids to pick out the data values.
         :param kwargs: Additional keyword arguments.
 
