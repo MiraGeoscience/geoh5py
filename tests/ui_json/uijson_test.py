@@ -35,6 +35,7 @@ from geoh5py.ui_json.forms import (
     FloatForm,
     IntegerForm,
     ObjectForm,
+    RadioLabelForm,
     StringForm,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
@@ -449,6 +450,12 @@ def test_unknown_uijson(tmp_path):
             "label": "my string parameter",
             "value": "my string value",
         },
+        "my_radio_label_parameter": {
+            "label": "my radio label parameter",
+            "original_label": "option 1",
+            "alternate_label": "option 2",
+            "value": "option_1",
+        },
         "my_integer_parameter": {
             "label": "my integer parameter",
             "value": 10,
@@ -491,6 +498,7 @@ def test_unknown_uijson(tmp_path):
     uijson = BaseUIJson.read(tmp_path / "test.ui.json")
 
     assert isinstance(uijson.my_string_parameter, StringForm)
+    assert isinstance(uijson.my_radio_label_parameter, RadioLabelForm)
     assert isinstance(uijson.my_integer_parameter, IntegerForm)
     assert isinstance(uijson.my_object_parameter, ObjectForm)
     assert isinstance(uijson.my_data_parameter, DataForm)
