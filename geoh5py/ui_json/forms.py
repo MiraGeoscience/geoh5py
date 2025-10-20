@@ -168,6 +168,22 @@ class StringForm(BaseForm):
     value: str = ""
 
 
+class RadioLabelForm(StringForm):
+    """
+    Radio button for two-option strings.
+
+    The uijson dialogue will render two radio buttons with label choices.  Any
+    form labels within the ui.json containing the string matching the original
+    button will be altered to the reflect the new button choice.
+
+    :param original_label: Label for the original value.
+    :param alternative_label: Label for the alternative value.
+    """
+
+    original_label: str
+    alternate_label: str
+
+
 class BoolForm(BaseForm):
     """
     Boolean valued uijson form.

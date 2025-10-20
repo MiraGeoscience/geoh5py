@@ -42,6 +42,7 @@ from geoh5py.ui_json.forms import (
     IntegerForm,
     MultiChoiceForm,
     ObjectForm,
+    RadioLabelForm,
     StringForm,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
@@ -141,6 +142,19 @@ def test_string_form():
     msg = "Input should be a valid string"
     with pytest.raises(ValueError, match=msg):
         _ = StringForm(label="name", value=1)
+
+
+def test_radio_label_form():
+    form = RadioLabelForm(
+        label="model type",
+        original_label="conductivity",
+        alternate_label="resistivity",
+        value="conductivity",
+    )
+    assert form.label == "model type"
+    assert form.original_label == "conductivity"
+    assert form.alternate_label == "resistivity"
+    assert form.value == "conductivity"
 
 
 def test_bool_form():
