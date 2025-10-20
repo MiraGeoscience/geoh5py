@@ -126,6 +126,8 @@ class BaseForm(BaseModel):
             if data.get("multiSelect", False):
                 return MultiChoiceForm
             return ChoiceForm
+        if "originalLabel" in data and "alternateLabel" in data:
+            return RadioLabelForm
         if any(k in data for k in ["fileDescription", "fileType"]):
             return FileForm
         if "meshType" in data:
