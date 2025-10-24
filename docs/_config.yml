@@ -3,6 +3,7 @@
 
 title: Geoh5py
 author: Mira Geoscience Ltd.
+copyright: "2025"
 logo: images/geoh5py_logo.png
 
 # Force re-execution of notebooks on each build.

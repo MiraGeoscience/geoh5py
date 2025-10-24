@@ -31,5 +31,4 @@ build:
 
     build:
       html:
-        - pixi run --frozen build-docs html $READTHEDOCS_OUTPUT | sed 's/\\x1b\\[[0-9;]*m//g'
-        - mv $READTHEDOCS_OUTPUT/_build/html/ $READTHEDOCS_OUTPUT/
+        - pixi run --frozen build-docs html $READTHEDOCS_OUTPUT

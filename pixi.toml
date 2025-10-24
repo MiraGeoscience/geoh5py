@@ -84,14 +84,18 @@ sphinx-rtd-theme = "*"
 sphinxcontrib-bibtex = "*"
 sphinxcontrib-googleanalytics = '*'
 
+[feature.doc.tasks.config-docs]
+cmd = "jupyter-book config sphinx docs/"
+
 [feature.doc.tasks.build-docs]
 args = [
   { arg = "builder",   default = "html" },
-  { arg = "outputdir", default = "docs" },
-  { arg = "extra_args", default = "" }
+  { arg = "outputdir", default = "docs/_build" },
 ]
+
+depends-on = ["config-docs"]
 # TODO: add -W option to fail on warnings
-cmd = "jupyter-book build -v -n --builder {{builder}} docs --path-output {{outputdir}} {{extra_args}}"
+cmd = "export PYTHONPATH=./docs/_ext && sphinx-build -T -n -b {{builder}} docs/ {{outputdir}}/{{builder}}"
 
 [tasks.show-pip-source]
 args = ["packages"]
