@@ -409,6 +409,9 @@ class H5Writer:
                 if key in ["Association", "Primitive type"]:
                     value = KEY_MAP[value.name]
 
+                if key == "Visible" and "Visible" in entity_handle:
+                    del entity_handle["Visible"]
+
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")
                 elif isinstance(value, str):

@@ -223,7 +223,7 @@ class DrapeModel(ObjectBase):
                 )
 
             values = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     values.T.tolist(),
                     dtype=cls._PRISM_DTYPE,
                 )
@@ -263,7 +263,7 @@ class DrapeModel(ObjectBase):
                 raise ValueError(msg)
 
             values = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     values.T.tolist(),
                     dtype=cls._LAYERS_DTYPE,
                 )

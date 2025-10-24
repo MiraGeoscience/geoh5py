@@ -42,6 +42,7 @@ from geoh5py.ui_json.forms import (
     IntegerForm,
     MultiChoiceForm,
     ObjectForm,
+    RadioLabelForm,
     StringForm,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
@@ -109,7 +110,7 @@ def test_dependency_type_enum():
     assert form.dependency_type == "enabled"
 
     with pytest.raises(
-        ValidationError, match="Input should be 'enabled' or 'disabled'"
+        ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
         _ = BaseForm(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
@@ -125,6 +126,15 @@ def test_base_form_serieralization():
     assert "dependencyType" in json
 
 
+def test_hide_dependency_type(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as ws:
+        form = StringForm(
+            label="name", value="test", dependency="my_param", dependency_type="show"
+        )
+        form = setup_from_uijson(ws, form)
+        assert form.dependency_type == "show"
+
+
 def test_string_form():
     form = StringForm(label="name", value="test")
     assert form.label == "name"
@@ -132,6 +142,19 @@ def test_string_form():
     msg = "Input should be a valid string"
     with pytest.raises(ValueError, match=msg):
         _ = StringForm(label="name", value=1)
+
+
+def test_radio_label_form():
+    form = RadioLabelForm(
+        label="model type",
+        original_label="conductivity",
+        alternate_label="resistivity",
+        value="conductivity",
+    )
+    assert form.label == "model type"
+    assert form.original_label == "conductivity"
+    assert form.alternate_label == "resistivity"
+    assert form.value == "conductivity"
 
 
 def test_bool_form():

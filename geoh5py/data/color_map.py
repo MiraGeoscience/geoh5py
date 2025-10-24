@@ -72,7 +72,7 @@ class ColorMap:
             if values.shape[1] != 5:
                 raise ShapeValidationError("values", values.shape, "(*, 5)")
 
-            self._values = np.core.records.fromarrays(
+            self._values = np.rec.fromarrays(
                 values.T, names=self._names, formats=self._formats
             )
 

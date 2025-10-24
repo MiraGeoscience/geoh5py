@@ -211,7 +211,7 @@ class ObjectBase(EntityContainer):
                     **{
                         key: val
                         for key, val in attr.items()
-                        if key not in ["parent", "entity_type", "type"]
+                        if key not in ["parent", "entity_type", "type", "visible"]
                     },
                 },
                 entity_type=self.workspace.validate_data_type(attr, attr.get("values")),
@@ -222,6 +222,7 @@ class ObjectBase(EntityContainer):
             if isinstance(data_object, VisualParameters):
                 self.visual_parameters = data_object
 
+            data_object.visible = attr.get("visible", False)
             property_groups.setdefault(validate_property_group, []).append(data_object)
             data_objects.append(data_object)
 
@@ -387,7 +388,7 @@ class ObjectBase(EntityContainer):
         :param parent: New parent for the copied object.
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
-        :param mask: Array of indices to sub-sample the input entity.
+        :param mask: A boolean mask of the data to keep.
         :param cherry_pick_children: List of uids to pick out the data values.
         :param kwargs: Additional keyword arguments.
 
