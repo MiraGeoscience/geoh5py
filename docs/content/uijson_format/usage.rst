@@ -64,11 +64,22 @@ The user interface defined by the ``ui.json`` file can be opened in ANALYST Pro 
 a. **Drag and Drop:**
    Simply drag the ``ui.json`` file into the viewport. The corresponding dialog will open immediately.
 
+   .. figure:: ./images/drag_drop.gif
+      :align: center
+      :width: 800
+
 b. **Add to Python Script Menu:**
 
    1. From the ANALYST menubar, open the *Python* menu and select *Script Directory* to launch the file explorer.
+
    2. Copy the ``ui.json`` file into the displayed folder.
+
    3. Close the workspace or restart ANALYST Pro. The new application will appear under the Python script menu.
+
+   .. figure:: ./images/dropdown.gif
+      :align: center
+      :width: 800
+
 
 Execution
 ^^^^^^^^^
