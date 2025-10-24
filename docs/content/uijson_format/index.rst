@@ -7,11 +7,6 @@ The format uses `JSON objects <https://json-schema.org/specification.html>`_ to 
 input parameters used in the UI, and pass those parameters to an accompanying python script.
 
 
-.. figure:: ./images/drag_drop.gif
-        :align: center
-        :width: 800
-
-
 External Links
 ^^^^^^^^^^^^^^
 - `JSON Schema <https://json-schema.org/specification.html>`_
