@@ -22,9 +22,9 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal, get_args
-from uuid import UUID
 
 import numpy as np
 
@@ -70,7 +70,7 @@ class DataType(EntityType):
     :param transparent_no_data: If the no data values are displayed as transparent or not.
     :param units: The type of the units of the data.
     :param kwargs: Additional keyword arguments to set as attributes
-        (see :obj:`...shared.entity_type.EntityType`).
+        (see :obj:`geoh5py.shared.entity_type.EntityType`).
     """
 
     _attribute_map = EntityType._attribute_map.copy()
@@ -96,7 +96,7 @@ class DataType(EntityType):
         duplicate_on_copy: bool = False,
         duplicate_type_on_copy: bool = False,
         hidden: bool = False,
-        mapping: ColorMapping = "equal_area",
+        mapping: ColorMapping | str = "equal_area",
         number_of_bins: int | None = None,
         precision: int = 2,
         scale: str | None = None,
@@ -111,7 +111,7 @@ class DataType(EntityType):
         self.duplicate_on_copy = duplicate_on_copy
         self.duplicate_type_on_copy = duplicate_type_on_copy
         self.hidden = hidden
-        self.mapping = mapping
+        self.mapping: ColorMapping | str = mapping
         self.number_of_bins = number_of_bins
         self.precision = precision
         self.primitive_type = self.validate_primitive_type(primitive_type)
@@ -210,8 +210,8 @@ class DataType(EntityType):
         workspace: Workspace,
         primitive_type: PrimitiveTypeEnum | str,
         *,
-        dynamic_implementation_id: str | UUID | None = None,
-        uid: UUID | None = None,
+        dynamic_implementation_id: str | uuid.UUID | None = None,
+        uid: uuid.UUID | None = None,
         **kwargs,
     ) -> DataType:
         """
@@ -566,7 +566,9 @@ class ReferencedValueMapType(ReferenceDataType):
     Data container for referenced value map.
     """
 
-    _TYPE_UID = UUID(fields=(0x2D5D6C1E, 0x4D8C, 0x4F3A, 0x9B, 0x3F, 0x2E5A0D8E1C1F))
+    _TYPE_UID = uuid.UUID(
+        fields=(0x2D5D6C1E, 0x4D8C, 0x4F3A, 0x9B, 0x3F, 0x2E5A0D8E1C1F)
+    )
 
     def __init__(
         self,
@@ -623,13 +625,13 @@ class GeometricDynamicDataType(DataType, ABC):
             "Dynamic implementation ID": "dynamic_implementation_id",
         }
     )
-    _TYPE_UID: UUID | None
-    _DYNAMIC_IMPLEMENTATION_ID: UUID
+    _TYPE_UID: uuid.UUID | None
+    _DYNAMIC_IMPLEMENTATION_ID: uuid.UUID
 
     def __init__(
         self,
         workspace: Workspace,
-        uid: UUID | None = None,
+        uid: uuid.UUID | None = None,
         **kwargs,
     ):
         if uid is None:
@@ -638,14 +640,14 @@ class GeometricDynamicDataType(DataType, ABC):
         super().__init__(workspace, uid=uid, **kwargs)
 
     @classmethod
-    def default_type_uid(cls) -> UUID | None:
+    def default_type_uid(cls) -> uuid.UUID | None:
         """
         Default uuid for the entity type.
         """
         return cls._TYPE_UID
 
     @property
-    def dynamic_implementation_id(self) -> UUID:
+    def dynamic_implementation_id(self) -> uuid.UUID:
         """
         The dynamic implementation id.
         """
@@ -657,7 +659,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     Data container for value map
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
+    _DYNAMIC_IMPLEMENTATION_ID = uuid.UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
     _TYPE_UID = None
 
     def __init__(
@@ -790,8 +792,10 @@ class GeometricDataXType(GeometricDynamicDataType):
     Data container for X values
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
-    _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
+    _DYNAMIC_IMPLEMENTATION_ID = uuid.UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
+    _TYPE_UID = uuid.UUID(
+        fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE)
+    )
 
 
 class GeometricDataYType(GeometricDynamicDataType):
@@ -799,8 +803,10 @@ class GeometricDataYType(GeometricDynamicDataType):
     Data container for Y values
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
-    _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
+    _DYNAMIC_IMPLEMENTATION_ID = uuid.UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
+    _TYPE_UID = uuid.UUID(
+        fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C)
+    )
 
 
 class GeometricDataZType(GeometricDynamicDataType):
@@ -808,8 +814,10 @@ class GeometricDataZType(GeometricDynamicDataType):
     Data container for Z values
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
-    _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
+    _DYNAMIC_IMPLEMENTATION_ID = uuid.UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
+    _TYPE_UID = uuid.UUID(
+        fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466)
+    )
 
 
 DYNAMIC_CLASS_IDS = {

@@ -1,0 +1,125 @@
+[workspace]
+requires-pixi = ">=0.54"
+channels = ["https://repo.prefix.dev/conda-forge"]
+platforms = ["win-64", "linux-64"]
+
+[dependencies]
+# dependencies resolved from conda
+## direct dependencies:
+#----------------------
+h5py = ">=3.2.1, 3.*"
+numpy = "1.26.*"
+pillow = "10.3.*"
+pydantic = ">=2.7, 2.*"
+
+[pypi-dependencies]
+geoh5py = {path = ".", editable = true}
+
+[environments]
+#prod-py310 = {features = ["py310"], solve-group = "prod-py310"}
+#prod-py311 = {features = ["py311"], solve-group = "prod-py311"}
+#prod-py312 = {features = ["py312"], solve-group = "prod-py312"}
+#test-prod-py310 = {features = ["py310", "test"], solve-group = "prod-py310"}
+#test-prod-py311 = {features = ["py311", "test"], solve-group = "prod-py311"}
+#test-prod-py312 = {features = ["py312", "test"], solve-group = "prod-py312"}
+
+py310 = {features = ["py310", "test"], solve-group = "default"}
+py311 = {features = ["py311", "test"]}
+py312 = {features = ["py312", "test"]}
+
+default = {features = ["py310", "test", "dev"], solve-group = "default"}
+docs = {features = ["py310", "doc"], solve-group = "default"}
+
+[feature.py310.dependencies]
+python = "3.10.*"
+
+[feature.py311.dependencies]
+python = "3.11.*"
+
+[feature.py312.dependencies]
+python = "3.12.*"
+
+[feature.dev.dependencies]
+Pygments = '*'
+ipython = "*"
+
+[feature.dev.tasks]
+repl = "ipython"
+
+[feature.test.dependencies]
+h5py = '*'
+packaging = '*'
+pylint = '*'
+pytest = "*"
+pytest-cov = "*"
+pyyaml = '*'
+scipy = '*'
+
+[feature.test.tasks]
+test = "pytest --cov --cov-report=xml"
+
+[feature.test.tasks.test-local]
+args = ["packages"]
+
+depends-on = [
+    {task = "use-local-deps", args = [ "{{ packages }}" ]},
+    {task = "show-pip-source", args =  [ "{{ packages }}" ]},
+    {task = "test"}
+]
+
+[feature.doc.dependencies]
+jupyter-book = "*"
+jupyter_client = "*"
+jupytext = "*"
+matplotlib-base = "*"
+nbsphinx = "*"
+nbstripout = "*"
+notebook = "*"
+numpydoc = "*"
+scipy = "*"
+sphinx = "*"
+sphinx-autodoc-typehints = "*"
+sphinx-issues = "*"
+sphinx-rtd-theme = "*"
+sphinxcontrib-bibtex = "*"
+sphinxcontrib-googleanalytics = '*'
+
+[feature.doc.tasks.config-docs]
+cmd = "jupyter-book config sphinx docs/"
+
+[feature.doc.tasks.build-docs]
+args = [
+  { arg = "builder",   default = "html" },
+  { arg = "outputdir", default = "docs/_build" },
+]
+
+depends-on = ["config-docs"]
+# TODO: add -W option to fail on warnings
+cmd = "export PYTHONPATH=./docs/_ext && sphinx-build -T -n -b {{builder}} docs/ {{outputdir}}/{{builder}}"
+
+[feature.doc.tasks.jupyter-book-build]
+args = [
+  { arg = "builder",   default = "html" },
+  { arg = "outputdir", default = "docs" },
+]
+
+# TODO: add -W option to fail on warnings
+cmd = "jupyter-book build -v -n --builder {{builder}} docs --path-output {{outputdir}}"
+
+[tasks.show-pip-source]
+args = ["packages"]
+cmd = "uv pip show {{packages}}"
+
+[tasks.use-local-deps]
+args = ["packages"]
+cmd = """
+uv pip install --no-deps --force-reinstall \
+{% for package in packages | split %} -e ../{{ package | trim }}{% endfor %}
+"""
+
+[tasks.test-pyvers]
+depends-on = [
+    {task = "test", environment = "py310"},
+    {task = "test", environment = "py311"},
+    {task = "test", environment = "py312"},
+]

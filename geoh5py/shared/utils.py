@@ -657,10 +657,10 @@ def box_intersect(
 def mask_by_extent(
     locations: np.ndarray, extent: np.ndarray | Sequence, inverse: bool = False
 ) -> np.ndarray:
-    """
+    r"""
     Find indices of locations within a rectangular extent.
 
-    :param locations: shape(*, 3) or shape(*, 2) Coordinates to be evaluated.
+    :param locations: shape(\*, 3) or shape(\*, 2) Coordinates to be evaluated.
     :param extent: shape(2, 2) Limits defined by the South-West and
         North-East corners. Extents can also be provided as 3D coordinates
         with shape(2, 3) defining the top and bottom limits.

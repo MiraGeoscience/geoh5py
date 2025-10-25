@@ -108,14 +108,6 @@ geoh5py.data.numeric\_data module
    :undoc-members:
    :show-inheritance:
 
-geoh5py.data.primitive\_type\_enum module
------------------------------------------
-
-.. automodule:: geoh5py.data.primitive_type_enum
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 geoh5py.data.reference\_value\_map module
 -----------------------------------------
 

@@ -26,14 +26,14 @@ jobs:
     name: Static analysis
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@main
     with:
-      package-manager: 'poetry'
+      package-manager: 'pixi'
       app-name: 'geoh5py'
       python-version: '3.10'
   call-workflow-pytest:
     name: Pytest
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@main
     with:
-      package-manager: 'poetry'
+      package-manager: 'pixi'
       python-versions: '["3.10", "3.11", "3.12"]'
       os: '["ubuntu-latest", "windows-latest"]'
       cache-number: 1

@@ -77,8 +77,8 @@ class DrapeModel(ObjectBase):
 
     @property
     def centroids(self) -> np.ndarray:
-        """
-        Cell center locations in world coordinates, shape(*, 3).
+        r"""
+        Cell center locations in world coordinates, shape(\*, 3).
 
         .. code-block:: python
 

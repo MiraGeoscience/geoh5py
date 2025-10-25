@@ -145,5 +145,13 @@ dmypy.json
 # geoh5 locks
 *.geoh5.lock
 
-#version ignore
+# auto-generated version file
 geoh5py/_version.py
+
+# not using poetry to lock, but pixi
+poetry.lock
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+/docs/conf.py

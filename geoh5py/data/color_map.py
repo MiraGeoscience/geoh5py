@@ -28,8 +28,8 @@ from ..shared.utils import map_attributes
 
 
 if TYPE_CHECKING:
-    from ..workspace import Workspace
-    from .data_type import DataType
+    import geoh5py
+    from geoh5py.workspace import Workspace
 
 
 class ColorMap:
@@ -105,12 +105,12 @@ class ColorMap:
             self.parent.workspace.update_attribute(self.parent, "color_map")
 
     @property
-    def parent(self) -> DataType | None:
+    def parent(self) -> geoh5py.data.data_type.DataType | None:
         """Parent data type"""
         return self._parent
 
     @parent.setter
-    def parent(self, data_type: DataType | None):
+    def parent(self, data_type: geoh5py.data.data_type.DataType | None):
         self._parent = data_type
 
     @property
