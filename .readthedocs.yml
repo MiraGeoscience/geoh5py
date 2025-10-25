@@ -29,6 +29,9 @@ build:
       - asdf install pixi latest
       - asdf global pixi latest
 
+    install:
+      - pixi install -e docs
+
     build:
       html:
-        - pixi run --frozen build-docs html $READTHEDOCS_OUTPUT
+        - pixi run --frozen -e docs build-docs html $READTHEDOCS_OUTPUT
