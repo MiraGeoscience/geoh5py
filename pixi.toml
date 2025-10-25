@@ -97,6 +97,15 @@ depends-on = ["config-docs"]
 # TODO: add -W option to fail on warnings
 cmd = "export PYTHONPATH=./docs/_ext && sphinx-build -T -n -b {{builder}} docs/ {{outputdir}}/{{builder}}"
 
+[feature.doc.tasks.jupyter-book-build]
+args = [
+  { arg = "builder",   default = "html" },
+  { arg = "outputdir", default = "docs" },
+]
+
+# TODO: add -W option to fail on warnings
+cmd = "jupyter-book build -v -n --builder {{builder}} docs --path-output {{outputdir}}"
+
 [tasks.show-pip-source]
 args = ["packages"]
 cmd = "uv pip show {{packages}}"
