@@ -56,7 +56,6 @@ include = [
     { path = "COPYING" },
     { path = "COPYING.LESSER" },
     { path = "LICENSE" },
-    { path = "README.rst" },
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
     { path = "geoh5py/_version.py", format = ["sdist", "wheel"] },
