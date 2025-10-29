@@ -1,4 +1,4 @@
-name: Microsoft DevOps Security Scan
+name: Security Scan
 
 on:
   pull_request:
@@ -24,13 +24,11 @@ concurrency:
 permissions: {}
 
 jobs:
-  msdo:
-    name: MSDO analysis
+  call-workflow-zizmor:
+    name: Zizmor analysis
     permissions:
       contents: read
       actions: read
-      security-events: write
-      id-token: write
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-msdo.yml@main
-    secrets:
-      sarif_upload_token: ${{ secrets.GITHUB_TOKEN }}
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@main
+    with:
+      advanced_security: true
