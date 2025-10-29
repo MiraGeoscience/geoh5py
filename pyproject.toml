@@ -59,6 +59,7 @@ include = [
     { path = "README.rst" },
     { path = "THIRD_PARTY_SOFTWARE.rst" },
     { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
+    { path = "geoh5py/_version.py", format = ["sdist", "wheel"] },
 ]
 version = "0.0.0.dev0"
 
