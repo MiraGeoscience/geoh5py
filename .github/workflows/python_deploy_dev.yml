@@ -5,8 +5,7 @@ on:
     tags:
       - 'v*' # Push events to every version tag (eg. v1.0.0)
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -16,6 +15,8 @@ jobs:
   call-workflow-conda-publish:
     name: Publish development conda package on JFrog Artifactory
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_rattler_package.yml@main
+    permissions:
+      contents: read
     with:
       package-name: 'geoh5py'
       python-version: '3.10'
@@ -28,6 +29,8 @@ jobs:
   call-workflow-pypi-publish:
     name: Publish development pypi package (JFrog Artifactory, TestPyPI)
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-publish_pypi_package.yml@main
+    permissions:
+      contents: read
     with:
       package-manager: 'poetry'
       package-name: 'geoh5py'

@@ -17,6 +17,8 @@ on:
       - feature/**
       - hotfix/**
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -25,6 +27,9 @@ jobs:
   call-workflow-static-analysis:
     name: Static analysis
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@main
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       package-manager: 'poetry'
       app-name: 'geoh5py'
@@ -32,6 +37,9 @@ jobs:
   call-workflow-pytest:
     name: Pytest
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@main
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       package-manager: 'poetry'
       python-versions: '["3.10", "3.11", "3.12"]'
