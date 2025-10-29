@@ -18,6 +18,11 @@ requires-python = ">=3.10,<4.0"
 
 description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
+license-files = [
+    "COPYING",
+    "COPYING.LESSER",
+    "docs/THIRD_PARTY_SOFTWARE.rst",
+]
 keywords = ["geology", "geophysics", "data", "interoperability"]
 readme = "package.rst"
 dynamic = ["version", "dependencies", "classifiers"]
@@ -53,12 +58,7 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 include = [
-    { path = "COPYING" },
-    { path = "COPYING.LESSER" },
-    { path = "LICENSE" },
-    { path = "README.rst" },
-    { path = "THIRD_PARTY_SOFTWARE.rst" },
-    { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
+    { path = "geoh5py/_version.py", format = ["sdist", "wheel"] },
 ]
 version = "0.0.0.dev0"
 
