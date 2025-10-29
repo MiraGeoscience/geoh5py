@@ -129,6 +129,9 @@ class CellObject(Points, ABC):
         if isinstance(indices, (list, tuple)):
             indices = np.array(indices)
 
+        if len(indices) == 0:
+            return
+
         if not isinstance(indices, np.ndarray):
             raise TypeError("Indices must be a list or numpy array.")
 
@@ -164,7 +167,7 @@ class CellObject(Points, ABC):
         new_index = np.ones_like(vert_index, dtype=int)
         new_index[vert_index] = np.arange(self.vertices.shape[0])
 
-        cell_mask = np.where(~np.all(vert_index[self.cells], axis=1))
+        cell_mask = np.where(~np.all(vert_index[self.cells], axis=1))[0]
         self._cells = new_index[self.cells]
         self.remove_cells(cell_mask)
 

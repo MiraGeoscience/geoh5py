@@ -116,15 +116,12 @@ def test_remove_cells_surface_data(tmp_path: Path):
 def test_remove_vertices_surface_data(tmp_path: Path):
     with Workspace.create(tmp_path / "remove_vertices.geoh5") as workspace:
         xyz, simplices, values = generate_surface(10)
+
         surface = Surface.create(
             workspace, name="mySurf", vertices=xyz, cells=simplices.tolist()
         )
 
         surface.add_data({"TMI": {"values": values}})
-
-        # todo: WARNING HERE! In some random scenarios, it raises an error in cell_object l97
-        #  'ValueError: zero-size array to reduction operation maximum which has no identity'
-        #  fixed seed for now but error should be catch!
 
         np.random.seed(42)
 
