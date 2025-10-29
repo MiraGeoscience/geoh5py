@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # Push events to every version tag (eg. v1.0.0)
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
