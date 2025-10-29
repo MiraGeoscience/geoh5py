@@ -9,9 +9,3 @@ input parameters used in the UI, and pass those parameters to an accompanying py
 .. figure:: ./images/drag_drop.gif
         :align: center
         :width: 800
-
-
-External Links
-^^^^^^^^^^^^^^
-- `JSON Schema <https://json-schema.org/specification.html>`_
-- `Universally Unique IDentifier (UUID) <https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
