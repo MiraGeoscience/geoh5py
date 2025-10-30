@@ -30,6 +30,6 @@ jobs:
       security-events: write
       contents: read
       actions: read
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@main
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@DEVOPS-917
     with:
       advanced_security: true
