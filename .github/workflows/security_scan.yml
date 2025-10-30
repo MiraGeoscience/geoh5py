@@ -32,4 +32,5 @@ jobs:
       actions: read
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@main
     with:
-      advanced_security: true
+      advanced_security: ${{ github.event_name == 'push' }}
+      annotations: ${{ github.event_name == 'pull_request' }}
