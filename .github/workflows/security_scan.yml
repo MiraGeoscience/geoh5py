@@ -27,6 +27,7 @@ jobs:
   call-workflow-zizmor:
     name: Zizmor analysis
     permissions:
+      security-events: write
       contents: read
       actions: read
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@main
