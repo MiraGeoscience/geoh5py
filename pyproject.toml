@@ -69,7 +69,6 @@ Pillow = "~10.3.0"
 pydantic = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
-jinja2 = '*'
 lockfile = "^0.12.2"
 packaging = '*'
 Pygments = "*"
@@ -81,7 +80,6 @@ scipy = "~1.14.0"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
-tomli = "*"
 h5py = "^3.14.0"
 
 [tool.poetry.requires-plugins]
