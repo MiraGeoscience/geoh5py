@@ -24,13 +24,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-workflow-zizmor:
-    name: Zizmor analysis
+  call-workflow-zizmor-annotate:
+    name: Zizmor analysis (advanced security)
+    if: ${{ github.event_name != 'pull_request' }}
     permissions:
       security-events: write
       contents: read
       actions: read
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@main
-    with:
-      advanced_security: ${{ github.event_name == 'push' }}
-      annotations: ${{ github.event_name == 'pull_request' }}
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-advanced-security.yml@v2
+
+  call-workflow-zizmor-advanced-security:
+    name: Zizmor analysis (annotate)
+    if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      checks: write
+      contents: read
+      actions: read
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-annotate.yml@v2
