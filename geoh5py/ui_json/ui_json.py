@@ -72,6 +72,14 @@ class BaseUIJson(BaseModel):
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
     _groups: dict[str, list[str]] | None = None
+    _path: Path | None = None
+
+    def __repr__(self):
+        return f"UIJson('{self.title if self._path is None else str(self._path.name)}')"
+
+    def __str__(self):
+        json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        return f"{self!r} :\n\n{json_string}"
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -110,13 +118,16 @@ class BaseUIJson(BaseModel):
                 __base__=BaseUIJson,
                 **fields,
             )
-            return model(**kwargs)
+            uijson = model(**kwargs)
+        else:
+            uijson = cls(**kwargs)
 
-        return cls(**kwargs)
+        uijson._path = path
+        return uijson
 
     def write(self, path: Path):
         """Write the UIJson object to file."""
-
+        self._path = path
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
