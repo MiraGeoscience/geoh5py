@@ -511,6 +511,7 @@ def test_unknown_uijson(tmp_path):
 
 
 def test_str_and_repr(tmp_path):
+    Workspace.create(tmp_path / "test.geoh5")
     uijson = BaseUIJson(
         version="0.1.0",
         title="my application",
