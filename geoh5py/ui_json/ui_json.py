@@ -71,8 +71,8 @@ class BaseUIJson(BaseModel):
     monitoring_directory: OptionalPath
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
-    _groups: dict[str, list[str]] | None = None
     _path: Path | None = None
+    _groups: dict[str, list[str]] | None = None
 
     def __repr__(self):
         return f"UIJson('{self.title if self._path is None else str(self._path.name)}')"
@@ -122,7 +122,7 @@ class BaseUIJson(BaseModel):
         else:
             uijson = cls(**kwargs)
 
-        uijson._path = path
+        uijson._path = path  # pylint: disable=protected-access
         return uijson
 
     def write(self, path: Path):
