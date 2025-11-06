@@ -433,6 +433,10 @@ def test_disabled_forms(tmp_path):
     assert uijson.is_disabled("my_group_disabled_param")
     assert uijson.is_disabled("my_other_group_disabled_param")
 
+    params = uijson.to_params()
+    assert "my_param" in params
+    assert "my_other_param" not in params
+
 
 def test_unknown_uijson(tmp_path):
     ws = Workspace.create(tmp_path / "test.geoh5")
