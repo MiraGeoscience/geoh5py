@@ -264,6 +264,8 @@ class BaseUIJson(BaseModel):
 
         ui_json = self.model_dump(exclude_unset=True)
         for field in self.model_fields_set:
+            if self.is_disabled(field):
+                continue
             form = ui_json[field]
             validations = get_validations(list(form) if isinstance(form, dict) else [])
             for validation in validations:
