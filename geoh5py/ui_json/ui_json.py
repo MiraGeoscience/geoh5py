@@ -160,6 +160,28 @@ class BaseUIJson(BaseModel):
 
         return disabled
 
+    def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
+        """
+        Flatten the UIJson data to dictionary of key/value pairs.
+
+        Chooses between value/property in data forms depending on the is_value
+        field.
+
+        :return: Flattened dictionary of key/value pairs.
+        """
+        data = {}
+        fields = self.model_fields_set if active_only else self.model_fields
+        for field in fields:
+            if skip_disabled and self.is_disabled(field):
+                continue
+
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                value = value.flatten()
+            data[field] = value
+
+        return data
+
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
         Promote, flatten and validate parameter/values dictionary.
@@ -168,30 +190,21 @@ class BaseUIJson(BaseModel):
             workspaces to avoid closing and flushing data.
         """
 
+        data = self.flatten(skip_disabled=True, active_only=True)
         with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
             if geoh5 is None:
                 raise ValueError("Workspace cannot be None.")
 
-            data = {}
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
-            for field in self.model_fields_set:
-                if self.is_disabled(field):
-                    continue
-
+            for field, value in data.items():
                 if field == "geoh5":
-                    data[field] = geoh5
                     continue
-
-                value = getattr(self, field)
-                value = value.flatten() if isinstance(value, BaseForm) else value
 
                 if isinstance(value, UUID):
-                    value = self._object_or_catch(geoh5, value)
+                    data[field] = self._object_or_catch(geoh5, value)
 
                 if isinstance(value, UIJsonError):
                     errors[field].append(value)
-
-                data[field] = value
 
             self.validate_data(data, errors)
 
