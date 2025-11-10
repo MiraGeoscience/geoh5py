@@ -433,6 +433,10 @@ def test_disabled_forms(tmp_path):
     assert uijson.is_disabled("my_group_disabled_param")
     assert uijson.is_disabled("my_other_group_disabled_param")
 
+    params = uijson.to_params()
+    assert "my_param" in params
+    assert "my_other_param" not in params
+
 
 def test_unknown_uijson(tmp_path):
     ws = Workspace.create(tmp_path / "test.geoh5")
@@ -508,3 +512,25 @@ def test_unknown_uijson(tmp_path):
     assert "my_optional_parameter" not in params
     assert "my_group_optional_parameter" not in params
     assert "my_grouped_parameter" not in params
+
+
+def test_str_and_repr(tmp_path):
+    Workspace.create(tmp_path / "test.geoh5")
+    uijson = BaseUIJson(
+        version="0.1.0",
+        title="my application",
+        geoh5=str(tmp_path / "test.geoh5"),
+        run_command="python -m my_module",
+        monitoring_directory=None,
+        conda_environment="test",
+        workspace_geoh5=None,
+    )
+    str_uijson = str(uijson)
+    repr_uijson = repr(uijson)
+    assert "UIJson('my application')" in repr_uijson
+    assert '"version": "0.1.0"' in str_uijson
+    uijson.write(tmp_path / "test.ui.json")
+    str_uijson = str(uijson)
+    repr_uijson = repr(uijson)
+    assert "UIJson('test.ui.json')" in repr_uijson
+    assert '"version": "0.1.0"' in str_uijson
