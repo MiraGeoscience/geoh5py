@@ -83,7 +83,7 @@ class BaseUIJson(BaseModel):
     def __str__(self) -> str:
         """String level shows the full json representation."""
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
-        return f"{self!r} :\n\n{json_string}"
+        return f"{self!r} -> {json_string}"
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -93,7 +93,7 @@ class BaseUIJson(BaseModel):
         return path
 
     @classmethod
-    def read(cls, path: Path) -> BaseUIJson:
+    def read(cls, path: str | Path) -> BaseUIJson:
         """
         Create a UIJson object from ui.json file.
 
@@ -105,6 +105,9 @@ class BaseUIJson(BaseModel):
         :param path: Path to the .ui.json file.
         :returns: UIJson object.
         """
+
+        if isinstance(path, str):
+            path = Path(path)
 
         path = path.resolve()
 
