@@ -446,3 +446,29 @@ class DataForm(BaseForm):
         ):
             return self.property
         return self.value
+
+UUIDListOrNumber = Annotated[
+    list[UUID] | float | int | None,  # pylint: disable=unsupported-binary-operation
+    BeforeValidator(empty_string_to_none),
+    PlainSerializer(uuid_to_string_or_numeric),
+]
+
+class MultiChoiceDataForm(DataForm):
+    """Data form with multi-choice."""
+
+    value:
+    multi_select: bool = True
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value):
+        if not value:
+            raise ValueError("MultiChoiceForm must have multi_select: True.")
+        return value
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value):
+        if not isinstance(value, list):
+            value = [value]
+        return value
