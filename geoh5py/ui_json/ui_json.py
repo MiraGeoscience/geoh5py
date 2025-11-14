@@ -74,7 +74,10 @@ class BaseUIJson(BaseModel):
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
     _path: Path | None = None
-    _groups: dict[str, list[str]] | None = None
+    _groups: dict[str, list[str]]
+
+    def model_post_init(self, context: Any, /) -> None:
+        self._groups = self.get_groups()
 
     def __repr__(self) -> str:
         """Repr level shows a path if it exists or the title otherwise."""
@@ -153,29 +156,23 @@ class BaseUIJson(BaseModel):
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
 
-    @property
-    def groups(self) -> dict[str, list[str]]:
+    def get_groups(self) -> dict[str, list[str]]:
         """
         Returns grouped forms.
 
         :returns: Dictionary of group names and the parameters belonging to each
             group.
         """
-        if self._groups is None:
-            groups: dict[str, list[str]] = {}
-            for field in self.model_fields:
-                form = getattr(self, field)
-                if not isinstance(form, BaseForm):
-                    continue
-                name = getattr(form, "group", "")
-                if name:
-                    groups[name] = (
-                        [field] if name not in groups else groups[name] + [field]
-                    )
+        groups: dict[str, list[str]] = {}
+        for field in self.model_fields:
+            form = getattr(self, field)
+            if not isinstance(form, BaseForm):
+                continue
+            name = getattr(form, "group", "")
+            if name:
+                groups[name] = [field] if name not in groups else groups[name] + [field]
 
-            self._groups = groups
-
-        return self._groups
+        return groups
 
     def is_disabled(self, field: str) -> bool:
         """
@@ -194,7 +191,7 @@ class BaseUIJson(BaseModel):
 
         disabled = False
         if value.group:
-            group = next(v for k, v in self.groups.items() if field in v)
+            group = next(v for k, v in self._groups.items() if field in v)
             for member in group:
                 form = getattr(self, member)
                 if form.group_optional:
