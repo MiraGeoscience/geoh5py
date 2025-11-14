@@ -942,7 +942,7 @@ def str2none(value):
 
 def split_name_suffixes(name: str) -> tuple:
     """
-    Split a the base name from its suffixes assuming they are separated by periods.
+    Split the base name from its suffixes assuming they are separated by periods.
     """
     # Split only once from the right to get all suffixes correctly
     if "." in name:
