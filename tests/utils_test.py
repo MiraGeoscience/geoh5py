@@ -33,6 +33,7 @@ from geoh5py.shared.utils import (
     extract_uids,
     find_unique_name,
     format_numeric_values,
+    split_name_suffixes,
 )
 
 
@@ -47,6 +48,15 @@ def test_find_unique_name():
     assert find_unique_name(name, names) == "test(2)"
 
 
+def test_split_name_suffix():
+    name = "test.ui.json"
+    assert split_name_suffixes(name) == ("test", ".ui.json")
+
+    name = "test"
+
+    assert split_name_suffixes(name) == ("test", "")
+
+
 def test_find_unique_name_files():
     name = "test.ui.json"
     names = ["test.ui.json", "test(1).ui.json", "bidon"]
@@ -56,6 +66,10 @@ def test_find_unique_name_files():
     name = "test(1).ui.json"
 
     assert find_unique_name(name, names) == "test(2).ui.json"
+
+    name = "Test(1).ui.json"
+
+    assert find_unique_name(name, names, case_sensitive=False) == "Test(2).ui.json"
 
 
 def test_dip_azimuth_to_vector():
