@@ -98,7 +98,7 @@ class EntityType(ABC):
             for prop in dir(self)
             if isinstance(getattr(self.__class__, prop, None), property)
             and getattr(self, prop) is not None
-            and prop != "attribute_map"
+            and prop not in ["attribute_map", "on_file"]
         }
 
         attributes.update(kwargs)
@@ -106,7 +106,11 @@ class EntityType(ABC):
         if attributes.get("uid") in attributes.get("workspace", self.workspace)._types:  # pylint: disable=protected-access
             del attributes["uid"]
 
-        return self.__class__(**attributes)
+        entity_type = self.__class__(**attributes)
+
+        entity_type.workspace.save_entity_type(entity_type)
+
+        return entity_type
 
     @classmethod
     def create_custom(cls, workspace: Workspace, **kwargs):
