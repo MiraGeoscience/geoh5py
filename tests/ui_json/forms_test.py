@@ -27,7 +27,7 @@ import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups import GroupTypeEnum, PropertyGroup
 from geoh5py.objects import Curve, Points, Surface
 from geoh5py.ui_json.forms import (
     Association,
@@ -35,6 +35,7 @@ from geoh5py.ui_json.forms import (
     BoolForm,
     ChoiceForm,
     DataForm,
+    DataGroupForm,
     DataOrValueForm,
     DataType,
     FileForm,
@@ -409,6 +410,24 @@ def test_data_form():
         association=["Vertex", "Cell"],
         data_type=["Float", "Integer"],
     )
+    assert form.association == [Association.VERTEX, Association.CELL]
+    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+
+
+def test_data_group_form():
+    group_uid = str(uuid.uuid4())
+    form = DataGroupForm(
+        label="name",
+        value=group_uid,
+        data_group_type="Strike & dip",
+        parent="Da-da",
+        association=["Vertex", "Cell"],
+        data_type=["Float", "Integer"],
+    )
+    assert form.label == "name"
+    assert form.value == uuid.UUID(group_uid)
+    assert form.data_group_type == GroupTypeEnum.STRIKEDIP
+    assert form.parent == "Da-da"
     assert form.association == [Association.VERTEX, Association.CELL]
     assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
 

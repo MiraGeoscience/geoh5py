@@ -37,7 +37,7 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 from pydantic.functional_validators import BeforeValidator
 
-from geoh5py.groups import Group
+from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.validators import (
     empty_string_to_none,
@@ -51,7 +51,7 @@ from geoh5py.shared.validators import (
 )
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements, too-many-branches
 
 
 class DependencyType(str, Enum):
@@ -138,6 +138,8 @@ class BaseForm(BaseModel):
             k in data
             for k in ["parent", "association", "dataType", "isValue", "property"]
         ):
+            if "dataGroupType" in data:
+                return DataGroupForm
             if "multiSelect" in data:
                 return MultiChoiceDataForm
             if any(
@@ -424,6 +426,14 @@ class DataForm(DataFormMixin, BaseForm):
     """
 
     value: OptionalUUID
+
+
+class DataGroupForm(DataForm):
+    """
+    Geoh5py uijson form for grouped data associated with an object.
+    """
+
+    data_group_type: GroupTypeEnum | list[GroupTypeEnum]
 
 
 class DataOrValueForm(DataFormMixin, BaseForm):
