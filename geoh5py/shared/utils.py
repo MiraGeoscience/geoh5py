@@ -940,7 +940,22 @@ def str2none(value):
     return value
 
 
-def find_unique_name(name: str, names: list[str]) -> str:
+def split_name_suffixes(name: str) -> tuple[str, str]:
+    """
+    Split the base name from its suffixes assuming they are separated by periods.
+    """
+    # Split only once from the right to get all suffixes correctly
+    if "." in name:
+        base, suffixes = name.split(".", maxsplit=1)
+        suffixes = f".{suffixes}"
+    else:
+        base = name
+        suffixes = ""
+
+    return base, suffixes
+
+
+def find_unique_name(name: str, names: list[str], case_sensitive=True) -> str:
     """
     Generate a unique name not in `names`.
     If the name ends with (n), increment n until unique.
@@ -950,16 +965,16 @@ def find_unique_name(name: str, names: list[str]) -> str:
     :param names: List of names to avoid.
     :return: A unique name.
     """
-    if name not in names:
+    if not case_sensitive:
+        names_list = [val.lower() if isinstance(val, str) else val for val in names]
+    else:
+        names_list = names
+
+    checkname = name.lower() if not case_sensitive and isinstance(name, str) else name
+    if checkname not in names_list:
         return name
 
-    # Split only once from the right to get all suffixes correctly
-    if "." in name:
-        base_part, suffixes = name.split(".", maxsplit=1)
-        suffixes = f".{suffixes}"
-    else:
-        base_part = name
-        suffixes = ""
+    base_part, suffixes = split_name_suffixes(name)
 
     # Extract and increment count if '(n)' is present
     match = re.match(r"^(.*?)(?:\((\d+)\))?$", base_part)
@@ -968,8 +983,11 @@ def find_unique_name(name: str, names: list[str]) -> str:
 
     while True:
         candidate = f"{base}({count}){suffixes}"
-        if candidate not in names:
+        checkname = candidate if case_sensitive else candidate.lower()
+
+        if checkname not in names_list:
             return candidate
+
         count += 1
 
 

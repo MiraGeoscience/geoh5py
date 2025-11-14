@@ -23,6 +23,8 @@ from __future__ import annotations
 import numpy as np
 from h5py import special_dtype
 
+from geoh5py.shared.utils import find_unique_name
+
 
 class ReferenceValueMap:
     """Maps from reference index to reference value of ReferencedData."""
@@ -72,7 +74,14 @@ class ReferenceValueMap:
             if not np.all(np.asarray(list(value_map)) >= 0):
                 raise KeyError("Key must be an positive integer")
 
-            value_list = list(value_map.items())
+            # Make sure no duplicated name as case-insensitive
+            names = list(value_map.values())
+            ids = list(value_map)
+            value_list = []
+            for ind, name in enumerate(names):
+                new = find_unique_name(name, names[:ind], case_sensitive=False)
+                value_list.append((ids[ind], new))
+
             value_map = np.array(
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
