@@ -231,6 +231,8 @@ class BaseUIJson(BaseModel):
 
                 if isinstance(value, UUID):
                     value = self._object_or_catch(geoh5, value)
+                if isinstance(value, list) and value and isinstance(value[0], UUID):
+                    value = [self._object_or_catch(geoh5, uid) for uid in value]
 
                 if isinstance(value, UIJsonError):
                     errors[field].append(value)

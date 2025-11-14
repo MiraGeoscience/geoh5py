@@ -125,20 +125,36 @@ def types_to_string(types: list) -> list[str] | str:
     return str(types[0].default_type_uid())
 
 
-def uuid_to_string(value: UUID | None) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, UUID):
-        return str(value)
-    return value
+def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
+    def convert(value: UUID | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, UUID):
+            return str(value)
+        return value
+
+    if isinstance(value, list):
+        return [convert(v) for v in value]
+    return convert(value)
 
 
-def uuid_to_string_or_numeric(value: UUID | float | int | None) -> str | float | int:
-    if value is None:
-        return ""
-    if isinstance(value, UUID):
-        return str(value)
-    return value
+UidOrNumeric = UUID | float | int | None
+StringOrNumeric = str | float | int
+
+
+def uuid_to_string_or_numeric(
+    value: UidOrNumeric | list[UidOrNumeric],
+) -> StringOrNumeric | list[StringOrNumeric]:
+    def convert(value: UidOrNumeric) -> StringOrNumeric:
+        if value is None:
+            return ""
+        if isinstance(value, UUID):
+            return str(value)
+        return value
+
+    if isinstance(value, list):
+        return [convert(v) for v in value]
+    return convert(value)
 
 
 class BaseValidator(ABC):

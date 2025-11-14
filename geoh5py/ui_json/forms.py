@@ -138,6 +138,12 @@ class BaseForm(BaseModel):
             k in data
             for k in ["parent", "association", "dataType", "isValue", "property"]
         ):
+            if "multiSelect" in data:
+                return MultiChoiceDataForm
+            if any(
+                k in data for k in ["min", "max", "precision", "isValue", "property"]
+            ):
+                return DataOrValueForm
             return DataForm
         if isinstance(data.get("value"), str):
             return StringForm
@@ -404,15 +410,28 @@ UUIDOrNumber = Annotated[
 ]
 
 
-class DataForm(BaseForm):
-    """
-    Geoh5py data uijson form.
-    """
+class DataFormMixin(BaseModel):
+    """Mixin class to add common attributes a series of data classes."""
 
-    value: UUIDOrNumber
     parent: str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
+
+
+class DataForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson form for data associated with an object.
+    """
+
+    value: OptionalUUID
+
+
+class DataOrValueForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson data form that also accepts a single value.
+    """
+
+    value: UUIDOrNumber
     is_value: bool = False
     property: OptionalUUID = None
     min: float = -np.inf
@@ -447,16 +466,18 @@ class DataForm(BaseForm):
             return self.property
         return self.value
 
-UUIDListOrNumber = Annotated[
-    list[UUID] | float | int | None,  # pylint: disable=unsupported-binary-operation
+
+OptionalUUIDList = Annotated[
+    list[UUID] | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string_or_numeric),
+    PlainSerializer(uuid_to_string),
 ]
 
-class MultiChoiceDataForm(DataForm):
-    """Data form with multi-choice."""
 
-    value:
+class MultiChoiceDataForm(DataFormMixin, BaseForm):
+    """Geoh5py uijson data form with multi-choice."""
+
+    value: OptionalUUIDList
     multi_select: bool = True
 
     @field_validator("multi_select", mode="before")

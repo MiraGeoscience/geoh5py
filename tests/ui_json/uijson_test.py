@@ -32,8 +32,10 @@ from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
     BoolForm,
     DataForm,
+    DataOrValueForm,
     FloatForm,
     IntegerForm,
+    MultiChoiceDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -87,11 +89,9 @@ def sample_uijson(test_path):
                         "parent": "my_object_parameter",
                         "association": "Vertex",
                         "data_type": "Float",
-                        "is_value": False,
-                        "property": str(data.uid),
-                        "value": 0.0,
+                        "value": str(data.uid),
                     },
-                    "my_other_data_parameter": {
+                    "my_data_or_value_parameter": {
                         "label": "My other data parameter",
                         "parent": "my_object_parameter",
                         "association": "Vertex",
@@ -99,6 +99,14 @@ def sample_uijson(test_path):
                         "is_value": True,
                         "property": "",
                         "value": 0.0,
+                    },
+                    "my_multi_choice_data_parameter": {
+                        "label": "My multi-choice data parameter",
+                        "parent": "my_other_object_parameter",
+                        "association": "Vertex",
+                        "data_type": "Float",
+                        "value": [str(data.uid)],
+                        "multi_selecte": True,
                     },
                     "my_faulty_data_parameter": {
                         "label": "My faulty data parameter",
@@ -125,7 +133,8 @@ def test_uijson(tmp_path):
         my_object_parameter: ObjectForm
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
-        my_other_data_parameter: DataForm
+        my_data_or_value_parameter: DataOrValueForm
+        my_multi_choice_data_parameter: MultiChoiceDataForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
 
@@ -470,13 +479,28 @@ def test_unknown_uijson(tmp_path):
             "value": str(pts.uid),
         },
         "my_data_parameter": {
-            "label": "my data parameter",
+            "label": "My data parameter",
             "parent": "my_object_parameter",
             "association": "Vertex",
             "data_type": "Float",
-            "is_value": False,
-            "property": str(data.uid),
+            "value": str(data.uid),
+        },
+        "my_data_or_value_parameter": {
+            "label": "My other data parameter",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "is_value": True,
+            "property": "",
             "value": 0.0,
+        },
+        "my_multi_choice_data_parameter": {
+            "label": "My multi-choice data parameter",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "value": [str(data.uid)],
+            "multi_select": True,
         },
         "my_optional_parameter": {
             "label": "my optional parameter",
@@ -506,9 +530,13 @@ def test_unknown_uijson(tmp_path):
     assert isinstance(uijson.my_integer_parameter, IntegerForm)
     assert isinstance(uijson.my_object_parameter, ObjectForm)
     assert isinstance(uijson.my_data_parameter, DataForm)
+    assert isinstance(uijson.my_data_or_value_parameter, DataOrValueForm)
+    assert isinstance(uijson.my_multi_choice_data_parameter, MultiChoiceDataForm)
     params = uijson.to_params()
     assert params["my_object_parameter"].uid == pts.uid
     assert params["my_data_parameter"].uid == data.uid
+    assert params["my_data_or_value_parameter"] == 0.0
+    assert params["my_multi_choice_data_parameter"][0].uid == data.uid
     assert "my_optional_parameter" not in params
     assert "my_group_optional_parameter" not in params
     assert "my_grouped_parameter" not in params
