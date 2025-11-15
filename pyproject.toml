@@ -121,7 +121,6 @@ ignore = [
     "TID252", # TODO
     "RUF012", # TODO
     "UP031", # TODO
-    "UP038", # TODO
     "RUF001", # TODO
     "RUF003", # TODO
     "RUF005",  # collection-literal-concatenation - wrong suggestion with numpy arrays

@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 from io import BytesIO
 
 import numpy as np
@@ -60,7 +61,8 @@ def test_attribute_setters():
     gimage = GeoImage.create(workspace, image=image, cells=[[0, 0, 0, 0], [1, 1, 1, 1]])
 
     with pytest.raises(
-        TypeError, match="Attribute 'cells' must be provided as type numpy.ndarray"
+        TypeError,
+        match=re.escape("Attribute 'cells' must be provided as type numpy.ndarray"),
     ):
         gimage.cells = "abc"
 
@@ -99,7 +101,9 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         with pytest.raises(
             ValueError,
-            match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
+            match=re.escape(
+                "Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray"
+            ),
         ):
             geoimage.image = np.random.randn(12)
 
@@ -112,7 +116,8 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         assert geoimage.image is None
 
         with pytest.raises(
-            AttributeError, match="An 'image' must be set before georeferencing."
+            AttributeError,
+            match=re.escape("An 'image' must be set before georeferencing."),
         ):
             geoimage.set_tag_from_vertices()
 
@@ -136,13 +141,15 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
             geoimage.georeference(pixels[0, :], points)
 
         with pytest.raises(
-            ValueError, match="Input 'locations' must be a 2D array of shape"
+            ValueError, match=re.escape("Input 'locations' must be a 2D array of shape")
         ):
             geoimage.georeference(pixels, points[0, :])
 
         with pytest.raises(
             AttributeError,
-            match="The 'image' property cannot be reset. Consider creating a new object",
+            match=re.escape(
+                "The 'image' property cannot be reset. Consider creating a new object"
+            ),
         ):
             geoimage.image = np.random.randint(0, 255, (128, 64, 3))
 
@@ -239,7 +246,8 @@ def test_georeference_image(tmp_path):
         geoimage.tag = {"test": 3}
 
         with pytest.warns(
-            UserWarning, match="The 'tif.' image has no referencing information."
+            UserWarning,
+            match=re.escape("The 'tif.' image has no referencing information."),
         ):
             geoimage.georeferencing_from_tiff()
 

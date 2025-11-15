@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -68,14 +69,15 @@ def test_add_file(tmp_path: Path):
         compare_entities(file_data, rec_data, ignore=["_parent"])
 
     with pytest.raises(
-        TypeError, match="Input 'file_bytes' for FilenameData must be of type 'bytes'."
+        TypeError,
+        match=re.escape("Input 'file_bytes' for FilenameData must be of type 'bytes'."),
     ):
         file_data.file_bytes = "abc"
 
     file_data.values = None
 
     with pytest.raises(
-        AttributeError, match="FilenameData requires the 'values' to be set."
+        AttributeError, match=re.escape("FilenameData requires the 'values' to be set.")
     ):
         file_data.file_bytes = b"abc"
 

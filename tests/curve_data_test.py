@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 from pathlib import Path
 
@@ -36,7 +37,9 @@ def test_attribute_validations():
     n_data = 12
 
     with Workspace() as workspace:
-        with pytest.raises(TypeError, match="Parts must be a list or numpy array."):
+        with pytest.raises(
+            TypeError, match=re.escape("Parts must be a list or numpy array.")
+        ):
             Curve.create(workspace, vertices=np.random.randn(n_data, 3), parts="abc")
 
         with pytest.raises(
@@ -146,7 +149,9 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            with pytest.raises(TypeError, match="Values cannot have decimal points."):
+            with pytest.raises(
+                TypeError, match=re.escape("Values cannot have decimal points.")
+            ):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
 
             data_vert_rec.values = np.random.randint(
@@ -185,14 +190,19 @@ def test_remove_cells_data(tmp_path: Path):
         curve = workspace.get_entity("new_curve")[0]
 
         with pytest.raises(
-            ValueError, match="Found indices larger than the number of cells."
+            ValueError,
+            match=re.escape("Found indices larger than the number of cells."),
         ):
             curve.remove_cells([12])
 
-        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+        with pytest.raises(
+            TypeError, match=re.escape("Indices must be a list or numpy array.")
+        ):
             curve.remove_cells("abc")
 
-        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+        with pytest.raises(
+            TypeError, match=re.escape("Indices must be a list or numpy array.")
+        ):
             curve.remove_vertices("abc")
 
         curve.remove_cells([0])
@@ -226,7 +236,8 @@ def test_remove_vertex_data(tmp_path):
         curve.copy(name="validation")
 
         with pytest.raises(
-            ValueError, match="Found indices larger than the number of vertices."
+            ValueError,
+            match=re.escape("Found indices larger than the number of vertices."),
         ):
             curve.remove_vertices([12])
 

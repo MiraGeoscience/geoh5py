@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 
 import numpy as np
@@ -40,12 +41,14 @@ def test_attribute_validations():
         Curve.create(workspace, vertices=xyz, on_file="abc")
 
     with pytest.raises(
-        TypeError, match="Input clipping_ids must be a list of uuid.UUID or None"
+        TypeError,
+        match=re.escape("Input clipping_ids must be a list of uuid.UUID or None"),
     ):
         Curve.create(workspace, vertices=xyz, clipping_ids=["abc", uuid.uuid4()])
 
     with pytest.raises(
-        TypeError, match="Input clipping_ids must be a list of uuid.UUID or None"
+        TypeError,
+        match=re.escape("Input clipping_ids must be a list of uuid.UUID or None"),
     ):
         Curve.create(workspace, vertices=xyz, clipping_ids="abc")
 
