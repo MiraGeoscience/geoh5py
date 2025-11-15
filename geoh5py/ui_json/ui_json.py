@@ -35,6 +35,8 @@ from pydantic import (
 )
 
 from geoh5py import Workspace
+from geoh5py.groups import PropertyGroup
+from geoh5py.shared import Entity
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.shared.validators import empty_string_to_none, none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
@@ -71,7 +73,20 @@ class BaseUIJson(BaseModel):
     monitoring_directory: OptionalPath
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
-    _groups: dict[str, list[str]] | None = None
+    _path: Path | None = None
+    _groups: dict[str, list[str]]
+
+    def model_post_init(self, context: Any, /) -> None:
+        self._groups = self.get_groups()
+
+    def __repr__(self) -> str:
+        """Repr level shows a path if it exists or the title otherwise."""
+        return f"UIJson('{self.title if self._path is None else str(self._path.name)}')"
+
+    def __str__(self) -> str:
+        """String level shows the full json representation."""
+        json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        return f"{self!r} -> {json_string}"
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -81,8 +96,21 @@ class BaseUIJson(BaseModel):
         return path
 
     @classmethod
-    def read(cls, path: Path):
-        """Create a UIJson object from file."""
+    def read(cls, path: str | Path) -> BaseUIJson:
+        """
+        Create a UIJson object from ui.json file.
+
+        Raises errors if the file doesn't exist or is not a .ui.json file.
+        Also validates at the Form and UIJson level whether the file is
+        properly formatted.  If called from the BaseUIJson class, forms
+        will be inferred dynamically.
+
+        :param path: Path to the .ui.json file.
+        :returns: UIJson object.
+        """
+
+        if isinstance(path, str):
+            path = Path(path)
 
         path = path.resolve()
 
@@ -110,38 +138,50 @@ class BaseUIJson(BaseModel):
                 __base__=BaseUIJson,
                 **fields,
             )
-            return model(**kwargs)
+            uijson = model(**kwargs)
+        else:
+            uijson = cls(**kwargs)
 
-        return cls(**kwargs)
+        uijson._path = path  # pylint: disable=protected-access
+        return uijson
 
     def write(self, path: Path):
-        """Write the UIJson object to file."""
+        """
+        Write the UIJson object to file.
 
+        :param path: Path to write the .ui.json file.
+        """
+        self._path = path
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
 
-    @property
-    def groups(self) -> dict[str, list[str]]:
-        """Returns grouped forms."""
-        if self._groups is None:
-            groups: dict[str, list[str]] = {}
-            for field in self.model_fields:
-                form = getattr(self, field)
-                if not isinstance(form, BaseForm):
-                    continue
-                name = getattr(form, "group", "")
-                if name:
-                    groups[name] = (
-                        [field] if name not in groups else groups[name] + [field]
-                    )
+    def get_groups(self) -> dict[str, list[str]]:
+        """
+        Returns grouped forms.
 
-            self._groups = groups
+        :returns: Dictionary of group names and the parameters belonging to each
+            group.
+        """
+        groups: dict[str, list[str]] = {}
+        for field in self.model_fields:
+            form = getattr(self, field)
+            if not isinstance(form, BaseForm):
+                continue
+            name = getattr(form, "group", "")
+            if name:
+                groups[name] = [field] if name not in groups else groups[name] + [field]
 
-        return self._groups
+        return groups
 
     def is_disabled(self, field: str) -> bool:
-        """Checks if a field is disabled based on form status."""
+        """
+        Checks if a field is disabled based on form status.
+
+        :param field: Field name to check.
+        :returns: True if the field is disabled by it's own enabled status or
+            the groups enabled status, False otherwise.
+        """
 
         value = getattr(self, field)
         if not isinstance(value, BaseForm):
@@ -151,7 +191,7 @@ class BaseUIJson(BaseModel):
 
         disabled = False
         if value.group:
-            group = next(v for k, v in self.groups.items() if field in v)
+            group = next(v for k, v in self._groups.items() if field in v)
             for member in group:
                 form = getattr(self, member)
                 if form.group_optional:
@@ -160,38 +200,55 @@ class BaseUIJson(BaseModel):
 
         return disabled
 
+    def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
+        """
+        Flatten the UIJson data to dictionary of key/value pairs.
+
+        Chooses between value/property in data forms depending on the is_value
+        field.
+
+        :return: Flattened dictionary of key/value pairs.
+        """
+        data = {}
+        fields = self.model_fields_set if active_only else self.model_fields
+        for field in fields:
+            if skip_disabled and self.is_disabled(field):
+                continue
+
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                value = value.flatten()
+            data[field] = value
+
+        return data
+
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
         Promote, flatten and validate parameter/values dictionary.
 
         :param workspace: Workspace to fetch entities from.  Used for passing active
             workspaces to avoid closing and flushing data.
+
+        :returns: If the data passes validation, to_params returns a promoted and
+            flattened parameters/values dictionary that may be dumped into an application
+            specific params (options) class.
         """
 
+        data = self.flatten(skip_disabled=True, active_only=True)
         with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
             if geoh5 is None:
                 raise ValueError("Workspace cannot be None.")
 
-            data = {}
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
-            for field in self.model_fields_set:
-                if self.is_disabled(field):
-                    continue
-
+            for field, value in data.items():
                 if field == "geoh5":
-                    data[field] = geoh5
                     continue
-
-                value = getattr(self, field)
-                value = value.flatten() if isinstance(value, BaseForm) else value
 
                 if isinstance(value, UUID):
-                    value = self._object_or_catch(geoh5, value)
+                    data[field] = self._object_or_catch(geoh5, value)
 
                 if isinstance(value, UIJsonError):
                     errors[field].append(value)
-
-                data[field] = value
 
             self.validate_data(data, errors)
 
@@ -199,7 +256,7 @@ class BaseUIJson(BaseModel):
 
     def validate_data(
         self, params: dict[str, Any] | None = None, errors: dict[str, Any] | None = None
-    ):
+    ) -> None:
         """
         Validate the UIJson data.
 
@@ -220,6 +277,8 @@ class BaseUIJson(BaseModel):
 
         ui_json = self.model_dump(exclude_unset=True)
         for field in self.model_fields_set:
+            if self.is_disabled(field):
+                continue
             form = ui_json[field]
             validations = get_validations(list(form) if isinstance(form, dict) else [])
             for validation in validations:
@@ -234,12 +293,16 @@ class BaseUIJson(BaseModel):
         self,
         workspace: Workspace,
         uuid: UUID,
-    ):
+    ) -> Entity | PropertyGroup | UIJsonError:
         """
         Returns an object if it exists in the workspace or an error if not.
 
         :param workspace: Workspace to fetch entities from.
         :param uuid: UUID of the object to fetch.
+
+        :returns: The object if it exists in the workspace or a placeholder error
+            to be collected and raised later with any other UIJson level validation
+            errors.
         """
 
         obj = workspace.get_entity(uuid)
