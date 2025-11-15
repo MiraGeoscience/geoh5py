@@ -74,7 +74,10 @@ class BaseUIJson(BaseModel):
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
     _path: Path | None = None
-    _groups: dict[str, list[str]] | None = None
+    _groups: dict[str, list[str]]
+
+    def model_post_init(self, context: Any, /) -> None:
+        self._groups = self.get_groups()
 
     def __repr__(self) -> str:
         """Repr level shows a path if it exists or the title otherwise."""
@@ -83,7 +86,7 @@ class BaseUIJson(BaseModel):
     def __str__(self) -> str:
         """String level shows the full json representation."""
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
-        return f"{self!r} :\n\n{json_string}"
+        return f"{self!r} -> {json_string}"
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -93,7 +96,7 @@ class BaseUIJson(BaseModel):
         return path
 
     @classmethod
-    def read(cls, path: Path) -> BaseUIJson:
+    def read(cls, path: str | Path) -> BaseUIJson:
         """
         Create a UIJson object from ui.json file.
 
@@ -105,6 +108,9 @@ class BaseUIJson(BaseModel):
         :param path: Path to the .ui.json file.
         :returns: UIJson object.
         """
+
+        if isinstance(path, str):
+            path = Path(path)
 
         path = path.resolve()
 
@@ -150,29 +156,23 @@ class BaseUIJson(BaseModel):
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
 
-    @property
-    def groups(self) -> dict[str, list[str]]:
+    def get_groups(self) -> dict[str, list[str]]:
         """
         Returns grouped forms.
 
         :returns: Dictionary of group names and the parameters belonging to each
             group.
         """
-        if self._groups is None:
-            groups: dict[str, list[str]] = {}
-            for field in self.model_fields:
-                form = getattr(self, field)
-                if not isinstance(form, BaseForm):
-                    continue
-                name = getattr(form, "group", "")
-                if name:
-                    groups[name] = (
-                        [field] if name not in groups else groups[name] + [field]
-                    )
+        groups: dict[str, list[str]] = {}
+        for field in self.model_fields:
+            form = getattr(self, field)
+            if not isinstance(form, BaseForm):
+                continue
+            name = getattr(form, "group", "")
+            if name:
+                groups[name] = [field] if name not in groups else groups[name] + [field]
 
-            self._groups = groups
-
-        return self._groups
+        return groups
 
     def is_disabled(self, field: str) -> bool:
         """
@@ -191,7 +191,7 @@ class BaseUIJson(BaseModel):
 
         disabled = False
         if value.group:
-            group = next(v for k, v in self.groups.items() if field in v)
+            group = next(v for k, v in self._groups.items() if field in v)
             for member in group:
                 form = getattr(self, member)
                 if form.group_optional:
@@ -199,6 +199,28 @@ class BaseUIJson(BaseModel):
                     break
 
         return disabled
+
+    def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
+        """
+        Flatten the UIJson data to dictionary of key/value pairs.
+
+        Chooses between value/property in data forms depending on the is_value
+        field.
+
+        :return: Flattened dictionary of key/value pairs.
+        """
+        data = {}
+        fields = self.model_fields_set if active_only else self.model_fields
+        for field in fields:
+            if skip_disabled and self.is_disabled(field):
+                continue
+
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                value = value.flatten()
+            data[field] = value
+
+        return data
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
@@ -212,30 +234,21 @@ class BaseUIJson(BaseModel):
             specific params (options) class.
         """
 
+        data = self.flatten(skip_disabled=True, active_only=True)
         with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
             if geoh5 is None:
                 raise ValueError("Workspace cannot be None.")
 
-            data = {}
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
-            for field in self.model_fields_set:
-                if self.is_disabled(field):
-                    continue
-
+            for field, value in data.items():
                 if field == "geoh5":
-                    data[field] = geoh5
                     continue
-
-                value = getattr(self, field)
-                value = value.flatten() if isinstance(value, BaseForm) else value
 
                 if isinstance(value, UUID):
-                    value = self._object_or_catch(geoh5, value)
+                    data[field] = self._object_or_catch(geoh5, value)
 
                 if isinstance(value, UIJsonError):
                     errors[field].append(value)
-
-                data[field] = value
 
             self.validate_data(data, errors)
 
