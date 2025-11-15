@@ -31,7 +31,7 @@ def test_attribute_setters():
     with Workspace() as workspace:
         grid = Grid2D.create(workspace)
 
-        with pytest.raises(TypeError, match="Rotation angle must be a float."):
+        with pytest.raises(TypeError, match="Rotation angle must be a float"):
             grid.rotation = np.r_[0, 1]
 
         with pytest.raises(TypeError, match="Attribute 'origin' must be a list"):

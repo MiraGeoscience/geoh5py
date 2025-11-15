@@ -251,7 +251,7 @@ def test_survey_airborne_fem_data(tmp_path):
 
     with pytest.raises(
         ValueError,
-        match="PropertyGroup named 'time_data' already exists on the survey entity.",
+        match="PropertyGroup named 'time_data' already exists on the survey entity",
     ):
         receivers.add_components_data({"time_data": data})
 

@@ -114,7 +114,7 @@ def test_remove_point_data(tmp_path):
             "Error returning None mask."
         )
 
-        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+        with pytest.raises(TypeError, match="Indices must be a list or numpy array"):
             points.remove_vertices("abc")
 
         data = points.add_data(
@@ -127,7 +127,7 @@ def test_remove_point_data(tmp_path):
             points.vertices = np.random.randn(10, 3)
 
         with pytest.raises(
-            ValueError, match="Found indices larger than the number of vertices."
+            ValueError, match="Found indices larger than the number of vertices"
         ):
             points.remove_vertices([12])
 
