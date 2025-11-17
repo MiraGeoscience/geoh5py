@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 
 import numpy as np
 from numpy import ndarray
@@ -57,30 +58,39 @@ class TextData(Data):
         return ""
 
     def validate_values(
-        self, values: np.ndarray | str | None
+        self, values: bytes | Iterable | str | None
     ) -> np.ndarray | str | None:
+        """
+        Validate text values provided as a single string or array of strings.
+
+        :param values: The values to validate.
+
+        :return: The validated values.
+        """
         if isinstance(values, bytes):
             values = values.decode()
 
-        if isinstance(values, np.ndarray) and values.dtype == object:
-            values = np.array(
-                [v.decode("utf-8") if isinstance(v, bytes) else v for v in values],
-                dtype=str,
-            )
+        if isinstance(values, str | None):
+            return values
 
-            if self.n_values is not None and len(values) < self.n_values:
-                full_array = np.full(self.n_values, self.nan_value, dtype=values.dtype)
-                full_array[: len(values)] = values
-                return full_array
-
-        if (not isinstance(values, (str, type(None), np.ndarray))) or (
-            isinstance(values, np.ndarray) and values.dtype.kind not in ["U", "S"]
-        ):
+        if not isinstance(values, Iterable):
             raise ValueError(
-                f"Input 'values' for {self} must be of type {np.ndarray}  str or None."
+                f"Input 'values' for {self} must be of type Iterable, str or None."
             )
 
-        return values
+        array_values = np.array(
+            [v.decode("utf-8") if isinstance(v, bytes) else v for v in values],
+            dtype=str,
+        )
+
+        if self.n_values is not None and len(array_values) < self.n_values:
+            full_array = np.full(
+                self.n_values, self.nan_value, dtype=array_values.dtype
+            )
+            full_array[: len(array_values)] = array_values
+            return full_array
+
+        return array_values
 
 
 class CommentsData(TextData):

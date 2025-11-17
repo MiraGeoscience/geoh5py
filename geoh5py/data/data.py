@@ -362,7 +362,7 @@ class Data(Entity):
         return self._values
 
     @values.setter
-    def values(self, values: np.ndarray | None):
+    def values(self, values):
         self._values = self.validate_values(values)
 
         if self.on_file:
