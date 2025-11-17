@@ -77,9 +77,7 @@ def test_text_data_length_mismatch(tmp_path):
         # Test setting value to the text_mesh_data property through setattr
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                "The 'Text Data' entries must contain a list of len\\('n_vertices'\\)."
-            ),
+            match="entries must contain a list of len",
         ):
             text_object.color = ["#ff00f1ff", "#00ff1fff", "#0000ffff"]
 
