@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 
 import numpy as np
@@ -211,7 +212,7 @@ def test_multi_choice_form():
     assert form.value == ["test"]
     assert '"value":["test"]' in form.json_string
 
-    with pytest.raises(ValidationError, match="multi_select: True."):
+    with pytest.raises(ValidationError, match=re.escape("multi_select: True.")):
         _ = MultiChoiceForm(
             label="names",
             value="test",
@@ -411,7 +412,7 @@ def test_data_form():
     assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
 
     with pytest.raises(
-        ValidationError, match="Value must be numeric if is_value is True."
+        ValidationError, match="Value must be numeric if is_value is True"
     ):
         _ = DataForm(
             label="name",

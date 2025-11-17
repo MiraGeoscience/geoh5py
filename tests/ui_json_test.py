@@ -93,12 +93,12 @@ def test_input_file_json():
         InputFile(ui_json=123)
 
     with pytest.raises(
-        AttributeError, match="'ui_json' must be set before setting data."
+        AttributeError, match="'ui_json' must be set before setting data"
     ):
         InputFile().data = {"abc": 123}
 
     with pytest.raises(
-        AttributeError, match="InputFile requires a 'ui_json' to be defined."
+        AttributeError, match="InputFile requires a 'ui_json' to be defined"
     ):
         InputFile().update_ui_values({"abc": 123})
 
@@ -116,7 +116,9 @@ def test_input_file_json():
 
     with pytest.raises(
         ValueError,
-        match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
+        match=re.escape(
+            "Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`."
+        ),
     ):
         InputFile(ui_json=ui_json).data
 
@@ -414,7 +416,9 @@ def test_object_promotion(tmp_path: Path):
         "Promotion of entity from uuid string failed."
     )
 
-    with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
+    with pytest.raises(
+        ValueError, match=re.escape("Input 'data' must be of type dict or None.")
+    ):
         new_in_file.data = 123
 
 
@@ -596,7 +600,7 @@ def test_input_file(tmp_path: Path):
     out_file = in_file.write_ui_json(path=tmp_path)
 
     with pytest.raises(
-        ValueError, match="Input file should have the extension .ui.json"
+        ValueError, match=re.escape("Input file should have the extension .ui.json")
     ):
         InputFile.read_ui_json("somefile.json")
 

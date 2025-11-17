@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -102,7 +103,8 @@ def test_create_vp_model(tmp_path: Path):
     ws = Workspace()
 
     with pytest.raises(
-        TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
+        TypeError,
+        match=re.escape("Attribute 'unit_property_id' should be a 'uuid.UUID'"),
     ):
         VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")
 
@@ -124,7 +126,7 @@ def test_create_vp_model(tmp_path: Path):
 )
 def test_vp_valiations(name, dtype: DataType, tmp_path: Path):
     with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
-        layers, prisms, units = create_mesh_parameters()
+        layers, prisms, _ = create_mesh_parameters()
 
         entity_type = DataType.find_or_create_type(workspace, PrimitiveTypeEnum(dtype))
 
