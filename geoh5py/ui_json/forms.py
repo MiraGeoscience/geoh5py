@@ -37,6 +37,7 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 from pydantic.functional_validators import BeforeValidator
 
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.validators import (
@@ -380,30 +381,15 @@ class GroupForm(BaseForm):
     group_type: GroupTypes
 
 
-class Association(str, Enum):
-    """
-    Geoh5py object association types.
-    """
+Association = Enum(  # type: ignore
+    "Association",
+    [(k.name, k.name.capitalize()) for k in DataAssociationEnum],
+    type=str,
+)
 
-    VERTEX = "Vertex"
-    CELL = "Cell"
-    FACE = "Face"
-
-
-class DataType(str, Enum):
-    """
-    Geoh5py data types.
-    """
-
-    INTEGER = "Integer"
-    FLOAT = "Float"
-    BOOLEAN = "Boolean"
-    REFERENCED = "Referenced"
-    VECTOR = "Vector"
-    DATETIME = "DateTime"
-    GEOMETRIC = "Geometric"
-    TEXT = "Text"
-
+DataType = Enum(  # type: ignore
+    "DataType", [(k.name, k.name.capitalize()) for k in DataTypeEnum], type=str
+)
 
 UUIDOrNumber = Annotated[
     UUID | float | int | None,  # pylint: disable=unsupported-binary-operation

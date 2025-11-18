@@ -84,6 +84,30 @@ def test_reference_value_map():
     assert isinstance(value_map(), dict)
 
 
+def test_copy_reference_data(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        points, data, _ = generate_value_map(workspace)
+
+        new_value_map = data.entity_type.value_map()
+
+        new_index = np.max(list(new_value_map.keys())) + 1
+        extra_name = new_value_map[new_index - 1].capitalize()
+        new_value_map[new_index] = extra_name
+
+        new_type = data.entity_type.copy(value_map=new_value_map)
+        new_values = data.values.copy()
+        new_values[-1] = new_index
+        ref_data = points.add_data(
+            {"new_values": {"values": new_values, "entity_type": new_type}}
+        )
+
+        value_map = ref_data.value_map()
+
+        assert list(value_map.values())[-1] == extra_name + "(1)"
+
+
 def test_create_reference_data(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
 

@@ -383,7 +383,7 @@ def test_grouped_forms(tmp_path):
     with Workspace(tmp_path / "test.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    groups = uijson.groups
+    groups = uijson._groups
     assert "my_group" in groups
     assert "my_grouped_param" in groups["my_group"]
     assert "my_other_grouped_param" in groups["my_group"]
