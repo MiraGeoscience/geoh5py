@@ -89,9 +89,8 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
-    :param verbose: Sets the level at which Geoscience Analyst will make
-        the parameter visible in a ui.json file.  Verbosity level is set
-        within Analyst menu.
+    :param place_holder_text: Text displayed in ui element when no data
+        has been provided.
     """
 
     model_config = ConfigDict(
@@ -114,6 +113,7 @@ class BaseForm(BaseModel):
     dependency_type: DependencyType = DependencyType.ENABLED
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
+    place_holder_text: str = ""
 
     @classmethod
     def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
