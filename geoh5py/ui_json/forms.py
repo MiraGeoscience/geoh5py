@@ -141,7 +141,7 @@ class BaseForm(BaseModel):
             if "dataGroupType" in data:
                 return DataGroupForm
             if "multiSelect" in data:
-                return MultiChoiceDataForm
+                return MultiSelectDataForm
             if any(
                 k in data for k in ["min", "max", "precision", "isValue", "property"]
             ):
@@ -484,8 +484,8 @@ OptionalUUIDList = Annotated[
 ]
 
 
-class MultiChoiceDataForm(DataFormMixin, BaseForm):
-    """Geoh5py uijson data form with multi-choice."""
+class MultiSelectDataForm(DataFormMixin, BaseForm):
+    """Geoh5py uijson data form with multi-selection."""
 
     value: OptionalUUIDList
     multi_select: bool = True
@@ -494,7 +494,7 @@ class MultiChoiceDataForm(DataFormMixin, BaseForm):
     @classmethod
     def only_multi_select(cls, value):
         if not value:
-            raise ValueError("MultiChoiceForm must have multi_select: True.")
+            raise ValueError("MultiSelectForm must have multi_select: True.")
         return value
 
     @field_validator("value", mode="before")

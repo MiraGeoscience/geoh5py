@@ -35,7 +35,7 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     FloatForm,
     IntegerForm,
-    MultiChoiceDataForm,
+    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -100,13 +100,13 @@ def sample_uijson(test_path):
                         "property": "",
                         "value": 0.0,
                     },
-                    "my_multi_choice_data_parameter": {
-                        "label": "My multi-choice data parameter",
+                    "my_multi_select_data_parameter": {
+                        "label": "My multi-select data parameter",
                         "parent": "my_other_object_parameter",
                         "association": "Vertex",
                         "data_type": "Float",
                         "value": [str(data.uid)],
-                        "multi_selecte": True,
+                        "multi_select": True,
                     },
                     "my_faulty_data_parameter": {
                         "label": "My faulty data parameter",
@@ -134,7 +134,7 @@ def test_uijson(tmp_path):
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
         my_data_or_value_parameter: DataOrValueForm
-        my_multi_choice_data_parameter: MultiChoiceDataForm
+        my_multi_select_data_parameter: MultiSelectDataForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
 
@@ -531,7 +531,7 @@ def test_unknown_uijson(tmp_path):
     assert isinstance(uijson.my_object_parameter, ObjectForm)
     assert isinstance(uijson.my_data_parameter, DataForm)
     assert isinstance(uijson.my_data_or_value_parameter, DataOrValueForm)
-    assert isinstance(uijson.my_multi_choice_data_parameter, MultiChoiceDataForm)
+    assert isinstance(uijson.my_multi_choice_data_parameter, MultiSelectDataForm)
     params = uijson.to_params()
     assert params["my_object_parameter"].uid == pts.uid
     assert params["my_data_parameter"].uid == data.uid

@@ -42,8 +42,8 @@ from geoh5py.ui_json.forms import (
     FloatForm,
     GroupForm,
     IntegerForm,
-    MultiChoiceDataForm,
     MultiChoiceForm,
+    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -479,7 +479,7 @@ def test_multichoice_data_form():
     data_uid_1 = str(uuid.uuid4())
     data_uid_2 = str(uuid.uuid4())
 
-    form = MultiChoiceDataForm(
+    form = MultiSelectDataForm(
         label="name",
         value=data_uid_1,
         parent="my_param",
@@ -492,7 +492,7 @@ def test_multichoice_data_form():
     assert form.association == "Vertex"
     assert form.data_type == "Float"
 
-    form = MultiChoiceDataForm(
+    form = MultiSelectDataForm(
         label="name",
         value=[data_uid_1, data_uid_2],
         parent="my_param",
@@ -505,7 +505,7 @@ def test_multichoice_data_form():
 def test_multichoice_data_form_serialization():
     data_uid_1 = str(uuid.uuid4())
     data_uid_2 = str(uuid.uuid4())
-    form = MultiChoiceDataForm(
+    form = MultiSelectDataForm(
         label="name",
         value=[data_uid_1, data_uid_2],
         parent="my_param",
@@ -515,7 +515,7 @@ def test_multichoice_data_form_serialization():
     data = form.model_dump()
     assert data["value"] == [data_uid_1, data_uid_2]
 
-    form = MultiChoiceDataForm(
+    form = MultiSelectDataForm(
         label="name",
         value=data_uid_1,
         parent="my_param",
@@ -525,7 +525,7 @@ def test_multichoice_data_form_serialization():
     data = form.model_dump()
     assert data["value"] == [data_uid_1]
 
-    form = MultiChoiceDataForm(
+    form = MultiSelectDataForm(
         label="name",
         value=[],
         parent="my_param",
@@ -614,7 +614,7 @@ def test_base_form_infer(tmp_path):
             "multiSelect": True,
         }
     )
-    assert form == MultiChoiceDataForm
+    assert form == MultiSelectDataForm
     form = BaseForm.infer(
         {
             "label": "test",
