@@ -971,7 +971,7 @@ def find_unique_name(name: str, names: list[str], case_sensitive=True) -> str:
         names_list = names
 
     checkname = name.lower() if not case_sensitive and isinstance(name, str) else name
-    if checkname not in names_list:
+    if checkname not in names_list or not isinstance(name, str):
         return name
 
     base_part, suffixes = split_name_suffixes(name)
