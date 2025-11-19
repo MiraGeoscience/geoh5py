@@ -965,12 +965,15 @@ def find_unique_name(name: str, names: list[str], case_sensitive=True) -> str:
     :param names: List of names to avoid.
     :return: A unique name.
     """
+    if not isinstance(name, str):
+        return name
+
     if not case_sensitive:
         names_list = [val.lower() if isinstance(val, str) else val for val in names]
     else:
         names_list = names
 
-    checkname = name.lower() if not case_sensitive and isinstance(name, str) else name
+    checkname = name.lower() if not case_sensitive else name
     if checkname not in names_list:
         return name
 
