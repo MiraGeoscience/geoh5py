@@ -62,6 +62,7 @@ about:
   license_file:
     - COPYING
     - COPYING.LESSER
+    - docs/THIRD_PARTY_SOFTWARE.rst
   homepage: https://www.mirageoscience.com/mining-industry-software/python-integration/
   repository: https://github.com/MiraGeoscience/geoh5py
   documentation: https://mirageoscience-geoh5py.readthedocs-hosted.com/
