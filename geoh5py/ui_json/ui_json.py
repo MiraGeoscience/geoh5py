@@ -242,6 +242,7 @@ class BaseUIJson(BaseModel):
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
             for field, value in data.items():
                 if field == "geoh5":
+                    data[field] = geoh5
                     continue
 
                 if isinstance(value, UUID):
