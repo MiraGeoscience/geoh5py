@@ -164,7 +164,7 @@ class BaseUIJson(BaseModel):
             group.
         """
         groups: dict[str, list[str]] = {}
-        for field in self.model_fields:
+        for field in self.__class__.model_fields:
             form = getattr(self, field)
             if not isinstance(form, BaseForm):
                 continue
