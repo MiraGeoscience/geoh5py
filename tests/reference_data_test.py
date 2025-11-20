@@ -151,6 +151,8 @@ def test_add_data_map(tmp_path):
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
         ]
 
+        # Add duplicate value
+        data_map[1, 1] = data_map[0, 1]
         with pytest.raises(TypeError, match="Property maps must be a dictionary"):
             data.data_maps = data_map
 
