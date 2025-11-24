@@ -80,7 +80,9 @@ html_theme = "alabaster"
 html_theme_options = {
     "description": f"version {release}",
 }
-
+html_sidebars = {
+    "**": ["sbt-sidebar-nav.html", "sbt-sidebar-footer.html"]
+}
 # Enable numref
 numfig = True
 
