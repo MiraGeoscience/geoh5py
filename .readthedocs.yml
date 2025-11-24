@@ -26,7 +26,7 @@ build:
         ./git-lfs install
         ./git-lfs fetch
         ./git-lfs checkout
-      - echo "jupyter-book config sphinx docs/"
+      # - echo "jupyter-book config sphinx docs/"
 
     pre_build:
       - "pip install . --no-deps"
