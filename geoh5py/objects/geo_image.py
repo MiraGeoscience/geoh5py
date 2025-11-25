@@ -32,6 +32,11 @@ from PIL.TiffImagePlugin import TiffImageFile
 
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
+from ..shared.cut_by_extent import (
+    compute_clipped_polygon_uv,
+    compute_pixel_rectangle_from_uv,
+    pixel_rect_to_world,
+)
 from ..shared.utils import (
     PILLOW_ARGUMENTS,
     box_intersect,
@@ -150,7 +155,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
         """
-        # todo: save the temp grid in a temp workspace?
         if self.vertices is None:
             raise AttributeError("Vertices are not defined.")
 
@@ -158,34 +162,63 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             warnings.warn("Image is not defined.")
             return None
 
-        # transform the image to a grid
-        grid = self.to_grid2d(parent=parent, mode="RGBA")
+        if inverse:
+            raise NotImplementedError(
+                "Inverse mask is not implemented yet with images."
+            )
 
-        # transform the image
-        grid_transformed = grid.copy_from_extent(
-            extent=extent,
-            parent=parent,
-            copy_children=copy_children,
-            clear_cache=clear_cache,
-            inverse=inverse,
-            from_image=True,
-            **kwargs,
+        # 1. find the point where the image and extent intersect
+        clipped_uv, plane = compute_clipped_polygon_uv(
+            self.vertices,
+            extent,
+            eps_plane=1e-5,
+            eps_collinear=1e-6,
+            dtype=np.float32,
         )
 
-        if grid_transformed is None:
-            grid.workspace.remove_entity(grid)
-            warnings.warn("Image could not be cropped.")
+        # short-circuit degenerate cases
+        if clipped_uv.shape[0] < 3:
+            warnings.warn("The image and the extent doesn't intersect.")
             return None
 
-        # transform the grid back to an image
-        image_transformed = grid_transformed.to_geoimage(
-            keys=grid_transformed.get_data_list(), mode="RGBA", normalize=False
-        )
+        # 2. compute the new extent of the image (planar coordinates)
+        new_extent = compute_pixel_rectangle_from_uv(
+            clipped_uv, self.u_cell_size, self.v_cell_size, self.u_count, self.v_count
+        )  # 3. crop the image to the new extent
+        cropped_image = self.image.crop(new_extent)
 
-        grid.workspace.remove_entity(grid_transformed)
-        grid.workspace.remove_entity(grid)
+        # 4. get the final results
+        new_attributes = {
+            "image": cropped_image,
+            "vertices": pixel_rect_to_world(
+                new_extent, plane, self.u_cell_size, self.v_cell_size
+            ),
+        }
 
-        return image_transformed
+        if parent:
+            new_attributes["parent"] = parent
+
+        return self._create_geoimage_from_attributes(**new_attributes)
+
+    def _create_geoimage_from_attributes(self, **kwargs) -> GeoImage:
+        """
+        Create a new GeoImage from attributes.
+
+        :param kwargs: The attributes to update.
+
+        :return: a new instance of GeoImage.
+        """
+        if "parent" in kwargs:
+            if hasattr(kwargs["parent"], "h5file"):
+                workspace = kwargs.pop("parent")
+            else:
+                workspace = kwargs["parent"].workspace
+        else:
+            workspace = self.workspace
+
+        new_attributes = GeoImageConversion.verify_kwargs(self, **kwargs)
+
+        return GeoImage.create(workspace, **new_attributes)
 
     @property
     def default_vertices(self) -> np.ndarray:
@@ -448,12 +481,11 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         return self.vertices.shape[0]
 
     @property
-    def origin(self) -> np.array:
+    def origin(self) -> np.ndarray:
         """
         The origin of the image.
         :return: an array of the origin of the image in x, y, z.
         """
-
         return self.vertices[3, :]
 
     @property
@@ -524,9 +556,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if self.image is None:
             raise AttributeError("An 'image' must be set before georeferencing.")
 
-        width, height = self.image.size
-        self._tag[256] = (width,)
-        self._tag[257] = (height,)
+        self._tag[256] = (self.u_count,)
+        self._tag[257] = (self.v_count,)
         self._tag[33922] = (
             0.0,
             0.0,
@@ -536,8 +567,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             self.vertices[0, 2],
         )
         self._tag[33550] = (
-            abs(self.vertices[1, 0] - self.vertices[0, 0]) / width,
-            abs(self.vertices[0, 1] - self.vertices[2, 1]) / height,
+            self.u_cell_size,
+            self.v_cell_size,
             0.0,
         )
 
@@ -673,3 +704,37 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         if self.on_file:
             self.workspace.update_attribute(self, "vertices")
+
+    @property
+    def u_count(self) -> int:
+        """
+        Number of pixels in the u direction.
+        :return: the number of pixels in the u direction.
+        """
+        return self.default_vertices[1, 0].astype(np.int32)
+
+    @property
+    def v_count(self) -> int:
+        """
+        Number of pixels in the v direction.
+        :return: the number of pixels in the v direction.
+        """
+        return self.default_vertices[0, 1].astype(np.int32)
+
+    @property
+    def u_cell_size(self) -> float:
+        """
+        Cell size in the u direction.
+        :return: the cell size in the u direction.
+        """
+        distance_u = np.linalg.norm(self.vertices[2] - self.vertices[3])
+        return distance_u / self.u_count
+
+    @property
+    def v_cell_size(self) -> float:
+        """
+        Cell size in the v direction.
+        :return: the cell size in the v direction.
+        """
+        distance_v = np.linalg.norm(self.vertices[0] - self.vertices[3])
+        return distance_v / self.v_count
