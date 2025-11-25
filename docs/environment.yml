@@ -11,7 +11,7 @@ dependencies:
   - numpy
   - h5py
   - pip
-  - jupyter-book
+  - jupyter-book=1.0
   - jupytext
   - notebook
   - pip:
