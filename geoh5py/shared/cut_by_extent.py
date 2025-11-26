@@ -18,12 +18,10 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 
 
-def normalize(v: np.ndarray, dtype: np.dtype[Any] = np.float32) -> np.ndarray:
+def normalize(v: np.ndarray) -> np.ndarray:
     """
     Normalize a vector to unit length.
 
@@ -32,13 +30,12 @@ def normalize(v: np.ndarray, dtype: np.dtype[Any] = np.float32) -> np.ndarray:
 
     :return: Normalized vector with unit length.
     """
-    v = np.asarray(v, dtype=dtype)
+    v = np.asarray(v, dtype=np.float64)
     return v / np.linalg.norm(v)
 
 
 def plane_from_quad_origin_last(
-    verts: np.ndarray,
-    dtype: np.dtype[Any] = np.float32,
+    vertices: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Create a coordinate system from a quad with the last vertex as origin.
@@ -46,22 +43,21 @@ def plane_from_quad_origin_last(
     Constructs a plane coordinate system (origin, u-vector, v-vector, normal)
     from four vertices where the last vertex serves as the origin.
 
-    :param verts: Array of shape (4, 3) containing the four vertices of the quad.
-    :param dtype: NumPy data type for computations.
+    :param vertices: Array of shape (4, 3) containing the four vertices of the quad.
 
     :return: Tuple containing (origin, u-vector, v-vector, normal vector).
 
-    :raises ValueError: If verts is not a (4, 3) array.
+    :raises ValueError: If vertices is not a (4, 3) array.
     """
-    if verts.shape != (4, 3):
-        raise ValueError("verts must be a (4, 3) array")
+    if vertices.shape != (4, 3):
+        raise ValueError("vertices must be a (4, 3) array")
 
-    verts = np.asarray(verts, dtype=dtype)
+    vertices = np.asarray(vertices)
 
-    p0 = verts[3]
-    u = normalize(verts[2] - p0, dtype=dtype)
-    v = normalize(verts[0] - p0, dtype=dtype)
-    n = normalize(np.cross(u, v), dtype=dtype)
+    p0 = vertices[3]
+    u = normalize(vertices[2] - p0)
+    v = normalize(vertices[0] - p0)
+    n = normalize(np.cross(u, v))
     return p0, u, v, n
 
 
@@ -72,7 +68,6 @@ def intersect_segment_plane(
     n: np.ndarray,
     *,
     eps_plane: float = 1e-5,
-    dtype: np.dtype[Any] = np.float32,
 ) -> np.ndarray | None:
     """
     Compute intersection of a line segment with a plane.
@@ -85,15 +80,9 @@ def intersect_segment_plane(
     :param p0: Point on the plane.
     :param n: Normal vector of the plane.
     :param eps_plane: Tolerance for plane distance calculations.
-    :param dtype: NumPy data type for computations.
 
     :return: Intersection point if it exists within the segment, None otherwise.
     """
-    a = np.asarray(a, dtype=dtype)
-    b = np.asarray(b, dtype=dtype)
-    p0 = np.asarray(p0, dtype=dtype)
-    n = np.asarray(n, dtype=dtype)
-
     da = np.dot(a - p0, n)
     db = np.dot(b - p0, n)
 
@@ -126,7 +115,7 @@ def clean_extent_for_intersection(
         raise TypeError("Expected a numpy array of extent values.")
 
     if not extent.ndim == 2 or extent.shape not in [(2, 3), (2, 2)]:
-        raise TypeError("Expected a 2D numpy array with 2 or 3 columns")
+        raise TypeError("Expected a 2D numpy array with 2 points and 2 or 3 columns")
 
     z_coords = vertices[:, 2]
     zmin, zmax = float(z_coords.min()), float(z_coords.max())
@@ -145,7 +134,6 @@ def compute_plane_box_intersections(
     n: np.ndarray,
     extent: np.ndarray,
     eps_plane: float,
-    dtype: np.dtype[Any] = np.float32,
 ) -> np.ndarray:
     """
     Compute intersections between a plane and the edges of a 3D bounding box.
@@ -157,7 +145,6 @@ def compute_plane_box_intersections(
     :param n: Normal vector of the plane.
     :param extent: coordinates of (xmin, xmax, ymin, ymax, zmin, zmax) defining the box.
     :param eps_plane: Tolerance for plane distance calculations.
-    :param dtype: NumPy data type for computations.
 
     :return: Array of intersection points, shape (N, 3) where N is the number of intersections.
     """
@@ -186,7 +173,7 @@ def compute_plane_box_intersections(
                     [xmax, ymax, extent_z],
                     [xmin, ymax, extent_z],
                 ],
-                dtype=dtype,
+                dtype=np.float64,
             )
             return corners
 
@@ -201,7 +188,7 @@ def compute_plane_box_intersections(
             [xmax, ymax, zmin],
             [xmax, ymax, zmax],
         ],
-        dtype=dtype,
+        dtype=np.float64,
     )
 
     edges = [
@@ -219,16 +206,16 @@ def compute_plane_box_intersections(
         (4, 6),
     ]
 
-    pts: list[np.ndarray] = []
+    points: list[np.ndarray] = []
     for a, b in edges:
-        p = intersect_segment_plane(c[a], c[b], p0, n, eps_plane=eps_plane, dtype=dtype)
+        p = intersect_segment_plane(c[a], c[b], p0, n, eps_plane=eps_plane)
         if p is not None:
-            pts.append(p)
+            points.append(p)
 
-    if not pts:
-        return np.zeros((0, 3), dtype=dtype)
+    if not points:
+        return np.zeros((0, 3), dtype=np.float64)
 
-    return np.asarray(pts, dtype=dtype)
+    return np.asarray(points, dtype=np.float64)
 
 
 def project_to_uv(
@@ -236,7 +223,6 @@ def project_to_uv(
     p0: np.ndarray,
     u: np.ndarray,
     v: np.ndarray,
-    dtype: np.dtype[Any] = np.float32,
 ) -> np.ndarray:
     """
     Project a 3D point onto a 2D UV coordinate system.
@@ -247,28 +233,11 @@ def project_to_uv(
     :param p0: Origin of the UV coordinate system.
     :param u: U-axis basis vector.
     :param v: V-axis basis vector.
-    :param dtype: NumPy data type for computations.
 
     :return: 2D coordinates in the UV system.
     """
-    d = np.asarray(p, dtype=dtype) - p0
-    return np.array([np.dot(d, u), np.dot(d, v)], dtype=dtype)
-
-
-def polygon_area(poly: np.ndarray) -> float:
-    """
-    Calculate the signed area of a 2D polygon.
-
-    Uses the shoelace formula to compute the signed area of a polygon.
-    Positive area indicates counter-clockwise orientation.
-
-    :param poly: Array of shape (N, 2) containing polygon vertices.
-
-    :return: Signed area of the polygon.
-    """
-    x = poly[:, 0]
-    y = poly[:, 1]
-    return 0.5 * float(np.sum(x * np.roll(y, -1) - y * np.roll(x, -1)))
+    d = np.asarray(p, dtype=np.float64) - p0
+    return np.array([np.dot(d, u), np.dot(d, v)], dtype=np.float64)
 
 
 def ensure_ccw(poly: np.ndarray) -> np.ndarray:
@@ -281,8 +250,13 @@ def ensure_ccw(poly: np.ndarray) -> np.ndarray:
 
     :return: Polygon vertices in counter-clockwise order.
     """
-    if polygon_area(poly) < 0.0:
+    x = poly[:, 0]
+    y = poly[:, 1]
+    poly_area = 0.5 * float(np.sum(x * np.roll(y, -1) - y * np.roll(x, -1)))
+
+    if poly_area < 0.0:
         return poly[::-1]
+
     return poly
 
 
@@ -384,29 +358,28 @@ def clip_polygon_uv(
     return out
 
 
-def sort_polygon_by_angle(pts: np.ndarray) -> np.ndarray:
+def sort_polygon_by_angle(points: np.ndarray) -> np.ndarray:
     """
     Sort polygon vertices by angle from centroid.
 
     Orders polygon vertices by their angle relative to the polygon's centroid,
     ensuring a consistent vertex ordering.
 
-    :param pts: Array of shape (N, 2) containing polygon vertices.
+    :param points: Array of shape (N, 2) containing polygon vertices.
 
     :return: Sorted vertices ordered by angle from centroid.
     """
-    center = pts.mean(axis=0)
-    ang = np.arctan2(pts[:, 1] - center[1], pts[:, 0] - center[0])
-    return pts[np.argsort(ang)]
+    center = points.mean(axis=0)
+    ang = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
+    return points[np.argsort(ang)]
 
 
 # pylint: disable=too-many-locals
 def compute_clipped_polygon_uv(
-    verts: np.ndarray,
+    vertices: np.ndarray,
     extent: np.ndarray,
     eps_plane: float = 1e-5,
     eps_collinear: float = 1e-6,
-    dtype: np.dtype[Any] = np.float32,
 ) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
     Compute clipped polygon in UV coordinates and plane frame.
@@ -415,32 +388,31 @@ def compute_clipped_polygon_uv(
     the result to UV coordinates. Returns both the clipped polygon and the
     plane coordinate system for further processing.
 
-    :param verts: Quad vertices, shape (4, 3) with last vertex as origin.
+    :param vertices: Quad vertices, shape (4, 3) with last vertex as origin.
     :param extent: Bounding box as (xmin, xmax, ymin, ymax, zmin, zmax).
     :param eps_plane: Tolerance for plane distance calculations.
     :param eps_collinear: Tolerance for collinearity detection.
-    :param dtype: NumPy data type for computations.
 
     :return: Tuple of (clipped polygon in UV coordinates, plane frame (P0, u, v, n)).
     """
-    p0, u, v, n = plane_from_quad_origin_last(verts, dtype=dtype)
+    p0, u, v, n = plane_from_quad_origin_last(vertices)
 
     # Extract Z bounds from the vertices and clean the extent
-    cleaned_extent = clean_extent_for_intersection(extent, verts)
+    cleaned_extent = clean_extent_for_intersection(extent, vertices)
 
-    pts_box = compute_plane_box_intersections(
-        p0, n, cleaned_extent, eps_plane=eps_plane, dtype=dtype
+    points_box = compute_plane_box_intersections(
+        p0, n, cleaned_extent, eps_plane=eps_plane
     )
-    if pts_box.shape[0] < 2:
+    if points_box.shape[0] < 2:
         # no meaningful intersection with box
-        return np.zeros((0, 2), dtype=dtype), (p0, u, v, n)
+        return np.zeros((0, 2), dtype=np.float64), (p0, u, v, n)
 
     # project once
     quad_uv = np.asarray(
-        [project_to_uv(p, p0, u, v, dtype=dtype) for p in verts], dtype=dtype
+        [project_to_uv(p, p0, u, v) for p in vertices], dtype=np.float64
     )
     box_uv = np.asarray(
-        [project_to_uv(p, p0, u, v, dtype=dtype) for p in pts_box], dtype=dtype
+        [project_to_uv(p, p0, u, v) for p in points_box], dtype=np.float64
     )
 
     quad_uv = sort_polygon_by_angle(quad_uv)
@@ -492,8 +464,8 @@ def pixel_centers_in_polygon(
     xints = (x2 - x1) * (ys - y1) / (y2 - y1 + 1e-12) + x1
     crossings = cond & (xs < xints)
 
-    inside_pts = (crossings.sum(axis=1) % 2 == 1).reshape(u.shape)
-    return np.argwhere(inside_pts)
+    inside_points = (crossings.sum(axis=1) % 2 == 1).reshape(u.shape)
+    return np.argwhere(inside_points)
 
 
 def compute_pixel_rectangle_from_uv(
@@ -507,8 +479,7 @@ def compute_pixel_rectangle_from_uv(
     Compute pixel rectangle bounds from UV coordinates.
 
     Converts UV polygon coordinates to pixel space and computes the bounding
-    rectangle that encompasses the polygon. Uses cell center logic to match
-    Grid2D behavior exactly.
+    rectangle that encompasses the polygon. Optimized for rectangular extents.
 
     :param uv: UV coordinates of polygon vertices, shape (N, 2).
     :param u_cell: Size of one pixel in U direction.
@@ -518,21 +489,22 @@ def compute_pixel_rectangle_from_uv(
 
     :return: Tuple of (xmin, ymin, xmax, ymax) pixel coordinates for PIL crop.
     """
-    # Create grid of all cell centers in UV space
-    u_centers = (np.arange(width) + 0.5) * u_cell
-    v_centers = (np.arange(height) + 0.5) * v_cell
-
-    # Check each pixel center
-    selected_pixels = pixel_centers_in_polygon(u_centers, v_centers, uv)
-
-    if len(selected_pixels) == 0:
+    if len(uv) == 0:
         return 0, 0, 0, 0
 
-    # Get bounds of selected pixels
-    xmin = int(selected_pixels[:, 0].min())
-    xmax = int(selected_pixels[:, 0].max()) + 1
-    ymin = int(selected_pixels[:, 1].min())
-    ymax = int(selected_pixels[:, 1].max()) + 1
+    # For rectangular extents, directly compute bounds without building full arrays
+    u_min, u_max = float(uv[:, 0].min()), float(uv[:, 0].max())
+    v_min, v_max = float(uv[:, 1].min()), float(uv[:, 1].max())
+
+    # Convert UV bounds to pixel indices
+    xmin = max(0, int(np.floor(u_min / u_cell - 0.5)) + 1)
+    xmax = min(width, int(np.floor(u_max / u_cell - 0.5)) + 2)
+    ymin = max(0, int(np.floor(v_min / v_cell - 0.5)) + 1)
+    ymax = min(height, int(np.floor(v_max / v_cell - 0.5)) + 2)
+
+    # Ensure we have a valid rectangle
+    if xmin >= xmax or ymin >= ymax:
+        return 0, 0, 0, 0
 
     return xmin, ymin, xmax, ymax
 
@@ -572,7 +544,7 @@ def pixel_rect_to_world(
     v_min = ymin * v_cell
     v_max = ymax * v_cell
 
-    # Define corners in UV space (matching Grid2D vertex ordering)
+    # Define corners in UV space
     xs = np.array([u_min, u_max, u_max, u_min], float)
     ys = np.array([v_max, v_max, v_min, v_min], float)
 

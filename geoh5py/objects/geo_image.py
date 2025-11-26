@@ -169,11 +169,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         # 1. find the point where the image and extent intersect
         clipped_uv, plane = compute_clipped_polygon_uv(
-            self.vertices,
-            extent,
-            eps_plane=1e-5,
-            eps_collinear=1e-6,
-            dtype=np.float32,
+            self.vertices, extent, eps_plane=1e-5, eps_collinear=1e-6
         )
 
         # short-circuit degenerate cases
@@ -184,21 +180,32 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         # 2. compute the new extent of the image (planar coordinates)
         new_extent = compute_pixel_rectangle_from_uv(
             clipped_uv, self.u_cell_size, self.v_cell_size, self.u_count, self.v_count
-        )  # 3. crop the image to the new extent
-        cropped_image = self.image.crop(new_extent)
+        )
+
+        # 3. crop the image to the new extent (PIL image coordinates)
+        cropped_image = self.image.crop(
+            (
+                new_extent[0],
+                self.v_count - new_extent[3],
+                new_extent[2],
+                self.v_count - new_extent[1],
+            )
+        )
 
         # 4. get the final results
-        new_attributes = {
-            "image": cropped_image,
-            "vertices": pixel_rect_to_world(
-                new_extent, plane, self.u_cell_size, self.v_cell_size
-            ),
-        }
+        kwargs.update(
+            {
+                "image": cropped_image,
+                "vertices": pixel_rect_to_world(
+                    new_extent, plane, self.u_cell_size, self.v_cell_size
+                ),
+            }
+        )
 
         if parent:
-            new_attributes["parent"] = parent
+            kwargs["parent"] = parent
 
-        return self._create_geoimage_from_attributes(**new_attributes)
+        return self._create_geoimage_from_attributes(**kwargs)
 
     def _create_geoimage_from_attributes(self, **kwargs) -> GeoImage:
         """
@@ -308,6 +315,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Input 'locations' must be a 2D array of shape(*, 3) "
                 "with the same number of rows as the control points."
             )
+
         constant = np.ones(reference.shape[0])
         param_x, _, _, _ = np.linalg.lstsq(
             np.c_[constant, reference], locations[:, 0], rcond=None
@@ -381,7 +389,13 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         Get the image as a :obj:`PIL.Image` object.
         """
         if self.image_data is not None and self.image_data.file_bytes is not None:
-            return Image.open(BytesIO(self.image_data.file_bytes))
+            old_limit = Image.MAX_IMAGE_PIXELS
+            Image.MAX_IMAGE_PIXELS = None
+            try:
+                im = Image.open(BytesIO(self.image_data.file_bytes))
+            finally:
+                Image.MAX_IMAGE_PIXELS = old_limit
+            return im
 
         return None
 
@@ -548,6 +562,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         """
         If tag is None, set the basic tag values based on vertices
         in order to export as a georeferenced .tiff.
+
         WARNING: this function must be used after georeference().
         """
         if self._tag is None:
@@ -576,6 +591,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     def tag(self) -> dict | None:
         """
         Georeferencing information of a tiff image stored in the header.
+
         :return: a dictionary containing the PIL.Image.tag information.
         """
         if self._tag:
@@ -610,8 +626,9 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         """
         return self.converter.to_grid2d(self, mode, **grid2d_kwargs)
 
+    @staticmethod
     def validate_image_data(
-        self, image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None
+        image: str | np.ndarray | BytesIO | Image.Image | FilenameData | None,
     ) -> Image.Image:
         """
         Validate the input image.
