@@ -28,7 +28,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from PIL import Image
-from PIL.TiffImagePlugin import TiffImageFile
 
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
@@ -102,6 +101,9 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         self.image = image
         self.cells = cells
 
+        if vertices is None:
+            self.georeferencing_from_image()
+
         if rotation is not None:
             self.rotation = rotation
 
@@ -155,9 +157,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
         """
-        if self.vertices is None:
-            raise AttributeError("Vertices are not defined.")
-
         if self.image is None:
             warnings.warn("Image is not defined.")
             return None
@@ -342,11 +341,9 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         Georeferencing the GeoImage from the image.
         """
         if self.image is not None:
+            self.vertices = self.default_vertices
             if self.tag is not None:
-                self.vertices = self.default_vertices
                 self.georeferencing_from_tiff()
-            else:
-                self.vertices = self.default_vertices
 
     def georeferencing_from_tiff(self):
         """
@@ -432,9 +429,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             self.vertices = self.default_vertices
 
         # if the image is a tiff save tag information
-        if isinstance(image, TiffImageFile):
+        if hasattr(image, "tag") and image.tag:
             self.tag = image
-            self.to_grid2d(name=self.name + "_grid2d")
 
     @property
     def image_data(self) -> FilenameData | None:
@@ -600,8 +596,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
     @tag.setter
     def tag(self, value: Image.Image | dict | None):
-        if isinstance(value, (Image.Image, TiffImageFile)):
-            self._tag = dict(value.tag)
+        if hasattr(value, "tag") and value.tag:  # type: ignore
+            self._tag = dict(value.tag)  # type: ignore
         elif isinstance(value, dict):
             self._tag = value
         elif value is None:
@@ -682,8 +678,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         # Case where the vertices are not set but the image is defined
         if self._vertices is None and self.tag is not None and self.image is not None:
-            self.vertices = self.default_vertices
-            self.georeferencing_from_tiff()
+            self.georeferencing_from_tiff()  # unlikely
 
         # Case neither vertices nor image are set
         if self._vertices is None:
@@ -717,7 +712,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             raise ValueError("Array of 'vertices' must be of shape (4, 3).")
 
         self._vertices = xyz
-        self._tag = None
 
         if self.on_file:
             self.workspace.update_attribute(self, "vertices")
