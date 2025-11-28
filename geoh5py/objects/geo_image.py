@@ -39,8 +39,8 @@ from ..shared.cut_by_extent import (
 from ..shared.utils import (
     PILLOW_ARGUMENTS,
     box_intersect,
-    dip_points,
     xy_rotation_matrix,
+    yz_rotation_matrix,
 )
 from .object_base import ObjectBase
 
@@ -265,23 +265,19 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         delta_xyz = rotated_vertices[0] - rotated_vertices[3]
 
         # Compute dip in degrees
-        dip = np.rad2deg(
-            np.arctan2(delta_xyz[2], np.sqrt(delta_xyz[0] ** 2 + delta_xyz[1] ** 2))
-        )
+        dip = np.arctan2(delta_xyz[2], delta_xyz[1])
+        dip = np.round(np.rad2deg(dip), decimals=3)
 
-        return dip
+        return dip % 360.0
 
     @dip.setter
     def dip(self, new_dip: float):
-        # Transform the vertices to a plane
-        self.vertices = (
-            dip_points(
-                self.vertices - self.origin,
-                np.deg2rad(new_dip - self.dip),
-                np.deg2rad(self.rotation),
-            )
-            + self.origin
-        )
+        vertices = self.vertices - self.origin
+        vertices = xy_rotation_matrix(np.deg2rad(-self.rotation)) @ vertices.T
+        # when we are defining 30 degree, we it do dip donward 30 degrees
+        vertices = yz_rotation_matrix(np.deg2rad(new_dip - self.dip)) @ vertices
+        vertices = xy_rotation_matrix(np.deg2rad(self.rotation)) @ vertices
+        self.vertices = vertices.T + self.origin
 
     def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
         """
@@ -315,6 +311,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "with the same number of rows as the control points."
             )
 
+        # todo: because the vertices can be non-planar, correct here
         constant = np.ones(reference.shape[0])
         param_x, _, _, _ = np.linalg.lstsq(
             np.c_[constant, reference], locations[:, 0], rcond=None
@@ -361,6 +358,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             v_cell_size = float(self.tag[33550][1])
             u_count = float(self.tag[256][0])
             v_count = float(self.tag[257][0])
+
+            # todo: not anymore because it's not always a rectangle
             u_oposite = float(u_origin + u_cell_size * u_count)
             v_oposite = float(v_origin - v_cell_size * v_count)
 
@@ -502,27 +501,26 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     def rotation(self) -> float:
         """
         The rotation of the image in degrees, counter-clockwise.
+
+        :raises: If the vertices do not form a rectangle with 90-degree angles,
+        a ValueError is raised.
+
+        :raises: If the image requires more than dip and rotation transformations,
+        a ValueError is raised.
+
         :return: the rotation angle.
         """
-        dxy = np.r_[np.diff(self.vertices[:2, 0]), np.diff(self.vertices[:2, 1])]
-        dxy /= np.linalg.norm(dxy)
-        rotation_rad = np.arctan2(dxy[1], dxy[0])
+        # todo: must check if the image can be explained by rotation and dip only
 
-        return np.rad2deg(rotation_rad)
+        axes = self.vertices[2, :2] - self.origin[:2]
+        return float(np.rad2deg(np.arctan2(axes[1], axes[0])))
 
     @rotation.setter
     def rotation(self, new_rotation):
-        # Compute rotation matrix
         rotation_matrix = xy_rotation_matrix(np.deg2rad(new_rotation - self.rotation))
-
-        # get the vertices without the origin
         vertices = self.vertices - self.origin
-
-        # get the rotation matrix
-        vertices = rotation_matrix @ vertices.T
-
-        # save the vertices
-        self.vertices = vertices.T + self.origin
+        vertices = (rotation_matrix @ vertices.T).T + self.origin
+        self.vertices = vertices
 
     def save_as(self, name: str, path: str | Path = ""):
         """
@@ -530,6 +528,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         It the name ends by '.tif' or '.tiff' and the tag is not None
         then the image is saved as georeferenced tiff image ;
         else, the image is save with PIL.Image's save function.
+
         :param name: the name to give to the image.
         :param path: the path of the file of the image, default: ''.
         """
@@ -569,6 +568,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         self._tag[256] = (self.u_count,)
         self._tag[257] = (self.v_count,)
+        # todo: It should be a 6 * 4 tuples defining the affine transformation
         self._tag[33922] = (
             0.0,
             0.0,

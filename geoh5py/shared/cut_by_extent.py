@@ -117,11 +117,10 @@ def clean_extent_for_intersection(
     if not extent.ndim == 2 or extent.shape not in [(2, 3), (2, 2)]:
         raise TypeError("Expected a 2D numpy array with 2 points and 2 or 3 columns")
 
-    z_coords = vertices[:, 2]
-    zmin, zmax = float(z_coords.min()), float(z_coords.max())
-
-    if extent.shape[1] == 2:
-        # For 2D extents, add Z bounds with slight expansion for safety
+    if extent.shape[1] == 2 or np.all(extent[:, 2] == 0):
+        z_coords = vertices[:, 2]
+        zmin, zmax = float(z_coords.min()), float(z_coords.max())
+        # always have 1 and -1 padding to avoid precision issues
         z_bounds = np.array([[zmin - 1], [zmax + 1]], dtype=np.float64)
         extent = np.column_stack([extent.astype(np.float64), z_bounds])
 
@@ -151,31 +150,6 @@ def compute_plane_box_intersections(
     # Expect extent to be already cleaned (shape (2, 3))
     xmin, ymin, zmin = extent[0]
     xmax, ymax, zmax = extent[1]
-
-    # Special case: if extent is 2D (zmin == zmax) and lies in the plane,
-    # return the corners of the extent rectangle
-    if abs(zmin - zmax) < eps_plane:
-        extent_z = zmin
-        # Check if the extent plane is the same as the image plane
-        plane_z_at_extent = np.dot(p0, n)  # Distance from origin to plane
-        extent_distance_to_plane = abs(
-            extent_z - plane_z_at_extent / n[2]
-            if abs(n[2]) > eps_plane
-            else float("inf")
-        )
-
-        if extent_distance_to_plane < eps_plane:
-            # Extent rectangle is in the same plane, return its corners
-            corners = np.array(
-                [
-                    [xmin, ymin, extent_z],
-                    [xmax, ymin, extent_z],
-                    [xmax, ymax, extent_z],
-                    [xmin, ymax, extent_z],
-                ],
-                dtype=np.float64,
-            )
-            return corners
 
     c = np.asarray(
         [
@@ -423,51 +397,6 @@ def compute_clipped_polygon_uv(
     return clipped_uv, (p0, u, v, n)
 
 
-def pixel_centers_in_polygon(
-    u_centers: np.ndarray, v_centers: np.ndarray, uv_polygon: np.ndarray
-) -> np.ndarray:
-    """
-    Determine pixel centers inside a UV polygon.
-
-    Uses the ray-casting algorithm to find pixel centers that lie within
-    a given polygon defined in UV coordinates.
-
-    :param u_centers: The U coordinates of pixel centers.
-    :param v_centers: The V coordinates of pixel centers.
-    :param uv_polygon: The UV polygon vertices, shape (N, 2).
-
-    :return: The array of pixel indices (i, j) whose centers are inside the polygon.
-    """
-    poly = np.asarray(uv_polygon, float)
-    px, py = poly[:, 0], poly[:, 1]
-
-    # edges
-    x1 = px[:-1]
-    y1 = py[:-1]
-    x2 = px[1:]
-    y2 = py[1:]
-
-    # close polygon
-    if not np.all(poly[0] == poly[-1]):
-        x1 = np.r_[x1, px[-1]]
-        y1 = np.r_[y1, py[-1]]
-        x2 = np.r_[x2, px[0]]
-        y2 = np.r_[y2, py[0]]
-
-    # grid of centers
-    u, v = np.meshgrid(u_centers, v_centers, indexing="ij")
-
-    xs = u.ravel().reshape(-1, 1)
-    ys = v.ravel().reshape(-1, 1)
-
-    cond = ((y1 <= ys) & (ys < y2)) | ((y2 <= ys) & (ys < y1))
-    xints = (x2 - x1) * (ys - y1) / (y2 - y1 + 1e-12) + x1
-    crossings = cond & (xs < xints)
-
-    inside_points = (crossings.sum(axis=1) % 2 == 1).reshape(u.shape)
-    return np.argwhere(inside_points)
-
-
 def compute_pixel_rectangle_from_uv(
     uv: np.ndarray,
     u_cell: float,
@@ -496,11 +425,10 @@ def compute_pixel_rectangle_from_uv(
     u_min, u_max = float(uv[:, 0].min()), float(uv[:, 0].max())
     v_min, v_max = float(uv[:, 1].min()), float(uv[:, 1].max())
 
-    # Convert UV bounds to pixel indices
-    xmin = max(0, int(np.floor(u_min / u_cell - 0.5)) + 1)
-    xmax = min(width, int(np.floor(u_max / u_cell - 0.5)) + 2)
-    ymin = max(0, int(np.floor(v_min / v_cell - 0.5)) + 1)
-    ymax = min(height, int(np.floor(v_max / v_cell - 0.5)) + 2)
+    xmin = max(0, int(np.ceil((u_min / u_cell) - 0.5)))
+    xmax = min(width, int(np.floor((u_max / u_cell) - 0.5)) + 1)
+    ymin = max(0, int(np.ceil((v_min / v_cell) - 0.5)))
+    ymax = min(height, int(np.floor((v_max / v_cell) - 0.5)) + 1)
 
     # Ensure we have a valid rectangle
     if xmin >= xmax or ymin >= ymax:

@@ -756,30 +756,6 @@ def yz_rotation_matrix(angle: float) -> np.ndarray:
     )
 
 
-def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarray:
-    """
-    Rotate points about the x-axis by the dip angle and then about the z-axis by the rotation angle.
-    :param points: an array of points to rotate
-    :param dip: the dip angle in radians
-    :param rotation: the rotation angle in radians
-    :return: the rotated points
-    """
-    # Assert points is a numpy array containing 3D points
-    if not isinstance(points, np.ndarray) and points.ndim != 2 and points.shape[1] != 3:
-        raise TypeError("Input points must be a 2D numpy array of shape (N, 3).")
-
-    # rotate the points about the z-axis by the inverse rotation angle
-    points = xy_rotation_matrix(-rotation) @ points.T
-
-    # Rotate points with the dip angle
-    points = yz_rotation_matrix(dip) @ points
-
-    # Rotate back the points to initial orientation
-    points = xy_rotation_matrix(rotation) @ points
-
-    return points.T
-
-
 def set_attributes(entity, **kwargs):
     """
     Loop over kwargs and set attributes to an entity.
