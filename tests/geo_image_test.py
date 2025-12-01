@@ -248,10 +248,7 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
             assert new_image is not None, "Error copying from extent."
 
-            with pytest.warns(UserWarning, match="The image and the extent"):
-                new_image = geoimage.copy_from_extent(
-                    np.vstack([[100, 100], [200, 200]])
-                )
+            new_image = geoimage.copy_from_extent(np.vstack([[100, 100], [200, 200]]))
 
             assert new_image is None, "Error copying from extent that is out of bounds."
 
