@@ -89,7 +89,7 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
-    :param place_holder_text: Text displayed in ui element when no data
+    :param placeholder_text: Text displayed in ui element when no data
         has been provided.
     """
 
