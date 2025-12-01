@@ -654,6 +654,39 @@ def box_intersect(
     return True
 
 
+def clean_extent_for_intersection(
+    extent: np.ndarray, locations: np.ndarray
+) -> np.ndarray:
+    """
+    Clean and prepare extent array for 3D intersection calculations.
+
+    :param extent: Input extent array, shape (2, 2) or (2, 3)
+    :param locations: Array of vertices to extract Z bounds from, shape (N, 3)
+
+    :return: Cleaned extent array with shape (2, 3)
+    """
+    # raises the eventual errors
+    if isinstance(extent, Sequence):
+        extent = np.vstack(extent)
+
+    if (
+        not isinstance(extent, np.ndarray)
+        or extent.ndim != 2
+        or extent.shape not in [(2, 3), (2, 2)]
+    ):
+        raise ValueError(
+            "Input 'extent' must be a 2D array-like with 2 points and 2 or 3 columns"
+        )
+
+    if extent.shape[1] == 2 or np.all(extent[:, 2] == 0):
+        z_coordinates = locations[:, 2]
+        z_min, z_max = float(z_coordinates.min()), float(z_coordinates.max())
+        z_bounds = np.array([[z_min - 1], [z_max + 1]], dtype=np.float64)
+        extent = np.column_stack([extent.astype(np.float64), z_bounds])
+
+    return extent
+
+
 def mask_by_extent(
     locations: np.ndarray, extent: np.ndarray | Sequence, inverse: bool = False
 ) -> np.ndarray:
@@ -668,16 +701,12 @@ def mask_by_extent(
 
     :returns: Array of bool for the locations inside or outside the box extent.
     """
-    if isinstance(extent, Sequence):
-        extent = np.vstack(extent)
-
-    if not isinstance(extent, np.ndarray) or extent.ndim != 2:
-        raise ValueError("Input 'extent' must be a 2D array-like.")
-
     if not isinstance(locations, np.ndarray) or locations.ndim != 2:
         raise ValueError(
             "Input 'locations' must be an array-like of shape(*, 3) or (*, 2)."
         )
+
+    extent = clean_extent_for_intersection(extent, locations)
 
     indices = np.ones(locations.shape[0], dtype=bool)
     for loc, lim in zip(locations.T, extent.T, strict=False):

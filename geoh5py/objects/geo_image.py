@@ -32,9 +32,9 @@ from PIL import Image
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
 from ..shared.cut_by_extent import (
-    compute_clipped_polygon_uv,
-    compute_pixel_rectangle_from_uv,
+    pixel_extent_from_polygon,
     pixel_rect_to_world,
+    plane_box_intersection,
 )
 from ..shared.utils import (
     PILLOW_ARGUMENTS,
@@ -167,19 +167,21 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             )
 
         # 1. find the point where the image and extent intersect
-        clipped_uv, plane = compute_clipped_polygon_uv(
+        clipped_uv, plane = plane_box_intersection(
             self.vertices, extent, eps_plane=1e-5, eps_collinear=1e-6
         )
 
-        # short-circuit degenerate cases
         if clipped_uv.shape[0] < 3:
-            warnings.warn("The image and the extent doesn't intersect.")
             return None
 
         # 2. compute the new extent of the image (planar coordinates)
-        new_extent = compute_pixel_rectangle_from_uv(
+        new_extent = pixel_extent_from_polygon(
             clipped_uv, self.u_cell_size, self.v_cell_size, self.u_count, self.v_count
         )
+
+        # unlikely as it might be caught earlier
+        if new_extent is None:
+            return None
 
         # 3. crop the image to the new extent (PIL image coordinates)
         cropped_image = self.image.crop(
@@ -201,24 +203,26 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             }
         )
 
-        if parent:
-            kwargs["parent"] = parent
+        return self._create_geoimage_from_attributes(parent, **kwargs)
 
-        return self._create_geoimage_from_attributes(**kwargs)
-
-    def _create_geoimage_from_attributes(self, **kwargs) -> GeoImage:
+    def _create_geoimage_from_attributes(
+        self, parent: None | Any = None, **kwargs
+    ) -> GeoImage:
         """
         Create a new GeoImage from attributes.
 
         :param kwargs: The attributes to update.
+        :param parent: the parent workspace or entity
+            or a group containing the object.
 
         :return: a new instance of GeoImage.
         """
-        if "parent" in kwargs:
-            if hasattr(kwargs["parent"], "h5file"):
-                workspace = kwargs.pop("parent")
+        if parent:
+            if hasattr(parent, "h5file"):
+                workspace = parent
             else:
-                workspace = kwargs["parent"].workspace
+                workspace = parent.workspace
+                kwargs["parent"] = parent
         else:
             workspace = self.workspace
 
