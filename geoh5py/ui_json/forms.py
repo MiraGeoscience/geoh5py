@@ -113,7 +113,7 @@ class BaseForm(BaseModel):
     dependency_type: DependencyType = DependencyType.ENABLED
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
-    place_holder_text: str = ""
+    placeholder_text: str = ""
 
     @classmethod
     def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
