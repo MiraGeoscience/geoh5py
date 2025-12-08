@@ -30,7 +30,7 @@ requirements:
     - h5py >=3.2.1, <4.0.dev
     - numpy >=1.26.0, <1.27.dev
     - pillow >=10.3.0, <10.4.dev
-    - pydantic >=2.5.2, <3.0.dev
+    - pydantic 2.11.*
 
 tests:
   - python:
