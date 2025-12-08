@@ -100,6 +100,10 @@ def test_attribute_setters():
     image = np.random.randint(0, 255, (128, 128))
     gimage = GeoImage.create(workspace, image=image, cells=[[0, 0, 0, 0], [1, 1, 1, 1]])
 
+    assert gimage.n_vertices == 4
+
+    assert gimage.n_cells == 2
+
     with pytest.raises(
         TypeError, match="Attribute 'cells' must be provided as type numpy.ndarray"
     ):
@@ -110,6 +114,9 @@ def test_attribute_setters():
 
     with pytest.raises(TypeError, match="Indices array must be of integer type"):
         gimage.cells = np.array([[0, 0, 0, 0], [1, 1, 1, 1]], ndmin=2, dtype=float)
+
+    with pytest.raises(TypeError, match="Input 'vertices' must be provided "):
+        gimage.vertices = "bidon"
 
 
 def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements

@@ -665,7 +665,6 @@ def clean_extent_for_intersection(
 
     :return: Cleaned extent array with shape (2, 3)
     """
-    # raises the eventual errors
     if isinstance(extent, Sequence):
         extent = np.vstack(extent)
 
@@ -1266,3 +1265,15 @@ def uuid_from_values(data: dict | str) -> UUID:
         data = dict_to_json_str(data)
 
     return uuid5(NAMESPACE_DNS, str(data))
+
+
+def normalize(vector: np.ndarray | list) -> np.ndarray:
+    """
+    Normalize a vector to unit length.
+
+    :param vector: Input vector to normalize.
+
+    :return: Normalized vector with unit length.
+    """
+    vector = np.asarray(vector, dtype=np.float64)
+    return vector / np.linalg.norm(vector)

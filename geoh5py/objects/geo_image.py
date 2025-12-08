@@ -31,11 +31,7 @@ from PIL import Image
 
 from ..data import FilenameData
 from ..shared.conversion import GeoImageConversion
-from ..shared.cut_by_extent import (
-    pixel_extent_from_polygon,
-    pixel_rect_to_world,
-    plane_box_intersection,
-)
+from ..shared.cut_by_extent import Plane
 from ..shared.utils import (
     PILLOW_ARGUMENTS,
     box_intersect,
@@ -167,20 +163,17 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
             )
 
         # 1. find the point where the image and extent intersect
-        clipped_uv, plane = plane_box_intersection(
-            self.vertices, extent, eps_plane=1e-5, eps_collinear=1e-6
+        plane = Plane.create_from_points(
+            self.vertices[3], self.vertices[2], self.vertices[0]
         )
 
-        if clipped_uv.shape[0] < 3:
-            return None
-
-        # 2. compute the new extent of the image (planar coordinates)
-        new_extent = pixel_extent_from_polygon(
-            clipped_uv, self.u_cell_size, self.v_cell_size, self.u_count, self.v_count
+        new_extent, new_vertices = plane.extent_from_vertices_and_box(
+            self,
+            self.vertices,
+            extent,
         )
 
-        # unlikely as it might be caught earlier
-        if new_extent is None:
+        if new_extent is None or new_vertices is None:
             return None
 
         # 3. crop the image to the new extent (PIL image coordinates)
@@ -197,9 +190,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         kwargs.update(
             {
                 "image": cropped_image,
-                "vertices": pixel_rect_to_world(
-                    new_extent, plane, self.u_cell_size, self.v_cell_size
-                ),
+                "vertices": new_vertices,
             }
         )
 
