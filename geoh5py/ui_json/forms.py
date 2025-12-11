@@ -432,3 +432,25 @@ class DataForm(BaseForm):
         ):
             return self.property
         return self.value
+
+
+class DataRangeForm(BaseForm):
+    """
+    Geoh5py data range uijson form.
+
+    :param value: The value can be a single float or a list of two floats.
+        Geoscience ANALYST will estimate a range on load if a single float
+        is provided, but will always return a list.
+    :param property: The UUID of the property to which the range applies.
+    :param range_label: Label for the range.
+    :param allow_complement: If True, the complement option will be available
+        in Geoscience ANALYST as a checkbox.
+    :param is_complement: If True, the range slider in Geoscience ANALYST will
+        be inverted and the implied selection is outside of the range provided.
+    """
+
+    value: float | list[float]
+    property: UUID
+    range_label: str
+    allow_complement: bool = False
+    is_complement: bool = False

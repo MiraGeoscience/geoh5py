@@ -35,6 +35,7 @@ from geoh5py.ui_json.forms import (
     BoolForm,
     ChoiceForm,
     DataForm,
+    DataRangeForm,
     DataType,
     FileForm,
     FloatForm,
@@ -432,6 +433,26 @@ def test_data_form():
             data_type="Float",
             is_value=False,
         )
+
+
+def test_data_range_form():
+    data_uid = str(uuid.uuid4())
+    form = DataRangeForm(
+        label="name",
+        property=data_uid,
+        value=[0.0, 1.0],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        range_label="value range",
+    )
+    assert form.label == "name"
+    assert form.property == uuid.UUID(data_uid)
+    assert form.value == [0.0, 1.0]
+    assert form.parent == "my_param"
+    assert form.association == "Vertex"
+    assert form.data_type == "Float"
+    assert form.range_label == "value range"
 
 
 def test_flatten():
