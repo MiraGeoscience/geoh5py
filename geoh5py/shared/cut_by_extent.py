@@ -27,29 +27,14 @@ from geoh5py.shared.utils import (
     clean_extent_for_intersection,
     ensure_counter_clockwise,
     normalize,
+    validate_3d_array,
+    validate_normalized_vector,
 )
 
 
 if TYPE_CHECKING:
     from geoh5py.objects.geo_image import GeoImage
     from geoh5py.objects.grid2d import Grid2D
-
-
-def validate_3d_array(value: np.ndarray) -> np.ndarray:
-    """Validate that input is a 3D numpy array."""
-    if not isinstance(value, np.ndarray):
-        raise TypeError(f"Expected numpy array, got {type(value).__name__}")
-    if value.shape != (3,):
-        raise ValueError(f"Expected shape (3,), got {value.shape}")
-    return value
-
-
-def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
-    """Validate that input is a normalized 3D vector."""
-    value = validate_3d_array(value)
-    if not np.isclose(np.linalg.norm(value), 1.0, atol=1e-6):
-        raise ValueError("Vector is not normalized.")
-    return value
 
 
 class Plane(BaseModel):

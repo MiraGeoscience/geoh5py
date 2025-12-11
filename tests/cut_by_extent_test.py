@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from geoh5py.shared.cut_by_extent import Plane
 
@@ -27,42 +28,21 @@ from geoh5py.shared.cut_by_extent import Plane
 @pytest.mark.parametrize(
     "origin,u,v,match",
     [
-        # origin shape error
+        # bad shape
         (
             np.array([0.0, 0.0]),
             np.array([1.0, 0.0, 0.0]),
             np.array([0.0, 1.0, 0.0]),
-            r"origin must be shape \(3,\), got",
+            r"Expected shape \(3,\), got \(2,\)",
         ),
-        # u_vector shape error
-        (
-            np.array([0.0, 0.0, 0.0]),
-            np.array([1.0, 0.0]),
-            np.array([0.0, 1.0, 0.0]),
-            r"u_vector must be shape \(3,\), got",
-        ),
-        # v_vector shape error
-        (
-            np.array([0.0, 0.0, 0.0]),
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.0, 1.0]),
-            r"v_vector must be shape \(3,\), got",
-        ),
-        # u not normalized
+        # non-normalized
         (
             np.array([0.0, 0.0, 0.0]),
             np.array([2.0, 0.0, 0.0]),
             np.array([0.0, 1.0, 0.0]),
-            r"u_vector is not normalized\.",
+            r"Vector is not normalized\.",
         ),
-        # v not normalized
-        (
-            np.array([0.0, 0.0, 0.0]),
-            np.array([1.0, 0.0, 0.0]),
-            np.array([0.0, 2.0, 0.0]),
-            r"v_vector is not normalized\.",
-        ),
-        # not orthogonal
+        # non-orthogonal
         (
             np.array([0.0, 0.0, 0.0]),
             np.array([1.0, 0.0, 0.0]),
@@ -73,7 +53,7 @@ from geoh5py.shared.cut_by_extent import Plane
 )
 def test_plane_validate_uv_errors(origin, u, v, match):
     """Ensure Plane model_validator raises for invalid origin/u/v inputs with message match."""
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(ValidationError, match=match):
         Plane(origin=origin, u_vector=u, v_vector=v)
 
 

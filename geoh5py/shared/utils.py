@@ -1299,3 +1299,32 @@ def ensure_counter_clockwise(polygon: np.ndarray) -> np.ndarray:
         return polygon[::-1]
 
     return polygon
+
+
+def validate_3d_array(value: np.ndarray) -> np.ndarray:
+    """
+    Validate that input is a 3D numpy array.
+
+    :param value: Input array to validate.
+
+    :return: The validated 3D array.
+    """
+    if not isinstance(value, np.ndarray):
+        raise TypeError(f"Expected numpy array, got {type(value).__name__}")
+    if value.shape != (3,):
+        raise ValueError(f"Expected shape (3,), got {value.shape}")
+    return value
+
+
+def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
+    """
+    Validate that input is a normalized 3D vector.
+
+    :param value: Input array to validate.
+
+    :return: The validated normalized 3D vector.
+    """
+    value = validate_3d_array(value)
+    if not np.isclose(np.linalg.norm(value), 1.0, atol=1e-6):
+        raise ValueError("Vector is not normalized.")
+    return value
