@@ -162,10 +162,13 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Inverse mask is not implemented yet with images."
             )
 
+        if copy_children is False:
+            warnings.warn(
+                "The 'copy_children' argument is not applicable to GeoImage objects."
+            )
+
         # 1. find the point where the image and extent intersect
-        plane = Plane.create_from_points(
-            self.vertices[3], self.vertices[2], self.vertices[0]
-        )
+        plane = Plane.from_points(self.vertices[3], self.vertices[2], self.vertices[0])
 
         new_extent, new_vertices = plane.extent_from_vertices_and_box(
             self,
@@ -175,6 +178,9 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         if new_extent is None or new_vertices is None:
             return None
+
+        if np.isclose(new_vertices, self.vertices).all():
+            return self.copy(parent, clear_cache=clear_cache)
 
         # 3. crop the image to the new extent (PIL image coordinates)
         cropped_image = self.image.crop(

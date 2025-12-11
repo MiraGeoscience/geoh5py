@@ -1277,3 +1277,25 @@ def normalize(vector: np.ndarray | list) -> np.ndarray:
     """
     vector = np.asarray(vector, dtype=np.float64)
     return vector / np.linalg.norm(vector)
+
+
+def ensure_counter_clockwise(polygon: np.ndarray) -> np.ndarray:
+    """
+    Ensure polygon vertices are ordered counter-clockwise.
+
+    Reverses the vertex order if the polygon area is negative (clockwise orientation).
+
+    :param polygon: Array of shape (N, 2) containing polygon vertices.
+
+    :return: Polygon vertices in counter-clockwise order.
+    """
+    x_coords = polygon[:, 0]
+    y_coords = polygon[:, 1]
+    polygon_area = 0.5 * float(
+        np.sum(x_coords * np.roll(y_coords, -1) - y_coords * np.roll(x_coords, -1))
+    )
+
+    if polygon_area < 0.0:
+        return polygon[::-1]
+
+    return polygon

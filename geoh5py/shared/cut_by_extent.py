@@ -18,17 +18,38 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, model_validator
 
-from geoh5py.shared.utils import clean_extent_for_intersection, normalize
+from geoh5py.shared.utils import (
+    clean_extent_for_intersection,
+    ensure_counter_clockwise,
+    normalize,
+)
 
 
 if TYPE_CHECKING:
     from geoh5py.objects.geo_image import GeoImage
     from geoh5py.objects.grid2d import Grid2D
+
+
+def validate_3d_array(value: np.ndarray) -> np.ndarray:
+    """Validate that input is a 3D numpy array."""
+    if not isinstance(value, np.ndarray):
+        raise TypeError(f"Expected numpy array, got {type(value).__name__}")
+    if value.shape != (3,):
+        raise ValueError(f"Expected shape (3,), got {value.shape}")
+    return value
+
+
+def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
+    """Validate that input is a normalized 3D vector."""
+    value = validate_3d_array(value)
+    if not np.isclose(np.linalg.norm(value), 1.0, atol=1e-6):
+        raise ValueError("Vector is not normalized.")
+    return value
 
 
 class Plane(BaseModel):
@@ -42,35 +63,23 @@ class Plane(BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    origin: np.ndarray
-    u_vector: np.ndarray
-    v_vector: np.ndarray
+    origin: Annotated[np.ndarray, AfterValidator(validate_3d_array)]
+    u_vector: Annotated[np.ndarray, AfterValidator(validate_normalized_vector)]
+    v_vector: Annotated[np.ndarray, AfterValidator(validate_normalized_vector)]
 
     @model_validator(mode="after")
     def validate_uv(self) -> Plane:
         """
-        Ensure:
-            - origin, u_vector and v_vector are 3D.
-            - u_vector and v_vector are normalized.
-            - u and v are 3D and orthogonal.
+        Ensure u_vector and v_vector are orthogonal.
+        Shape and normalization are validated by field validators.
         """
-        if self.origin.shape != (3,):
-            raise ValueError(f"origin must be shape (3,), got {self.origin.shape}")
-        if self.u_vector.shape != (3,):
-            raise ValueError(f"u_vector must be shape (3,), got {self.u_vector.shape}")
-        if self.v_vector.shape != (3,):
-            raise ValueError(f"v_vector must be shape (3,), got {self.v_vector.shape}")
-        if not np.isclose(np.linalg.norm(self.u_vector), 1.0, atol=1e-6):
-            raise ValueError("u_vector is not normalized.")
-        if not np.isclose(np.linalg.norm(self.v_vector), 1.0, atol=1e-6):
-            raise ValueError("v_vector is not normalized.")
         if not np.isclose(float(np.dot(self.u_vector, self.v_vector)), 0.0, atol=1e-8):
             raise ValueError("u_vector and v_vector are not orthogonal.")
 
         return self
 
     @classmethod
-    def create_from_points(
+    def from_points(
         cls,
         origin: np.ndarray,
         point_u: np.ndarray,
@@ -96,9 +105,96 @@ class Plane(BaseModel):
             origin=np.asarray(origin, dtype=float), u_vector=u_vector, v_vector=v_vector
         )
 
-    @classmethod
+    @property
+    def normal(self) -> np.ndarray:
+        """
+        Get the normal vector of the plane.
+
+        :return: Normal vector as a numpy array.
+        """
+        return normalize(np.cross(self.u_vector, self.v_vector))
+
+    def project_to_uv(
+        self,
+        point: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Project a 3D point onto a 2D UV coordinate system.
+
+        Projects a point P onto the UV plane defined by plane object.
+
+        :param point: 3D point to project.
+
+        :return: 2D coordinates in the UV system.
+        """
+        displacement = np.asarray(point, dtype=np.float64) - self.origin
+        return np.array(
+            [np.dot(displacement, self.u_vector), np.dot(displacement, self.v_vector)],
+            dtype=np.float64,
+        )
+
+    def extent_from_vertices_and_box(
+        self,
+        planar_object: Grid2D | GeoImage,
+        vertices: np.ndarray,
+        extent: np.ndarray,
+        *,
+        eps_plane: float = 1e-5,
+        eps_collinear: float = 1e-6,
+    ) -> tuple[tuple[int, int, int, int], np.ndarray] | tuple[None, None]:
+        """
+        Compute pixel rectangle extent from quad and bounding box intersection.
+
+        Computes the intersection of a quad with a 3D bounding box, projects
+        the result to UV coordinates, and derives the pixel rectangle extent.
+
+        :param planar_object: Object with 'u_count', 'v_count',
+            'u_cell_size', 'v_cell_size' attributes.
+        :param vertices: Quad vertices, shape (4, 3) with last vertex as origin.
+        :param extent: Bounding box as (xmin, xmax, ymin, ymax, zmin, zmax).
+        :param eps_plane: Tolerance for plane distance calculations.
+        :param eps_collinear: Tolerance for collinearity detection.
+
+        :return: Pixel rectangle extent as (xmin, ymin, xmax, ymax)
+            or None if no valid extent.
+        """
+        if not isinstance(vertices, np.ndarray) or vertices.shape != (4, 3):
+            raise ValueError(
+                "vertices must be a numpy array of shape (4, 3). "
+                f"Got {type(vertices)} with shape {vertices.shape}."
+            )
+
+        if not isinstance(extent, np.ndarray) or extent.shape not in [(2, 3), (2, 2)]:
+            raise ValueError(
+                "extent must be a numpy array of shape (2, 3)."
+                f"Got {type(extent)} with shape {extent.shape}."
+            )
+
+        u_count, v_count, u_cell_size, v_cell_size = self._get_count_cell_from_object(
+            planar_object
+        )
+
+        clipped_uv = self._box_intersection(
+            vertices, extent, eps_plane=eps_plane, eps_collinear=eps_collinear
+        )
+
+        if clipped_uv.shape[0] < 3:
+            return None, None
+
+        new_extent = self._pixel_extent_from_polygon(
+            clipped_uv, u_cell_size, v_cell_size, u_count, v_count
+        )
+
+        # unlikely if first condition is met
+        if new_extent is None:
+            return None, None
+
+        new_vertices = self._pixel_rect_to_world(new_extent, u_cell_size, v_cell_size)
+
+        return new_extent, new_vertices
+
+    @staticmethod
     def _clip_polygon_uv(
-        cls,
         subject_polygon: np.ndarray,
         clipping_polygon: np.ndarray,
         eps_collinear: float,
@@ -116,8 +212,8 @@ class Plane(BaseModel):
         :return: Clipped polygon vertices,
             shape (K, 2) where K is the number of vertices in the result.
         """
-        subject_polygon = cls._ensure_counter_clockwise(subject_polygon)
-        clipping_polygon = cls._ensure_counter_clockwise(clipping_polygon)
+        subject_polygon = ensure_counter_clockwise(subject_polygon)
+        clipping_polygon = ensure_counter_clockwise(clipping_polygon)
 
         output_vertices = subject_polygon
         for i, current_clip_edge_start in enumerate(clipping_polygon):
@@ -131,10 +227,10 @@ class Plane(BaseModel):
             for j, current_vertex in enumerate(input_vertices):
                 next_vertex = input_vertices[(j + 1) % len(input_vertices)]
 
-                current_inside = cls._point_left_of_directed_edge(
+                current_inside = Plane._point_left_of_directed_edge(
                     current_vertex, current_clip_edge_start, current_clip_edge_end
                 )
-                next_inside = cls._point_left_of_directed_edge(
+                next_inside = Plane._point_left_of_directed_edge(
                     next_vertex, current_clip_edge_start, current_clip_edge_end
                 )
 
@@ -142,7 +238,7 @@ class Plane(BaseModel):
                     clipped_vertices.append(next_vertex)
                 elif current_inside and not next_inside:
                     clipped_vertices.append(
-                        cls._intersection_2d(
+                        Plane._intersection_2d(
                             current_vertex,
                             next_vertex,
                             current_clip_edge_start,
@@ -152,7 +248,7 @@ class Plane(BaseModel):
                     )
                 elif not current_inside and next_inside:
                     clipped_vertices.append(
-                        cls._intersection_2d(
+                        Plane._intersection_2d(
                             current_vertex,
                             next_vertex,
                             current_clip_edge_start,
@@ -168,28 +264,6 @@ class Plane(BaseModel):
             output_vertices = np.asarray(clipped_vertices, dtype=subject_polygon.dtype)
 
         return output_vertices
-
-    @staticmethod
-    def _ensure_counter_clockwise(polygon: np.ndarray) -> np.ndarray:
-        """
-        Ensure polygon vertices are ordered counter-clockwise.
-
-        Reverses the vertex order if the polygon area is negative (clockwise orientation).
-
-        :param polygon: Array of shape (N, 2) containing polygon vertices.
-
-        :return: Polygon vertices in counter-clockwise order.
-        """
-        x_coords = polygon[:, 0]
-        y_coords = polygon[:, 1]
-        polygon_area = 0.5 * float(
-            np.sum(x_coords * np.roll(y_coords, -1) - y_coords * np.roll(x_coords, -1))
-        )
-
-        if polygon_area < 0.0:
-            return polygon[::-1]
-
-        return polygon
 
     @staticmethod
     def _intersection_2d(
@@ -526,91 +600,3 @@ class Plane(BaseModel):
             output.append(getattr(planar_object, attribute))
 
         return output[0], output[1], output[2], output[3]
-
-    @property
-    def normal(self) -> np.ndarray:
-        """
-        Get the normal vector of the plane.
-
-        :return: Normal vector as a numpy array.
-        """
-        return normalize(np.cross(self.u_vector, self.v_vector))
-
-    def project_to_uv(
-        self,
-        point: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Project a 3D point onto a 2D UV coordinate system.
-
-        Projects a point P onto the UV plane defined by plane object.
-
-        :param point: 3D point to project.
-
-        :return: 2D coordinates in the UV system.
-        """
-        displacement = np.asarray(point, dtype=np.float64) - self.origin
-        return np.array(
-            [np.dot(displacement, self.u_vector), np.dot(displacement, self.v_vector)],
-            dtype=np.float64,
-        )
-
-    def extent_from_vertices_and_box(
-        self,
-        planar_object: Grid2D | GeoImage,
-        vertices: np.ndarray,
-        extent: np.ndarray,
-        *,
-        eps_plane: float = 1e-5,
-        eps_collinear: float = 1e-6,
-    ) -> tuple[tuple[int, int, int, int], np.ndarray] | tuple[None, None]:
-        """
-        Compute pixel rectangle extent from quad and bounding box intersection.
-
-        Computes the intersection of a quad with a 3D bounding box, projects
-        the result to UV coordinates, and derives the pixel rectangle extent.
-
-        :param planar_object: Object with 'u_count', 'v_count',
-            'u_cell_size', 'v_cell_size' attributes.
-        :param vertices: Quad vertices, shape (4, 3) with last vertex as origin.
-        :param extent: Bounding box as (xmin, xmax, ymin, ymax, zmin, zmax).
-        :param eps_plane: Tolerance for plane distance calculations.
-        :param eps_collinear: Tolerance for collinearity detection.
-
-        :return: Pixel rectangle extent as (xmin, ymin, xmax, ymax)
-            or None if no valid extent.
-        """
-        if not isinstance(vertices, np.ndarray) or vertices.shape != (4, 3):
-            raise ValueError(
-                "vertices must be a numpy array of shape (4, 3). "
-                f"Got {type(vertices)} with shape {vertices.shape}."
-            )
-
-        if not isinstance(extent, np.ndarray) or extent.shape not in [(2, 3), (2, 2)]:
-            raise ValueError(
-                "extent must be a numpy array of shape (2, 3)."
-                f"Got {type(extent)} with shape {extent.shape}."
-            )
-
-        u_count, v_count, u_cell_size, v_cell_size = self._get_count_cell_from_object(
-            planar_object
-        )
-
-        clipped_uv = self._box_intersection(
-            vertices, extent, eps_plane=eps_plane, eps_collinear=eps_collinear
-        )
-
-        if clipped_uv.shape[0] < 3:
-            return None, None
-
-        new_extent = self._pixel_extent_from_polygon(
-            clipped_uv, u_cell_size, v_cell_size, u_count, v_count
-        )
-
-        # unlikely if first condition is met
-        if new_extent is None:
-            return None, None
-
-        new_vertices = self._pixel_rect_to_world(new_extent, u_cell_size, v_cell_size)
-
-        return new_extent, new_vertices
