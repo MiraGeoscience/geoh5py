@@ -165,7 +165,7 @@ class BaseUIJson(BaseModel):
             group.
         """
         groups: dict[str, list[str]] = {}
-        for field in self.model_fields:
+        for field in self.__class__.model_fields:
             form = getattr(self, field)
             if not isinstance(form, BaseForm):
                 continue
@@ -243,6 +243,7 @@ class BaseUIJson(BaseModel):
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
             for field, value in data.items():
                 if field == "geoh5":
+                    data[field] = geoh5
                     continue
 
                 if isinstance(value, UUID):

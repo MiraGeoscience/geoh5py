@@ -4,6 +4,7 @@ context:
   name: "geoh5py"
   version: "0.0.0.dev0"  # This will be replaced by the actual version in the build process
   python_min: "3.10"
+  module_name: ${{ name|lower|replace("-", "_") }}
 
 package:
   name: ${{ name|lower }}
@@ -34,8 +35,8 @@ requirements:
 tests:
   - python:
       imports:
-        - geoh5py
-        - geoh5py._version
+        - ${{ module_name }}
+        - ${{ module_name }}._version
   - script:
       - pytest --ignore=tests/version_test.py
     requirements:
@@ -45,6 +46,9 @@ tests:
     files:
       source:
         - tests/
+  - package_contents:
+      files:
+        - site-packages/${{ module_name }}/_version.py
 
 about:
   summary: Python API for geoh5, an open file format for geoscientific data.
@@ -58,6 +62,7 @@ about:
   license_file:
     - COPYING
     - COPYING.LESSER
+    - docs/THIRD_PARTY_SOFTWARE.rst
   homepage: https://www.mirageoscience.com/mining-industry-software/python-integration/
   repository: https://github.com/MiraGeoscience/geoh5py
   documentation: https://mirageoscience-geoh5py.readthedocs-hosted.com/

@@ -300,6 +300,8 @@ def test_parent_child_validation(tmp_path):
 
     uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     params = uijson.to_params()
+
+    assert params["geoh5"] == params["my_object_parameter"].workspace
     assert params["my_data_parameter"].uid == data.uid
 
     # Data is not a child of the parent object
