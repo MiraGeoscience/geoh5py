@@ -105,13 +105,6 @@ def to_class(
     return out
 
 
-def empty_string_to_none(value):
-    """Promote empty string to uid, and pass all other values."""
-    if value == "":
-        return None
-    return value
-
-
 def none_to_empty_string(value):
     """None transforms to empty string for serialization."""
     if value is None:
@@ -123,38 +116,6 @@ def types_to_string(types: list) -> list[str] | str:
     if len(types) > 1:
         return [str(k.default_type_uid()) for k in types]
     return str(types[0].default_type_uid())
-
-
-def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
-    def convert(value: UUID | None) -> str:
-        if value is None:
-            return ""
-        if isinstance(value, UUID):
-            return str(value)
-        return value
-
-    if isinstance(value, list):
-        return [convert(v) for v in value]
-    return convert(value)
-
-
-UidOrNumeric = UUID | float | int | None
-StringOrNumeric = str | float | int
-
-
-def uuid_to_string_or_numeric(
-    value: UidOrNumeric | list[UidOrNumeric],
-) -> StringOrNumeric | list[StringOrNumeric]:
-    def convert(value: UidOrNumeric) -> StringOrNumeric:
-        if value is None:
-            return ""
-        if isinstance(value, UUID):
-            return str(value)
-        return value
-
-    if isinstance(value, list):
-        return [convert(v) for v in value]
-    return convert(value)
 
 
 class BaseValidator(ABC):

@@ -41,12 +41,15 @@ from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.validators import (
-    empty_string_to_none,
     to_class,
     to_list,
     to_path,
     to_uuid,
     types_to_string,
+)
+from geoh5py.ui_json.annotations import OptionalUUIDList
+from geoh5py.ui_json.validations.form import (
+    empty_string_to_none,
     uuid_to_string,
     uuid_to_string_or_numeric,
 )
@@ -461,13 +464,6 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         ):
             return self.property
         return self.value
-
-
-OptionalUUIDList = Annotated[
-    list[UUID] | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
-]
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):

@@ -38,9 +38,10 @@ from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.utils import fetch_active_workspace
-from geoh5py.shared.validators import empty_string_to_none, none_to_empty_string
+from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
+from geoh5py.ui_json.validations.form import empty_string_to_none
 
 
 OptionalPath = Annotated[
