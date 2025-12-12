@@ -27,7 +27,7 @@ import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups import GroupTypeEnum, PropertyGroup
 from geoh5py.objects import Curve, Points, Surface
 from geoh5py.ui_json.forms import (
     Association,
@@ -35,6 +35,8 @@ from geoh5py.ui_json.forms import (
     BoolForm,
     ChoiceForm,
     DataForm,
+    DataGroupForm,
+    DataOrValueForm,
     DataRangeForm,
     DataType,
     FileForm,
@@ -42,6 +44,7 @@ from geoh5py.ui_json.forms import (
     GroupForm,
     IntegerForm,
     MultiChoiceForm,
+    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -411,10 +414,48 @@ def test_data_form():
     assert form.association == [Association.VERTEX, Association.CELL]
     assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
 
+
+def test_data_group_form():
+    group_uid = str(uuid.uuid4())
+    form = DataGroupForm(
+        label="name",
+        value=group_uid,
+        data_group_type="Strike & dip",
+        parent="Da-da",
+        association=["Vertex", "Cell"],
+        data_type=["Float", "Integer"],
+    )
+    assert form.label == "name"
+    assert form.value == uuid.UUID(group_uid)
+    assert form.data_group_type == GroupTypeEnum.STRIKEDIP
+    assert form.parent == "Da-da"
+    assert form.association == [Association.VERTEX, Association.CELL]
+    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+
+
+def test_data_or_value_form():
+    data_uid = str(uuid.uuid4())
+    form = DataOrValueForm(
+        label="name",
+        value=0.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        is_value=False,
+        property=data_uid,
+    )
+    assert form.label == "name"
+    assert form.value == 0.0
+    assert form.parent == "my_param"
+    assert form.association == "Vertex"
+    assert form.data_type == "Float"
+    assert not form.is_value
+    assert form.property == uuid.UUID(data_uid)
+
     with pytest.raises(
         ValidationError, match="Value must be numeric if is_value is True."
     ):
-        _ = DataForm(
+        _ = DataOrValueForm(
             label="name",
             value=data_uid,
             parent="my_param",
@@ -425,7 +466,7 @@ def test_data_form():
     with pytest.raises(
         ValidationError, match="A property must be provided if is_value is used"
     ):
-        _ = DataForm(
+        _ = DataOrValueForm(
             label="name",
             value=1.0,
             parent="my_param",
@@ -433,6 +474,70 @@ def test_data_form():
             data_type="Float",
             is_value=False,
         )
+
+
+def test_multichoice_data_form():
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_uid_1,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    assert form.label == "name"
+    assert form.value == [uuid.UUID(data_uid_1)]
+    assert form.parent == "my_param"
+    assert form.association == "Vertex"
+    assert form.data_type == "Float"
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    assert form.value == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
+
+
+def test_multichoice_data_form_serialization():
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+    form = MultiSelectDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    data = form.model_dump()
+    assert data["value"] == [data_uid_1, data_uid_2]
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_uid_1,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    data = form.model_dump()
+    assert data["value"] == [data_uid_1]
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=[],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        is_value=False,
+        property=[data_uid_1, data_uid_2],
+    )
+    data = form.model_dump()
+    assert data["property"] == [data_uid_1, data_uid_2]
+    assert data["value"] == []
 
 
 def test_data_range_form():
@@ -469,7 +574,7 @@ def test_flatten():
     )
     assert str(form.flatten()) == data_uid
 
-    form = DataForm(
+    form = DataOrValueForm(
         label="name",
         value=0.0,
         parent="my_param",
@@ -480,7 +585,7 @@ def test_flatten():
     )
     assert form.flatten() == 0.0
 
-    form = DataForm(
+    form = DataOrValueForm(
         label="name",
         value=0.0,
         parent="my_param",
@@ -520,6 +625,29 @@ def test_base_form_infer(tmp_path):
         }
     )
     assert form == DataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": [str(uuid.uuid4()), str(uuid.uuid4())],
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "multiSelect": True,
+        }
+    )
+    assert form == MultiSelectDataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "isValue": True,
+            "property": str(uuid.uuid4()),
+        }
+    )
+    assert form == DataOrValueForm
     form = BaseForm.infer(
         {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())}
     )
