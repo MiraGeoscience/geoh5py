@@ -675,3 +675,15 @@ def test_base_form_infer(tmp_path):
         }
     )
     assert form == MultiChoiceForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "property": str(uuid.uuid4()),
+            "value": [0.0, 1.0],
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "rangeLabel": "value range",
+        }
+    )
+    assert form == DataRangeForm

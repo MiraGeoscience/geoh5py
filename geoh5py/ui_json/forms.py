@@ -142,6 +142,10 @@ class BaseForm(BaseModel):
             k in data
             for k in ["parent", "association", "dataType", "isValue", "property"]
         ):
+            if any(
+                k in data for k in ["allowComplement", "isComplement", "rangeLabel"]
+            ):
+                return DataRangeForm
             if "dataGroupType" in data:
                 return DataGroupForm
             if "multiSelect" in data:
@@ -487,7 +491,7 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
         return value
 
 
-class DataRangeForm(BaseForm):
+class DataRangeForm(DataFormMixin, BaseForm):
     """
     Geoh5py data range uijson form.
 
