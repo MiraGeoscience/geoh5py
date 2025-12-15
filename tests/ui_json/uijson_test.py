@@ -44,9 +44,10 @@ from geoh5py.ui_json.ui_json import BaseUIJson
 from geoh5py.ui_json.validations import UIJsonError
 
 
-def sample_uijson(test_path):
-    uijson_path = test_path / "test.ui.json"
-    geoh5_path = test_path / "test.geoh5"
+@pytest.fixture
+def sample_uijson(tmp_path):
+    uijson_path = tmp_path / "test.ui.json"
+    geoh5_path = tmp_path / "test.geoh5"
     with Workspace.create(geoh5_path) as workspace:
         pts = Points.create(workspace, name="test", vertices=np.random.random((10, 3)))
         data = pts.add_data({"my data": {"values": np.random.random(10)}})
@@ -126,7 +127,7 @@ def sample_uijson(test_path):
         return uijson_path
 
 
-def test_uijson(tmp_path):
+def test_uijson(sample_uijson):
     class MyUIJson(BaseUIJson):
         my_string_parameter: StringForm
         my_integer_parameter: IntegerForm
@@ -138,7 +139,7 @@ def test_uijson(tmp_path):
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
 
-    uijson = MyUIJson.read(sample_uijson(tmp_path))
+    uijson = MyUIJson.read(sample_uijson)
     with pytest.raises(UIJsonError) as err:
         with Workspace(uijson.geoh5, mode="r+") as workspace:
             _ = uijson.to_params(workspace=workspace)
