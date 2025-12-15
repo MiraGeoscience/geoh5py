@@ -52,16 +52,12 @@ class GeoImageConversion(BaseConversion):
             dtype=[("x", float), ("y", float), ("z", float)],
         )
 
-        grid2d_attributes["u_count"] = geoimage.default_vertices[1, 0].astype(np.int32)
-        grid2d_attributes["v_count"] = geoimage.default_vertices[0, 1].astype(np.int32)
-
-        # Compute the distances
-        distance_u = np.linalg.norm(geoimage.vertices[2] - geoimage.vertices[3])
-        distance_v = np.linalg.norm(geoimage.vertices[0] - geoimage.vertices[3])
+        grid2d_attributes["u_count"] = geoimage.u_count
+        grid2d_attributes["v_count"] = geoimage.v_count
 
         # Now compute the cell sizes
-        grid2d_attributes["u_cell_size"] = distance_u / grid2d_attributes["u_count"]
-        grid2d_attributes["v_cell_size"] = distance_v / grid2d_attributes["v_count"]
+        grid2d_attributes["u_cell_size"] = geoimage.u_cell_size
+        grid2d_attributes["v_cell_size"] = geoimage.v_cell_size
 
         grid2d_attributes["elevation"] = grid2d_attributes.get("elevation", 0)
 
