@@ -654,6 +654,38 @@ def box_intersect(
     return True
 
 
+def clean_extent_for_intersection(
+    extent: np.ndarray, locations: np.ndarray
+) -> np.ndarray:
+    """
+    Clean and prepare extent array for 3D intersection calculations.
+
+    :param extent: Input extent array, shape (2, 2) or (2, 3)
+    :param locations: Array of vertices to extract Z bounds from, shape (N, 3)
+
+    :return: Cleaned extent array with shape (2, 3)
+    """
+    if isinstance(extent, Sequence):
+        extent = np.vstack(extent)
+
+    if (
+        not isinstance(extent, np.ndarray)
+        or extent.ndim != 2
+        or extent.shape not in [(2, 3), (2, 2)]
+    ):
+        raise ValueError(
+            "Input 'extent' must be a 2D array-like with 2 points and 2 or 3 columns"
+        )
+
+    if extent.shape[1] == 2 or np.all(extent[:, 2] == 0):
+        z_coordinates = locations[:, 2]
+        z_min, z_max = float(z_coordinates.min()), float(z_coordinates.max())
+        z_bounds = np.array([[z_min - 1], [z_max + 1]], dtype=np.float64)
+        extent = np.column_stack([extent.astype(np.float64), z_bounds])
+
+    return extent
+
+
 def mask_by_extent(
     locations: np.ndarray, extent: np.ndarray | Sequence, inverse: bool = False
 ) -> np.ndarray:
@@ -668,16 +700,12 @@ def mask_by_extent(
 
     :returns: Array of bool for the locations inside or outside the box extent.
     """
-    if isinstance(extent, Sequence):
-        extent = np.vstack(extent)
-
-    if not isinstance(extent, np.ndarray) or extent.ndim != 2:
-        raise ValueError("Input 'extent' must be a 2D array-like.")
-
     if not isinstance(locations, np.ndarray) or locations.ndim != 2:
         raise ValueError(
             "Input 'locations' must be an array-like of shape(*, 3) or (*, 2)."
         )
+
+    extent = clean_extent_for_intersection(extent, locations)
 
     indices = np.ones(locations.shape[0], dtype=bool)
     for loc, lim in zip(locations.T, extent.T, strict=False):
@@ -754,30 +782,6 @@ def yz_rotation_matrix(angle: float) -> np.ndarray:
             [0, np.sin(angle), np.cos(angle)],
         ]
     )
-
-
-def dip_points(points: np.ndarray, dip: float, rotation: float = 0) -> np.ndarray:
-    """
-    Rotate points about the x-axis by the dip angle and then about the z-axis by the rotation angle.
-    :param points: an array of points to rotate
-    :param dip: the dip angle in radians
-    :param rotation: the rotation angle in radians
-    :return: the rotated points
-    """
-    # Assert points is a numpy array containing 3D points
-    if not isinstance(points, np.ndarray) and points.ndim != 2 and points.shape[1] != 3:
-        raise TypeError("Input points must be a 2D numpy array of shape (N, 3).")
-
-    # rotate the points about the z-axis by the inverse rotation angle
-    points = xy_rotation_matrix(-rotation) @ points.T
-
-    # Rotate points with the dip angle
-    points = yz_rotation_matrix(dip) @ points
-
-    # Rotate back the points to initial orientation
-    points = xy_rotation_matrix(rotation) @ points
-
-    return points.T
 
 
 def set_attributes(entity, **kwargs):
@@ -1261,3 +1265,66 @@ def uuid_from_values(data: dict | str) -> UUID:
         data = dict_to_json_str(data)
 
     return uuid5(NAMESPACE_DNS, str(data))
+
+
+def normalize(vector: np.ndarray | list) -> np.ndarray:
+    """
+    Normalize a vector to unit length.
+
+    :param vector: Input vector to normalize.
+
+    :return: Normalized vector with unit length.
+    """
+    vector = np.asarray(vector, dtype=np.float64)
+    return vector / np.linalg.norm(vector)
+
+
+def ensure_counter_clockwise(polygon: np.ndarray) -> np.ndarray:
+    """
+    Ensure polygon vertices are ordered counter-clockwise.
+
+    Reverses the vertex order if the polygon area is negative (clockwise orientation).
+
+    :param polygon: Array of shape (N, 2) containing polygon vertices.
+
+    :return: Polygon vertices in counter-clockwise order.
+    """
+    x_coords = polygon[:, 0]
+    y_coords = polygon[:, 1]
+    polygon_area = 0.5 * float(
+        np.sum(x_coords * np.roll(y_coords, -1) - y_coords * np.roll(x_coords, -1))
+    )
+
+    if polygon_area < 0.0:
+        return polygon[::-1]
+
+    return polygon
+
+
+def validate_3d_array(value: np.ndarray) -> np.ndarray:
+    """
+    Validate that input is a 3D numpy array.
+
+    :param value: Input array to validate.
+
+    :return: The validated 3D array.
+    """
+    if not isinstance(value, np.ndarray):
+        raise TypeError(f"Expected numpy array, got {type(value).__name__}")
+    if value.shape != (3,):
+        raise ValueError(f"Expected shape (3,), got {value.shape}")
+    return value
+
+
+def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
+    """
+    Validate that input is a normalized 3D vector.
+
+    :param value: Input array to validate.
+
+    :return: The validated normalized 3D vector.
+    """
+    value = validate_3d_array(value)
+    if not np.isclose(np.linalg.norm(value), 1.0, atol=1e-6):
+        raise ValueError("Vector is not normalized.")
+    return value
