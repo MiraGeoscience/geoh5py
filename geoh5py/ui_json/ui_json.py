@@ -55,13 +55,12 @@ class BaseUIJson(BaseModel):
     """
     Base class for storing ui.json data on disk.
 
+    :param version: Version of the application.
     :params title: Title of the application.
     :params geoh5: Path to the geoh5 file.
     :params run_command: Command to run the application.
-    :params run_command_boolean: Boolean to run the command.
     :params monitoring_directory: Directory to monitor for changes.
     :params conda_environment: Conda environment to run the application.
-    :params conda_environment_boolean: Boolean to run the conda environment.
     :params workspace_geoh5: Path to the workspace geoh5 file.
     """
 
@@ -161,7 +160,7 @@ class BaseUIJson(BaseModel):
         """
         Returns grouped forms.
 
-        :returns: Dictionary of group names and the parameters belonging to each
+        :returns: Group names and the parameters belonging to each
             group.
         """
         groups: dict[str, list[str]] = {}
@@ -180,7 +179,7 @@ class BaseUIJson(BaseModel):
         Checks if a field is disabled based on form status.
 
         :param field: Field name to check.
-        :returns: True if the field is disabled by it's own enabled status or
+        :returns: True if the field is disabled by its own enabled status or
             the groups enabled status, False otherwise.
         """
 
@@ -207,6 +206,9 @@ class BaseUIJson(BaseModel):
 
         Chooses between value/property in data forms depending on the is_value
         field.
+
+        :param skip_disabled: If True, skips fields with 'enabled' set to False.
+        :param active_only: If True, skips fields that have not been explicitly set.
 
         :return: Flattened dictionary of key/value pairs.
         """
