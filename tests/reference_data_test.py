@@ -28,6 +28,7 @@ import pytest
 
 from geoh5py.data import GeometricDataConstants, ReferenceValueMap
 from geoh5py.data.data_type import ReferencedValueMapType
+from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -83,6 +84,30 @@ def test_reference_value_map():
     assert isinstance(value_map(), dict)
 
 
+def test_copy_reference_data(tmp_path):
+    h5file_path = tmp_path / r"testPoints.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        points, data, _ = generate_value_map(workspace)
+
+        new_value_map = data.entity_type.value_map()
+
+        new_index = np.max(list(new_value_map.keys())) + 1
+        extra_name = new_value_map[new_index - 1].capitalize()
+        new_value_map[new_index] = extra_name
+
+        new_type = data.entity_type.copy(value_map=new_value_map)
+        new_values = data.values.copy()
+        new_values[-1] = new_index
+        ref_data = points.add_data(
+            {"new_values": {"values": new_values, "entity_type": new_type}}
+        )
+
+        value_map = ref_data.value_map()
+
+        assert list(value_map.values())[-1] == extra_name + "(1)"
+
+
 def test_create_reference_data(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
 
@@ -90,7 +115,7 @@ def test_create_reference_data(tmp_path):
         points, data, _ = generate_value_map(workspace)
 
         with pytest.raises(
-            TypeError, match="entity_type must be of type ReferenceDataType"
+            TypeError, match="Input 'entity_type' with primitive_type 'None'"
         ):
             data.entity_type = "abc"
 
@@ -117,17 +142,21 @@ def test_add_data_map(tmp_path):
     with Workspace.create(h5file_path) as workspace:
         _, data, _ = generate_value_map(workspace)
 
+        # create a property group to test GEOPY-2256 bug
+        parent = data.parent
+        _ = PropertyGroup(parent, properties=[data])
+
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
         ]
 
+        # Add duplicate value
+        data_map[1, 1] = data_map[0, 1]
         with pytest.raises(TypeError, match="Property maps must be a dictionary"):
             data.data_maps = data_map
 
-        with pytest.raises(
-            TypeError, match="Data map values must be a numpy array or dict"
-        ):
+        with pytest.raises(TypeError, match="Value map must be a numpy array or dict."):
             data.add_data_map("test", "abc")
 
         assert data.remove_data_map("DataValues") is None
@@ -141,15 +170,15 @@ def test_add_data_map(tmp_path):
         data.entity_type.value_map = value_map
         data.add_data_map("test", data_map)
 
-        with pytest.raises(KeyError, match="Data map 'test' already exists."):
-            data.add_data_map("test", data_map)
-
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
         ]
 
         data.add_data_map("test2", data_map)
+
+        # test duplicate
+        data.add_data_map("test2", data_map, public=False)
 
         assert isinstance(data.data_maps["test"], GeometricDataConstants)
 
@@ -166,9 +195,21 @@ def test_add_data_map(tmp_path):
         geo_data = rec_data.data_maps["test2"]
         assert geo_data.entity_type.value_map is not None
         assert geo_data.entity_type.value_map.name == "test2"
+
         np.testing.assert_array_almost_equal(
             np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
             data_map[:, 1],
+        )
+
+        geo_data_2 = rec_data.data_maps["test2(1)"]
+        assert geo_data_2.entity_type.value_map.name == "test2(1)"
+
+        assert geo_data.public == 1
+        assert geo_data_2.public == 0
+
+        assert np.array_equal(
+            np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
+            np.asarray(list(geo_data_2.entity_type.value_map().values()), dtype=float),
         )
 
 
@@ -188,10 +229,20 @@ def test_copy_data_map(tmp_path):
         geom_data = workspace.get_entity("test2")
         assert len(geom_data) == 2
 
-        assert geom_data[0].entity_type.name != geom_data[1].entity_type.name
+        assert geom_data[0].parent != geom_data[1].parent
+
         assert np.all(
             geom_data[0].entity_type.value_map.map
             == geom_data[1].entity_type.value_map.map
+        )
+
+        # test with copying data on the same parent
+        data_copy = data.copy()
+
+        assert (
+            list(data.data_maps.keys())[0]
+            != list(data_copy.data_maps.keys())[0]
+            == "test2(1)"
         )
 
 
@@ -237,6 +288,32 @@ def test_value_map_from_values(tmp_path):
             }
         )
         assert len(new.entity_type.value_map.map) == len(np.unique(data.values)) + 1
+
+
+def test_value_map_from_str_values(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        points, _, _ = generate_value_map(workspace, n_data=100)
+
+        value_map = []
+        for _ in range(4):
+            value_map.append(
+                "".join(random.choice(string.ascii_lowercase) for _ in range(8))
+            )
+
+        values = np.random.randint(1, 5, size=points.n_vertices)
+
+        new = points.add_data(
+            {
+                "auto_map": {
+                    "type": "referenced",
+                    "values": values,
+                    "value_map": np.asarray(value_map),
+                }
+            }
+        )
+        assert len(new.entity_type.value_map.map) == len(np.unique(values)) + 1
 
 
 def test_variable_string_length(tmp_path):

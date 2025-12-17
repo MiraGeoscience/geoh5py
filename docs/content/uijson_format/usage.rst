@@ -59,21 +59,26 @@ geoh5py as shown below:
 Rendering
 ^^^^^^^^^
 
-The user-interface is rendered in ANALYST Pro by one of two methods.
-Users can either drag-and-drop the ui.json file to the viewport:
+The user interface defined by the ``ui.json`` file can be opened in ANALYST Pro in two ways:
 
-.. figure:: ./images/drag_drop.gif
-        :align: center
-        :width: 800
+a. **Drag and Drop:**
+   Simply drag the ``ui.json`` file into the viewport. The corresponding dialog will open immediately.
 
+   .. figure:: ./images/drag_drop.gif
+      :align: center
+      :width: 800
 
-Alternatively, users can add the application to the choice list of ANALYST-Python scripts:
+b. **Add to Python Script Menu:**
 
-.. figure:: ./images/dropdown.gif
-        :align: center
-        :width: 800
+   1. From the ANALYST menubar, open the *Python* menu and select *Script Directory* to launch the file explorer.
 
-Note that ANALYST needs to be restarted for the changes to take effect.
+   2. Copy the ``ui.json`` file into the displayed folder.
+
+   3. Close the workspace or restart ANALYST Pro. The new application will appear under the Python script menu.
+
+   .. figure:: ./images/dropdown.gif
+      :align: center
+      :width: 800
 
 
 Execution

@@ -100,6 +100,38 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
     :height: 100
 
 
+Radio Label Parameter
+----------------------
+
+If both ``originalLabel`` and ``alternateLabel`` members are added to a string parameter, the dialog will render a
+two-choice radio button with label choices.  The ``value`` will reflect the current choice and all labels within the
+ui.json containing the string matching the original button will be altered to the reflect the current choice.
+
+.. code-block:: json
+
+   {
+   "model_type": {
+   "main": true,
+   "group": "Models",
+   "label": "Model type",
+   "originalLabel": "Conductivity",
+   "alternateLabel": "Resistivity",
+   "value": "Conductivity",
+   "enabled": true
+   },
+   "conductivity_model": {
+   "main": true,
+   "group": "Models",
+   "label": "Conductivity model",
+   "value": 0.1
+   }
+   }
+
+.. figure:: ./images/radio_label_param_before.png
+    :height: 100
+
+.. figure:: ./images/radio_label_param_after.png
+    :height: 100
 
 Multi-choice string Parameter
 -----------------------------
@@ -333,7 +365,7 @@ The range slider parameter allows users to select a data channel and select a ra
 Compared to the data or value parameter, the range slider parameter adds the required **rangeLabel**, **allowComplement**
 and **isComplement** members.  If allowComplement is true, the user may flip the inclusion from within the bounds to outside
 the bounds, and when it is false the icon for flipping the complement is grey and inactive.  When saved the ui.json file
-will have it's **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected
+will have its **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected
 data, whereas the **value** will contain the range values.  If is complement is false, then the data are intended to be
 included within the bounds, and if it is false they are meant to be included outside the bounds.
 

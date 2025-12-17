@@ -20,34 +20,21 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from .data import PrimitiveTypeEnum
-from .data_type import ReferencedBooleanType
 from .referenced_data import ReferencedData
+
+
+if TYPE_CHECKING:
+    from .data_type import ReferencedBooleanType
 
 
 class BooleanData(ReferencedData):
     """
     Data class for logical (bool) values.
     """
-
-    @property
-    def entity_type(self):
-        """
-        :obj:`~geoh5py.data.data_type.ReferencedBooleanType`
-        """
-        return self._entity_type
-
-    @entity_type.setter
-    def entity_type(self, data_type: ReferencedBooleanType):
-        if not isinstance(data_type, ReferencedBooleanType):
-            raise TypeError("'entity_type' must be of type ReferencedBooleanType")
-
-        self._entity_type = data_type
-
-        if self.on_file:
-            self.workspace.update_attribute(self, "entity_type")
 
     def format_type(self, values: np.ndarray):
         """
@@ -65,10 +52,6 @@ class BooleanData(ReferencedData):
     @property
     def formatted_values(self):
         return super().formatted_values.astype("int8")
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.BOOLEAN
 
     @property
     def ndv(self) -> int:

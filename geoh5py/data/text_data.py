@@ -27,7 +27,6 @@ from numpy import ndarray
 
 from ..shared.utils import as_str_if_uuid, dict_mapper
 from .data import Data
-from .primitive_type_enum import PrimitiveTypeEnum
 
 
 def text_formating(values: None | np.ndarray | str) -> ndarray | None:
@@ -57,10 +56,6 @@ class TextData(Data):
         """
         return ""
 
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.TEXT
-
     def validate_values(
         self, values: np.ndarray | str | None
     ) -> np.ndarray | str | None:
@@ -88,7 +83,7 @@ class TextData(Data):
         return values
 
 
-class CommentsData(Data):
+class CommentsData(TextData):
     """
     Comments added to an Object or Group.
     Stored as a list of dictionaries with the following keys:
@@ -107,10 +102,6 @@ class CommentsData(Data):
     @property
     def formatted_values(self):
         return json.dumps(dict_mapper(self.values, [as_str_if_uuid]))
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.TEXT
 
     def validate_values(self, values) -> dict | None:
         if isinstance(values, str):
@@ -143,7 +134,7 @@ class CommentsData(Data):
         return values
 
 
-class MultiTextData(Data):
+class MultiTextData(TextData):
     _values: np.ndarray | str | None
 
     @property
@@ -156,10 +147,6 @@ class MultiTextData(Data):
         Value used to represent missing data in python.
         """
         return ""
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.MULTI_TEXT
 
     def validate_values(
         self, values: np.ndarray | str | None

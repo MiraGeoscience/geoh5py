@@ -21,16 +21,22 @@
 from __future__ import annotations
 
 import re
+import uuid
 
 import numpy as np
 import pytest
 
+from geoh5py import Workspace
+from geoh5py.objects import Points
 from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
+    as_str_if_uuid,
     box_intersect,
+    dict_to_json_str,
     inf2str,
     mask_by_extent,
     nan2str,
+    uuid_from_values,
 )
 
 
@@ -70,11 +76,11 @@ def test_mask_by_extent():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Input 'extent' must be a 2D array-like"),
+        match=re.escape("Input 'locations' must be an array-like of"),
     ):
-        mask_by_extent("abc", corners)
+        mask_by_extent("abc", corners[0])
 
-    assert not mask_by_extent(np.vstack([points]), np.vstack(corners[:2])), (
+    assert not mask_by_extent(np.vstack([points]), corners[:2]), (
         "Point should have been outside."
     )
 
@@ -139,3 +145,41 @@ def test_box_intersect_input():
         match=re.escape("Extents must be of shape (2, N) containing the minimum"),
     ):
         box_intersect(box_a, box_b[::-1, :])
+
+
+def test_dict_to_str():
+    workspace = Workspace()
+    pts = Points.create(workspace)
+    uid = uuid.uuid4()
+    data = {
+        "key1": "value1",
+        "key2": 123,
+        "key3": 45.67,
+        "key4": uid,
+        "key5": workspace,
+        "key6": pts,
+    }
+    str_dict = dict_to_json_str(data)
+
+    assert all(
+        (elem in str_dict)
+        for elem in ["4.5670e+01", str(uid), '"key2": 123', str(pts.uid)]
+    )
+
+
+def test_uuid_from_values():
+    uid = uuid.uuid4()
+    data = {
+        "key1": "value1",
+        "key2": 123,
+        "key3": 45.67,
+        "key4": uid,
+    }
+    uid_a = uuid_from_values(data)
+
+    data["key4"] = as_str_if_uuid(uid)
+    assert uid_a == uuid_from_values(data)
+
+    data["key5"] = "abc"
+
+    assert uid_a != uuid_from_values(data)

@@ -132,9 +132,7 @@ class Grid2D(GridObject):
 
             xyz_dipped = dip_matrix @ xyz.T
             centroids = (rotation_matrix @ xyz_dipped).T
-
-            for ind, axis in enumerate(["x", "y", "z"]):
-                centroids[:, ind] += self.origin[axis]
+            centroids += np.asarray(self._origin.tolist())[None, :]
 
             self._centroids = centroids
 
@@ -183,15 +181,11 @@ class Grid2D(GridObject):
             delta_orig = dip_matrix @ delta_orig
 
             rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
-            delta_orig = (rotation_matrix @ delta_orig).T
+            delta_orig = (rotation_matrix @ delta_orig).T.flatten()
 
             kwargs.update(
                 {
-                    "origin": np.r_[
-                        self.origin["x"] + delta_orig[0, 0],
-                        self.origin["y"] + delta_orig[0, 1],
-                        self.origin["z"] + delta_orig[0, 2],
-                    ],
+                    "origin": np.asarray(self._origin.tolist()) + delta_orig,
                     "u_count": np.sum(u_ind),
                     "v_count": np.sum(v_ind),
                 }
@@ -207,6 +201,9 @@ class Grid2D(GridObject):
             mask=indices,
             **kwargs,
         )
+
+        if not copy:
+            return None
 
         if not inverse:
             for child in copy.children:
@@ -304,7 +301,7 @@ class Grid2D(GridObject):
         if isinstance(value, np.ndarray):
             if not len(value) == 1:
                 raise ValueError(
-                    "Attribute 'v_cell_size' must be a float of shape (1,)"
+                    f"Attribute '{axis}_cell_size' must be a float of shape (1,)"
                 )
 
             return np.r_[value].astype(float).item()

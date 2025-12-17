@@ -30,8 +30,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..data import CommentsData, Data
-from .entity import Entity
+from geoh5py.data import CommentsData, Data, FilenameData
+from geoh5py.shared.entity import Entity
+from geoh5py.shared.utils import get_unique_name_from_entities
 
 
 if TYPE_CHECKING:
@@ -140,6 +141,10 @@ class EntityContainer(Entity):
             raise TypeError(
                 f"Input file must be a path or BytesIO object, not {type(file)}"
             )
+
+        name = get_unique_name_from_entities(
+            name, self.children, key="values", types=FilenameData
+        )
 
         attributes = {
             "name": name,

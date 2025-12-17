@@ -203,7 +203,7 @@ def test_concatenated_entities(tmp_path):
         with pytest.raises(UserWarning) as error:
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
             dtype = data_type.DataType.find_or_create(
-                workspace, primitive_type=FloatData.primitive_type()
+                workspace, primitive_type=FloatData
             )
             class_type(entity_type=dtype)
 
@@ -366,16 +366,6 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         assert len(well.get_data("my_log_values/")) == 1
         assert len(well.get_data("my_log_values/")[0].values) == 50
 
-        with pytest.raises(ValueError, match="already present on the drillhole"):
-            well.add_data(
-                {
-                    "my_log_values/": {
-                        "depth": np.arange(0, 50.0),
-                        "values": np.random.randn(50),
-                    },
-                }
-            )
-
 
 def test_append_data_to_tables(tmp_path):
     h5file_path = tmp_path / r"test_append_data_to_tables.geoh5"
@@ -469,20 +459,6 @@ def test_append_data_to_tables(tmp_path):
         assert len(well.to_) == len(well.from_) == 3, (
             "Should have exactly 3 from-to data."
         )
-
-        with pytest.raises(
-            ValueError, match="Data with name 'Depth Data' already present"
-        ):
-            well_b.add_data(
-                {
-                    "Depth Data": {
-                        "values": np.random.randn(10),
-                        "depth": np.sort(
-                            np.random.uniform(low=0.05, high=100, size=(10,))
-                        ),
-                    },
-                }
-            )
 
         well_b_data.values = np.random.randn(from_to_b.shape[0])
 
@@ -1095,7 +1071,7 @@ def test_add_data_to_property(tmp_path):
             "property_group"
         ].depth_table_by_name("new value", mapped=True)
 
-        assert verificationf[0][0][:3] == "abc"
+        assert verificationf[0][0] == value_map[verification_map_value[0]]
 
 
 def test_tables_errors(tmp_path):

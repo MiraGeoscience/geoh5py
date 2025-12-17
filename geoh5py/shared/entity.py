@@ -333,8 +333,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
                 f"Provided value of type '{type(value)}'."
             )
 
-    @staticmethod
-    def validate_metadata(value) -> dict | None:
+    def validate_metadata(self, value: np.ndarray | dict | None) -> dict | None:
         if isinstance(value, np.ndarray):
             value = value[0]
 

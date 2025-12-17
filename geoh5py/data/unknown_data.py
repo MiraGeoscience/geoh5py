@@ -23,14 +23,9 @@ from __future__ import annotations
 from typing import Any
 
 from .data import Data
-from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class UnknownData(Data):
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.INVALID
-
     def validate_values(self, values: Any | None) -> Any:
         """
         Validate values for UnknownData.

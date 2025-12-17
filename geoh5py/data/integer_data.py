@@ -23,7 +23,6 @@ from __future__ import annotations
 import numpy as np
 
 from ..shared import INTEGER_NDV
-from .data import PrimitiveTypeEnum
 from .numeric_data import NumericData
 
 
@@ -46,10 +45,6 @@ class IntegerData(NumericData):
             return values
 
         return np.round(values).astype(np.int32)
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.INTEGER
 
     @property
     def nan_value(self):

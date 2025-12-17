@@ -30,7 +30,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
-from geoh5py.objects import Drillhole, Points
+from geoh5py.objects import Points
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -44,7 +44,7 @@ from geoh5py.shared.exceptions import (
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import InputValidation, templates
 from geoh5py.ui_json.constants import default_ui_json, ui_validations
-from geoh5py.ui_json.input_file import InputFile
+from geoh5py.ui_json.input_file import DEFAULT_UI_JSON_NAME, InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
 
@@ -778,6 +778,7 @@ def test_data_object_file_association(tmp_path: Path):
     in_file = InputFile(ui_json=ui_json)
 
     in_file.write_ui_json(name="test.ui.json", path=tmp_path)
+
     assert in_file.data["data"] == file
 
 
@@ -906,7 +907,7 @@ def test_dependency_enabling(tmp_path: Path):
         in_file.update_ui_values({"parameter_b": None})
 
     # Test disabled
-    in_file.ui_json["parameter_a"]["enabled"] = False
+    ui_json["parameter_a"]["enabled"] = False
     ui_json["parameter_b"]["dependencyType"] = "disabled"
     ui_json["parameter_b"]["enabled"] = True
     ui_json["parameter_b"]["value"] = 123.0
@@ -942,3 +943,70 @@ def test_range_label(tmp_path):
         "value": [0.2, 0.8],
         "property": data.uid,
     }
+
+
+def test_default_naming(tmp_path):
+    workspace = get_workspace(tmp_path)
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+
+    in_file = InputFile(ui_json=ui_json)
+    in_file.name = DEFAULT_UI_JSON_NAME
+
+    assert in_file.name == "Custom_UI.ui.json"
+
+
+def test_copy_relatives(tmp_path):
+    workspace = get_workspace(tmp_path)
+    original_points = workspace.get_entity("Points_A")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["workspace_geoh5"] = workspace.h5file
+    ui_json["points"] = templates.object_parameter(
+        value=str(original_points.uid),
+    )
+    in_file = InputFile(ui_json=ui_json)
+
+    workspace2 = Workspace()
+
+    in_file.copy_relatives(workspace2)
+
+    # dry run for coverage
+    InputFile().copy_relatives(workspace2)
+
+    copied_points = workspace2.get_entity("Points_A")[0]
+
+    compare_entities(copied_points, original_points, ignore=["_property_groups"])
+
+
+def test_copy_uijson(tmp_path):
+    workspace = get_workspace(tmp_path)
+    original_points = workspace.get_entity("Points_A")[0]
+
+    ui_json = deepcopy(default_ui_json)
+    ui_json["geoh5"] = workspace
+    ui_json["points"] = templates.object_parameter(
+        value=str(original_points.uid),
+    )
+    in_file = InputFile(ui_json=ui_json)
+
+    # same workspace
+    copied_in_file = in_file.copy(title="Copied")
+    assert copied_in_file.geoh5.h5file == workspace.h5file
+    assert copied_in_file.data["title"] == "Copied"
+
+    # with new workspace
+    h5file_path_2 = tmp_path / "copied.geoh5"
+    new_in_file = in_file.copy(geoh5=h5file_path_2)
+
+    with Workspace(h5file_path_2) as workspace_2:
+        assert str(new_in_file.geoh5.h5file)[-12:] == "copied.geoh5"
+        assert workspace_2.get_entity("Points_A")[0].name == "Points_A"
+
+    with pytest.raises(FileExistsError, match="The specified geoh5"):
+        in_file.copy(geoh5=h5file_path_2)
+
+    with pytest.raises(ValueError, match="InputFile must have a ui_json"):
+        InputFile().copy()

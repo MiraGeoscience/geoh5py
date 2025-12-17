@@ -154,9 +154,7 @@ class Octree(GridObject):
             ) * self.w_cell_size
             xyz = np.c_[u_grid, v_grid, w_grid]
             self._centroids = np.dot(rot, xyz.T).T
-
-            for ind, axis in enumerate(["x", "y", "z"]):
-                self._centroids[:, ind] += self.origin[axis]
+            self._centroids += np.asarray(self._origin.tolist())[None, :]
 
         return self._centroids
 
@@ -319,11 +317,11 @@ class Octree(GridObject):
             )
 
         if np.issubdtype(array.dtype, np.number):
-            assert array.shape[1] == 4, (
-                "'octree_cells' requires an ndarray of shape (*, 4)"
-            )
+            if array.shape[1] != 4:
+                raise ValueError("'octree_cells' requires an ndarray of shape (*, 4).")
+
             array = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     array.T.tolist(),
                     dtype=cls.__OCTREE_DTYPE,
                 )

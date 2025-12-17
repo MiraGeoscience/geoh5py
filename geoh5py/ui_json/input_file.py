@@ -33,9 +33,8 @@ from geoh5py.shared.exceptions import BaseValidationError, JSONParameterValidati
 from geoh5py.shared.validators import AssociationValidator
 
 from ..shared.utils import (
-    as_str_if_uuid,
+    copy_dict_relatives,
     dict_mapper,
-    entity2uuid,
     fetch_active_workspace,
     str2none,
     str2uuid,
@@ -44,17 +43,16 @@ from ..shared.utils import (
 )
 from .constants import base_validations, ui_validations
 from .utils import (
-    container_group2name,
     flatten,
     path2workspace,
     set_enabled,
     str2inf,
-    workspace2path,
 )
 from .validation import InputValidation
 
 
 # pylint: disable=simplifiable-if-expression, too-many-instance-attributes
+DEFAULT_UI_JSON_NAME = "quick_run.ui.json"
 
 
 class InputFile:
@@ -155,15 +153,24 @@ class InputFile:
     def name(self) -> str | None:
         """
         Name of ui.json file.
+
+        If the name is the default name, it get overridden by the title if exists.
         """
         if getattr(self, "_name", None) is None and self.ui_json is not None:
             self.name = self.ui_json["title"]
+
+        if (
+            self._name == DEFAULT_UI_JSON_NAME
+            and self.ui_json is not None
+            and "title" in self.ui_json
+        ):
+            self.name = self.ui_json["title"].replace(" ", "_")
 
         return self._name
 
     @name.setter
     def name(self, name: str):
-        if ".ui.json" not in name:
+        if not name.endswith(".ui.json"):
             name += ".ui.json"
 
         self._name = name
@@ -284,6 +291,8 @@ class InputFile:
                     self.ui_json[key][member] = value
             else:
                 self.ui_json[key] = value
+
+        self._data = None
 
     @property
     def validate(self):
@@ -423,7 +432,7 @@ class InputFile:
             self.update_ui_values(self.data)
 
         with open(self.path_name, "w", encoding="utf-8") as file:
-            json.dump(self.stringify(self.demote(self.ui_json)), file, indent=4)
+            json.dump(stringify(self.ui_json), file, indent=4)
 
         return self.path_name
 
@@ -456,20 +465,6 @@ class InputFile:
             self.geoh5 = value
 
         self.update_ui_values({key: value})
-
-    @staticmethod
-    def stringify(var: dict[str, Any]) -> dict[str, Any]:
-        """
-        Convert inf, none, and list types to strings within a dictionary
-
-        :param var: Dictionary containing ui.json keys, values, fields
-
-        :return: Dictionary with inf and none types converted to string
-            representations in json format.
-        """
-        var = stringify(var)
-
-        return var
 
     @classmethod
     def numify(cls, ui_json: dict[str, Any]) -> dict[str, Any]:
@@ -507,31 +502,18 @@ class InputFile:
 
         return ui_json
 
-    @classmethod
-    def demote(cls, var: dict[str, Any]) -> dict[str, Any]:
-        """
-        Converts promoted parameter values to their string representations.
-
-        Other parameters are left unchanged.
-        """
-        mappers = [entity2uuid, as_str_if_uuid, workspace2path, container_group2name]
-        demoted: dict[str, Any] = {}
-        for key, value in var.items():
-            if isinstance(value, dict):
-                demoted[key] = cls.demote(value)
-
-            elif isinstance(value, (list, tuple)):
-                demoted[key] = [dict_mapper(val, mappers) for val in value]
-            else:
-                demoted[key] = dict_mapper(value, mappers)
-
-        return demoted
-
     def promote(self, var: dict[str, Any]) -> dict[str, Any]:
-        """Convert uuids to entities from the workspace."""
+        """
+        Convert uuids to entities from the workspace.
+
+        TODO: change validation to use a simpler function here?
+
+        :param var: Dictionary to promote.
+
+        :return: Promoted dictionary.
+        """
         if self._geoh5 is None:
             return var
-
         for key, value in var.items():
             if isinstance(value, dict):
                 if "groupValue" in value and "value" in value:
@@ -564,6 +546,7 @@ class InputFile:
         if isinstance(value, UUID) and self._geoh5 is not None:
             if self.validate:
                 self.association_validator(key, value, self._geoh5)
+            # todo: why uuid2 entity here?
             value = uuid2entity(value, self._geoh5)
 
         return value
@@ -619,3 +602,61 @@ class InputFile:
             self.ui_json[key]["property"] = group_value
 
         self.ui_json[key]["value"] = value["value"]
+
+    def copy(
+        self,
+        clear_cache: bool = False,
+        validate: bool = True,
+        **kwargs,
+    ) -> InputFile:
+        """
+        Create a copy of the input file, and copying the relatives to a new workspace.
+
+        :param clear_cache: Indicate whether to clear the cache.
+        :param validate: Indicate whether to validate the new input file.
+        :param kwargs: The parameters to update in the new input file ui_json.
+
+        :return: The new input file.
+        """
+        if self.ui_json is None:
+            raise ValueError("InputFile must have a ui_json to create a copy.")
+
+        ui_json = self.ui_json.copy()
+
+        input_file = InputFile(ui_json=ui_json, validate=validate)
+        geoh5_path = kwargs.pop("geoh5", self.geoh5.h5file)
+        input_file.update_ui_values(kwargs)
+
+        if Path(geoh5_path).resolve() == Path(self.geoh5.h5file).resolve():
+            return input_file
+
+        if Path(geoh5_path).exists():
+            raise FileExistsError(
+                f"The specified geoh5 file already exists: {ui_json['geoh5']}"
+            )
+
+        ui_json["geoh5"] = geoh5_path
+
+        with Workspace.create(geoh5_path) as workspace:
+            input_file.copy_relatives(workspace, clear_cache=clear_cache)
+
+        return InputFile(ui_json=stringify(ui_json), validate=validate)
+
+    def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
+        """
+        Copy the entities referenced in the input file to a new workspace.
+
+        :param parent: The parent to copy the entities to.
+        :param clear_cache: Indicate whether to clear the cache.
+        """
+        if self.ui_json is None:
+            return
+
+        ui_json = self.ui_json.copy()
+        ui_json.pop("geoh5", None)
+
+        copy_dict_relatives(
+            self.geoh5.promote(ui_json),
+            parent,
+            clear_cache=clear_cache,
+        )

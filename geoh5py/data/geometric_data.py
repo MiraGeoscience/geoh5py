@@ -22,8 +22,9 @@ from __future__ import annotations
 
 from uuid import UUID
 
+import numpy as np
+
 from .data import Data
-from .primitive_type_enum import PrimitiveTypeEnum
 
 
 class GeometricDataConstants(Data):
@@ -52,10 +53,6 @@ class GeometricDataConstants(Data):
             **kwargs,
         )
 
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.GEOMETRIC
-
     def validate_values(self, values: None) -> None:
         """
         Validate values for GeometricDataConstants.
@@ -66,3 +63,18 @@ class GeometricDataConstants(Data):
             )
 
         return values
+
+    def copy(
+        self,
+        parent=None,
+        *,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ) -> None:
+        """
+        Overload of the base Data.copy method to prevent direct copy of GeometricData.
+
+        :return: A new GeometricDataConstants instance or None.
+        """
+        return None

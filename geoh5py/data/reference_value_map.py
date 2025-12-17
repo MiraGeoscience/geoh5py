@@ -23,6 +23,8 @@ from __future__ import annotations
 import numpy as np
 from h5py import special_dtype
 
+from geoh5py.shared.utils import find_unique_name
+
 
 class ReferenceValueMap:
     """Maps from reference index to reference value of ReferencedData."""
@@ -64,9 +66,7 @@ class ReferenceValueMap:
 
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
             if value_map.ndim == 1:
-                unique_set = set(value_map)
-                unique_set.discard(0)
-                value_map = {i + 1: str(val) for i, val in enumerate(unique_set)}
+                value_map = cls._dict_map_from_value_array(value_map)
 
             value_map = dict(value_map)
 
@@ -74,19 +74,28 @@ class ReferenceValueMap:
             if not np.all(np.asarray(list(value_map)) >= 0):
                 raise KeyError("Key must be an positive integer")
 
-            value_list = list(value_map.items())
+            # Make sure no duplicated name as case-insensitive
+            names = list(value_map.values())
+            ids = list(value_map)
+            value_list = []
+            for ind, name in enumerate(names):
+                new = find_unique_name(name, names[:ind], case_sensitive=False)
+                value_list.append((ids[ind], new))
+
             value_map = np.array(
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
 
             # TODO: Replace with numpy.dtypes.StringDType instead for support of variable
             # length string after moving to numpy >=2.0
-            str_len = max(
+            str_len = [
                 len(val) if isinstance(val, str) else len(str(val))
                 for val in value_map["Value"]
-            )
+            ]
+
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype(f"U{str_len}"), "utf-8"
+                value_map["Value"].astype(f"U{max(str_len) if str_len else 32}"),
+                "utf-8",
             )
 
         if not isinstance(value_map, np.ndarray):
@@ -117,6 +126,23 @@ class ReferenceValueMap:
         mapper = np.sort(self.map, order="Key")
         indices = np.searchsorted(mapper["Key"], values)
         return mapper["Value"][indices]
+
+    @staticmethod
+    def _dict_map_from_value_array(value_array: np.ndarray) -> dict:
+        """
+        Create a map from an array of values.
+
+        :param value_array: The array of values to map.
+
+        :return: A dictionary mapping indices to values.
+        """
+        unique_set = set(value_array)
+
+        if np.issubdtype(value_array.dtype, np.number):
+            unique_set.discard(0)
+            return {int(val): f"Unit {val}" for val in unique_set}
+
+        return {i + 1: str(value) for i, value in enumerate(value_array)}
 
 
 BOOLEAN_VALUE_MAP = np.array(

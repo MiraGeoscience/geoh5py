@@ -28,7 +28,8 @@ import warnings
 import numpy as np
 from h5py import special_dtype
 
-from ...data import Data, DataAssociationEnum, DataType
+from ...data import Data, DataAssociationEnum
+from ...data.data_type import DataType
 from ...groups import Group
 from ..entity import Entity
 from ..entity_type import EntityType
@@ -677,7 +678,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         if values is not None and not remove:
             indices = np.hstack(
                 [
-                    np.core.records.fromarrays(
+                    np.rec.fromarrays(
                         (start, len(values), obj_id, data_id),
                         dtype=[
                             ("Start index", "<u4"),

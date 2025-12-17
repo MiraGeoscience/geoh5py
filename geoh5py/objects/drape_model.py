@@ -40,8 +40,8 @@ class DrapeModel(ObjectBase):
     """
 
     _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
-    __LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
-    __PRISM_DTYPE = np.dtype(
+    _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
+    _PRISM_DTYPE = np.dtype(
         [
             ("Top easting", "<f8"),
             ("Top northing", "<f8"),
@@ -64,6 +64,18 @@ class DrapeModel(ObjectBase):
         super().__init__(**kwargs)
 
     @property
+    def z_cell_size(self) -> np.ndarray:
+        """Compute thickness of every cell in the drape model."""
+        grid_z = np.full((self.prisms.shape[0], self._layers["K"].max() + 2), np.nan)
+        grid_z[:, 0] = self._prisms["Top elevation"]
+        grid_z[self._layers["I"], self._layers["K"] + 1] = self._layers[
+            "Bottom elevation"
+        ]
+        hz = (grid_z[:, :-1] - grid_z[:, 1:]).flatten()
+
+        return hz[~np.isnan(hz)]
+
+    @property
     def centroids(self) -> np.ndarray:
         """
         Cell center locations in world coordinates, shape(*, 3).
@@ -77,24 +89,58 @@ class DrapeModel(ObjectBase):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            self._centroids = np.vstack(
-                [
-                    np.ones((int(val), 3)) * self.prisms[ii, :3]
-                    for ii, val in enumerate(self.prisms[:, 4])
-                ]
+            xy = np.repeat(
+                np.c_[self.prisms[:, :2]], self.prisms[:, 4].astype(int), axis=0
             )
-            tops = np.hstack(
-                [
-                    np.r_[
-                        cells[2],
-                        self.layers[int(cells[3]) : int(cells[3] + cells[4] - 1), 2],
-                    ]
-                    for cells in self.prisms.tolist()
-                ]
-            )
-            self._centroids[:, 2] = (tops + self.layers[:, 2]) / 2.0
+            z = self.layers[:, 2] + self.z_cell_size / 2.0
+            self._centroids = np.c_[xy, z]
 
         return self._centroids
+
+    def copy(
+        self,
+        parent=None,
+        *,
+        copy_children: bool = True,
+        clear_cache: bool = False,
+        mask: np.ndarray | None = None,
+        **kwargs,
+    ) -> DrapeModel:
+        """
+        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy`.
+        """
+        mask = self.validate_mask(mask)
+
+        if mask is not None:
+            layers = self.layers[mask]
+            prisms_ids, new_ids, count = np.unique(
+                layers[:, 0], return_inverse=True, return_counts=True
+            )
+            layers[:, 0] = new_ids
+            prisms = self.prisms[prisms_ids.astype(int)]
+            prisms[:, 3] = np.r_[0, np.cumsum(count[:-1])]
+            prisms[:, 4] = count
+            kwargs.update({"prisms": prisms, "layers": layers})
+
+        new_entity = super().copy(
+            parent=parent,
+            copy_children=copy_children,
+            clear_cache=clear_cache,
+            mask=mask,
+            **kwargs,
+        )
+
+        return new_entity
+
+    @property
+    def extent(self) -> np.ndarray | None:
+        """
+        Geography bounding box of the object.
+
+        :return: Bounding box defined by the bottom South-West and
+            top North-East coordinates,  shape(2, 3).
+        """
+        return np.c_[self.prisms.min(axis=0)[:3], self.prisms.max(axis=0)[:3]].T
 
     @property
     def layers(self) -> np.ndarray:
@@ -170,23 +216,21 @@ class DrapeModel(ObjectBase):
             )
 
         if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 5:
+            if values.shape[1] != len(cls._PRISM_DTYPE):
                 raise ValueError(
-                    "Array of 'prisms' must be of shape (*, 5). "
+                    f"Array of 'prisms' must be of shape (*, {len(cls._PRISM_DTYPE)}). "
                     f"Array of shape {values.shape} provided."
                 )
 
             values = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     values.T.tolist(),
-                    dtype=cls.__PRISM_DTYPE,
+                    dtype=cls._PRISM_DTYPE,
                 )
             )
 
-        if values.dtype != cls.__PRISM_DTYPE:
-            raise ValueError(
-                f"Array of 'prisms' must be of dtype = {cls.__PRISM_DTYPE}"
-            )
+        if values.dtype != cls._PRISM_DTYPE:
+            raise ValueError(f"Array of 'prisms' must be of dtype = {cls._PRISM_DTYPE}")
 
         return values
 
@@ -208,9 +252,9 @@ class DrapeModel(ObjectBase):
             )
 
         if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 3:
+            if values.shape[1] != len(cls._LAYERS_DTYPE):
                 raise ValueError(
-                    "Array of 'layers' must be of shape (*, 3). "
+                    f"Array of 'layers' must be of shape (*, {len(cls._LAYERS_DTYPE)}). "
                     f"Array of shape {values.shape} provided."
                 )
 
@@ -219,15 +263,15 @@ class DrapeModel(ObjectBase):
                 raise ValueError(msg)
 
             values = np.asarray(
-                np.core.records.fromarrays(
+                np.rec.fromarrays(
                     values.T.tolist(),
-                    dtype=cls.__LAYERS_DTYPE,
+                    dtype=cls._LAYERS_DTYPE,
                 )
             )
 
-        if values.dtype != cls.__LAYERS_DTYPE:
+        if values.dtype != cls._LAYERS_DTYPE:
             raise ValueError(
-                f"Array of 'layers' must be of dtype = {cls.__LAYERS_DTYPE}"
+                f"Array of 'layers' must be of dtype = {cls._LAYERS_DTYPE}"
             )
 
         return values

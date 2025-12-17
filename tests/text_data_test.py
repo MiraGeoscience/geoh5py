@@ -155,3 +155,37 @@ def test_create_byte_text_data(tmp_path: Path):
 
             word.values = np.array([b"b word"])[0]
             assert word.values == "b word"
+
+
+def test_create_one_text_data(tmp_path: Path):
+    """
+    Would be great to visualize text in GA, if a text object contains 1 text only
+    """
+    name = "MyTestPointset"
+
+    # Generate a random cloud of points with reference values
+    n_data = 12
+
+    h5file_path = tmp_path / r"testTextData.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        points = Points.create(
+            workspace,
+            vertices=np.random.randn(n_data, 3),
+            name=name,
+            allow_move=False,
+        )
+
+        _ = points.add_data(
+            {
+                "DataValues": {
+                    "type": "text",
+                    "values": "considering only a text",
+                }
+            }
+        )
+
+    # todo: text cannot be visualize in GA, but could be printed in "DataColour"!
+    with Workspace(h5file_path).open("r") as workspace:
+        rec_data = workspace.get_entity("DataValues")[0]
+        assert "considering only a text" == rec_data.values

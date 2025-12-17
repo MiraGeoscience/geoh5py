@@ -24,12 +24,11 @@ from typing import cast
 
 import numpy as np
 
-from ..shared.utils import find_unique_name
+from geoh5py.shared.utils import get_unique_name_from_entities
+
 from .data import Data
-from .data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
-from .primitive_type_enum import PrimitiveTypeEnum
 from .reference_value_map import ReferenceValueMap
 
 
@@ -50,35 +49,79 @@ class ReferencedData(IntegerData):
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Data:
+    ):
         """
         Overwrite the copy method to ensure that the uid is set to None and
         transfer the GeometricDataValueMapType to the new entity type.
         """
         kwargs["uid"] = None
 
-        new_data = cast(
-            ReferencedData,
-            super().copy(
-                parent=parent,
-                clear_cache=clear_cache,
-                mask=mask,
-                omit_list=["_metadata", "_data_maps"],
-                **kwargs,
-            ),
+        new_data = super().copy(
+            parent=parent,
+            clear_cache=clear_cache,
+            mask=mask,
+            omit_list=["_metadata", "_data_maps"],
+            **kwargs,
         )
 
+        if not new_data:
+            return None
+
         # Always overwrite the entity type name to protect the GeometricDataValueMapType
-        new_data.entity_type.name = find_unique_name(
-            self.entity_type.name,
-            [tp.name for tp in self.workspace.types if isinstance(tp, DataType)],
+        new_data.entity_type.name = get_unique_name_from_entities(
+            self.entity_type.name, self.workspace.types, types=Data
         )
 
         if self.data_maps is not None:
-            for name, child in self.data_maps.items():
-                new_data.add_data_map(name, child.entity_type.value_map.map)
+            data_maps = {}
+            for child in self.data_maps.values():
+                geometric_data = new_data.copy_data_map(child, clear_cache=clear_cache)
+                if geometric_data:
+                    data_maps[geometric_data.name] = geometric_data
+
+            if data_maps:
+                new_data.data_maps = data_maps
 
         return new_data
+
+    def copy_data_map(
+        self,
+        data_map: GeometricDataConstants,
+        name: str | None = None,
+        clear_cache=True,
+    ) -> GeometricDataConstants | None:
+        """
+        Create a copy with unique name of a GeometricDataConstant entity.
+
+        :param data_map: An existing GeometricDataConstant to be copied.
+        :param name: Name assigned to the data_map, or increments the original.
+        :param clear_cache: Clear array attributes after copy.
+        """
+        name = get_unique_name_from_entities(
+            name or data_map.name,
+            self.parent.children,
+            types=GeometricDataConstants,
+        )
+        data_type = self.parent.add_data_map_type(
+            name, data_map.entity_type.value_map.map, self.entity_type.name
+        )
+
+        geometric_data = cast(
+            GeometricDataConstants,
+            self.workspace.copy_to_parent(
+                data_map,
+                self.parent,
+                clear_cache=clear_cache,
+                name=name,
+            ),
+        )
+
+        # TODO: Clean up after GEOPY-2427
+        if not geometric_data:
+            return None
+
+        geometric_data.entity_type = data_type
+        return geometric_data
 
     @property
     def data_maps(self) -> dict[str, GeometricDataConstants] | None:
@@ -89,9 +132,7 @@ class ReferencedData(IntegerData):
             data_maps = {}
             for name, uid in self.metadata.items():
                 child = self.workspace.get_entity(uid)[0]
-                if isinstance(child, GeometricDataConstants) and isinstance(
-                    child.entity_type, GeometricDataValueMapType
-                ):
+                if isinstance(child, GeometricDataConstants):
                     data_maps[name] = child
 
             if data_maps:
@@ -111,7 +152,7 @@ class ReferencedData(IntegerData):
                     )
 
                 if (
-                    not isinstance(val.entity_type, GeometricDataValueMapType)
+                    not hasattr(val.entity_type, "value_map")
                     or val.entity_type.value_map is None
                 ):
                     raise ValueError(
@@ -127,23 +168,6 @@ class ReferencedData(IntegerData):
             self.workspace.update_attribute(self, "data_map")
 
     @property
-    def entity_type(self) -> ReferenceDataType:
-        """
-        The associated reference data type.
-        """
-        return self._entity_type
-
-    @entity_type.setter
-    def entity_type(self, data_type: ReferenceDataType):
-        if not isinstance(data_type, ReferenceDataType):
-            raise TypeError("entity_type must be of type ReferenceDataType")
-
-        self._entity_type = data_type
-
-        if self.on_file:
-            self.workspace.update_attribute(self, "entity_type")
-
-    @property
     def mapped_values(self) -> np.ndarray:
         """
         The values mapped from the reference data.
@@ -152,10 +176,6 @@ class ReferencedData(IntegerData):
             raise ValueError("Entity type must have a value map.")
 
         return self.value_map.map_values(self.values)
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.REFERENCED
 
     @property
     def value_map(self) -> ReferenceValueMap | None:
@@ -182,46 +202,13 @@ class ReferencedData(IntegerData):
         del self.data_maps[name]
         self.data_maps = self._data_maps
 
-    def add_data_map(self, name: str, data: np.ndarray | dict):
+    def add_data_map(self, name: str, values: np.ndarray | dict, public: bool = True):
         """
         Add a data map to the value map.
 
         :param name: The name of the data map.
-        :param data: The data map to add.
+        :param values: The data map to add.
+        :param public: Whether the data map should be public.
         """
-        value_map = self.data_maps or {}
-
-        if name in value_map:
-            raise KeyError(f"Data map '{name}' already exists.")
-
-        if not isinstance(data, dict | np.ndarray):
-            raise TypeError("Data map values must be a numpy array or dict")
-
-        if self.entity_type.value_map is None:
-            raise ValueError("Entity type must have a value map.")
-
-        reference_data = ReferenceValueMap(data, name=name)
-        # TODO: Enforce that the keys of the data map are a subset
-        #  of the value map keys once GA changes its behavior
-        # if not set(reference_data.map["Key"]).issubset(
-        #     set(self.entity_type.value_map.map["Key"])
-        # ):
-        #     raise KeyError("Data map keys must be a subset of the value map keys.")
-        #
-
-        data_type = GeometricDataValueMapType(
-            self.workspace,
-            value_map=reference_data,
-            parent=self.parent,
-            name=self.entity_type.name + f": {name}",
-        )
-        geom_data = self.parent.add_data(
-            {
-                name: {
-                    "association": self.association,
-                    "entity_type": data_type,
-                }
-            }
-        )
-        value_map[name] = geom_data
-        self.data_maps = value_map
+        data = self.parent.add_data_map(self, name, values, public)
+        return data

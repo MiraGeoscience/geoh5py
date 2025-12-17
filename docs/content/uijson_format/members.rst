@@ -64,7 +64,8 @@ dependencyType
 ^^^^^^^^^^^^^^
 ``str``
 Provides the behaviour when the dependency is enabled.  If ``enabled``, the current parameter's enabled state will
-match the dependency, if ``disabled`` it will be the opposite of it's dependency.
+match the dependency, if ``disabled`` it will be the opposite of its dependency.  Alternatively, a ``show`` or
+``hide`` string may be used to control the visibility of the dependent parameter
 
 groupDependency
 ^^^^^^^^^^^^^^^

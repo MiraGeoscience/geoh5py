@@ -1,20 +1,48 @@
-[tool.poetry]
-name = "geoh5py"
-version = "0.11.0"
-
-license = "LGPL-3.0-or-later"
-description = "Python API for geoh5, an open file format for geoscientific data"
-authors = ["Mira Geoscience <support@mirageoscience.com>"]
-repository = "https://github.com/MiraGeoscience/geoh5py"
-maintainers = [
-    "Benjamin Kary <benjamink@mirageoscience.com>",
-    "Dominique Fournier <dominiquef@mirageoscience.com>",
-    "Matthieu Cedou <matthieuc@mirageoscience.com>",
+[build-system]
+requires = [
+  "poetry-core>=1.8.0",
+  "poetry-dynamic-versioning>=1.9.1,<2.0",
+  # list dependencies to work with PIP_NO_DEPS=1
+  "MarkupSafe>=2.0",
+  "dunamai>=1.25,<2.0",
+  "jinja2>=3.0,<4.0",
+  "packaging>=24.0",
+  "tomlkit>=0.13",
 ]
-documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
-homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
-readme = "package.rst"
+build-backend = "poetry_dynamic_versioning.backend"
+
+[project]
+name = "geoh5py"
+requires-python = ">=3.10,<4.0"
+
+
+description = "Python API for geoh5, an open file format for geoscientific data"
+license = "LGPL-3.0-or-later"
+license-files = [
+    "COPYING",
+    "COPYING.LESSER",
+    "docs/THIRD_PARTY_SOFTWARE.rst",
+]
 keywords = ["geology", "geophysics", "data", "interoperability"]
+readme = "package.rst"
+dynamic = ["version", "dependencies", "classifiers"]
+authors = [
+    { name = "Mira Geoscience", email = "support@mirageoscience.com" }
+]
+maintainers = [
+    { name = "Benjamin Kary", email = "benjamink@mirageoscience.com" },
+    { name = "Dominique Fournier", email = "dominiquef@mirageoscience.com" },
+    { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
+]
+
+[project.urls]
+homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
+repository = "https://github.com/MiraGeoscience/geoh5py"
+documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
+
+[tool.poetry]
+requires-poetry = '>=2.0,<3.0'
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -30,28 +58,21 @@ classifiers = [
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
 include = [
-    { path = "COPYING" },
-    { path = "COPYING.LESSER" },
-    { path = "LICENSE" },
-    { path = "README.rst" },
-    { path = "THIRD_PARTY_SOFTWARE.rst" },
-    { path = "docs/**/THIRD_PARTY_SOFTWARE.rst" },
+    { path = "geoh5py/_version.py", format = ["sdist", "wheel"] },
 ]
+version = "0.0.0.dev0"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-
 h5py = "^3.2.1"
 numpy = "~1.26.0"
 Pillow = "~10.3.0"
-pydantic = "^2.5.2"
+pydantic = "~2.11"
 
 [tool.poetry.group.dev.dependencies]
-jinja2 = '*'
 lockfile = "^0.12.2"
 packaging = '*'
 Pygments = "*"
-pylint = ">=3.3.1"
+pylint = "*"
 pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
@@ -59,9 +80,35 @@ scipy = "~1.14.0"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
-tomli = "*"
+h5py = "^3.14.0"
 
-[tool.poetry.extras]
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.9.1,<2.0.0", extras = ["plugin"] }
+
+[tool.poetry-dynamic-versioning]
+bump = true
+enable = true
+fix-shallow-repository = true
+strict = true
+style = "pep440"
+vcs = "git"
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["geoh5py/_version.py", "recipe.yaml"]
+patterns = [
+    { value = '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''', mode = "str" },
+    { value = '''(^\s*version\s*(?::.*?)?:\s*['"])[^'"]*(['"])''', mode = "str" },
+]
+
+[tool.poetry-dynamic-versioning.files."geoh5py/_version.py"]
+persistent-substitution = true
+initial-content = """
+  # Version placeholder that will be replaced during substitution
+  __version__ = "0.0.0"
+"""
+
+[tool.poetry-dynamic-versioning.files."recipe.yaml"]
+persistent-substitution = true
 
 [tool.ruff]
 target-version = "py310"
@@ -146,7 +193,3 @@ fail_under = 90
 [tool.coverage.html]
 skip_empty = true
 skip_covered = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0", "setuptools"]
-build-backend = "poetry.core.masonry.api"

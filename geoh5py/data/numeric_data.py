@@ -26,7 +26,7 @@ from warnings import warn
 
 import numpy as np
 
-from .data import Data, PrimitiveTypeEnum
+from .data import Data
 
 
 logger = logging.getLogger(__name__)
@@ -36,10 +36,6 @@ class NumericData(Data, ABC):
     """
     Data container for floats values
     """
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.INVALID
 
     @property
     @abstractmethod

@@ -82,6 +82,9 @@ class BaseSurvey(ObjectBase, ABC):
             **kwargs,
         )
 
+        if not new_entity:
+            return None
+
         if self.metadata is not None:
             new_entity.metadata = copy_no_reference(self.metadata)
 

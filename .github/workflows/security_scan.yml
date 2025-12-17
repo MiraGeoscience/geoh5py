@@ -1,0 +1,43 @@
+name: Security Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
+  push:
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  call-workflow-zizmor-annotate:
+    name: Zizmor analysis (advanced security)
+    if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-advanced-security.yml@v2
+
+  call-workflow-zizmor-advanced-security:
+    name: Zizmor analysis (annotate)
+    if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      checks: write
+      contents: read
+      actions: read
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-annotate.yml@v2

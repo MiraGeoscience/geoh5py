@@ -27,6 +27,7 @@ import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
+from geoh5py.groups import PropertyGroup
 from geoh5py.objects import Curve, Points, Surface
 from geoh5py.ui_json.forms import (
     Association,
@@ -37,11 +38,32 @@ from geoh5py.ui_json.forms import (
     DataType,
     FileForm,
     FloatForm,
+    GroupForm,
     IntegerForm,
     MultiChoiceForm,
     ObjectForm,
+    RadioLabelForm,
     StringForm,
 )
+from geoh5py.ui_json.ui_json import BaseUIJson
+
+
+def setup_from_uijson(workspace, form):
+    class MyUIJson(BaseUIJson):
+        my_param: type(form)
+
+    uijson = MyUIJson.model_construct(
+        version="blahblah",
+        title="my title",
+        geoh5=workspace.h5file,
+        run_command="whatever",
+        monitoring_directory="don't care",
+        conda_environment="don't have one",
+        my_param=form,
+    )
+    uijson.write(workspace.h5file.parent / "test.ui.json")
+    uijson = MyUIJson.read(workspace.h5file.parent / "test.ui.json")
+    return uijson.my_param
 
 
 def test_base_form():
@@ -88,7 +110,7 @@ def test_dependency_type_enum():
     assert form.dependency_type == "enabled"
 
     with pytest.raises(
-        ValidationError, match="Input should be 'enabled' or 'disabled'"
+        ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
         _ = BaseForm(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
@@ -104,6 +126,15 @@ def test_base_form_serieralization():
     assert "dependencyType" in json
 
 
+def test_hide_dependency_type(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as ws:
+        form = StringForm(
+            label="name", value="test", dependency="my_param", dependency_type="show"
+        )
+        form = setup_from_uijson(ws, form)
+        assert form.dependency_type == "show"
+
+
 def test_string_form():
     form = StringForm(label="name", value="test")
     assert form.label == "name"
@@ -111,6 +142,19 @@ def test_string_form():
     msg = "Input should be a valid string"
     with pytest.raises(ValueError, match=msg):
         _ = StringForm(label="name", value=1)
+
+
+def test_radio_label_form():
+    form = RadioLabelForm(
+        label="model type",
+        original_label="conductivity",
+        alternate_label="resistivity",
+        value="conductivity",
+    )
+    assert form.label == "model type"
+    assert form.original_label == "conductivity"
+    assert form.alternate_label == "resistivity"
+    assert form.value == "conductivity"
 
 
 def test_bool_form():
@@ -177,60 +221,105 @@ def test_multi_choice_form():
 
 
 def test_file_form(tmp_path):
-    paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
-    _ = [p.touch() for p in paths]
-    form = FileForm(
-        label="file",
-        value=str(paths[0]),
-        file_description=["something"],
-        file_type=["ext"],
-    )
-    assert form.label == "file"
-    assert form.value == [paths[0]]
-    assert form.file_description == ["something"]
-    assert form.file_type == ["ext"]
-    assert not form.file_multi
-    assert 'my_file.ext",' in form.json_string
+    with Workspace.create(tmp_path / "test.geoh5") as geoh5:
+        paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
+        _ = [p.touch() for p in paths]
 
-    form = FileForm(
-        label="file",
-        value=";".join([str(p) for p in paths]),
-        file_description=["something"],
-        file_type=["ext"],
-        file_multi=True,
-    )
-    assert form.label == "file"
-    assert form.value == paths
-    assert form.file_description == ["something"]
-    assert form.file_type == ["ext"]
-    assert form.file_multi
-
-    msg = "does not exist"
-    with pytest.raises(ValidationError, match=msg):
-        _ = FileForm(
+        file_form = FileForm(
             label="file",
-            value=str(tmp_path / "not_a_file.ext"),
+            value=paths[0],
             file_description=["something"],
             file_type=["ext"],
         )
 
-    msg = "File description and type lists must be the same length"
-    with pytest.raises(ValidationError, match=msg):
-        _ = FileForm(
-            label="file",
-            value=str(paths[0]),
-            file_description=["something", "else"],
-            file_type=["ext"],
-        )
+        file_form = setup_from_uijson(geoh5, file_form)
 
-    msg = "have invalid extensions"
-    with pytest.raises(ValidationError, match=msg):
-        _ = FileForm(
+        assert file_form.label == "file"
+        assert file_form.value == [paths[0]]
+        assert file_form.file_description == ["something"]
+        assert file_form.file_type == ["ext"]
+        assert not file_form.file_multi
+        assert 'my_file.ext",' in file_form.json_string
+
+        file_form = FileForm(
             label="file",
-            value=str(paths[0]),
+            value=";".join([str(p) for p in paths]),
             file_description=["something"],
-            file_type=["doc"],
+            file_type=["ext"],
+            file_multi=True,
         )
+        file_form = setup_from_uijson(geoh5, file_form)
+
+        assert file_form.label == "file"
+        assert file_form.value == paths
+        assert file_form.file_description == ["something"]
+        assert file_form.file_type == ["ext"]
+        assert file_form.file_multi
+
+        msg = "does not exist"
+        with pytest.raises(ValidationError, match=msg):
+            form = FileForm.model_construct(
+                label="file",
+                value=str(tmp_path / "not_a_file.ext"),
+                file_description=["something"],
+                file_type=["ext"],
+            )
+            setup_from_uijson(geoh5, form)
+
+        msg = "File description and type lists must be the same length"
+        with pytest.raises(ValidationError, match=msg):
+            form = FileForm.model_construct(
+                label="file",
+                value=[paths[0]],
+                file_description=["something", "else"],
+                file_type=["ext"],
+            )
+            setup_from_uijson(geoh5, form)
+
+        msg = "have invalid extensions"
+        with pytest.raises(ValidationError, match=msg):
+            form = FileForm.model_construct(
+                label="file",
+                value=[paths[0]],
+                file_description=["something"],
+                file_type=["doc"],
+            )
+            setup_from_uijson(geoh5, form)
+
+
+def test_directory_form(tmp_path):
+    file_form = FileForm(
+        label="working directory",
+        file_description=["Directory"],
+        file_type=["directory"],
+        directory_only=True,
+        value=str(tmp_path),
+    )
+    with Workspace.create(tmp_path / "test.geoh5") as geoh5:
+        file_form = setup_from_uijson(geoh5, file_form)
+        assert file_form.value[0] == tmp_path
+
+        with pytest.raises(ValidationError, match="File type must be"):
+            file_form = FileForm.model_construct(
+                label="working directory",
+                file_description=["Directory"],
+                file_type=["ext"],
+                directory_only=True,
+                value=[str(tmp_path)],
+            )
+            file_form = setup_from_uijson(geoh5, file_form)
+            assert True
+
+        with pytest.raises(ValidationError, match="File description must be"):
+            file_form = FileForm(
+                label="working directory",
+                file_description=["something else"],
+                file_type=["directory"],
+                directory_only=True,
+                value=[str(tmp_path)],
+            )
+            file_form = setup_from_uijson(geoh5, file_form)
+            assert True
 
 
 def test_object_form():
@@ -381,3 +470,59 @@ def test_flatten():
     )
 
     assert str(form.flatten()) == data_uid
+
+
+def test_base_form_infer(tmp_path):
+    form = BaseForm.infer({"label": "test", "value": "test"})
+    assert form == StringForm
+    form = BaseForm.infer({"label": "test", "value": 1})
+    assert form == IntegerForm
+    form = BaseForm.infer({"label": "test", "value": 1.0})
+    assert form == FloatForm
+    form = BaseForm.infer({"label": "test", "value": True})
+    assert form == BoolForm
+    form = BaseForm.infer(
+        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]}
+    )
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points}
+    )
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+        }
+    )
+    assert form == DataForm
+    form = BaseForm.infer(
+        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())}
+    )
+    assert form == GroupForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": tmp_path,
+            "directoryOnly": True,
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
+        }
+    )
+    assert form == FileForm
+    form = BaseForm.infer(
+        {"label": "test", "value": "test", "choiceList": ["test", "other"]}
+    )
+    assert form == ChoiceForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "multiSelect": True,
+            "value": ["test", "other"],
+            "choice_list": ["test", "other", "another"],
+        }
+    )
+    assert form == MultiChoiceForm

@@ -18,9 +18,9 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-from geoh5py import TYPE_UID_TO_CLASS, get_type_uid_classes
 from geoh5py.groups import ContainerGroup, SimPEGGroup, UIJsonGroup
 from geoh5py.objects import Curve, Points, Surface
+from geoh5py.workspace import TYPE_UID_TO_CLASS, get_type_uid_classes
 
 
 def test_get_objects_with_type_uid():

@@ -42,11 +42,12 @@ from weakref import ReferenceType
 import h5py
 import numpy as np
 
-from .. import data, groups, objects
-from ..data import CommentsData, Data, DataType, PrimitiveTypeEnum
-from ..data.text_data import TextData
-from ..data.visual_parameters import VisualParameters
-from ..groups import (
+from geoh5py import data, groups, objects
+from geoh5py.data import CommentsData, Data, PrimitiveTypeEnum
+from geoh5py.data.data_type import DataType
+from geoh5py.data.text_data import TextData
+from geoh5py.data.visual_parameters import VisualParameters
+from geoh5py.groups import (
     CustomGroup,
     DrillholeGroup,
     Group,
@@ -54,11 +55,11 @@ from ..groups import (
     PropertyGroup,
     RootGroup,
 )
-from ..io import H5Reader, H5Writer
-from ..io.utils import str_from_subtype, str_from_type
-from ..objects import Drillhole, ObjectBase
-from ..shared import weakref_utils
-from ..shared.concatenation import (
+from geoh5py.io import H5Reader, H5Writer
+from geoh5py.io.utils import str_from_subtype, str_from_type
+from geoh5py.objects import Drillhole, ObjectBase
+from geoh5py.shared import weakref_utils
+from geoh5py.shared.concatenation import (
     Concatenated,
     ConcatenatedData,
     ConcatenatedDrillhole,
@@ -66,12 +67,13 @@ from ..shared.concatenation import (
     ConcatenatedPropertyGroup,
     Concatenator,
 )
-from ..shared.entity import Entity
-from ..shared.entity_type import EntityType
-from ..shared.exceptions import Geoh5FileClosedError
-from ..shared.utils import (
+from geoh5py.shared.entity import Entity
+from geoh5py.shared.entity_type import EntityType
+from geoh5py.shared.exceptions import Geoh5FileClosedError
+from geoh5py.shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
+    dict_mapper,
     get_attributes,
     str2uuid,
 )
@@ -88,6 +90,22 @@ NETWORK_DRIVES = [
     "Box",
     "iCloud",
 ]
+
+
+def get_type_uid_classes():
+    members = []
+    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
+        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
+            members.append(member)
+
+    return members
+
+
+TYPE_UID_TO_CLASS = {
+    k.default_type_uid(): k
+    for k in get_type_uid_classes()
+    if k.default_type_uid() is not None
+}
 
 
 # pylint: disable=too-many-instance-attributes
@@ -249,14 +267,15 @@ class Workspace(AbstractContextManager):
     def contributors(self, value: list[str]):
         self._contributors = np.asarray(value, dtype=h5py.special_dtype(vlen=str))
 
+    # TODO Simplify return type to Entity on GEOPY-2427
     def copy_to_parent(
         self,
-        entity,
+        entity: Entity,
         parent,
         omit_list: tuple = (),
         clear_cache: bool = False,
         **kwargs,
-    ):
+    ) -> Entity | None:
         """
         Copy an entity to a different parent with copies of children.
 
@@ -314,8 +333,6 @@ class Workspace(AbstractContextManager):
         entity_kwargs["parent"] = parent
 
         entity_type = type(entity)
-        if isinstance(entity, Data):
-            entity_type = Data
 
         entity_kwargs.pop("property_groups", None)
 
@@ -344,7 +361,9 @@ class Workspace(AbstractContextManager):
         for prop_group in property_groups:
             properties = None
             if prop_group.properties is not None:
-                properties = [data_map[uid] for uid in prop_group.properties]
+                properties = [
+                    data_map[uid] for uid in prop_group.properties if uid in data_map
+                ]
 
             # prepare the kwargs
             property_group_kwargs = {
@@ -423,39 +442,30 @@ class Workspace(AbstractContextManager):
                 f"got {type(entity_type)}."
             )
 
-        for name, member in inspect.getmembers(data):
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class)
-                and member is not entity_class
-                and hasattr(member, "primitive_type")
-                and inspect.ismethod(member.primitive_type)
-                and entity_type.primitive_type is member.primitive_type()
-            ):
-                if member is CommentsData and not any(
-                    isinstance(val, str) and val == "UserComments"
-                    for val in entity.values()
-                ):
-                    continue
+        type_enum = getattr(PrimitiveTypeEnum, entity_type.primitive_type.name, None)
 
-                if self.version > 1.0 and isinstance(
-                    entity["parent"], ConcatenatedObject
-                ):
-                    member = type("Concatenated" + name, (ConcatenatedData, member), {})
+        if type_enum is None or not issubclass(type_enum.value, Data):
+            raise TypeError(
+                f"Data type {entity_class} not found in {entity_type.primitive_type}."
+            )
 
-                if member is TextData and any(
-                    isinstance(val, str) and "Visual Parameters" == val
-                    for val in entity.values()
-                ):
-                    member = VisualParameters
+        member = type_enum.value
 
-                created_entity = member(entity_type=entity_type, **entity)
+        if self.version > 1.0 and isinstance(entity["parent"], ConcatenatedObject):
+            member = type(
+                "Concatenated" + member.__name__, (ConcatenatedData, member), {}
+            )
 
-                return created_entity
+        if member is TextData:
+            if entity.get("name", None) == "Visual Parameters":
+                member = VisualParameters
 
-        raise TypeError(
-            f"Data type {entity_class} not found in {entity_type.primitive_type}."
-        )
+            if entity.get("name", None) == "UserComments":
+                member = CommentsData
+
+        created_entity = member(entity_type=entity_type, **entity)
+
+        return created_entity
 
     def create_entity(
         self,
@@ -493,7 +503,7 @@ class Workspace(AbstractContextManager):
             return created_data
 
         created_entity = self.create_object_or_group(entity_class, entity, entity_type)
-        if save_on_creation and self.h5file is not None:
+        if created_entity is not None and save_on_creation and self.h5file is not None:
             self.save_entity(created_entity, compression=compression)
         return created_entity
 
@@ -516,7 +526,7 @@ class Workspace(AbstractContextManager):
 
     def create_object_or_group(
         self, entity_class, entity: dict, entity_type: dict | EntityType
-    ) -> Group | ObjectBase:
+    ) -> Group | ObjectBase | None:
         """
         Create an object or a group with attributes.
 
@@ -542,41 +552,34 @@ class Workspace(AbstractContextManager):
             else:
                 entity_type_uid = uuid.uuid4()
 
-        for name, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-            if (
-                inspect.isclass(member)
-                and issubclass(member, entity_class.__bases__)
-                and member is not entity_class.__bases__
-                and not member == CustomGroup
-                and member.default_type_uid() == entity_type_uid
+        member = TYPE_UID_TO_CLASS.get(entity_type_uid, None)
+
+        if member is None:
+            # Special case for CustomGroup without uuid
+            if entity_class == Group:
+                entity_type = CustomGroup.find_or_create_type(self, **entity_type)
+                return CustomGroup(entity_type=entity_type, **entity)
+
+            logger.warning(
+                "Entity class type %s not recognized for uid %s. Skipping.",
+                entity_class,
+                entity_type_uid,
+            )
+            return None
+
+        if self.version > 1.0:
+            if member in (DrillholeGroup, IntegratorDrillholeGroup):
+                member = type(
+                    "Concatenator" + member.__name__, (Concatenator, member), {}
+                )
+            elif member is Drillhole and isinstance(
+                entity.get("parent"),
+                (DrillholeGroup, IntegratorDrillholeGroup),
             ):
-                if self.version > 1.0:
-                    if member in (DrillholeGroup, IntegratorDrillholeGroup):
-                        member = type("Concatenator" + name, (Concatenator, member), {})
-                    elif member is Drillhole and isinstance(
-                        entity.get("parent"),
-                        (DrillholeGroup, IntegratorDrillholeGroup),
-                    ):
-                        member = ConcatenatedDrillhole
+                member = ConcatenatedDrillhole
 
-                entity_type = member.find_or_create_type(self, **entity_type)
-
-                created_entity = member(entity_type=entity_type, **entity)
-
-                return created_entity
-
-        # Special case for CustomGroup without uuid
-        if entity_class == Group:
-            entity_type = groups.custom.CustomGroup.find_or_create_type(
-                self, **entity_type
-            )
-            created_entity = groups.custom.CustomGroup(
-                entity_type=entity_type, **entity
-            )
-
-            return created_entity
-
-        raise TypeError(f"Entity class type {entity_class} not recognized.")
+        entity_type = member.find_or_create_type(self, **entity_type)
+        return member(entity_type=entity_type, **entity)
 
     def create_root(
         self, entity_attributes: dict | None = None, type_attributes: dict | None = None
@@ -1285,6 +1288,37 @@ class Workspace(AbstractContextManager):
         self.fetch_or_create_root()
 
         return self
+
+    def promote(self, value: Any) -> Any:
+        """
+        Promote uuid to entity as it is or in a nested structure.
+
+        :param value: The value to promote.
+
+        :return: The promoted value.
+        """
+
+        def promote_uid(val: Any) -> Any:
+            """
+            Promote a uuid to an entity if it exists in the workspace.
+
+            If not, return the value as is.
+
+            :param val: The value to promote.
+
+            :return: The promoted value if possible or the value as is.
+            """
+            if isinstance(val, uuid.UUID):
+                loaded_val = self.get_entity(val)[0]
+                if loaded_val is not None:
+                    return loaded_val
+
+            return val
+
+        if isinstance(value, dict):
+            value = value.copy()
+
+        return dict_mapper(value, [str2uuid, promote_uid])
 
     def register(self, entity: Entity | EntityType | PropertyGroup):
         """

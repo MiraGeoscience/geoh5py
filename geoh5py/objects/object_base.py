@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 from warnings import warn
 
@@ -34,8 +34,11 @@ from ..data import (
     Data,
     DataAssociationEnum,
     GeometricDataConstants,
+    ReferencedData,
+    ReferenceValueMap,
     VisualParameters,
 )
+from ..data.data_type import GeometricDataValueMapType
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
 from ..shared import Entity
 from ..shared.conversion import BaseConversion
@@ -44,6 +47,9 @@ from ..shared.utils import (
     array_is_colour,
     box_intersect,
     clear_array_attributes,
+    extract_uids,
+    find_unique_name,
+    get_unique_name_from_entities,
     mask_by_extent,
     str2uuid,
 )
@@ -174,12 +180,25 @@ class ObjectBase(EntityContainer):
 
         property_groups: dict[PropertyGroup | None, list[Data]] = {}
         data_objects = []
+
+        names = [child.name for child in self.children if isinstance(child, Data)]
+
         for name, attr in data.items():
             if not isinstance(attr, dict):
                 raise TypeError(
                     f"Given value to data {name} should of type {dict}. "
                     f"Type {type(attr)} given instead."
                 )
+
+            if name == "Visual Parameters":
+                logger.warning(
+                    "Visual Parameters should not be added as data. "
+                    "Use the 'visual_parameters' property instead."
+                )
+                continue
+
+            name = find_unique_name(name, names)
+            names.append(name)
 
             attr, validate_property_group = self.validate_association(
                 {**attr, "name": name}, property_group=property_group, **kwargs
@@ -192,7 +211,7 @@ class ObjectBase(EntityContainer):
                     **{
                         key: val
                         for key, val in attr.items()
-                        if key not in ["parent", "entity_type", "type"]
+                        if key not in ["parent", "entity_type", "type", "visible"]
                     },
                 },
                 entity_type=self.workspace.validate_data_type(attr, attr.get("values")),
@@ -203,6 +222,7 @@ class ObjectBase(EntityContainer):
             if isinstance(data_object, VisualParameters):
                 self.visual_parameters = data_object
 
+            data_object.visible = attr.get("visible", False)
             property_groups.setdefault(validate_property_group, []).append(data_object)
             data_objects.append(data_object)
 
@@ -221,6 +241,78 @@ class ObjectBase(EntityContainer):
             return data_objects[0]
 
         return data_objects
+
+    def add_data_map(
+        self, data: ReferencedData, name: str, values: dict, public: bool = True
+    ) -> GeometricDataConstants:
+        """
+        Add a data map to the reference data under the object.
+
+        :param data: The referenced data to add the map to.
+        :param name: The name of the data map.
+        :param values: The values to add to the data map.
+        :param public: Whether the data map is public or not.
+        """
+        data_maps = data.data_maps or {}
+
+        name = get_unique_name_from_entities(
+            name, self.children, types=GeometricDataConstants
+        )
+
+        if data.entity_type.value_map is None:
+            raise ValueError("Entity type must have a value map.")
+
+        # TODO: Enforce that the keys of the data map are a subset
+        #  of the value map keys once GA changes its behavior
+        # if not set(reference_data.map["Key"]).issubset(
+        #     set(self.entity_type.value_map.map["Key"])
+        # ):
+        #     raise KeyError("Data map keys must be a subset of the value map keys.")
+
+        data_type = self.add_data_map_type(name, values, data.entity_type.name)
+
+        geom_data = cast(
+            GeometricDataConstants,
+            self.add_data(
+                {
+                    name: {
+                        "association": data.association,
+                        "entity_type": data_type,
+                        "public": public,
+                    }
+                }
+            ),
+        )
+        data_maps[name] = geom_data
+        data.data_maps = data_maps
+
+        return geom_data
+
+    def add_data_map_type(
+        self,
+        name: str,
+        values: np.ndarray | dict,
+        entity_type_name: str,
+    ) -> GeometricDataValueMapType:
+        """
+        Add a data map type to the object.
+
+        :param name: The name of the data map type.
+        :param values: The values to add to the data map type.
+        :param entity_type_name: The name of the entity type for the data map type.
+
+        :return: The created Data object.
+        """
+        reference_data = ReferenceValueMap(values, name=name)
+
+        data_type = GeometricDataValueMapType(
+            self.workspace,
+            value_map=reference_data,
+            parent=self,
+            name=entity_type_name + f": {name}",
+        )
+
+        return data_type
 
     def add_data_to_group(
         self,
@@ -287,6 +379,7 @@ class ObjectBase(EntityContainer):
         copy_children: bool = True,
         clear_cache: bool = False,
         mask: np.ndarray | None = None,
+        cherry_pick_children: list[UUID | Data] | None = None,
         **kwargs,
     ):
         """
@@ -295,7 +388,8 @@ class ObjectBase(EntityContainer):
         :param parent: New parent for the copied object.
         :param copy_children: Copy children entities.
         :param clear_cache: Clear cache of data values.
-        :param mask: Array of indices to sub-sample the input entity.
+        :param mask: A boolean mask of the data to keep.
+        :param cherry_pick_children: List of uids to pick out the data values.
         :param kwargs: Additional keyword arguments.
 
         :return: New copy of the input entity.
@@ -307,11 +401,20 @@ class ObjectBase(EntityContainer):
             **kwargs,
         )
 
+        # TODO: Clean up after GEOPY-2427
+        if not new_object:
+            return None
+
         mask = self.validate_mask(mask)
 
-        if copy_children:
+        cherry_pick_uids = extract_uids(cherry_pick_children)
+
+        if copy_children or cherry_pick_uids is not None:
             children_map = {}
             for child in self.children:
+                if cherry_pick_uids is not None and child.uid not in cherry_pick_uids:
+                    continue
+
                 if isinstance(child, PropertyGroup | GeometricDataConstants):
                     continue
 
@@ -321,11 +424,12 @@ class ObjectBase(EntityContainer):
                     mask=mask,
                 )
 
-                children_map[child.uid] = child_copy.uid
+                if child_copy:
+                    children_map[child.uid] = child_copy.uid
 
             if self.property_groups:
                 self.workspace.copy_property_groups(
-                    new_object, self.property_groups, children_map
+                    cast(ObjectBase, new_object), self.property_groups, children_map
                 )
                 new_object.workspace.update_attribute(new_object, "property_groups")
 

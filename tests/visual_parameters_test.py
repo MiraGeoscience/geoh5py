@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pytest
 
@@ -27,7 +29,7 @@ from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
-def test_visual_parameters(tmp_path):
+def test_visual_parameters(tmp_path, caplog):
     name = "MyTestPointset"
 
     # Generate a random cloud of points with reference values
@@ -71,17 +73,17 @@ def test_visual_parameters(tmp_path):
         assert points.visual_parameters.uid == viz_params_b.uid
         assert viz_params not in points.children
 
-        vp3 = points.add_data(
-            {
-                "Visual Parameters": {
-                    "name": "Visual Parameters",
-                    "association": "OBJECT",
-                    "primitive_type": "TEXT",
+        with caplog.at_level(logging.WARNING):
+            points.add_data(
+                {
+                    "Visual Parameters": {
+                        "name": "Visual Parameters",
+                        "association": "OBJECT",
+                        "primitive_type": "TEXT",
+                    }
                 }
-            }
-        )
-
-        assert points.visual_parameters.uid == vp3.uid
+            )
+        assert any("Visual Parameters should not" in m for m in caplog.messages)
 
         with pytest.raises(UserWarning, match="Visual parameters already exist"):
             points.add_default_visual_parameters()

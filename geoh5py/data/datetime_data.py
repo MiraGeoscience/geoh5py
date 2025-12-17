@@ -20,14 +20,13 @@
 
 from __future__ import annotations
 
-from .data import PrimitiveTypeEnum
 from .text_data import TextData
 
 
 class DatetimeData(TextData):
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.DATETIME
+    """
+    DatetimeData class for storing datetime values in a geoh5 file.
+    """
 
     # TODO: implement specialization to access values.
     # Stored as a 1D array of variable-length strings formatted according to the ISO 8601

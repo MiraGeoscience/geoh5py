@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 import h5py
@@ -80,7 +81,7 @@ def test_non_ascii_path_geoh5(tmp_path: Path):
     workspace = Workspace.create(path / "test.geoh5")
     workspace.close()
 
-    ifile = InputFile(ui_json=default_ui_json)
+    ifile = InputFile(ui_json=deepcopy(default_ui_json))
     ifile.update_ui_values({"geoh5": workspace})
     ifile.write_ui_json("test.ui.json", path)
 

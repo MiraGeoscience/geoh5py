@@ -20,14 +20,15 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from io import BytesIO
-from json import loads
+from json import dumps, loads
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from uuid import NAMESPACE_DNS, UUID, uuid5
 from warnings import warn
 
 import h5py
@@ -39,6 +40,7 @@ from .exceptions import Geoh5FileClosedError
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
+    from .entity_container import EntityContainer
 
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
@@ -89,7 +91,9 @@ INV_KEY_MAP = {
     "Name": "name",
     "Number of bins": "number_of_bins",
     "NU": "u_count",
+    "Nu": "u_count",
     "NV": "v_count",
+    "Nv": "v_count",
     "NW": "w_count",
     "options": "options",
     "Object": "OBJECT",
@@ -122,9 +126,11 @@ INV_KEY_MAP = {
     "U Cell Size": "u_cell_size",
     "U Count": "u_count",
     "U Size": "u_cell_size",
+    "U size": "u_cell_size",
     "V Cell Size": "v_cell_size",
     "V Count": "v_count",
     "V Size": "v_cell_size",
+    "V size": "v_cell_size",
     "Vector": "VECTOR",
     "Version": "version",
     "Vertical": "vertical",
@@ -132,6 +138,11 @@ INV_KEY_MAP = {
     "Vertex": "VERTEX",
     "Visible": "visible",
     "W Cell Size": "w_cell_size",
+    "Flag property ID": "flag_property_id",
+    "Heterogeneous property ID": "heterogeneous_property_id",
+    "Physical data name": "physical_data_name",
+    "Unit property ID": "unit_property_id",
+    "Weight property ID": "weight_property_id",
 }
 
 KEY_MAP = {value: key for key, value in INV_KEY_MAP.items()}
@@ -343,7 +354,8 @@ def are_objects_similar(obj1, obj2, ignore: list[str] | None):
 
     :return: If attributes similar or not.
     """
-    assert isinstance(obj1, type(obj2)), "Objects are not the same type."
+    if not isinstance(obj1, type(obj2)):
+        raise TypeError("Objects are not the same type.")
 
     attributes1 = getattr(obj1, "__dict__", obj1)
     attributes2 = getattr(obj2, "__dict__", obj2)
@@ -585,6 +597,7 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     :return val: Transformed values
     """
     if isinstance(val, dict):
+        val = val.copy()
         for key, values in val.items():
             short_list = string_funcs.copy()
             if omit is not None:
@@ -594,13 +607,8 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
 
             val[key] = dict_mapper(values, short_list)
 
-    if isinstance(val, list):
-        out = []
-        for elem in val:
-            for fun in string_funcs:
-                elem = fun(elem, *args)
-            out += [elem]
-        return out
+    if isinstance(val, (list, tuple)):
+        return [dict_mapper(elem, string_funcs) for elem in val]
 
     for fun in string_funcs:
         val = fun(val, *args)
@@ -608,16 +616,24 @@ def dict_mapper(val, string_funcs: list[Callable], *args, omit: dict | None = No
     return val
 
 
-def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
+def box_intersect(
+    extent_a: np.ndarray | Sequence, extent_b: np.ndarray | Sequence
+) -> bool:
     """
     Compute the intersection of two axis-aligned bounding extents defined by their
     arrays of minimum and maximum bounds in N-D space.
 
-    :param extent_a: First extent or shape (2, N)
-    :param extent_b: Second extent or shape (2, N)
+    :param extent_a: First extent coordinated, array or list of shape (2, N)
+    :param extent_b: Second extent coordinated, array or list of shape (2, N)
 
     :return: Logic if the box extents intersect along all dimensions.
     """
+    if isinstance(extent_a, Sequence):
+        extent_a = np.vstack(extent_a)
+
+    if isinstance(extent_b, Sequence):
+        extent_b = np.vstack(extent_b)
+
     for extent in [extent_a, extent_b]:
         if not isinstance(extent, np.ndarray) or extent.ndim != 2:
             raise TypeError("Input extents must be 2D numpy.ndarrays.")
@@ -639,7 +655,7 @@ def box_intersect(extent_a: np.ndarray, extent_b: np.ndarray) -> bool:
 
 
 def mask_by_extent(
-    locations: np.ndarray, extent: np.ndarray, inverse: bool = False
+    locations: np.ndarray, extent: np.ndarray | Sequence, inverse: bool = False
 ) -> np.ndarray:
     """
     Find indices of locations within a rectangular extent.
@@ -652,6 +668,9 @@ def mask_by_extent(
 
     :returns: Array of bool for the locations inside or outside the box extent.
     """
+    if isinstance(extent, Sequence):
+        extent = np.vstack(extent)
+
     if not isinstance(extent, np.ndarray) or extent.ndim != 2:
         raise ValueError("Input 'extent' must be a 2D array-like.")
 
@@ -813,13 +832,19 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     Convert all values in a dictionary to string.
 
     :param values: Dictionary of values to be converted.
-    """
-    string_dict = {}
-    for key, value in values.items():
-        mappers = [nan2str, inf2str, as_str_if_uuid, none2str, path2str]
-        string_dict[key] = dict_mapper(value, mappers)
 
-    return string_dict
+    :return: Dictionary of string values.
+    """
+    mappers = [
+        entity2uuid,
+        nan2str,
+        inf2str,
+        as_str_if_uuid,
+        none2str,
+        workspace2path,
+        path2str,
+    ]
+    return dict_mapper(values, mappers)
 
 
 def to_list(value: Any) -> list:
@@ -915,24 +940,58 @@ def str2none(value):
     return value
 
 
-def find_unique_name(name: str, names: list[str]) -> str:
+def split_name_suffixes(name: str) -> tuple[str, str]:
     """
-    Get a unique name not in a list of names.
-
-    :param name: The name to check.
-    :param names: The list of names to avoid.
-
-    :return: a unique name.
+    Split the base name from its suffixes assuming they are separated by periods.
     """
+    # Split only once from the right to get all suffixes correctly
+    if "." in name:
+        base, suffixes = name.split(".", maxsplit=1)
+        suffixes = f".{suffixes}"
+    else:
+        base = name
+        suffixes = ""
 
-    if name not in names:
+    return base, suffixes
+
+
+def find_unique_name(name: str, names: list[str], case_sensitive=True) -> str:
+    """
+    Generate a unique name not in `names`.
+    If the name ends with (n), increment n until unique.
+    For files with extensions, insert the counter before all extensions.
+
+    :param name: Proposed name.
+    :param names: List of names to avoid.
+    :return: A unique name.
+    """
+    if not isinstance(name, str):
         return name
 
-    count = 1
-    while f"{name}({count})" in names:
-        count += 1
+    if not case_sensitive:
+        names_list = [val.lower() if isinstance(val, str) else val for val in names]
+    else:
+        names_list = names
 
-    return f"{name}({count})"
+    checkname = name.lower() if not case_sensitive else name
+    if checkname not in names_list:
+        return name
+
+    base_part, suffixes = split_name_suffixes(name)
+
+    # Extract and increment count if '(n)' is present
+    match = re.match(r"^(.*?)(?:\((\d+)\))?$", base_part)
+    base = match.group(1)  # type: ignore
+    count = int(match.group(2)) + 1 if match.group(2) else 1  # type: ignore
+
+    while True:
+        candidate = f"{base}({count}){suffixes}"
+        checkname = candidate if case_sensitive else candidate.lower()
+
+        if checkname not in names_list:
+            return candidate
+
+        count += 1
 
 
 def remove_duplicates_in_list(input_list: list) -> list:
@@ -1016,3 +1075,189 @@ def array_is_colour(values: np.ndarray) -> bool:
         and values.shape[1] in (3, 4)
         and np.issubdtype(values.dtype, np.number)
     )
+
+
+def format_numeric_values(
+    input_values: np.ndarray, n_decimals: int, max_chars: int
+) -> np.ndarray:
+    """
+    Format numeric values for display.
+
+    For values that are too long, scientific notation is used.
+    If the value is less than 1, it is rounded to a number of decimals depending on its magnitude.
+    Trailing zeros and decimal points are removed.
+
+    :param input_values: The array of values to format.
+    :param n_decimals: The number of decimal places to round to.
+    :param max_chars: The maximum number of characters for each formatted value.
+
+    :return: An array of formatted strings.
+    """
+    nan_mask = np.isnan(input_values)
+    values = input_values[~nan_mask]
+
+    # prepare "normal format" strings
+    mask = (np.abs(values) < 1) & (values != 0)
+    decimals = np.full(values.shape, n_decimals, dtype=int)
+    if np.any(mask):
+        log_abs = np.log10(np.abs(values[mask]))
+        decimals[mask] = n_decimals - np.floor(log_abs).astype(int) - 1
+
+    formats = np.char.add(np.char.add("%.", decimals.astype(str)), "f")
+    normal_str = np.char.rstrip(np.char.mod(formats, values), "0")
+
+    # prepare the scientific notation strings
+    sci_str = np.char.mod(f"%.{n_decimals}e", values)
+    man_exp = np.array(np.char.split(sci_str, "e").tolist())
+    man = np.char.rstrip(np.char.rstrip(man_exp[:, 0], "0"), ".")
+    sci_str = np.char.add(np.char.add(man, "e"), man_exp[:, 1])
+
+    # choose between normal and scientific notation
+    result = np.where(np.char.str_len(normal_str) > max_chars, sci_str, normal_str)
+
+    # replace NaN values with empty strings
+    final_result = np.full(input_values.shape, "", dtype=object)
+    final_result[~nan_mask] = result
+
+    return final_result
+
+
+def get_unique_name_from_entities(
+    name: str,
+    entities: list[Any],
+    key: str = "name",
+    types: type | tuple[type] | None = None,
+) -> str:
+    """
+    Find a unique name in an object, optionally filtering by type.
+
+    :param name: Proposed name.
+    :param entities: The list of entities to search in.
+    :param key: The key of the object to extract
+    :param types: If provided, only entities of this type will be considered.
+
+    :return: A unique name.
+    """
+
+    def child_check(child_: Any) -> bool:
+        """
+        Function to filter entities based on instance type.
+        """
+        if types is not None and not isinstance(child_, types):
+            return False
+        return True
+
+    names = []
+    for child in entities:
+        if child_check(child):
+            sub_name = getattr(child, key, None)
+            if isinstance(sub_name, str):
+                names.append(sub_name)
+
+    return find_unique_name(name, names)
+
+
+def extract_uids(values) -> list[UUID] | None:
+    """
+    Extract the UUIDs from a list of UUIDs, Data objects or strings.
+
+    :param values: A list of UUIDs, Data objects or strings.
+
+    :return: A list of UUIDs or None if input is None.
+    """
+    if values is None:
+        return None
+
+    if not isinstance(values, Iterable) or isinstance(values, (str, bytes)):
+        values = [values]
+
+    uids = []
+    for child in values:
+        uid = entity2uuid(str2uuid(child))
+        if not isinstance(uid, UUID):
+            raise TypeError(
+                f"'{child}' must be of type UUID, "
+                f"or has 'uid' as attribute, not '{type(child)}'"
+            )
+        uids.append(uid)
+
+    return uids
+
+
+def copy_dict_relatives(
+    values: dict, parent: EntityContainer | Workspace, clear_cache: bool = False
+):
+    """
+    Copy the objects and groups referenced in a dictionary of values to a new parent.
+
+    The input dictionary is not modified. The values must be already promoted.
+
+    :param values: A dictionary of values possibly containing references to objects and groups.
+    :param parent: The parent to copy the objects and groups to.
+    :param clear_cache: If True, clear the array attributes of the copied objects and groups.
+    """
+
+    # 2. do the copy
+    def copy_obj_and_group(val: Any) -> Any:
+        """
+        Function to copy objects and groups found in the options.
+        To be used in dict_mapper for intricate structures.
+
+        :param val: The value to check and possibly copy.
+
+        :return: The same value
+        """
+        if hasattr(val, "children"):
+            if val.workspace.h5file == parent.workspace.h5file:
+                raise ValueError("Cannot copy objects within the same workspace.")
+
+            # do not copy if the uuid already exists in the parent workspace
+            if parent.workspace.get_entity(val.uid)[0] is not None:
+                return val
+
+            val.copy(parent, copy_children=True, clear_cache=clear_cache)  # type: ignore
+
+        return val
+
+    dict_mapper(values, [copy_obj_and_group])
+
+
+def workspace2path(value):
+    if hasattr(value, "h5file"):
+        if isinstance(value.h5file, BytesIO):
+            return "[in-memory]"
+        return str(value.h5file)
+    return value
+
+
+def dict_to_json_str(data: dict) -> str:
+    """
+    Format all values in a dictionary for json serialization.
+
+    :param data: Dictionary of values to be converted.
+
+    :return: A json string representation of the dictionary.
+    """
+    formatted = stringify(data)
+    formatted = dict_mapper(
+        formatted, [lambda x: f"{x:.4e}" if isinstance(x, float) else x]
+    )
+    return dumps(formatted, indent=4)
+
+
+def uuid_from_values(data: dict | str) -> UUID:
+    """
+    Create a deterministic uuid of a dictionary or its json string representation.
+
+    Floats are formatted to fixed precision scientific notation and objects are
+    converted to uid strings.
+
+    :param data: Dictionary or a string representation of a dictionary containing
+    parameters/values of an application.
+
+    :returns: Unique but recoverable uuid file identifier string.
+    """
+    if isinstance(data, dict):
+        data = dict_to_json_str(data)
+
+    return uuid5(NAMESPACE_DNS, str(data))

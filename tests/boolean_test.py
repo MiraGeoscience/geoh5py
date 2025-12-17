@@ -99,7 +99,7 @@ def test_data_boolean(tmp_path):
                 data2.values = np.array([1.1, 0.2, 1.1])
 
             with pytest.raises(
-                TypeError, match="'entity_type' must be of type ReferencedBooleanType"
+                TypeError, match="Input 'entity_type' with primitive_type"
             ):
                 data2.entity_type = non_bool.entity_type
 

@@ -35,6 +35,7 @@ def make_example(workspace, add_str_column=False):
     curve = Curve.create(
         workspace,
         vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
+        name="curve",
     )
 
     # Add data
@@ -229,9 +230,6 @@ def test_property_group_errors(tmp_path):
         curve.add_data(
             {"Period1": {"values": np.random.rand(12)}}, property_group="myGroup"
         )
-
-        with pytest.raises(ValueError, match="Multiple data 'Period1'"):
-            prop_group._validate_data("Period1")  # pylint: disable=protected-access
 
         curve.add_data(
             {"TestAssociation": {"values": np.random.rand(11), "association": "CELL"}},

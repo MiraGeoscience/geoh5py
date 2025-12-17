@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 from warnings import warn
 
-from .data import Data, PrimitiveTypeEnum
+from .data import Data
 
 
 class FilenameData(Data):
@@ -46,10 +46,6 @@ class FilenameData(Data):
         super().__init__(values=values, name=name, public=public, **kwargs)
 
         self.file_bytes = file_bytes
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.FILENAME
 
     @property
     def file_bytes(self):
@@ -89,12 +85,14 @@ class FilenameData(Data):
 
         return self.values
 
-    def save_file(self, path: str | Path = Path(), name=None):
+    def save_file(self, path: str | Path = Path(), name=None) -> Path:
         """
         Save the file to disk.
 
         :param path: Directory to save the file to.
         :param name: Name given to the file.
+
+        :return: Path to the saved file.
         """
         Path(path).mkdir(exist_ok=True)
         if name is None:
@@ -103,6 +101,8 @@ class FilenameData(Data):
         if self.file_bytes is not None:
             with open(Path(path) / name, "wb") as raw_binary:
                 raw_binary.write(self.file_bytes)
+
+        return Path(path) / name
 
     def validate_values(self, values: Any | None) -> Any:
         if not isinstance(values, str | None):

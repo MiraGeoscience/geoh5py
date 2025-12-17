@@ -23,17 +23,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from geoh5py.data import data_type, geometric_data
-from geoh5py.objects import Points
+from geoh5py.objects import Curve, Points
 from geoh5py.workspace import Workspace
 
 
-def test_xyz_dataype(tmp_path: Path):
+@pytest.mark.parametrize("obj_type", [Points, Curve])
+def test_xyz_dataype(tmp_path: Path, obj_type):
     h5file_path = tmp_path / f"{__name__}.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
-        points = Points.create(workspace, vertices=np.random.randn(10, 3))
+        points = obj_type.create(workspace, vertices=np.random.randn(10, 3))
 
         for name in ["X", "Y", "Z"]:
             class_name = f"GeometricData{name}Type"
@@ -57,6 +59,12 @@ def test_xyz_dataype(tmp_path: Path):
                 data.entity_type.uid
                 == getattr(data_type, class_name).default_type_uid()
             )
+
+        copy_pts = points.copy()
+
+        assert len(copy_pts.children) == 0
+
+        assert data.copy(parent=copy_pts) is None
 
     ws = Workspace(h5file_path)
     assert all(

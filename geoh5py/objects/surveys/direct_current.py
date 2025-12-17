@@ -171,8 +171,7 @@ class BaseElectrode(BaseSurvey, Curve, ABC):
         """
         return self.__TYPE_MAP
 
-    @staticmethod
-    def validate_metadata(value: dict | np.ndarray | bytes) -> dict:
+    def validate_metadata(self, value: dict | np.ndarray | bytes) -> dict:
         if isinstance(value, np.ndarray):
             value = value[0]
 

@@ -29,8 +29,8 @@ from uuid import UUID
 import numpy as np
 
 from ..shared import EntityType, utils
+from . import DataTypeEnum, PrimitiveTypeEnum
 from .color_map import ColorMap
-from .primitive_type_enum import DataTypeEnum, PrimitiveTypeEnum
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
 
@@ -91,9 +91,7 @@ class DataType(EntityType):
         self,
         workspace: Workspace,
         *,
-        primitive_type: (
-            type[Data] | PrimitiveTypeEnum | str
-        ) = PrimitiveTypeEnum.INVALID,
+        primitive_type: (type[Data] | PrimitiveTypeEnum | str) = "UNKNOWN",
         color_map: ColorMap | None = None,
         duplicate_on_copy: bool = False,
         duplicate_type_on_copy: bool = False,
@@ -466,15 +464,20 @@ class DataType(EntityType):
                 PrimitiveTypeEnum, utils.INV_KEY_MAP.get(primitive_type, primitive_type)
             )
 
-        if isinstance(primitive_type, type) and hasattr(
-            primitive_type, "primitive_type"
-        ):
-            primitive_type = primitive_type.primitive_type()
+        if isinstance(primitive_type, type):
+            primitive_type = PrimitiveTypeEnum(primitive_type)
 
         if not isinstance(primitive_type, PrimitiveTypeEnum):
             raise ValueError(
                 f"Attribute 'primitive_type' should be one of {PrimitiveTypeEnum.__members__}"
             )
+
+        if primitive_type in [
+            PrimitiveTypeEnum.COMMENTS,
+            PrimitiveTypeEnum.VISUAL_PARAMETERS,
+        ]:
+            return PrimitiveTypeEnum.TEXT
+
         return primitive_type
 
 
@@ -687,7 +690,8 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         ref_data = []
         for child in parent.children:
             if (
-                isinstance(child.entity_type, ReferencedValueMapType)
+                hasattr(child, "entity_type")
+                and isinstance(child.entity_type, ReferencedValueMapType)
                 and child.entity_type.name == ref_data_name
             ):
                 ref_data.append(child)

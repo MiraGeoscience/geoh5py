@@ -17,26 +17,19 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
-# flake8: noqa
-
-__version__ = "0.11.0"
-
-import inspect
-
-from geoh5py.workspace import Workspace
-
-from . import groups, objects
-from .groups import CustomGroup
+from __future__ import annotations
 
 
-def get_type_uid_classes():
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
+try:
+    from ._version import __version__
+except ModuleNotFoundError:
+    from datetime import datetime
 
-    return members
+    __date_str = datetime.today().strftime("%Y%m%d")
+    __version__ = "0.0.0.dev0+" + __date_str
 
 
-TYPE_UID_TO_CLASS = {k.default_type_uid(): k for k in get_type_uid_classes()}
+from geoh5py.workspace.workspace import Workspace, active_workspace
+
+
+__all__ = ["Workspace", "active_workspace"]

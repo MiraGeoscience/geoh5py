@@ -76,10 +76,6 @@ def test_create_grid_2d_data(tmp_path):
         grid = Grid2D.create(workspace_context)
 
         converter = Grid2DConversion
-        grid._origin = None
-        with pytest.raises(AttributeError, match="The Grid2D has no origin."):
-            converter.grid_to_tag(grid)
-
         for axis in ["u", "v"]:
             assert len(getattr(grid, f"cell_center_{axis}", None)) == 1
 

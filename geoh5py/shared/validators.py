@@ -30,7 +30,6 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py import TYPE_UID_TO_CLASS, Workspace
 from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
@@ -46,6 +45,7 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
     iterable,
 )
+from geoh5py.workspace import TYPE_UID_TO_CLASS, Workspace
 
 
 def to_path(value: list[str]) -> list[Path]:

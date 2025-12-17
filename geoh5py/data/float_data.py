@@ -23,7 +23,6 @@ from __future__ import annotations
 import numpy as np
 
 from ..shared import FLOAT_NDV
-from .data import PrimitiveTypeEnum
 from .numeric_data import NumericData
 
 
@@ -50,10 +49,6 @@ class FloatData(NumericData):
             return values
 
         return values
-
-    @classmethod
-    def primitive_type(cls) -> PrimitiveTypeEnum:
-        return PrimitiveTypeEnum.FLOAT
 
     @property
     def nan_value(self):

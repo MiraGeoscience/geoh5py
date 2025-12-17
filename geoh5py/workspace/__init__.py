@@ -17,8 +17,9 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
-# pylint: disable=unused-import
-# flake8: noqa
-
-from .workspace import Workspace, active_workspace
+from .workspace import (
+    TYPE_UID_TO_CLASS,
+    Workspace,
+    active_workspace,
+    get_type_uid_classes,
+)

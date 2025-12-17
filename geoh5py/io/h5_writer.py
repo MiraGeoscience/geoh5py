@@ -36,13 +36,11 @@ from pydantic import BaseModel
 from ..data import (
     CommentsData,
     Data,
-    DataType,
     FilenameData,
-    GeometricDataValueMapType,
-    ReferenceDataType,
     ReferencedData,
     ReferenceValueMap,
 )
+from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
@@ -410,6 +408,9 @@ class H5Writer:
 
                 if key in ["Association", "Primitive type"]:
                     value = KEY_MAP[value.name]
+
+                if key == "Visible" and "Visible" in entity_handle:
+                    del entity_handle["Visible"]
 
                 if isinstance(value, (np.int8, bool)):
                     entity_handle.attrs.create(key, int(value), dtype="int8")

@@ -19,7 +19,8 @@
 
 from __future__ import annotations
 
-from ..data import Data, DataType
+from ..data import Data
+from ..data.data_type import DataType
 from ..groups import Group, GroupType, PropertyGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared.entity import Entity

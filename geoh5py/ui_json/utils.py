@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import warnings
 from io import BytesIO
+from logging import getLogger
 from pathlib import Path
 from shutil import copy, move
 from time import time
@@ -33,15 +34,20 @@ from geoh5py.objects import ObjectBase
 from geoh5py.shared.utils import fetch_active_workspace
 
 
-def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
+logger = getLogger(__name__)
+
+
+def flatten(ui_json: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """
-    Flattens ui.json format to simple key/value pair.
+    Flatten ui.json format to simple key/value pairs.
 
-    For most of the field, the value is stored in the 'value' member.
-    For widgets storing several values, values are passed as a dictionary.
+    Converts the nested ui.json structure to a flat dictionary where most fields
+    have their values extracted from the 'value' member. For widgets storing
+    multiple values, the values are passed as a dictionary.
 
-    :params ui_json: The form containing the data.
+    :param ui_json: The form containing the UI data to flatten.
 
+    :return: A flattened dictionary with parameter names as keys and their values.
     """
     data: dict[str, Any] = {}
     for name, value in ui_json.items():
@@ -78,8 +84,21 @@ def flatten(ui_json: dict[str, dict]) -> dict[str, Any]:
     return data
 
 
-def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[str, Any]:
-    """Collects ui parameters with common field and optional value."""
+def collect(
+    ui_json: dict[str, dict[str, Any]], member: str, value: Any = None
+) -> dict[str, dict[str, Any]]:
+    """
+    Collect UI parameters with a common field and optional value.
+
+    Searches through the ui_json dictionary for parameters that contain a
+    specific member field, optionally filtering by the value of that field.
+
+    :param ui_json: The UI JSON dictionary to search through.
+    :param member: The field name to search for in each parameter.
+    :param value: Optional value to match against the member field.
+
+    :return: Dictionary of parameters that match the criteria.
+    """
 
     parameters = {}
     for name, form in ui_json.items():
@@ -90,39 +109,72 @@ def collect(ui_json: dict[str, dict], member: str, value: Any = None) -> dict[st
     return parameters
 
 
-def find_all(ui_json: dict[str, dict], member: str, value: Any = None) -> list[str]:
-    """Returns names of all collected parameters."""
+def find_all(
+    ui_json: dict[str, dict[str, Any]], member: str, value: Any = None
+) -> list[str]:
+    """
+    Return names of all parameters matching the given criteria.
+
+    Convenience function that returns just the parameter names from the collect
+    function results.
+
+    :param ui_json: The UI JSON dictionary to search through.
+    :param member: The field name to search for in each parameter.
+    :param value: Optional value to match against the member field.
+
+    :return: List of parameter names that match the criteria.
+    """
     parameters = collect(ui_json, member, value)
     return list(parameters.keys())
 
 
-def group_optional(ui_json: dict[str, dict], group_name: str) -> bool:
-    """Returns groupOptional bool for group name."""
+def group_optional(ui_json: dict[str, dict[str, Any]], group_name: str) -> bool:
+    """
+    Check if a group has the groupOptional flag enabled.
+
+    Searches for parameters belonging to the specified group and returns the
+    groupOptional boolean value for that group.
+
+    :param ui_json: The UI JSON dictionary to search through.
+    :param group_name: Name of the group to check.
+
+    :return: True if the group is optional, False otherwise.
+    """
     group = collect(ui_json, "group", group_name)
     parameters = find_all(group, "groupOptional")
     return group[parameters[0]]["groupOptional"] if parameters else False
 
 
-def optional_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
+def optional_requires_value(ui_json: dict[str, dict[str, Any]], parameter: str) -> bool:
     """
-    True if enabled else False.
+    Check if an optional parameter requires a value based on its enabled state.
 
-    :param ui_json: UI.json dictionary
-    :param parameter: Name of parameter to check type.
+    For optional parameters, this function checks the 'enabled' field to determine
+    if the parameter requires a value.
+
+    :param ui_json: UI JSON dictionary containing the parameters.
+    :param parameter: Name of the parameter to check.
+
+    :return: True if the parameter is enabled, False otherwise.
     """
     return ui_json[parameter].get("enabled", True)
 
 
-def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
+def dependency_requires_value(
+    ui_json: dict[str, dict[str, Any]], parameter: str
+) -> bool:
     """
-    Handles dependency and optional requirements.
+    Check if a parameter requires a value based on its dependency constraints.
 
-    If dependency doesn't require a value then the function returns False. But
-    if the dependency does require a value, the return value is either True,
-    or will take on the enabled state if the dependent parameter is optional.
+    Handles dependency and optional requirements for parameters. If a dependency
+    doesn't require a value then the function returns False. If the dependency
+    does require a value, the return value is either True, or will take on the
+    enabled state if the dependent parameter is optional.
 
-    :param ui_json: UI.json dictionary
-    :param parameter: Name of parameter to check type.
+    :param ui_json: UI JSON dictionary containing the parameters.
+    :param parameter: Name of the parameter to check.
+
+    :return: True if the parameter requires a value based on dependencies, False otherwise.
     """
     dependency = ui_json[parameter]["dependency"]
 
@@ -147,12 +199,17 @@ def dependency_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     return is_required
 
 
-def group_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
+def group_requires_value(ui_json: dict[str, dict[str, Any]], parameter: str) -> bool:
     """
-    True is groupOptional and group is enabled else False
+    Check if a parameter requires a value based on its group's optional status.
 
-    :param ui_json: UI.json dictionary
-    :param parameter: Name of parameter to check type.
+    Determines if a parameter requires a value by checking if its group is optional
+    and if the group is enabled.
+
+    :param ui_json: UI JSON dictionary containing the parameters.
+    :param parameter: Name of the parameter to check.
+
+    :return: True if the group is optional and enabled, or if the group is not optional.
     """
     is_required = True
     groupname = ui_json[parameter]["group"]
@@ -162,19 +219,21 @@ def group_requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     return is_required
 
 
-def requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
+def requires_value(ui_json: dict[str, dict[str, Any]], parameter: str) -> bool:
     """
-    Check if a ui.json parameter requires a value (is not optional).
+    Check if a UI JSON parameter requires a value based on hierarchy of switches.
 
-    The required status of a parameter depends on a hierarchy of ui switches.
+    The required status of a parameter depends on a hierarchy of UI switches.
     At the top is the groupOptional switch, below that is the dependency
-    switch, and on the bottom is the optional switch.  When group optional
-    is disabled all parameters in the group are not required, When the
-    groupOptional is enabled the required status of a parameter depends first
-    any dependencies and lastly on it's optional status.
+    switch, and at the bottom is the optional switch. When groupOptional
+    is disabled, all parameters in the group are not required. When the
+    groupOptional is enabled, the required status of a parameter depends first
+    on any dependencies and lastly on its optional status.
 
-    :param ui_json: UI.json dictionary
-    :param parameter: Name of parameter to check type.
+    :param ui_json: UI JSON dictionary containing the parameters.
+    :param parameter: Name of the parameter to check.
+
+    :return: True if the parameter requires a value, False otherwise.
     """
     is_required = True
 
@@ -198,11 +257,18 @@ def requires_value(ui_json: dict[str, dict], parameter: str) -> bool:
     return is_required
 
 
-def group_enabled(group: dict[str, dict]) -> bool:
+def group_enabled(group: dict[str, dict[str, Any]]) -> bool:
     """
-    Return true if groupOptional and enabled are both true.
+    Check if a group is enabled based on groupOptional and enabled flags.
 
-    :param group: UI.json dictionary
+    Returns True if both groupOptional and enabled are True for the group.
+
+    :param group: UI JSON group dictionary containing parameters.
+
+    :return: True if the group is enabled, False otherwise.
+
+    :raises ValueError: If the provided group does not contain a
+        parameter with groupOptional member.
     """
     parameters = find_all(group, "groupOptional")
     if not parameters:
@@ -212,13 +278,21 @@ def group_enabled(group: dict[str, dict]) -> bool:
     return group[parameters[0]].get("enabled", True)
 
 
-def set_enabled(ui_json: dict, parameter: str, value: bool, validate=True):
+def set_enabled(
+    ui_json: dict[str, Any], parameter: str, value: bool, validate: bool = True
+) -> None:
     """
-    Set enabled status for an optional or groupOptional parameter.
+    Set the enabled status for an optional or groupOptional parameter.
 
-    :param ui_json: UI.json dictionary
-    :param parameter: Parameter name.
-    :param value: Boolean value set to parameter's enabled member.
+    Updates the 'enabled' field for parameters that support it, including optional
+    parameters, parameters with dependencies, and group optional parameters.
+
+    :param ui_json: UI JSON dictionary containing the parameters.
+    :param parameter: Name of the parameter to modify.
+    :param value: Boolean value to set for the parameter's enabled member.
+    :param validate: Whether to perform validation checks on the operation.
+
+    :raises Warning: If attempting to disable a non-optional parameter.
     """
     if ui_json[parameter].get("optional", False) or bool(
         ui_json[parameter].get("dependency", False)
@@ -248,8 +322,21 @@ def set_enabled(ui_json: dict, parameter: str, value: bool, validate=True):
             )
 
 
-def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
-    """Return parameter's 'member' value with default value for non-existent members."""
+def truth(ui_json: dict[str, dict[str, Any]], name: str, member: str) -> bool:
+    """
+    Get a parameter's member value with default fallback for non-existent members.
+
+    Returns the value of a specific member field for a parameter, or a default
+    value if the member doesn't exist.
+
+    :param ui_json: UI JSON dictionary containing the parameters.
+    :param name: Name of the parameter to check.
+    :param member: Name of the member field to retrieve.
+
+    :return: The member's value or its default value.
+
+    :raises ValueError: If the field was not provided and does not have a default state.
+    """
     default_states = {
         "enabled": True,
         "optional": False,
@@ -268,8 +355,17 @@ def truth(ui_json: dict[str, dict], name: str, member: str) -> bool:
     )
 
 
-def is_uijson(ui_json: dict[str, dict]):
-    """Returns True if dictionary contains all the required parameters."""
+def is_uijson(ui_json: dict[str, dict[str, Any]]) -> bool:
+    """
+    Check if a dictionary contains all the required UI JSON parameters.
+
+    Validates that a dictionary has the structure and required fields of a
+    valid UI JSON configuration.
+
+    :param ui_json: Dictionary to validate as UI JSON.
+
+    :return: True if the dictionary contains all required parameters, False otherwise.
+    """
     required_parameters = [
         "title",
         "monitoring_directory",
@@ -287,8 +383,17 @@ def is_uijson(ui_json: dict[str, dict]):
     return is_a_uijson
 
 
-def is_form(var) -> bool:
-    """Return true if dictionary 'var' contains both 'label' and 'value' members."""
+def is_form(var: Any) -> bool:
+    """
+    Check if a variable is a valid form dictionary.
+
+    Returns True if the dictionary variable contains both 'label' and 'value' members,
+    which are required for a valid UI form element.
+
+    :param var: Variable to check for form structure.
+
+    :return: True if the variable is a valid form dictionary, False otherwise.
+    """
     is_a_form = False
     if isinstance(var, dict):
         if all(k in var.keys() for k in ["label", "value"]):
@@ -297,7 +402,17 @@ def is_form(var) -> bool:
     return is_a_form
 
 
-def str2list(value):  # map "[...]" to [...]
+def str2list(value: Any) -> Any:
+    """
+    Convert string representation of numbers to list of floats.
+
+    Maps string values like "[1,2,3]" or "1,2,3" to [1.0, 2.0, 3.0].
+    Handles special cases like "inf", "-inf", and empty strings.
+
+    :param value: Value to convert, typically a string or already converted type.
+
+    :return: List of floats if conversion successful, original value otherwise.
+    """
     if isinstance(value, str):
         if value in ["inf", "-inf", ""]:
             return value
@@ -309,13 +424,38 @@ def str2list(value):  # map "[...]" to [...]
     return value
 
 
-def str2inf(value):
+def str2inf(value: Any) -> Any:
+    """
+    Convert string representations of infinity to float infinity values.
+
+    Converts "inf" and "-inf" strings to their corresponding float values.
+
+    :param value: Value to convert, typically a string.
+
+    :return: Float infinity value if input is "inf" or "-inf", original value otherwise.
+    """
     if value in ["inf", "-inf"]:
         return float(value)
     return value
 
 
-def workspace2path(value):
+def workspace2path(value: Any) -> str:
+    """
+    Convert a Workspace object to its file path string.
+
+    **Deprecated:** This function has been migrated to `geoh5py.shared.utils.workspace2path`
+    and will be removed in future versions.
+
+    :param value: Workspace object or other value to convert.
+
+    :return: File path string for Workspace objects, "[in-memory]" for in-memory workspaces,
+             or the original value for non-Workspace inputs.
+    """
+    logger.warning(
+        "Deprecation Warning - This function has been migrated to "
+        "`geoh5py.shared.utils.workspace2path` and will be removed in"
+        "future versions.",
+    )
     if isinstance(value, Workspace):
         if isinstance(value.h5file, BytesIO):
             return "[in-memory]"
@@ -323,15 +463,40 @@ def workspace2path(value):
     return value
 
 
-def path2workspace(value):
-    if isinstance(value, (str, Path)) and Path(value).suffix == ".geoh5":
+def path2workspace(value: Any) -> Any:
+    """
+    Convert a file path string to a Workspace object if it represents a valid geoh5 file.
+
+    Creates a Workspace object from a path string if the file exists and has a .geoh5 extension.
+
+    :param value: File path string, Path object, or other value to convert.
+
+    :return: Workspace object if the value represents a valid geoh5 file, original value otherwise.
+    """
+    if (
+        isinstance(value, (str, Path))
+        and Path(value).suffix == ".geoh5"
+        and Path(value).exists()
+    ):
         workspace = Workspace(value, mode="r")
         workspace.close()
         return workspace
     return value
 
 
-def container_group2name(value):
+def container_group2name(value: Any) -> Any:
+    """
+    Convert a ContainerGroup object to its name string.
+
+    **Deprecated:** This function will be removed in future releases.
+
+    :param value: ContainerGroup object or other value to convert.
+
+    :return: Name string for ContainerGroup objects, original value otherwise.
+    """
+    logger.warning(
+        "Deprecation Warning - This function will be removed in future releases."
+    )
     if isinstance(value, ContainerGroup):
         return value.name
     return value
@@ -343,9 +508,15 @@ def monitored_directory_copy(
     """
     Create a temporary geoh5 file in the monitoring folder and export entity for update.
 
-    :param directory: Monitoring directory
-    :param entity: Entity to be updated
-    :param copy_children: Option to copy children entities.
+    Creates a temporary workspace in the specified monitoring directory and copies
+    the given entity to it. This is useful for monitoring and updating entities
+    in a separate workspace environment.
+
+    :param directory: Path to the monitoring directory where the temporary file will be created.
+    :param entity: Entity (ObjectBase or Group) to be copied for monitoring.
+    :param copy_children: Whether to copy children entities along with the main entity.
+
+    :return: Full path to the created temporary geoh5 file.
     """
     directory_path = Path(directory)
     working_path = directory_path / ".working"
