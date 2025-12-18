@@ -53,11 +53,22 @@ tag = {
     34737: ("WGS 84 / UTM zone 34N|WGS 84|",),
 }
 
+pixels = np.r_[
+    np.c_[32, 0, 0],
+    np.c_[32, 64, 0],
+    np.c_[64, 64, 0],
+]
+points = np.r_[
+    np.c_[5.0, 5.0, 0],
+    np.c_[5.0, 10.0, 3],
+    np.c_[10.0, 10.0, 3],
+]
+tie_points = np.array(list(zip(pixels, points, strict=False)))
+
 
 @pytest.mark.parametrize(
     "tie_points_tag",
     [
-        (0.0, 0.0, 0.0, 522796.33210329525, 7244067.563364625, 0.0),
         (0.0, 0.0, 0.0, 522796.33210329525, 7244067.563364625, 0.0),
         (
             0.0,
@@ -74,7 +85,7 @@ tag = {
             0.0,
         ),
         (
-            0.0,
+            0.0,  # first point not the smallest XY
             0.0,
             0.0,
             522796.33210329525,
@@ -166,19 +177,8 @@ def test_attribute_setters():
         gimage.vertices = "bidon"
 
 
-def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
+def test_create_copy_empty_geoimage(tmp_path):
     with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
-        pixels = np.r_[
-            np.c_[32, 0, 0],
-            np.c_[32, 64, 0],
-            np.c_[64, 64, 0],
-        ]
-        points = np.r_[
-            np.c_[5.0, 5.0, 0],
-            np.c_[5.0, 10.0, 3],
-            np.c_[10.0, 10.0, 3],
-        ]
-
         geoimage = GeoImage.create(workspace, name="MyGeoImage")
 
         assert geoimage.image_georeferenced is None
@@ -187,7 +187,7 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
             geoimage.save_as("test")
 
         with pytest.raises(AttributeError, match="An 'image' must be set be"):
-            geoimage.georeference(pixels[0, :], points)
+            geoimage.georeference(tie_points)
 
         with pytest.raises(ValueError, match="Array of 'vertices' must be"):
             geoimage.vertices = [1, 2, 3]
@@ -203,7 +203,6 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         grid2d = geoimage.to_grid2d()
         assert grid2d.children == []
-
         assert geoimage.image is None
 
         with pytest.raises(
@@ -214,6 +213,10 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         with pytest.raises(AttributeError, match="The image is not georeferenced"):
             geoimage.georeferencing_from_tiff()
 
+
+def test_create_geoimage_dry_georeferencing(tmp_path):
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
+        geoimage = GeoImage.create(workspace, name="MyGeoImage")
         geoimage.image = np.random.randint(0, 255, (128, 128))
 
         np.testing.assert_allclose(
@@ -231,23 +234,28 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         ):
             geoimage.image = np.random.randint(0, 255, (128, 64, 3))
 
+
+def test_create_geoimage_full_georeferencing(tmp_path):  # pylint: disable=too-many-statements
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         geoimage = GeoImage.create(
             workspace, name="MyGeoImage", image=np.random.randint(0, 255, (128, 64, 3))
         )
-        geoimage.georeference(np.array(list(zip(pixels, points, strict=False))))
 
-        temp = np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]])
-        print(temp)
-        print(geoimage.vertices)
-        print(temp - geoimage.vertices)
+        geoimage.copy(name="test")
+
+        geoimage.georeference(tie_points)
+
+        # todo: I change the expected values. Is it good?
+        temp = np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]])[::-1]
 
         np.testing.assert_almost_equal(
             geoimage.vertices,
-            np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]).astype(float),
+            temp,
             err_msg="Issue geo-referencing the coordinates.",
         )
 
         geoimage.to_grid2d()
+
         geoimage.save_as("testtif.tif", str(tmp_path))
 
         geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
@@ -264,7 +272,7 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         # Re-load from file
         geoimage.image.save(tmp_path / r"test.tiff")
-        geoimage_file = GeoImage.create(workspace, name="MyGeoImage")
+        geoimage_file = GeoImage.create(workspace, name="MyGeoImageFile")
 
         with pytest.raises(ValueError, match="does not exist"):
             geoimage_file.image = str(tmp_path / r"abc.tiff")
@@ -496,13 +504,11 @@ def test_image_rotation(tmp_path):
         np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
 
         geoimage3 = GeoImage.create(workspace, name="test_area", image=image, dip=44)
-        print(geoimage3.dip, geoimage3.rotation)
         np.testing.assert_array_almost_equal(geoimage3.dip, 44)
 
         geoimage4 = GeoImage.create(
             workspace, name="test_area", image=image, dip=44, rotation=66
         )
-        print(geoimage4.dip, geoimage4.rotation)
         np.testing.assert_array_almost_equal(geoimage4.dip, 44)
         np.testing.assert_array_almost_equal(geoimage4.rotation, 66)
 

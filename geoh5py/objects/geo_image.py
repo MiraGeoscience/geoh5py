@@ -766,7 +766,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 ]
             )
 
-        # todo: ensure unicity of points
         if (
             not isinstance(tie_points, np.ndarray)
             or tie_points.ndim != 3
@@ -777,7 +776,28 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 f" Got {tie_points.shape} instead."
             )
 
-        return tie_points
+        # Remove exact duplicate (pixel, world) pairs
+        pairs_unique = np.unique(tie_points.reshape(-1, 6), axis=0)
+
+        n_pairs = pairs_unique.shape[0]
+        n_pix = np.unique(pairs_unique[:, :3], axis=0).shape[0]  # pixels (i, j, k)
+        n_wrd = np.unique(pairs_unique[:, 3:], axis=0).shape[0]  # worlds (x, y, z)
+
+        # (1) Same pixel -> different world
+        if n_pairs > n_pix:
+            raise ValueError(
+                "Inconsistent tie points: identical pixel coordinates map to "
+                "multiple world coordinates."
+            )
+
+        # (2) Same world -> different pixel
+        if n_pairs > n_wrd:
+            raise ValueError(
+                "Inconsistent tie points: identical world coordinates map to "
+                "multiple pixel coordinates."
+            )
+
+        return pairs_unique.reshape(-1, 2, 3)
 
     def _compute_image_corners_from_1_tie_point(
         self, points: np.ndarray, u_cell_size: float, v_cell_size: float
@@ -943,11 +963,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 or not np.isclose(calc_v_cell_size, v_cell_size, rtol=tol)
             )
         ):
-            print(
-                "Computed cell sizes from tie points do not match provided cell sizes."
-                f" Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
-                f"Provided: ({u_cell_size}, {v_cell_size})"
-            )
             raise ValueError(
                 "Computed cell sizes from tie points do not match provided cell sizes."
                 f" Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
