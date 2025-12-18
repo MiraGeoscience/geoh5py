@@ -563,7 +563,8 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
 
     @field_validator("multi_select", mode="before")
     @classmethod
-    def only_multi_select(cls, value):
+    def only_multi_select(cls, value: bool) -> bool:
+        """Validate that multi_select is True."""
         if not value:
             raise ValueError("MultiSelectForm must have multi_select: True.")
         return value
