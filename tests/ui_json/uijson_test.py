@@ -32,8 +32,10 @@ from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
     BoolForm,
     DataForm,
+    DataOrValueForm,
     FloatForm,
     IntegerForm,
+    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -42,9 +44,10 @@ from geoh5py.ui_json.ui_json import BaseUIJson
 from geoh5py.ui_json.validations import UIJsonError
 
 
-def sample_uijson(test_path):
-    uijson_path = test_path / "test.ui.json"
-    geoh5_path = test_path / "test.geoh5"
+@pytest.fixture
+def sample_uijson(tmp_path):
+    uijson_path = tmp_path / "test.ui.json"
+    geoh5_path = tmp_path / "test.geoh5"
     with Workspace.create(geoh5_path) as workspace:
         pts = Points.create(workspace, name="test", vertices=np.random.random((10, 3)))
         data = pts.add_data({"my data": {"values": np.random.random(10)}})
@@ -87,11 +90,9 @@ def sample_uijson(test_path):
                         "parent": "my_object_parameter",
                         "association": "Vertex",
                         "data_type": "Float",
-                        "is_value": False,
-                        "property": str(data.uid),
-                        "value": 0.0,
+                        "value": str(data.uid),
                     },
-                    "my_other_data_parameter": {
+                    "my_data_or_value_parameter": {
                         "label": "My other data parameter",
                         "parent": "my_object_parameter",
                         "association": "Vertex",
@@ -99,6 +100,14 @@ def sample_uijson(test_path):
                         "is_value": True,
                         "property": "",
                         "value": 0.0,
+                    },
+                    "my_multi_select_data_parameter": {
+                        "label": "My multi-select data parameter",
+                        "parent": "my_other_object_parameter",
+                        "association": "Vertex",
+                        "data_type": "Float",
+                        "value": [str(data.uid)],
+                        "multi_select": True,
                     },
                     "my_faulty_data_parameter": {
                         "label": "My faulty data parameter",
@@ -118,18 +127,19 @@ def sample_uijson(test_path):
         return uijson_path
 
 
-def test_uijson(tmp_path):
+def test_uijson(sample_uijson):
     class MyUIJson(BaseUIJson):
         my_string_parameter: StringForm
         my_integer_parameter: IntegerForm
         my_object_parameter: ObjectForm
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
-        my_other_data_parameter: DataForm
+        my_data_or_value_parameter: DataOrValueForm
+        my_multi_select_data_parameter: MultiSelectDataForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
 
-    uijson = MyUIJson.read(sample_uijson(tmp_path))
+    uijson = MyUIJson.read(sample_uijson)
     with pytest.raises(UIJsonError) as err:
         with Workspace(uijson.geoh5, mode="r+") as workspace:
             _ = uijson.to_params(workspace=workspace)
@@ -472,13 +482,28 @@ def test_unknown_uijson(tmp_path):
             "value": str(pts.uid),
         },
         "my_data_parameter": {
-            "label": "my data parameter",
+            "label": "My data parameter",
             "parent": "my_object_parameter",
             "association": "Vertex",
             "data_type": "Float",
-            "is_value": False,
-            "property": str(data.uid),
+            "value": str(data.uid),
+        },
+        "my_data_or_value_parameter": {
+            "label": "My other data parameter",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "is_value": True,
+            "property": "",
             "value": 0.0,
+        },
+        "my_multi_choice_data_parameter": {
+            "label": "My multi-choice data parameter",
+            "parent": "my_object_parameter",
+            "association": "Vertex",
+            "data_type": "Float",
+            "value": [str(data.uid)],
+            "multi_select": True,
         },
         "my_optional_parameter": {
             "label": "my optional parameter",
@@ -502,15 +527,20 @@ def test_unknown_uijson(tmp_path):
     with open(tmp_path / "test.ui.json", mode="w", encoding="utf8") as file:
         file.write(json.dumps(kwargs))
     uijson = BaseUIJson.read(tmp_path / "test.ui.json")
+    uijson.write(tmp_path / "test_copy.ui.json")
 
     assert isinstance(uijson.my_string_parameter, StringForm)
     assert isinstance(uijson.my_radio_label_parameter, RadioLabelForm)
     assert isinstance(uijson.my_integer_parameter, IntegerForm)
     assert isinstance(uijson.my_object_parameter, ObjectForm)
     assert isinstance(uijson.my_data_parameter, DataForm)
+    assert isinstance(uijson.my_data_or_value_parameter, DataOrValueForm)
+    assert isinstance(uijson.my_multi_choice_data_parameter, MultiSelectDataForm)
     params = uijson.to_params()
     assert params["my_object_parameter"].uid == pts.uid
     assert params["my_data_parameter"].uid == data.uid
+    assert params["my_data_or_value_parameter"] == 0.0
+    assert params["my_multi_choice_data_parameter"][0].uid == data.uid
     assert "my_optional_parameter" not in params
     assert "my_group_optional_parameter" not in params
     assert "my_grouped_parameter" not in params
