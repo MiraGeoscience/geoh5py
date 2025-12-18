@@ -504,8 +504,8 @@ def test_multichoice_data_form():
 
 
 def test_multichoice_data_form_serialization():
-    data_uid_1 = str(uuid.uuid4())
-    data_uid_2 = str(uuid.uuid4())
+    data_uid_1 = f"{{{uuid.uuid4()!s}}}"
+    data_uid_2 = f"{{{uuid.uuid4()!s}}}"
     form = MultiSelectDataForm(
         label="name",
         value=[data_uid_1, data_uid_2],

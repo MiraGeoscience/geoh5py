@@ -527,6 +527,7 @@ def test_unknown_uijson(tmp_path):
     with open(tmp_path / "test.ui.json", mode="w", encoding="utf8") as file:
         file.write(json.dumps(kwargs))
     uijson = BaseUIJson.read(tmp_path / "test.ui.json")
+    uijson.write(tmp_path / "test_copy.ui.json")
 
     assert isinstance(uijson.my_string_parameter, StringForm)
     assert isinstance(uijson.my_radio_label_parameter, RadioLabelForm)

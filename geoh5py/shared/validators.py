@@ -114,8 +114,8 @@ def none_to_empty_string(value):
 
 def types_to_string(types: list) -> list[str] | str:
     if len(types) > 1:
-        return [str(k.default_type_uid()) for k in types]
-    return str(types[0].default_type_uid())
+        return [f"{{{k.default_type_uid()!s}}}" for k in types]
+    return f"{{{types[0].default_type_uid()!s}}}"
 
 
 class BaseValidator(ABC):
