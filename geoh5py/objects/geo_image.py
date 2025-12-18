@@ -34,6 +34,8 @@ from ..shared.conversion import GeoImageConversion
 from ..shared.cut_by_extent import Plane
 from ..shared.utils import (
     PILLOW_ARGUMENTS,
+    are_affine,
+    are_coplanar,
     box_intersect,
     xy_rotation_matrix,
     yz_rotation_matrix,
@@ -162,6 +164,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Inverse mask is not implemented yet with images."
             )
 
+        # todo: image can indeed contains several images attached as children
         if copy_children is False:
             warnings.warn(
                 "The 'copy_children' argument is not applicable to GeoImage objects."
@@ -202,31 +205,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         return self._create_geoimage_from_attributes(parent, **kwargs)
 
-    def _create_geoimage_from_attributes(
-        self, parent: None | Any = None, **kwargs
-    ) -> GeoImage:
-        """
-        Create a new GeoImage from attributes.
-
-        :param kwargs: The attributes to update.
-        :param parent: the parent workspace or entity
-            or a group containing the object.
-
-        :return: a new instance of GeoImage.
-        """
-        if parent:
-            if hasattr(parent, "h5file"):
-                workspace = parent
-            else:
-                workspace = parent.workspace
-                kwargs["parent"] = parent
-        else:
-            workspace = self.workspace
-
-        new_attributes = GeoImageConversion.verify_kwargs(self, **kwargs)
-
-        return GeoImage.create(workspace, **new_attributes)
-
     @property
     def default_vertices(self) -> np.ndarray:
         """
@@ -240,7 +218,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                     [self.image.size[0], 0, 0],
                     [0, 0, 0],
                 ]
-            ).astype(float)
+            ).astype(np.float64)
         return np.asarray(
             [
                 [0, 1, 0],
@@ -248,7 +226,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 [1, 0, 0],
                 [0, 0, 0],
             ]
-        ).astype(float)
+        ).astype(np.float64)
 
     @property
     def dip(self) -> float:
@@ -280,57 +258,38 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         vertices = xy_rotation_matrix(np.deg2rad(self.rotation)) @ vertices
         self.vertices = vertices.T + self.origin
 
-    def georeference(self, reference: np.ndarray | list, locations: np.ndarray | list):
+    def georeference(
+        self,
+        tie_points: np.ndarray | list | tuple,
+        u_cell_size: float | None = None,
+        v_cell_size: float | None = None,
+    ):
         """
         Georeference the image vertices (corners) based on input reference and
         corresponding world coordinates.
 
-        :param reference: Array of integers representing the reference used as reference points.
-        :param locations: Array of floats for the corresponding world coordinates
-            for each input pixel.
+        :param tie_points: Array of tie points of shape (n, 2, 3)
+            where n is the number of tie points, 2 corresponds to
+            pixel and world coordinates, and 3 corresponds to (i, j, k)
+            and (x, y, z) respectively,
+            or a flat list/tuple of a 6*n length.
+
+        :param u_cell_size: Cell size in the u direction. If None, it is
+            computed from the current vertices and image size.
+        :param v_cell_size: Cell size in the v direction. If None, it is
+            computed from the current vertices and image size.
 
         :return vertices: Corners (vertices) in world coordinates.
         """
-        reference = np.asarray(reference)
-        locations = np.asarray(locations)
+
         if self.image is None:
             raise AttributeError("An 'image' must be set before georeferencing.")
 
-        if reference.ndim != 2 or reference.shape[0] < 3 or reference.shape[1] != 2:
-            raise ValueError(
-                "Input reference points must be a 2D array of shape(*, 2) "
-                "with at least 3 control points."
-            )
+        tie_points_verified = self._parse_tie_points(tie_points)
 
-        if (
-            locations.ndim != 2
-            or reference.shape[0] != locations.shape[0]
-            or locations.shape[1] != 3
-        ):
-            raise ValueError(
-                "Input 'locations' must be a 2D array of shape(*, 3) "
-                "with the same number of rows as the control points."
-            )
-
-        # todo: because the vertices can be non-planar, correct here
-        constant = np.ones(reference.shape[0])
-        param_x, _, _, _ = np.linalg.lstsq(
-            np.c_[constant, reference], locations[:, 0], rcond=None
+        self.vertices = self._compute_image_corners(
+            tie_points_verified, u_cell_size, v_cell_size
         )
-        param_y, _, _, _ = np.linalg.lstsq(
-            np.c_[constant, reference], locations[:, 1], rcond=None
-        )
-        param_z, _, _, _ = np.linalg.lstsq(
-            np.c_[constant, reference], locations[:, 2], rcond=None
-        )
-
-        corners = self.default_vertices[:, :2]
-
-        self.vertices = np.c_[
-            param_x[0] + corners @ param_x[1:],
-            param_y[0] + corners @ param_y[1:],
-            param_z[0] + corners @ param_z[1:],
-        ]
 
         self.set_tag_from_vertices()
 
@@ -348,37 +307,34 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         Get the geographic information from the PIL Image to georeference it.
         Run the georeference() method of the object.
         """
-        if self.tag is None:
+        if self.tag is None or self.image is None:
             raise AttributeError("The image is not georeferenced")
 
         try:
-            # get geographic information
-            u_origin = float(self.tag[33922][3])
-            v_origin = float(self.tag[33922][4])
-            u_cell_size = float(self.tag[33550][0])
-            v_cell_size = float(self.tag[33550][1])
-            u_count = float(self.tag[256][0])
-            v_count = float(self.tag[257][0])
-
-            # todo: not anymore because it's not always a rectangle
-            u_oposite = float(u_origin + u_cell_size * u_count)
-            v_oposite = float(v_origin - v_cell_size * v_count)
+            # get the tag values
+            tie_points = self._parse_tie_points(self.tag[33922])
+            u_count = int(self.tag[256][0])
+            v_count = int(self.tag[257][0])
+            u_cell_size = self.tag[33550][0]
+            v_cell_size = self.tag[33550][1]
 
             # prepare georeferencing
-            reference = np.array([[0.0, v_count], [u_count, v_count], [u_count, 0.0]])
+            if u_count != self.u_count or v_count != self.v_count:
+                raise ValueError("The image size does not match the size in the tag.")
 
-            locations = np.array(
-                [
-                    [u_origin, v_origin, 0.0],
-                    [u_oposite, v_origin, 0.0],
-                    [u_oposite, v_oposite, 0.0],
-                ]
+            self.vertices = self._compute_image_corners(
+                tie_points, u_cell_size, v_cell_size
             )
 
-            # georeference the raster
-            self.georeference(reference, locations)
-        except KeyError:
-            warnings.warn("The 'tif.' image has no referencing information.")
+        except KeyError as error:
+            warnings.warn(
+                f"The 'tif.' image has no referencing information. KeyError: {error}"
+            )
+        except ValueError as error:
+            warnings.warn(
+                "Could not parse the georeferencing information from the 'tif.' image."
+                f" ValueError: {error}"
+            )
 
     @property
     def image(self):
@@ -511,7 +467,12 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         :return: the rotation angle.
         """
-        # todo: must check if the image can be explained by rotation and dip only
+        plane = Plane.from_points(self.vertices[3], self.vertices[2], self.vertices[0])
+        if not plane.dip_rotation_only:
+            raise ValueError(
+                "The vertices do not define a rectangle that can be "
+                "explained by rotation and dip only."
+            )
 
         axes = self.vertices[2, :2] - self.origin[:2]
         return float(np.rad2deg(np.arctan2(axes[1], axes[0])))
@@ -569,15 +530,15 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         self._tag[256] = (self.u_count,)
         self._tag[257] = (self.v_count,)
-        # todo: It should be a 6 * 4 tuples defining the affine transformation
-        self._tag[33922] = (
-            0.0,
-            0.0,
-            0.0,
-            self.vertices[0, 0],
-            self.vertices[0, 1],
-            self.vertices[0, 2],
+
+        self._tag[33922] = tuple(
+            v
+            for (i, j, k), (x, y, z) in zip(
+                self.default_vertices, self.vertices, strict=False
+            )
+            for v in (i, j, k, x, y, z)
         )
+
         self._tag[33550] = (
             self.u_cell_size,
             self.v_cell_size,
@@ -643,7 +604,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 )
             value = image
             if image.min() < 0 or image.max() > 255 or image.dtype != "uint8":
-                value = image.astype(float)
+                value = image.astype(np.float64)
                 value -= value.min()
                 value *= 255.0 / value.max()
                 value = value.astype("uint8")
@@ -685,7 +646,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if self._vertices is None:
             return self.default_vertices
 
-        return self._vertices.view("<f8").reshape((-1, 3)).astype(float)
+        return self._vertices.view("<f8").reshape((-1, 3)).astype(np.float64)
 
     @vertices.setter
     def vertices(self, xyz: np.ndarray | list | None):
@@ -750,3 +711,247 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         """
         distance_v = np.linalg.norm(self.vertices[0] - self.vertices[3])
         return distance_v / self.v_count
+
+    def _create_geoimage_from_attributes(
+        self, parent: None | Any = None, **kwargs
+    ) -> GeoImage:
+        """
+        Create a new GeoImage from attributes.
+
+        :param kwargs: The attributes to update.
+        :param parent: the parent workspace or entity
+            or a group containing the object.
+
+        :return: a new instance of GeoImage.
+        """
+        if parent:
+            if hasattr(parent, "h5file"):
+                workspace = parent
+            else:
+                workspace = parent.workspace
+                kwargs["parent"] = parent
+        else:
+            workspace = self.workspace
+
+        new_attributes = GeoImageConversion.verify_kwargs(self, **kwargs)
+
+        return GeoImage.create(workspace, **new_attributes)
+
+    @staticmethod
+    def _parse_tie_points(tie_points: tuple | list | np.ndarray) -> np.ndarray:
+        """
+        Iterate through the ModelTiepointTag to extract the tiepoints.
+
+        Each tie point requires 6 values each:
+            - 3 for the pixel location (i, j, k)
+            - 3 for the world location (x, y, z)
+        In the tag, it's stored as a flat list of values.
+
+        :param tie_points: The ModelTiepointTag from a tiff image.
+
+        :return: An array of tiepoints of shape (n, 2, 3).
+        """
+        if isinstance(tie_points, tuple | list):
+            if len(tie_points) % 6 != 0:
+                raise ValueError(
+                    "ModelTiepointTag length must be a multiple of 6"
+                    f". Got length {len(tie_points)} instead."
+                )
+
+            it = iter(tie_points)
+            tie_points = np.array(
+                [
+                    [[next(it), next(it), next(it)], [next(it), next(it), next(it)]]
+                    for _ in range(len(tie_points) // 6)
+                ]
+            )
+
+        # todo: ensure unicity of points
+        if (
+            not isinstance(tie_points, np.ndarray)
+            or tie_points.ndim != 3
+            or tie_points.shape[1:] != (2, 3)
+        ):
+            raise ValueError(
+                "Tie points must be a numpy array of shape (n, 2, 3)."
+                f" Got {tie_points.shape} instead."
+            )
+
+        return tie_points
+
+    def _compute_image_corners_from_1_tie_point(
+        self, points: np.ndarray, u_cell_size: float, v_cell_size: float
+    ):
+        """
+        Compute world coordinates of image corners using 1 tie point and cell sizes.
+
+        Assumes axis-aligned rectangular mapping with known pixel sizes in world units.
+
+        :param points: List of [[i, j, k], [x, y, z]] pairs (must have at least 1).
+        :param u_cell_size: World units per pixel in the i (horizontal) direction.
+        :param v_cell_size: World units per pixel in the j (vertical) direction.
+
+        :return: Array of shape (4, 3) with corner world coordinates.
+        """
+        if len(points) < 1:
+            raise ValueError("At least 1 tie point is required")
+
+        # Extract first tie point
+        pix_ref = np.array(points[0][0][:2], dtype=np.float64)  # [i, j]
+        wrd_ref = np.array(points[0][1], dtype=np.float64)  # [x, y, z]
+
+        # Compute pixel offsets from reference point
+        delta_pix = self.default_vertices[::-1, :2] - pix_ref
+
+        # Convert to world offsets using cell sizes
+        delta_wrd = delta_pix * [u_cell_size, -v_cell_size]
+
+        # Add world offsets to reference point (z remains constant)
+        corners_wrd = np.column_stack(
+            [
+                wrd_ref[0] + delta_wrd[:, 0],  # x
+                wrd_ref[1] + delta_wrd[:, 1],  # y
+                np.full(4, wrd_ref[2]),  # z (constant)
+            ]
+        )
+
+        return corners_wrd
+
+    # pylint: disable=too-many-locals
+    def _compute_image_corners_from_2_tie_points(
+        self, points: np.ndarray
+    ) -> np.ndarray:
+        """
+        Compute world coordinates of image corners from 2 tie points,
+        assuming:
+          - rotation (yaw) = 0,
+          - dip direction = v (pixel j),
+          - x = f(i), y = g(j), z = h(j) (no shear).
+        """
+        if len(points) < 2:
+            raise ValueError("At least 2 tie points are required")
+
+        (i0, j0), (i1, j1) = points[:2, 0, :2].astype(np.float64)
+        (x0, y0, z0), (x1, y1, z1) = points[:2, 1, :].astype(np.float64)
+
+        if abs(i1 - i0) < 1e-12:
+            raise ValueError("Tie points must differ in i to determine x mapping")
+        if abs(j1 - j0) < 1e-12:
+            raise ValueError("Tie points must differ in j to determine y/z mapping")
+
+        ij = self.default_vertices[::-1, :2].astype(np.float64)
+
+        # x axis
+        ax = (x1 - x0) / (i1 - i0)
+        bx = x0 - ax * i0
+        x = ax * ij[:, 0] + bx
+
+        # y axis
+        ay = (y1 - y0) / (j1 - j0)
+        by = y0 - ay * j0
+        y = ay * ij[:, 1] + by
+
+        # compute dip (dip along v)
+        az = (z1 - z0) / (j1 - j0)
+        bz = z0 - az * j0
+        z = az * ij[:, 1] + bz
+
+        return np.column_stack((x, y, z))
+
+    def _compute_image_corners_from_3_tie_points(self, points: np.ndarray):
+        """
+        Compute world coordinates of image corners using 3 tie points.
+
+        :param points: List of [[i, j, k], [x, y, z]] pairs.
+
+        :return: Array of shape (4, 3) with corner world coordinates.
+        """
+        if len(points) < 3:
+            raise ValueError("At least 3 tie points are required")
+
+        # Extract first 3 tie points
+        pix = np.array([tp[0][:2] for tp in points[:3]], dtype=np.float64)  # (i, j)
+        wrd = np.array([tp[1] for tp in points[:3]], dtype=np.float64)  # (x, y, z)
+
+        # Build affine transformation: [i, j, 1] @ transform = [x, y, z]
+        design_matrix = np.column_stack([pix, np.ones(3)])
+        affine_transform = np.linalg.solve(design_matrix, wrd)
+
+        corner_design_matrix = np.column_stack(
+            [self.default_vertices[::-1, :2], np.ones(4)]
+        )
+        corners_wrd = corner_design_matrix @ affine_transform
+
+        return corners_wrd
+
+    def _compute_image_corners(
+        self,
+        points: np.ndarray,
+        u_cell_size: float | None,
+        v_cell_size: float | None,
+        tol: float = 1e-4,
+    ) -> np.ndarray:
+        """
+        Compute world coordinates of image corners using tie points.
+
+        :param points: List of [[i, j, k], [x, y, z]] pairs.
+        :param u_cell_size: World units per pixel in the i (horizontal) direction.
+        :param v_cell_size: World units per pixel in the j (vertical) direction.
+        :param tol: Tolerance for coplanarity and affine consistency checks.
+
+        :return: Array of shape (4, 3) with corner world coordinates.
+        """
+
+        if not are_coplanar(points, tol):
+            raise ValueError(
+                "Tie points are not coplanar; cannot compute image corners."
+            )
+
+        if not are_affine(points, tol):
+            raise ValueError(
+                "Tie points are not consistent with an affine transformation."
+            )
+
+        if points.shape[0] < 1:
+            raise ValueError(
+                "At least 1 tie point is required to compute image corners."
+            )
+
+        if points.shape[0] == 1:
+            if u_cell_size is None or v_cell_size is None:
+                raise ValueError(
+                    "Cell sizes must be provided when only 1 tie point is available."
+                )
+            return self._compute_image_corners_from_1_tie_point(
+                points, u_cell_size, v_cell_size
+            )
+        if points.shape[0] == 2:
+            corners = self._compute_image_corners_from_2_tie_points(points)
+        else:
+            corners = self._compute_image_corners_from_3_tie_points(points)
+
+        # check cell size is consistent
+        calc_u_cell_size = np.linalg.norm(corners[1] - corners[0]) / self.u_count
+        calc_v_cell_size = np.linalg.norm(corners[0] - corners[3]) / self.v_count
+
+        # should never happen
+        if (
+            u_cell_size is not None
+            and v_cell_size is not None
+            and (
+                not np.isclose(calc_u_cell_size, u_cell_size, rtol=tol)
+                or not np.isclose(calc_v_cell_size, v_cell_size, rtol=tol)
+            )
+        ):
+            print(
+                "Computed cell sizes from tie points do not match provided cell sizes."
+                f" Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
+                f"Provided: ({u_cell_size}, {v_cell_size})"
+            )
+            raise ValueError(
+                "Computed cell sizes from tie points do not match provided cell sizes."
+                f" Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
+                f"Provided: ({u_cell_size}, {v_cell_size})"
+            )
+
+        return corners

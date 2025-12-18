@@ -54,7 +54,48 @@ tag = {
 }
 
 
-def test_geoimage_with_tags_and_vertices(tmp_path):
+@pytest.mark.parametrize(
+    "tie_points_tag",
+    [
+        (0.0, 0.0, 0.0, 522796.33210329525, 7244067.563364625, 0.0),
+        (0.0, 0.0, 0.0, 522796.33210329525, 7244067.563364625, 0.0),
+        (
+            0.0,
+            0.0,
+            0.0,
+            522796.33210329525,
+            7244067.563364625,
+            0.0,
+            64.0,
+            64.0,
+            0.0,
+            522860.271,
+            7244003.625,
+            0.0,
+        ),
+        (
+            0.0,
+            0.0,
+            0.0,
+            522796.33210329525,
+            7244067.563364625,
+            0.0,
+            128.0,
+            0.0,
+            0.0,
+            522924.209425,
+            7244067.563364625,
+            0.0,
+            128.0,
+            128.0,
+            0.0,
+            522924.209425,
+            7243939.686042,
+            0.0,
+        ),
+    ],
+)
+def test_geoimage_with_tags_one_points(tmp_path, tie_points_tag):
     """
     Test creating a GeoImage with tags and verify vertices functionality.
 
@@ -63,11 +104,15 @@ def test_geoimage_with_tags_and_vertices(tmp_path):
     """
     with Workspace.create(tmp_path / "tagged_image_test.geoh5") as workspace:
         # Create a test image
-        image = Image.fromarray(
-            np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
-        )
+        xx, yy = np.meshgrid(np.arange(128), np.arange(128))
+        diagonal = ((xx + yy) / (128 + 128) * 255).astype("uint8")
+        image_data = np.stack([diagonal, diagonal, diagonal], axis=-1)
+        image = Image.fromarray(image_data, "RGB")
 
-        for tag_id, tag_value in tag.items():
+        temp_tag = tag.copy()
+        temp_tag[33922] = tie_points_tag
+
+        for tag_id, tag_value in temp_tag.items():
             image.getexif()[tag_id] = tag_value
 
         image_path = tmp_path / "test_tagged.tif"
@@ -89,6 +134,8 @@ def test_geoimage_with_tags_and_vertices(tmp_path):
                 [522796.3321033, 7243939.68604243, 0.0],
             ]
         )
+
+        geoimage.set_tag_from_vertices()
 
         assert np.allclose(vertices, expected), (
             "Vertices do not match expected values from tags."
@@ -122,9 +169,9 @@ def test_attribute_setters():
 def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
     with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         pixels = np.r_[
-            np.c_[32, 0],
-            np.c_[32, 64],
-            np.c_[64, 64],
+            np.c_[32, 0, 0],
+            np.c_[32, 64, 0],
+            np.c_[64, 64, 0],
         ]
         points = np.r_[
             np.c_[5.0, 5.0, 0],
@@ -175,18 +222,8 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
 
         geoimage.georeferencing_from_image()
 
-        # with pytest.raises(AttributeError, match="Vertices must be set for referencing"):
-        #     geoimage.set_tag_from_vertices()
-
-        with pytest.raises(
-            ValueError, match="Input reference points must be a 2D array"
-        ):
-            geoimage.georeference(pixels[0, :], points)
-
-        with pytest.raises(
-            ValueError, match="Input 'locations' must be a 2D array of shape"
-        ):
-            geoimage.georeference(pixels, points[0, :])
+        with pytest.raises(ValueError, match="Tie points must be a numpy array"):
+            geoimage.georeference(np.array(zip(pixels[0, :], points, strict=False)))
 
         with pytest.raises(
             AttributeError,
@@ -197,7 +234,13 @@ def test_create_copy_geoimage(tmp_path):  # pylint: disable=too-many-statements
         geoimage = GeoImage.create(
             workspace, name="MyGeoImage", image=np.random.randint(0, 255, (128, 64, 3))
         )
-        geoimage.georeference(pixels, points)
+        geoimage.georeference(np.array(list(zip(pixels, points, strict=False))))
+
+        temp = np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]])
+        print(temp)
+        print(geoimage.vertices)
+        print(temp - geoimage.vertices)
+
         np.testing.assert_almost_equal(
             geoimage.vertices,
             np.asarray([[0, 15, 6], [10, 15, 6], [10, 5, 0], [0, 5, 0]]).astype(float),
