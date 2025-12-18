@@ -17,32 +17,43 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-import logging
-from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BeforeValidator, Field, PlainSerializer
 
-from geoh5py.ui_json.validations.form import empty_string_to_none, uuid_to_string
+def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
+    def convert(value: UUID | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, UUID):
+            return f"{{{value!s}}}"
+        return value
+
+    if isinstance(value, list):
+        return [convert(v) for v in value]
+    return convert(value)
 
 
-logger = logging.getLogger(__name__)
-
-OptionalUUIDList = Annotated[
-    list[UUID] | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
-]
-
-
-def deprecate(value, info):
-    """Issue deprecation warning."""
-    logger.warning("Skipping deprecated field: %s.", info.field_name)
+def empty_string_to_none(value):
+    """Promote empty string to uid, and pass all other values."""
+    if value == "":
+        return None
     return value
 
 
-Deprecated = Annotated[
-    Any,
-    Field(exclude=True),
-    BeforeValidator(deprecate),
-]
+UidOrNumeric = UUID | float | int | None
+StringOrNumeric = str | float | int
+
+
+def uuid_to_string_or_numeric(
+    value: UidOrNumeric | list[UidOrNumeric],
+) -> StringOrNumeric | list[StringOrNumeric]:
+    def convert(value: UidOrNumeric) -> StringOrNumeric:
+        if value is None:
+            return ""
+        if isinstance(value, UUID):
+            return f"{{{value}}}"
+        return value
+
+    if isinstance(value, list):
+        return [convert(v) for v in value]
+    return convert(value)
