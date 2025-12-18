@@ -31,7 +31,7 @@ def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
         if value is None:
             return ""
         if isinstance(value, UUID):
-            return str(value)
+            return f"{{{value!s}}}"
         return value
 
     if isinstance(value, list):
@@ -53,7 +53,7 @@ def uuid_to_string_or_numeric(
         if value is None:
             return ""
         if isinstance(value, UUID):
-            return str(value)
+            return f"{{{value}}}"
         return value
 
     if isinstance(value, list):
