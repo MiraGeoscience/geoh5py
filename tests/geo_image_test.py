@@ -401,6 +401,89 @@ def test_georeference_image(tmp_path):
         assert len(new_grid.children) == 4
 
 
+def test_georeferencing_from_tiff_errors_and_warnings(tmp_path):
+    """
+    Test error and warning scenarios for the georeferencing_from_tiff method.
+
+    This test covers:
+    1. AttributeError when image is not georeferenced (tag is None)
+    2. UserWarning when required tags are missing (KeyError)
+    3. UserWarning when tag values cannot be parsed (ValueError)
+    """
+    with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
+        # Test 1: AttributeError when tag is None (no georeference info)
+        image_array = np.random.randint(0, 255, (128, 128, 3)).astype("uint8")
+        geoimage_no_tag = GeoImage.create(
+            workspace, name="no_tag_image", image=image_array
+        )
+
+        with pytest.raises(AttributeError, match="The image is not georeferenced"):
+            geoimage_no_tag.georeferencing_from_tiff()
+
+        # Test 2: UserWarning for missing required tags (KeyError)
+        # Create image with incomplete tags (missing required tag 33550)
+        image = Image.fromarray(image_array, "RGB")
+        incomplete_tag = {
+            256: (128,),  # ImageWidth
+            257: (128,),  # ImageHeight
+            33922: (0.0, 0.0, 0.0, 522796.33, 7244067.56, 0.0),  # ModelTiepointTag
+            # Missing 33550 (ModelPixelScaleTag) - will cause KeyError
+        }
+
+        for tag_id, tag_value in incomplete_tag.items():
+            image.getexif()[tag_id] = tag_value
+
+        incomplete_image_path = tmp_path / "incomplete_tags.tif"
+        image.save(incomplete_image_path, exif=image.getexif())
+
+        geoimage_incomplete = GeoImage.create(
+            workspace, name="incomplete_tags_image", image=str(incomplete_image_path)
+        )
+
+        with pytest.warns(
+            UserWarning,
+            match="The 'tif.' image has no referencing information. KeyError:",
+        ):
+            geoimage_incomplete.georeferencing_from_tiff()
+
+        # Test 3: UserWarning for ValueError (size mismatch)
+        # Create a properly formed TIFF, then manually modify its tag to have wrong dimensions
+        image_correct = Image.fromarray(
+            np.random.randint(0, 255, (64, 64, 3)).astype("uint8"), "RGB"
+        )
+        correct_tag = {
+            256: (64,),  # ImageWidth - correct
+            257: (64,),  # ImageHeight - correct
+            33922: (0.0, 0.0, 0.0, 522796.33, 7244067.56, 0.0),
+            33550: (1.0, 1.0, 0.0),  # ModelPixelScaleTag
+        }
+
+        for tag_id, tag_value in correct_tag.items():
+            image_correct.getexif()[tag_id] = tag_value
+
+        correct_path = tmp_path / "correct_tags.tif"
+        image_correct.save(correct_path, exif=image_correct.getexif())
+
+        # Create GeoImage and manually modify tag to cause size mismatch
+        geoimage_wrong_size = GeoImage.create(
+            workspace, name="wrong_size_image", image=str(correct_path)
+        )
+
+        # Manually set wrong dimensions in the tag to trigger ValueError
+        geoimage_wrong_size._tag = {
+            256: (128,),  # Wrong ImageWidth (actual is 64)
+            257: (128,),  # Wrong ImageHeight (actual is 64)
+            33922: (0.0, 0.0, 0.0, 522796.33, 7244067.56, 0.0),
+            33550: (1.0, 1.0, 0.0),
+        }
+
+        with pytest.warns(
+            UserWarning,
+            match="Could not parse the georeferencing information from the 'tif.' image. ValueError:",
+        ):
+            geoimage_wrong_size.georeferencing_from_tiff()
+
+
 def test_rotation_setter(tmp_path):
     with Workspace.create(tmp_path / r"geo_image_test.geoh5") as workspace:
         # add the data
@@ -988,3 +1071,561 @@ def test_copy_from_extent_error_conditions(tmp_path):
             NotImplementedError, match="Inverse mask is not implemented yet with images"
         ):
             geoimage_with_image.copy_from_extent(extent, inverse=True)
+
+
+def test_parse_tie_points():
+    """
+    Test _parse_tie_points static method error handling and validation.
+    """
+    # Test case 1: Valid tuple input (single tie point)
+    tie_points_tuple = (0.0, 0.0, 0.0, 100.0, 200.0, 0.0)
+    result = GeoImage._parse_tie_points(tie_points_tuple)
+    expected = np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]]])
+    np.testing.assert_array_equal(result, expected)
+
+    # Test case 2: Valid list input (multiple tie points)
+    tie_points_list = [
+        0.0,
+        0.0,
+        0.0,
+        100.0,
+        200.0,
+        0.0,
+        10.0,
+        10.0,
+        0.0,
+        110.0,
+        210.0,
+        0.0,
+    ]
+    result = GeoImage._parse_tie_points(tie_points_list)
+    assert result.shape == (2, 2, 3)
+
+    # Test case 3: Valid numpy array input
+    tie_points_array = np.array(
+        [
+            [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
+            [[10.0, 10.0, 0.0], [110.0, 210.0, 0.0]],
+        ]
+    )
+    result = GeoImage._parse_tie_points(tie_points_array)
+    np.testing.assert_array_equal(result, tie_points_array)
+
+    # Test case 4: ValueError - tuple/list length not multiple of 6
+    with pytest.raises(
+        ValueError, match="ModelTiepointTag length must be a multiple of 6"
+    ):
+        GeoImage._parse_tie_points((0.0, 0.0, 0.0, 100.0, 200.0))  # 5 elements
+
+    with pytest.raises(
+        ValueError, match="ModelTiepointTag length must be a multiple of 6"
+    ):
+        GeoImage._parse_tie_points([0.0, 0.0, 0.0, 100.0])  # 4 elements
+
+    # Test case 5: ValueError - wrong numpy array shape
+    with pytest.raises(ValueError, match="Tie points must be a numpy array of shape"):
+        # Wrong dimensions (2D instead of 3D)
+        GeoImage._parse_tie_points(np.array([[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]]))
+
+    with pytest.raises(ValueError, match="Tie points must be a numpy array of shape"):
+        # Wrong shape in last dimensions
+        GeoImage._parse_tie_points(np.array([[[0.0, 0.0], [100.0, 200.0]]]))
+
+    # Test case 6: ValueError - same pixel maps to different world coordinates
+    inconsistent_tie_points = np.array(
+        [
+            [
+                [0.0, 0.0, 0.0],
+                [100.0, 200.0, 0.0],
+            ],  # pixel (0,0,0) -> world (100,200,0)
+            [
+                [0.0, 0.0, 0.0],
+                [150.0, 250.0, 0.0],
+            ],  # pixel (0,0,0) -> world (150,250,0)
+        ]
+    )
+    with pytest.raises(
+        ValueError, match="identical pixel coordinates map to multiple world"
+    ):
+        GeoImage._parse_tie_points(inconsistent_tie_points)
+
+    # Test case 7: ValueError - same world maps to different pixel coordinates
+    inconsistent_world = np.array(
+        [
+            [
+                [0.0, 0.0, 0.0],
+                [100.0, 200.0, 0.0],
+            ],  # pixel (0,0,0) -> world (100,200,0)
+            [
+                [10.0, 10.0, 0.0],
+                [100.0, 200.0, 0.0],
+            ],  # pixel (10,10,0) -> world (100,200,0)
+        ]
+    )
+    with pytest.raises(
+        ValueError, match="identical world coordinates map to multiple pixel"
+    ):
+        GeoImage._parse_tie_points(inconsistent_world)
+
+    # Test case 8: Duplicate removal - exact duplicates should be handled
+    duplicated_tie_points = np.array(
+        [
+            [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
+            [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],  # exact duplicate
+            [[10.0, 10.0, 0.0], [110.0, 210.0, 0.0]],
+        ]
+    )
+    result = GeoImage._parse_tie_points(duplicated_tie_points)
+    # Should have only 2 unique pairs
+    assert result.shape == (2, 2, 3)
+
+
+def test_compute_image_corners_from_1_tie_point(tmp_path):
+    """
+    Test _compute_image_corners_from_1_tie_point method error handling and computation.
+    """
+    with Workspace.create(tmp_path / "test_1_tie_point.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        geoimage = GeoImage.create(workspace, name="test", image=image)
+
+        # Test case 1: Valid single tie point at origin
+        tie_points = np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
+        result = geoimage._compute_image_corners_from_1_tie_point(
+            tie_points, u_cell_size=1.0, v_cell_size=1.0
+        )
+        assert result.shape == (4, 3)
+        # z should be constant
+        assert np.allclose(result[:, 2], 5.0)
+        # Verify corners based on tie point at pixel (0,0) -> world (100, 200, 5)
+        # default_vertices reversed = [[0,0,0], [10,0,0], [10,10,0], [0,10,0]]
+        expected = np.array(
+            [
+                [100.0, 200.0, 5.0],  # pixel (0, 0) - origin
+                [110.0, 200.0, 5.0],  # pixel (10, 0)
+                [110.0, 190.0, 5.0],  # pixel (10, 10) - note: v is negative direction
+                [100.0, 190.0, 5.0],  # pixel (0, 10)
+            ]
+        )
+        np.testing.assert_allclose(result, expected)
+
+        # Test case 2: Valid tie point at different pixel location
+        tie_points_offset = np.array([[[5.0, 5.0, 0.0], [500.0, 600.0, 10.0]]])
+        result_offset = geoimage._compute_image_corners_from_1_tie_point(
+            tie_points_offset, u_cell_size=2.0, v_cell_size=3.0
+        )
+        assert result_offset.shape == (4, 3)
+        assert np.allclose(result_offset[:, 2], 10.0)
+
+        # Test case 3: ValueError - empty tie points array
+        with pytest.raises(ValueError, match="At least 1 tie point is required"):
+            geoimage._compute_image_corners_from_1_tie_point(
+                np.array([]).reshape(0, 2, 3), u_cell_size=1.0, v_cell_size=1.0
+            )
+
+
+def test_compute_image_corners_from_2_tie_points(tmp_path):
+    """
+    Test _compute_image_corners_from_2_tie_points method error handling and computation.
+    """
+    with Workspace.create(tmp_path / "test_2_tie_points.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        geoimage = GeoImage.create(workspace, name="test", image=image)
+
+        # Test case 1: Valid two tie points with simple 1:1 mapping
+        tie_points = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
+                [[10.0, 10.0, 0.0], [110.0, 210.0, 5.0]],
+            ]
+        )
+        result = geoimage._compute_image_corners_from_2_tie_points(tie_points)
+        assert result.shape == (4, 3)
+        # Verify the corners match expected values
+        # default_vertices reversed = [[0,0,0], [10,0,0], [10,10,0], [0,10,0]]
+        expected = np.array(
+            [
+                [100.0, 200.0, 5.0],  # pixel (0, 0)
+                [110.0, 200.0, 5.0],  # pixel (10, 0)
+                [110.0, 210.0, 5.0],  # pixel (10, 10)
+                [100.0, 210.0, 5.0],  # pixel (0, 10)
+            ]
+        )
+        np.testing.assert_allclose(result, expected)
+
+        # Test case 2: Valid two tie points with dip
+        tie_points_dip = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
+                [[5.0, 8.0, 0.0], [105.0, 208.0, 8.0]],  # z changes with j
+            ]
+        )
+        result_dip = geoimage._compute_image_corners_from_2_tie_points(tie_points_dip)
+        assert result_dip.shape == (4, 3)
+        # z should vary with j coordinate
+        assert not np.allclose(result_dip[:, 2], result_dip[0, 2])
+
+        # Test case 3: ValueError - less than 2 tie points
+        with pytest.raises(ValueError, match="At least 2 tie points are required"):
+            geoimage._compute_image_corners_from_2_tie_points(
+                np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
+            )
+
+        # Test case 4: ValueError - tie points with same i coordinate
+        tie_points_same_i = np.array(
+            [
+                [[5.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
+                [[5.0, 8.0, 0.0], [100.0, 208.0, 5.0]],  # same i=5.0
+            ]
+        )
+        with pytest.raises(
+            ValueError, match="Tie points must differ in i to determine x mapping"
+        ):
+            geoimage._compute_image_corners_from_2_tie_points(tie_points_same_i)
+
+        # Test case 5: ValueError - tie points with same j coordinate
+        tie_points_same_j = np.array(
+            [
+                [[0.0, 5.0, 0.0], [100.0, 200.0, 5.0]],
+                [[8.0, 5.0, 0.0], [108.0, 200.0, 5.0]],  # same j=5.0
+            ]
+        )
+        with pytest.raises(
+            ValueError, match="Tie points must differ in j to determine y/z mapping"
+        ):
+            geoimage._compute_image_corners_from_2_tie_points(tie_points_same_j)
+
+
+def test_compute_image_corners_from_3_tie_points(tmp_path):
+    """
+    Test _compute_image_corners_from_3_tie_points method error handling and computation.
+    """
+    with Workspace.create(tmp_path / "test_3_tie_points.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        geoimage = GeoImage.create(workspace, name="test", image=image)
+
+        # Test case 1: Valid three tie points forming axis-aligned rectangle
+        tie_points = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
+                [[10.0, 0.0, 0.0], [110.0, 200.0, 5.0]],
+                [[0.0, 10.0, 0.0], [100.0, 210.0, 5.0]],
+            ]
+        )
+        result = geoimage._compute_image_corners_from_3_tie_points(tie_points)
+        assert result.shape == (4, 3)
+        # Verify all corners
+        # default_vertices reversed = [[0,0,0], [10,0,0], [10,10,0], [0,10,0]]
+        expected = np.array(
+            [
+                [100.0, 200.0, 5.0],  # pixel (0, 0)
+                [110.0, 200.0, 5.0],  # pixel (10, 0)
+                [110.0, 210.0, 5.0],  # pixel (10, 10)
+                [100.0, 210.0, 5.0],  # pixel (0, 10)
+            ]
+        )
+        np.testing.assert_allclose(result, expected)
+
+        # Test case 2: Valid three tie points with rotation/scaling
+        tie_points_rotated = np.array(
+            [
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [[5.0, 0.0, 0.0], [10.0, 5.0, 0.0]],  # rotated and scaled
+                [[0.0, 5.0, 0.0], [-5.0, 10.0, 0.0]],  # rotated and scaled
+            ]
+        )
+        result_rotated = geoimage._compute_image_corners_from_3_tie_points(
+            tie_points_rotated
+        )
+        assert result_rotated.shape == (4, 3)
+        # Verify the affine transformation produces consistent results
+        assert np.all(np.isfinite(result_rotated))
+
+        # Test case 3: Valid three tie points with varying z
+        tie_points_z = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
+                [[5.0, 0.0, 0.0], [105.0, 200.0, 1.0]],
+                [[0.0, 5.0, 0.0], [100.0, 205.0, 2.0]],
+            ]
+        )
+        result_z = geoimage._compute_image_corners_from_3_tie_points(tie_points_z)
+        assert result_z.shape == (4, 3)
+
+        # Test case 4: ValueError - less than 3 tie points
+        with pytest.raises(ValueError, match="At least 3 tie points are required"):
+            geoimage._compute_image_corners_from_3_tie_points(
+                np.array(
+                    [
+                        [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
+                        [[5.0, 0.0, 0.0], [105.0, 200.0, 5.0]],
+                    ]
+                )
+            )
+
+
+def test_compute_image_corners(tmp_path):
+    """
+    Test _compute_image_corners method error handling and validation.
+    """
+    with Workspace.create(tmp_path / "test_compute_corners.geoh5") as workspace:
+        # Create a simple test image
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        geoimage = GeoImage.create(workspace, name="test", image=image)
+
+        # Test case 1: Valid 1 tie point with cell sizes
+        tie_points_1 = np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
+        result = geoimage._compute_image_corners(
+            tie_points_1, u_cell_size=1.0, v_cell_size=1.0
+        )
+        assert result.shape == (4, 3)
+
+        # Test case 2: ValueError - 1 tie point without cell sizes
+        with pytest.raises(
+            ValueError, match="Cell sizes must be provided when only 1 tie point"
+        ):
+            geoimage._compute_image_corners(
+                tie_points_1, u_cell_size=None, v_cell_size=None
+            )
+
+        # Test case 3: ValueError - empty tie points array
+        with pytest.raises(ValueError, match="At least 1 tie point is required"):
+            geoimage._compute_image_corners(
+                np.array([]).reshape(0, 2, 3), u_cell_size=None, v_cell_size=None
+            )
+
+        # Test case 4: ValueError - non-coplanar tie points
+        # Create tie points where world coordinates are not on the same plane
+        non_coplanar_points = np.array(
+            [
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [[1.0, 0.0, 0.0], [10.0, 0.0, 0.0]],
+                [[0.0, 1.0, 0.0], [0.0, 10.0, 0.0]],
+                [
+                    [1.0, 1.0, 0.0],
+                    [10.0, 10.0, 10.0],
+                ],  # This world point breaks coplanarity
+            ]
+        )
+        with pytest.raises(ValueError, match="Tie points are not coplanar"):
+            geoimage._compute_image_corners(
+                non_coplanar_points, u_cell_size=None, v_cell_size=None
+            )
+
+        # Test case 5: ValueError - non-affine tie points
+        # Create tie points that don't follow an affine transformation
+        # These are coplanar but non-affine (nonlinear mapping)
+        non_affine_points = np.array(
+            [
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
+                [[0.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
+                [
+                    [1.0, 1.0, 0.0],
+                    [3.0, 3.0, 0.0],
+                ],  # Breaks affine consistency (should be 1,1)
+            ]
+        )
+        with pytest.raises(
+            ValueError, match="Tie points are not consistent with an affine"
+        ):
+            geoimage._compute_image_corners(
+                non_affine_points, u_cell_size=None, v_cell_size=None
+            )
+
+        # Test case 6: ValueError - cell size mismatch
+        # Create 2 tie points with specific geometry
+        tie_points_2 = np.array(
+            [[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[10.0, 10.0, 0.0], [10.0, 10.0, 0.0]]]
+        )
+        # Provide incorrect cell sizes that don't match the actual geometry
+        with pytest.raises(
+            ValueError, match="Computed cell sizes from tie points do not match"
+        ):
+            geoimage._compute_image_corners(
+                tie_points_2,
+                u_cell_size=5.0,
+                v_cell_size=5.0,  # Wrong sizes
+            )
+
+        # Test case 7: Valid 2 tie points
+        tie_points_2_valid = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
+                [[5.0, 5.0, 0.0], [105.0, 205.0, 0.0]],
+            ]
+        )
+        result = geoimage._compute_image_corners(
+            tie_points_2_valid, u_cell_size=None, v_cell_size=None
+        )
+        assert result.shape == (4, 3)
+
+        # Test case 8: Valid 3 tie points
+        tie_points_3 = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
+                [[5.0, 0.0, 0.0], [105.0, 200.0, 0.0]],
+                [[0.0, 5.0, 0.0], [100.0, 205.0, 0.0]],
+            ]
+        )
+        result = geoimage._compute_image_corners(
+            tie_points_3, u_cell_size=None, v_cell_size=None
+        )
+        assert result.shape == (4, 3)
+
+
+def test_validate_geoimage(tmp_path):
+    """
+    Test GeoImageConversion._validate_geoimage static method error handling.
+    """
+    from geoh5py.shared.conversion import GeoImageConversion
+
+    with Workspace.create(tmp_path / "test_validate_geoimage.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+
+        # Test case 1: Valid geoimage with default rectangular vertices
+        geoimage_valid = GeoImage.create(workspace, name="valid", image=image)
+        # Should not raise any errors
+        GeoImageConversion._validate_geoimage(geoimage_valid)
+
+        # Test case 2: Valid geoimage with custom rectangular vertices
+        vertices_rect = np.array(
+            [[0.0, 10.0, 0.0], [10.0, 10.0, 0.0], [10.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+        )
+        geoimage_rect = GeoImage.create(
+            workspace, name="rect", image=image.copy(), vertices=vertices_rect
+        )
+        GeoImageConversion._validate_geoimage(geoimage_rect)
+
+        # Test case 3: ValueError - non-coplanar vertices
+        # Create a valid geoimage then modify vertices to be non-coplanar
+        geoimage_non_coplanar = GeoImage.create(
+            workspace, name="non_coplanar", image=image.copy()
+        )
+        # Directly set non-coplanar vertices bypassing property setter validation
+        geoimage_non_coplanar._vertices = np.rec.fromarrays(
+            np.array(
+                [
+                    [0.0, 10.0, 0.0],
+                    [10.0, 10.0, 0.0],
+                    [10.0, 0.0, 0.0],
+                    [0.0, 0.0, 10.0],  # Different z breaks coplanarity
+                ]
+            ).T,
+            dtype=geoimage_non_coplanar._GeoImage__VERTICES_DTYPE,
+        )
+        with pytest.raises(ValueError, match="GeoImage vertices are not coplanar"):
+            GeoImageConversion._validate_geoimage(geoimage_non_coplanar)
+
+        # Test case 4: ValueError - non-orthogonal vertices (but coplanar)
+        # Need vertices that are coplanar but not forming right angles
+        geoimage_non_orthogonal = GeoImage.create(
+            workspace, name="non_orthogonal", image=image.copy()
+        )
+        # Directly set non-orthogonal vertices - parallelogram in the xy plane
+        geoimage_non_orthogonal._vertices = np.rec.fromarrays(
+            np.array(
+                [
+                    [0.0, 10.0, 0.0],
+                    [12.0, 12.0, 0.0],  # Skewed - not a right angle
+                    [12.0, 2.0, 0.0],
+                    [0.0, 0.0, 0.0],
+                ]
+            ).T,
+            dtype=geoimage_non_orthogonal._GeoImage__VERTICES_DTYPE,
+        )
+        with pytest.raises(ValueError, match="GeoImage vertices are not orthogonal"):
+            GeoImageConversion._validate_geoimage(geoimage_non_orthogonal)
+
+        # Test case 5: ValueError - non-affine transformation
+        # To break the affine check, we need points where NO affine transformation can map
+        # pixel coordinates to world coordinates within tolerance
+        # A trapezoid with orthogonal corners at vertices[3] will work
+        geoimage_non_affine = GeoImage.create(
+            workspace, name="non_affine", image=image.copy()
+        )
+        # Create a trapezoid: orthogonal at vertex 3, but non-uniform sides
+        # But vertex[1] forms a trapezoid: [8, 10, 0] instead of [10, 10, 0]
+        geoimage_non_affine._vertices = np.rec.fromarrays(
+            np.array(
+                [
+                    [0.0, 10.0, 0.0],  # vertex 0
+                    [8.0, 10.0, 0.0],  # vertex 1 - makes it a trapezoid
+                    [10.0, 0.0, 0.0],  # vertex 2
+                    [0.0, 0.0, 0.0],  # vertex 3
+                ]
+            ).T,
+            dtype=geoimage_non_affine._GeoImage__VERTICES_DTYPE,
+        )
+        with pytest.raises(
+            ValueError, match="GeoImage vertices do not define an affine"
+        ):
+            GeoImageConversion._validate_geoimage(geoimage_non_affine)
+
+
+def test_rotation_dip_rotation_only_false(tmp_path):
+    """
+    Test GeoImage.rotation property when dip_rotation_only is False.
+
+    The rotation property should raise a ValueError when the vertices define
+    a rectangle that requires more than rotation and dip transformations
+    (i.e., when the u_vector of the plane has a non-zero Z component).
+    """
+    with Workspace.create(tmp_path / "test_rotation_dip_only.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+
+        # Test case 1: Valid rotation - dip_rotation_only is True
+        # Simple rectangle in XY plane with rotation
+        vertices_valid = np.array(
+            [[0.0, 10.0, 0.0], [10.0, 10.0, 0.0], [10.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+        )
+        geoimage_valid = GeoImage.create(
+            workspace, name="valid_rotation", image=image, vertices=vertices_valid
+        )
+        # Should not raise any errors - rotation property works
+        rotation = geoimage_valid.rotation
+        assert isinstance(rotation, float)
+
+        # Test case 2: ValueError - dip_rotation_only is False
+        # Create vertices where u_vector has Z component (requires more than rotation+dip)
+        # Need an orthogonal rectangle that's "twisted" in 3D space
+        #
+        # To make dip_rotation_only=False, u_vector must have non-zero Z component
+        geoimage_invalid = GeoImage.create(
+            workspace, name="invalid_rotation", image=image.copy()
+        )
+
+        # Create the orthogonal rectangle
+        origin = np.array([0.0, 0.0, 0.0])  # vertex[3]
+        u_vec = np.array([10.0, 0.0, 5.0])  # to vertex[2] - has Z component!
+        v_vec = np.array([0.0, 10.0, 0.0])  # to vertex[0] - in XY plane
+
+        # Normalize for unit vectors, then scale back to desired size
+        u_normalized = u_vec / np.linalg.norm(u_vec)
+        v_normalized = v_vec / np.linalg.norm(v_vec)
+        u_scaled = u_normalized * np.sqrt(10**2 + 5**2)  # Keep same length
+        v_scaled = v_normalized * 10
+
+        vertices_twisted = np.array(
+            [
+                origin + v_scaled,  # vertex[0]
+                origin + u_scaled + v_scaled,  # vertex[1]
+                origin + u_scaled,  # vertex[2]
+                origin,  # vertex[3]
+            ]
+        )
+
+        geoimage_invalid._vertices = np.rec.fromarrays(
+            vertices_twisted.T, dtype=geoimage_invalid._GeoImage__VERTICES_DTYPE
+        )
+
+        # Accessing rotation property should raise ValueError
+        with pytest.raises(
+            ValueError,
+            match="The vertices do not define a rectangle that can be explained by rotation and dip only",
+        ):
+            _ = geoimage_invalid.rotation

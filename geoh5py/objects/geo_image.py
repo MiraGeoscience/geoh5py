@@ -922,7 +922,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         :return: Array of shape (4, 3) with corner world coordinates.
         """
 
-        if not are_coplanar(points, tol):
+        if not are_coplanar(points[:, 1, :], tol):
             raise ValueError(
                 "Tie points are not coplanar; cannot compute image corners."
             )
