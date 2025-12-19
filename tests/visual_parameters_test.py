@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import pytest
 
-from geoh5py.objects import Points
+from geoh5py.objects import Curve, Points, Surface
 from geoh5py.workspace import Workspace
 
 
@@ -90,3 +90,53 @@ def test_visual_parameters(tmp_path, caplog):
 
         with pytest.raises(TypeError, match="Input 'visual_parameters'"):
             points.visual_parameters = 1
+
+        with pytest.raises(
+            TypeError, match="Input 'colour' values must be a list of 3 integers"
+        ):
+            points.visual_parameters.colour = [255, 0]  # Wrong length
+
+
+@pytest.mark.parametrize(
+    "object_type,object_name,extra_params",
+    [
+        (Points, "TestPoints", {}),
+        (Curve, "TestCurve", {}),
+        (
+            Surface,
+            "TestSurface",
+            {"cells": np.array([[0, 1, 5], [1, 6, 5], [1, 2, 6]])},
+        ),
+    ],
+)
+def test_colour_setter(tmp_path, object_type, object_name, extra_params):
+    """Test the colour setter with different object types."""
+    h5file_path = tmp_path / f"test_{object_name}_colour.geoh5"
+    colour = [0, 255, 0]  # Green
+
+    # Create vertices
+    if object_type == Surface:
+        x, y = np.meshgrid(np.arange(5), np.arange(5))
+        x, y = x.ravel(), y.ravel()
+        z = np.random.randn(x.shape[0])
+        vertices = np.c_[x, y, z]
+    else:
+        vertices = np.random.randn(10, 3)
+
+    with Workspace.create(h5file_path) as workspace:
+        obj = object_type.create(
+            workspace,
+            vertices=vertices,
+            name=object_name,
+            **extra_params,
+        )
+
+        viz_params = obj.add_default_visual_parameters()
+        viz_params.colour = colour
+
+        assert obj.visual_parameters.colour == colour
+
+    # Verify persistence
+    with Workspace(h5file_path) as workspace:
+        obj = workspace.get_entity(object_name)[0]
+        assert obj.visual_parameters.colour == colour

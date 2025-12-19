@@ -105,12 +105,18 @@ class VisualParameters(TextData):
 
     @colour.setter
     def colour(self, rgb: list | tuple | np.ndarray):
+        # all the CellObjects
+        set_transparency = self.parent.__class__.__name__ in ["Curve", "Surface"]
+
         if (
             not isinstance(rgb, (list, tuple, np.ndarray))
-            or len(rgb) != 3
+            or len(rgb) not in ([3, 4] if set_transparency else [3])
             or not all(isinstance(val, int) for val in rgb)
         ):
             raise TypeError("Input 'colour' values must be a list of 3 integers.")
+
+        if set_transparency and len(rgb) == 3:
+            rgb = list(rgb) + [255]
 
         byte_string = "".join(f"{val:02x}" for val in rgb)
         byte_string.join(f"{255:02x}")  # alpha value
