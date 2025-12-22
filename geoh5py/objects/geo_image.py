@@ -40,11 +40,12 @@ from ..shared.utils import (
     xy_rotation_matrix,
     yz_rotation_matrix,
 )
-from .object_base import ObjectBase
+from .object_base import Entity, ObjectBase
 
 
 if TYPE_CHECKING:
     from ..objects import Grid2D
+    from ..workspace import Workspace
 
 
 class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
@@ -164,7 +165,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Inverse mask is not implemented yet with images."
             )
 
-        # todo: image can indeed contains several images attached as children
+        # todo: image can contains several images attached as children
         if copy_children is False:
             warnings.warn(
                 "The 'copy_children' argument is not applicable to GeoImage objects."
@@ -310,31 +311,29 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if self.tag is None or self.image is None:
             raise AttributeError("The image is not georeferenced")
 
-        try:
-            # get the tag values
-            tie_points = self._parse_tie_points(self.tag[33922])
-            u_count = int(self.tag[256][0])
-            v_count = int(self.tag[257][0])
-            u_cell_size = self.tag[33550][0]
-            v_cell_size = self.tag[33550][1]
-
-            # prepare georeferencing
-            if u_count != self.u_count or v_count != self.v_count:
-                raise ValueError("The image size does not match the size in the tag.")
-
-            self.vertices = self._compute_image_corners(
-                tie_points, u_cell_size, v_cell_size
-            )
-
-        except KeyError as error:
+        if not all(key in self.tag for key in (33550, 33922)):
             warnings.warn(
-                f"The 'tif.' image has no referencing information. KeyError: {error}"
+                "The 'tif.' image is missing one or more required tags "
+                "(33550, 33922) for georeferencing."
             )
-        except ValueError as error:
-            warnings.warn(
-                "Could not parse the georeferencing information from the 'tif.' image."
-                f" ValueError: {error}"
+            return
+
+        # get the tag values
+        tie_points = self._parse_tie_points(self.tag[33922])
+        u_cell_size = self.tag[33550][0]
+        v_cell_size = self.tag[33550][1]
+
+        vertices = self._compute_image_corners(tie_points, u_cell_size, v_cell_size)
+
+        if isinstance(vertices, list):
+            warning_message = (
+                "Georeferencing from tiff failed because of the following reasons:"
+                "\n - ".join(vertices)
             )
+            warnings.warn(warning_message)
+            return
+
+        self.vertices = vertices
 
     @property
     def image(self):
@@ -595,7 +594,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         :return: Image converted to FileNameData object.
         """
-        # todo: this should be changed in the future to accept tiff images
+        # todo: this should be changed in the future to accept n dims tiff images
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
                 raise ValueError(
@@ -713,7 +712,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         return distance_v / self.v_count
 
     def _create_geoimage_from_attributes(
-        self, parent: None | Any = None, **kwargs
+        self, parent: None | Entity | Workspace = None, **kwargs
     ) -> GeoImage:
         """
         Create a new GeoImage from attributes.
@@ -751,47 +750,34 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         :return: An array of tiepoints of shape (n, 2, 3).
         """
-        if isinstance(tie_points, tuple | list):
-            if len(tie_points) % 6 != 0:
+        tie_points = np.asarray(tie_points, dtype=float)
+
+        if tie_points.ndim == 1:
+            if tie_points.size % 6 != 0:
                 raise ValueError(
-                    "ModelTiepointTag length must be a multiple of 6"
-                    f". Got length {len(tie_points)} instead."
+                    "ModelTiepointTag length must be a multiple of 6. "
+                    f"Got length {tie_points.size}."
                 )
-
-            it = iter(tie_points)
-            tie_points = np.array(
-                [
-                    [[next(it), next(it), next(it)], [next(it), next(it), next(it)]]
-                    for _ in range(len(tie_points) // 6)
-                ]
-            )
-
-        if (
-            not isinstance(tie_points, np.ndarray)
-            or tie_points.ndim != 3
-            or tie_points.shape[1:] != (2, 3)
-        ):
+            tie_points = tie_points.reshape(-1, 2, 3)
+        elif tie_points.ndim != 3 or tie_points.shape[1:] != (2, 3):
             raise ValueError(
-                "Tie points must be a numpy array of shape (n, 2, 3)."
-                f" Got {tie_points.shape} instead."
+                "Tie points must have shape (6n,) or (n, 2, 3). "
+                f"Got {tie_points.shape}."
             )
 
         # Remove exact duplicate (pixel, world) pairs
         pairs_unique = np.unique(tie_points.reshape(-1, 6), axis=0)
 
-        n_pairs = pairs_unique.shape[0]
-        n_pix = np.unique(pairs_unique[:, :3], axis=0).shape[0]  # pixels (i, j, k)
-        n_wrd = np.unique(pairs_unique[:, 3:], axis=0).shape[0]  # worlds (x, y, z)
+        pix = pairs_unique[:, :3]
+        wrd = pairs_unique[:, 3:]
 
-        # (1) Same pixel -> different world
-        if n_pairs > n_pix:
+        if np.unique(pix, axis=0).shape[0] != pairs_unique.shape[0]:
             raise ValueError(
                 "Inconsistent tie points: identical pixel coordinates map to "
                 "multiple world coordinates."
             )
 
-        # (2) Same world -> different pixel
-        if n_pairs > n_wrd:
+        if np.unique(wrd, axis=0).shape[0] != pairs_unique.shape[0]:
             raise ValueError(
                 "Inconsistent tie points: identical world coordinates map to "
                 "multiple pixel coordinates."
@@ -813,9 +799,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         :return: Array of shape (4, 3) with corner world coordinates.
         """
-        if len(points) < 1:
-            raise ValueError("At least 1 tie point is required")
-
         # Extract first tie point
         pix_ref = np.array(points[0][0][:2], dtype=np.float64)  # [i, j]
         wrd_ref = np.array(points[0][1], dtype=np.float64)  # [x, y, z]
@@ -837,10 +820,10 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         return corners_wrd
 
-    # pylint: disable=too-many-locals
     def _compute_image_corners_from_2_tie_points(
         self, points: np.ndarray
     ) -> np.ndarray:
+        # pylint: disable=too-many-locals
         """
         Compute world coordinates of image corners from 2 tie points,
         assuming:
@@ -848,9 +831,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
           - dip direction = v (pixel j),
           - x = f(i), y = g(j), z = h(j) (no shear).
         """
-        if len(points) < 2:
-            raise ValueError("At least 2 tie points are required")
-
         (i0, j0), (i1, j1) = points[:2, 0, :2].astype(np.float64)
         (x0, y0, z0), (x1, y1, z1) = points[:2, 1, :].astype(np.float64)
 
@@ -878,7 +858,9 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         return np.column_stack((x, y, z))
 
-    def _compute_image_corners_from_3_tie_points(self, points: np.ndarray):
+    def _compute_image_corners_from_3_tie_points(
+        self, points: np.ndarray
+    ) -> np.ndarray:
         """
         Compute world coordinates of image corners using 3 tie points.
 
@@ -886,9 +868,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         :return: Array of shape (4, 3) with corner world coordinates.
         """
-        if len(points) < 3:
-            raise ValueError("At least 3 tie points are required")
-
         # Extract first 3 tie points
         pix = np.array([tp[0][:2] for tp in points[:3]], dtype=np.float64)  # (i, j)
         wrd = np.array([tp[1] for tp in points[:3]], dtype=np.float64)  # (x, y, z)
@@ -910,7 +889,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         u_cell_size: float | None,
         v_cell_size: float | None,
         tol: float = 1e-4,
-    ) -> np.ndarray:
+    ) -> np.ndarray | list[str]:
         """
         Compute world coordinates of image corners using tie points.
 
@@ -919,29 +898,30 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         :param v_cell_size: World units per pixel in the j (vertical) direction.
         :param tol: Tolerance for coplanarity and affine consistency checks.
 
-        :return: Array of shape (4, 3) with corner world coordinates.
+        :return:
+            - Array of shape (4, 3) with corner world coordinates.
+            - or list of error messages if validation fails.
         """
-
+        errors = []
         if not are_coplanar(points[:, 1, :], tol):
-            raise ValueError(
-                "Tie points are not coplanar; cannot compute image corners."
-            )
+            errors.append("Tie points are not coplanar; cannot compute image corners.")
 
         if not are_affine(points, tol):
-            raise ValueError(
+            errors.append(
                 "Tie points are not consistent with an affine transformation."
             )
 
         if points.shape[0] < 1:
-            raise ValueError(
-                "At least 1 tie point is required to compute image corners."
-            )
+            errors.append("At least 1 tie point is required to compute image corners.")
+
+        if errors:
+            return errors
 
         if points.shape[0] == 1:
             if u_cell_size is None or v_cell_size is None:
-                raise ValueError(
+                return [
                     "Cell sizes must be provided when only 1 tie point is available."
-                )
+                ]
             return self._compute_image_corners_from_1_tie_point(
                 points, u_cell_size, v_cell_size
             )
@@ -963,10 +943,10 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 or not np.isclose(calc_v_cell_size, v_cell_size, rtol=tol)
             )
         ):
-            raise ValueError(
-                "Computed cell sizes from tie points do not match provided cell sizes."
-                f" Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
+            return [
+                "Computed cell sizes from tie points do not match provided cell sizes.\n"
+                f"Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
                 f"Provided: ({u_cell_size}, {v_cell_size})"
-            )
+            ]
 
         return corners

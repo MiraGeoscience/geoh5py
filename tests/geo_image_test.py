@@ -225,7 +225,9 @@ def test_create_geoimage_dry_georeferencing(tmp_path):
 
         geoimage.georeferencing_from_image()
 
-        with pytest.raises(ValueError, match="Tie points must be a numpy array"):
+        with pytest.raises(
+            TypeError, match="float\\(\\) argument must be a string or a real number"
+        ):
             geoimage.georeference(np.array(zip(pixels[0, :], points, strict=False)))
 
         with pytest.raises(
@@ -336,7 +338,7 @@ def test_georeference_image(tmp_path):
         geoimage.tag = {"test": 3}
 
         with pytest.warns(
-            UserWarning, match="The 'tif.' image has no referencing information."
+            UserWarning, match="The 'tif.' image is missing one or more required tags"
         ):
             geoimage.georeferencing_from_tiff()
 
@@ -442,46 +444,65 @@ def test_georeferencing_from_tiff_errors_and_warnings(tmp_path):
 
         with pytest.warns(
             UserWarning,
-            match="The 'tif.' image has no referencing information. KeyError:",
+            match="The 'tif.' image is missing one or more required tags",
         ):
             geoimage_incomplete.georeferencing_from_tiff()
 
-        # Test 3: UserWarning for ValueError (size mismatch)
-        # Create a properly formed TIFF, then manually modify its tag to have wrong dimensions
+        # Test 3: UserWarning when georeferencing validation fails
+        # Create an image with tie points that are non-coplanar
         image_correct = Image.fromarray(
             np.random.randint(0, 255, (64, 64, 3)).astype("uint8"), "RGB"
         )
-        correct_tag = {
-            256: (64,),  # ImageWidth - correct
-            257: (64,),  # ImageHeight - correct
-            33922: (0.0, 0.0, 0.0, 522796.33, 7244067.56, 0.0),
-            33550: (1.0, 1.0, 0.0),  # ModelPixelScaleTag
-        }
-
-        for tag_id, tag_value in correct_tag.items():
-            image_correct.getexif()[tag_id] = tag_value
-
-        correct_path = tmp_path / "correct_tags.tif"
-        image_correct.save(correct_path, exif=image_correct.getexif())
-
-        # Create GeoImage and manually modify tag to cause size mismatch
-        geoimage_wrong_size = GeoImage.create(
-            workspace, name="wrong_size_image", image=str(correct_path)
-        )
-
-        # Manually set wrong dimensions in the tag to trigger ValueError
-        geoimage_wrong_size._tag = {
-            256: (128,),  # Wrong ImageWidth (actual is 64)
-            257: (128,),  # Wrong ImageHeight (actual is 64)
-            33922: (0.0, 0.0, 0.0, 522796.33, 7244067.56, 0.0),
+        # Create tie points with world coordinates that are non-coplanar
+        # This will trigger the coplanarity check in _compute_image_corners
+        non_coplanar_tag = {
+            256: (64,),
+            257: (64,),
+            # Multiple tie points where world z coordinates don't form a plane
+            33922: (
+                0.0,
+                0.0,
+                0.0,
+                100.0,
+                200.0,
+                0.0,  # First tie point
+                10.0,
+                0.0,
+                0.0,
+                110.0,
+                200.0,
+                0.0,  # Second tie point
+                0.0,
+                10.0,
+                0.0,
+                100.0,
+                210.0,
+                0.0,  # Third tie point
+                10.0,
+                10.0,
+                0.0,
+                110.0,
+                210.0,
+                100.0,  # Fourth - breaks coplanarity
+            ),
             33550: (1.0, 1.0, 0.0),
         }
 
+        for tag_id, tag_value in non_coplanar_tag.items():
+            image_correct.getexif()[tag_id] = tag_value
+
+        non_coplanar_path = tmp_path / "non_coplanar.tif"
+        image_correct.save(non_coplanar_path, exif=image_correct.getexif())
+
+        geoimage_non_coplanar = GeoImage.create(
+            workspace, name="non_coplanar_image", image=str(non_coplanar_path)
+        )
+
         with pytest.warns(
             UserWarning,
-            match="Could not parse the georeferencing information from the 'tif.' image. ValueError:",
+            match="Georeferencing from tiff failed because of the following reasons:",
         ):
-            geoimage_wrong_size.georeferencing_from_tiff()
+            geoimage_non_coplanar.georeferencing_from_tiff()
 
 
 def test_rotation_setter(tmp_path):
@@ -1123,11 +1144,11 @@ def test_parse_tie_points():
         GeoImage._parse_tie_points([0.0, 0.0, 0.0, 100.0])  # 4 elements
 
     # Test case 5: ValueError - wrong numpy array shape
-    with pytest.raises(ValueError, match="Tie points must be a numpy array of shape"):
+    with pytest.raises(ValueError, match="Tie points must have shape"):
         # Wrong dimensions (2D instead of 3D)
         GeoImage._parse_tie_points(np.array([[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]]))
 
-    with pytest.raises(ValueError, match="Tie points must be a numpy array of shape"):
+    with pytest.raises(ValueError, match="Tie points must have shape"):
         # Wrong shape in last dimensions
         GeoImage._parse_tie_points(np.array([[[0.0, 0.0], [100.0, 200.0]]]))
 
@@ -1218,7 +1239,7 @@ def test_compute_image_corners_from_1_tie_point(tmp_path):
         assert np.allclose(result_offset[:, 2], 10.0)
 
         # Test case 3: ValueError - empty tie points array
-        with pytest.raises(ValueError, match="At least 1 tie point is required"):
+        with pytest.raises(IndexError):
             geoimage._compute_image_corners_from_1_tie_point(
                 np.array([]).reshape(0, 2, 3), u_cell_size=1.0, v_cell_size=1.0
             )
@@ -1267,7 +1288,7 @@ def test_compute_image_corners_from_2_tie_points(tmp_path):
         assert not np.allclose(result_dip[:, 2], result_dip[0, 2])
 
         # Test case 3: ValueError - less than 2 tie points
-        with pytest.raises(ValueError, match="At least 2 tie points are required"):
+        with pytest.raises(ValueError, match="not enough values to unpack"):
             geoimage._compute_image_corners_from_2_tie_points(
                 np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
             )
@@ -1355,7 +1376,7 @@ def test_compute_image_corners_from_3_tie_points(tmp_path):
         assert result_z.shape == (4, 3)
 
         # Test case 4: ValueError - less than 3 tie points
-        with pytest.raises(ValueError, match="At least 3 tie points are required"):
+        with pytest.raises(ValueError, match="all the input array dimensions"):
             geoimage._compute_image_corners_from_3_tie_points(
                 np.array(
                     [
@@ -1383,18 +1404,20 @@ def test_compute_image_corners(tmp_path):
         assert result.shape == (4, 3)
 
         # Test case 2: ValueError - 1 tie point without cell sizes
-        with pytest.raises(
-            ValueError, match="Cell sizes must be provided when only 1 tie point"
-        ):
-            geoimage._compute_image_corners(
-                tie_points_1, u_cell_size=None, v_cell_size=None
-            )
+        result = geoimage._compute_image_corners(
+            tie_points_1, u_cell_size=None, v_cell_size=None
+        )
+        assert isinstance(result, list), (
+            "Should return error list when cell sizes missing"
+        )
+        assert any("Cell sizes must be provided" in err for err in result)
 
         # Test case 3: ValueError - empty tie points array
-        with pytest.raises(ValueError, match="At least 1 tie point is required"):
-            geoimage._compute_image_corners(
-                np.array([]).reshape(0, 2, 3), u_cell_size=None, v_cell_size=None
-            )
+        result = geoimage._compute_image_corners(
+            np.array([]).reshape(0, 2, 3), u_cell_size=None, v_cell_size=None
+        )
+        assert isinstance(result, list), "Should return error list for empty array"
+        assert any("At least 1 tie point is required" in err for err in result)
 
         # Test case 4: ValueError - non-coplanar tie points
         # Create tie points where world coordinates are not on the same plane
@@ -1409,10 +1432,13 @@ def test_compute_image_corners(tmp_path):
                 ],  # This world point breaks coplanarity
             ]
         )
-        with pytest.raises(ValueError, match="Tie points are not coplanar"):
-            geoimage._compute_image_corners(
-                non_coplanar_points, u_cell_size=None, v_cell_size=None
-            )
+        result = geoimage._compute_image_corners(
+            non_coplanar_points, u_cell_size=None, v_cell_size=None
+        )
+        assert isinstance(result, list), (
+            "Should return error list for non-coplanar points"
+        )
+        assert any("Tie points are not coplanar" in err for err in result)
 
         # Test case 5: ValueError - non-affine tie points
         # Create tie points that don't follow an affine transformation
@@ -1428,12 +1454,15 @@ def test_compute_image_corners(tmp_path):
                 ],  # Breaks affine consistency (should be 1,1)
             ]
         )
-        with pytest.raises(
-            ValueError, match="Tie points are not consistent with an affine"
-        ):
-            geoimage._compute_image_corners(
-                non_affine_points, u_cell_size=None, v_cell_size=None
-            )
+        result = geoimage._compute_image_corners(
+            non_affine_points, u_cell_size=None, v_cell_size=None
+        )
+        assert isinstance(result, list), (
+            "Should return error list for non-affine points"
+        )
+        assert any(
+            "Tie points are not consistent with an affine" in err for err in result
+        )
 
         # Test case 6: ValueError - cell size mismatch
         # Create 2 tie points with specific geometry
@@ -1441,14 +1470,17 @@ def test_compute_image_corners(tmp_path):
             [[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[10.0, 10.0, 0.0], [10.0, 10.0, 0.0]]]
         )
         # Provide incorrect cell sizes that don't match the actual geometry
-        with pytest.raises(
-            ValueError, match="Computed cell sizes from tie points do not match"
-        ):
-            geoimage._compute_image_corners(
-                tie_points_2,
-                u_cell_size=5.0,
-                v_cell_size=5.0,  # Wrong sizes
-            )
+        result = geoimage._compute_image_corners(
+            tie_points_2,
+            u_cell_size=5.0,
+            v_cell_size=5.0,  # Wrong sizes
+        )
+        assert isinstance(result, list), (
+            "Should return error list for cell size mismatch"
+        )
+        assert any(
+            "Computed cell sizes from tie points do not match" in err for err in result
+        )
 
         # Test case 7: Valid 2 tie points
         tie_points_2_valid = np.array(
