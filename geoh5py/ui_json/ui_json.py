@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
@@ -43,6 +44,7 @@ from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
 from geoh5py.ui_json.validations.form import empty_string_to_none
 
+logger = logging.getLogger(__name__)
 
 OptionalPath = Annotated[
     Path | None,  # pylint: disable=unsupported-binary-operation
@@ -129,7 +131,10 @@ class BaseUIJson(BaseModel):
                 if name in BaseUIJson.model_fields:
                     continue
                 if isinstance(value, dict):
-                    fields[name] = (BaseForm.infer(value), ...)
+                    form_type = BaseForm.infer(value)
+                    print("LDKJSFL:SDKJF:LKDSJF:LSDKJF:LDJSFKLKSDFJ:LDSFJSD:LFJK")
+                    logger.info(f"Parameter: {name} interpreted as a {form_type.__name__}.")
+                    fields[name] = (form_type, ...)
                 else:
                     fields[name] = (type(value), ...)
 

@@ -200,8 +200,8 @@ class RadioLabelForm(StringForm):
     :param alternative_label: Label for the alternative value.
     """
 
-    original_label: str
-    alternate_label: str
+    original_label: str = ""
+    alternate_label: str = ""
 
 
 class BoolForm(BaseForm):
@@ -265,7 +265,7 @@ class ChoiceForm(BaseForm):
 
     """
 
-    value: str
+    value: str = ""
     choice_list: list[str]
 
     @model_validator(mode="after")
@@ -594,8 +594,8 @@ class DataRangeForm(DataFormMixin, BaseForm):
         be inverted and the implied selection is outside of the range provided.
     """
 
-    value: float | list[float]
-    property: UUID
+    value: float | list[float] | None
+    property: OptionalUUID
     range_label: str
     allow_complement: bool = False
     is_complement: bool = False
