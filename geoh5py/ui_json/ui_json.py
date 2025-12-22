@@ -132,7 +132,6 @@ class BaseUIJson(BaseModel):
                     continue
                 if isinstance(value, dict):
                     form_type = BaseForm.infer(value)
-                    print("LDKJSFL:SDKJF:LKDSJF:LSDKJF:LDJSFKLKSDFJ:LDSFJSD:LFJK")
                     logger.info(f"Parameter: {name} interpreted as a {form_type.__name__}.")
                     fields[name] = (form_type, ...)
                 else:
