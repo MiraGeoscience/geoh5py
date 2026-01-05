@@ -38,9 +38,10 @@ from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.utils import fetch_active_workspace
-from geoh5py.shared.validators import empty_string_to_none, none_to_empty_string
+from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
+from geoh5py.ui_json.validations.form import empty_string_to_none
 
 
 OptionalPath = Annotated[
@@ -164,7 +165,7 @@ class BaseUIJson(BaseModel):
             group.
         """
         groups: dict[str, list[str]] = {}
-        for field in self.model_fields:
+        for field in self.__class__.model_fields:
             form = getattr(self, field)
             if not isinstance(form, BaseForm):
                 continue
@@ -242,13 +243,18 @@ class BaseUIJson(BaseModel):
             errors: dict[str, Any] = {k: [] for k in self.model_fields_set}
             for field, value in data.items():
                 if field == "geoh5":
+                    data[field] = geoh5
                     continue
 
                 if isinstance(value, UUID):
-                    data[field] = self._object_or_catch(geoh5, value)
+                    value = self._object_or_catch(geoh5, value)
+                if isinstance(value, list) and value and isinstance(value[0], UUID):
+                    value = [self._object_or_catch(geoh5, uid) for uid in value]
 
                 if isinstance(value, UIJsonError):
                     errors[field].append(value)
+
+                data[field] = value
 
             self.validate_data(data, errors)
 

@@ -365,7 +365,7 @@ The range slider parameter allows users to select a data channel and select a ra
 Compared to the data or value parameter, the range slider parameter adds the required **rangeLabel**, **allowComplement**
 and **isComplement** members.  If allowComplement is true, the user may flip the inclusion from within the bounds to outside
 the bounds, and when it is false the icon for flipping the complement is grey and inactive.  When saved the ui.json file
-will have it's **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected
+will have its **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected
 data, whereas the **value** will contain the range values.  If is complement is false, then the data are intended to be
 included within the bounds, and if it is false they are meant to be included outside the bounds.
 

@@ -38,21 +38,24 @@ from pydantic.alias_generators import to_camel
 from pydantic.functional_validators import BeforeValidator
 
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
-from geoh5py.groups import Group
+from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.validators import (
-    empty_string_to_none,
     to_class,
     to_list,
     to_path,
     to_uuid,
     types_to_string,
+)
+from geoh5py.ui_json.annotations import OptionalUUIDList
+from geoh5py.ui_json.validations.form import (
+    empty_string_to_none,
     uuid_to_string,
     uuid_to_string_or_numeric,
 )
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements, too-many-branches
 
 
 class DependencyType(str, Enum):
@@ -139,6 +142,14 @@ class BaseForm(BaseModel):
             k in data
             for k in ["parent", "association", "dataType", "isValue", "property"]
         ):
+            if "dataGroupType" in data:
+                return DataGroupForm
+            if "multiSelect" in data:
+                return MultiSelectDataForm
+            if any(
+                k in data for k in ["min", "max", "precision", "isValue", "property"]
+            ):
+                return DataOrValueForm
             return DataForm
         if isinstance(data.get("value"), str):
             return StringForm
@@ -390,15 +401,36 @@ UUIDOrNumber = Annotated[
 ]
 
 
-class DataForm(BaseForm):
-    """
-    Geoh5py data uijson form.
-    """
+class DataFormMixin(BaseModel):
+    """Mixin class to add common attributes a series of data classes."""
 
-    value: UUIDOrNumber
     parent: str
     association: Association | list[Association]
     data_type: DataType | list[DataType]
+
+
+class DataForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson form for data associated with an object.
+    """
+
+    value: OptionalUUID
+
+
+class DataGroupForm(DataForm):
+    """
+    Geoh5py uijson form for grouped data associated with an object.
+    """
+
+    data_group_type: GroupTypeEnum | list[GroupTypeEnum]
+
+
+class DataOrValueForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson data form that also accepts a single value.
+    """
+
+    value: UUIDOrNumber
     is_value: bool = False
     property: OptionalUUID = None
     min: float = -np.inf
@@ -432,3 +464,24 @@ class DataForm(BaseForm):
         ):
             return self.property
         return self.value
+
+
+class MultiSelectDataForm(DataFormMixin, BaseForm):
+    """Geoh5py uijson data form with multi-selection."""
+
+    value: OptionalUUIDList
+    multi_select: bool = True
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value):
+        if not value:
+            raise ValueError("MultiSelectForm must have multi_select: True.")
+        return value
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value):
+        if not isinstance(value, list):
+            value = [value]
+        return value
