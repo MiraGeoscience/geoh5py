@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                     '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -43,6 +43,7 @@ from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
 from geoh5py.ui_json.validations.form import empty_string_to_none
+
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,9 @@ class BaseUIJson(BaseModel):
                     continue
                 if isinstance(value, dict):
                     form_type = BaseForm.infer(value)
-                    logger.info(f"Parameter: {name} interpreted as a {form_type.__name__}.")
+                    logger.info(
+                        "Parameter: %s interpreted as a %s.", name, form_type.__name__
+                    )
                     fields[name] = (form_type, ...)
                 else:
                     fields[name] = (type(value), ...)
