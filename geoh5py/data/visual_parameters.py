@@ -105,7 +105,6 @@ class VisualParameters(TextData):
 
     @colour.setter
     def colour(self, rgb: list | tuple | np.ndarray):
-        # all the CellObjects
         if (
             not isinstance(rgb, (list, tuple, np.ndarray))
             or len(rgb) not in [3, 4]
