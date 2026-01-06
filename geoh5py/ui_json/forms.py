@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                     '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -47,7 +47,7 @@ from geoh5py.shared.validators import (
     to_uuid,
     types_to_string,
 )
-from geoh5py.ui_json.annotations import OptionalUUIDList
+from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
 from geoh5py.ui_json.validations.form import (
     empty_string_to_none,
     uuid_to_string,
@@ -92,6 +92,8 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
+    :param placeholder_text: Text displayed in ui element when no data
+        has been provided.
     """
 
     model_config = ConfigDict(
@@ -114,6 +116,7 @@ class BaseForm(BaseModel):
     dependency_type: DependencyType = DependencyType.ENABLED
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
+    placeholder_text: str = ""
 
     @classmethod
     def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
@@ -594,7 +597,7 @@ class DataRangeForm(DataFormMixin, BaseForm):
         be inverted and the implied selection is outside of the range provided.
     """
 
-    value: float | list[float] | None
+    value: OptionalValueList
     property: OptionalUUID
     range_label: str
     allow_complement: bool = False

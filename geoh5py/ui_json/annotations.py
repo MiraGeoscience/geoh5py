@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                     '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -32,6 +32,11 @@ OptionalUUIDList = Annotated[
     list[UUID] | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
     PlainSerializer(uuid_to_string),
+]
+
+OptionalValueList = Annotated[
+    float | list[float] | None,
+    BeforeValidator(empty_string_to_none),
 ]
 
 
