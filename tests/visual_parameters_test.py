@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import pytest
 
-from geoh5py.objects import Curve, Points, Surface
+from geoh5py.objects import Curve, Grid2D, Points, Surface
 from geoh5py.workspace import Workspace
 
 
@@ -102,6 +102,7 @@ def test_visual_parameters(tmp_path, caplog):
     [
         (Points, "TestPoints", {}),
         (Curve, "TestCurve", {}),
+        (Grid2D, "TestGrid2D", {}),
         (
             Surface,
             "TestSurface",
