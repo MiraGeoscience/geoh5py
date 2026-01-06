@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -106,16 +106,14 @@ class VisualParameters(TextData):
     @colour.setter
     def colour(self, rgb: list | tuple | np.ndarray):
         # all the CellObjects
-        set_transparency = self.parent.__class__.__name__ in ["Curve", "Surface"]
-
         if (
             not isinstance(rgb, (list, tuple, np.ndarray))
-            or len(rgb) not in ([3, 4] if set_transparency else [3])
+            or len(rgb) not in [3, 4]
             or not all(isinstance(val, int) for val in rgb)
         ):
-            raise TypeError("Input 'colour' values must be a list of 3 integers.")
+            raise TypeError("Input 'colour' values must be a list of 3 or 4 integers.")
 
-        if set_transparency and len(rgb) == 3:
+        if len(rgb) == 3:
             rgb = list(rgb) + [255]
 
         byte_string = "".join(f"{val:02x}" for val in rgb)

@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -92,7 +92,7 @@ def test_visual_parameters(tmp_path, caplog):
             points.visual_parameters = 1
 
         with pytest.raises(
-            TypeError, match="Input 'colour' values must be a list of 3 integers"
+            TypeError, match="Input 'colour' values must be a list of 3 or 4 integers"
         ):
             points.visual_parameters.colour = [255, 0]  # Wrong length
 
