@@ -17,6 +17,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import uuid
@@ -288,9 +290,15 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         tie_points_verified = self._parse_tie_points(tie_points)
 
-        self.vertices = self._compute_image_corners(
+        corners = self._compute_image_corners(
             tie_points_verified, u_cell_size, v_cell_size
         )
+
+        # Check if errors were returned
+        if isinstance(corners, list):
+            raise ValueError(f"Failed to compute image corners: {'; '.join(corners)}")
+
+        self.vertices = corners
 
         self.set_tag_from_vertices()
 
@@ -821,42 +829,85 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         return corners_wrd
 
     def _compute_image_corners_from_2_tie_points(
-        self, points: np.ndarray
-    ) -> np.ndarray:
+        self, points: np.ndarray, u_cell_size: float, v_cell_size: float
+    ) -> np.ndarray | list[str]:
         # pylint: disable=too-many-locals
         """
         Compute world coordinates of image corners from 2 tie points,
-        assuming:
-          - rotation (yaw) = 0,
-          - dip direction = v (pixel j),
-          - x = f(i), y = g(j), z = h(j) (no shear).
+        assuming orthogonality and known cell sizes.
+
+        :param points: List of [[i, j, k], [x, y, z]] pairs.
+        :param u_cell_size: World units per pixel in the i (horizontal) direction.
+        :param v_cell_size: World units per pixel in the j (vertical) direction.
+
+        :return: Array of shape (4, 3) with corner world coordinates, or list of error messages.
         """
-        (i0, j0), (i1, j1) = points[:2, 0, :2].astype(np.float64)
-        (x0, y0, z0), (x1, y1, z1) = points[:2, 1, :].astype(np.float64)
+        errors = []
 
-        if abs(i1 - i0) < 1e-12:
-            raise ValueError("Tie points must differ in i to determine x mapping")
-        if abs(j1 - j0) < 1e-12:
-            raise ValueError("Tie points must differ in j to determine y/z mapping")
+        # Extract tie points
+        pix0, pix1 = points[:2, 0, :2].astype(np.float64)
+        wrd0, wrd1 = points[:2, 1, :].astype(np.float64)
 
-        ij = self.default_vertices[::-1, :2].astype(np.float64)
+        # Compute displacements
+        delta_pix = pix1 - pix0
+        delta_wrd = wrd1 - wrd0
 
-        # x axis
-        ax = (x1 - x0) / (i1 - i0)
-        bx = x0 - ax * i0
-        x = ax * ij[:, 0] + bx
+        di, dj = delta_pix
 
-        # y axis
-        ay = (y1 - y0) / (j1 - j0)
-        by = y0 - ay * j0
-        y = ay * ij[:, 1] + by
+        # Validate tie points differ in both directions
+        if abs(di) < 1e-12 or abs(dj) < 1e-12:
+            errors.append(
+                f"Tie points must differ in both pixel directions. "
+                f"Got di={di}, dj={dj}."
+            )
 
-        # compute dip (dip along v)
-        az = (z1 - z0) / (j1 - j0)
-        bz = z0 - az * j0
-        z = az * ij[:, 1] + bz
+        delta_wrd_norm = np.linalg.norm(delta_wrd)
 
-        return np.column_stack((x, y, z))
+        if delta_wrd_norm < 1e-12:
+            errors.append("Tie points map to the same world coordinates")
+
+        # Check consistency: |delta_wrd|² = (di*u_cell_size)² + (dj*v_cell_size)²
+        expected_mag_sq = (di * u_cell_size) ** 2 + (dj * v_cell_size) ** 2
+        if not np.isclose(expected_mag_sq, delta_wrd_norm**2, rtol=1e-3):
+            errors.append(
+                f"Tie points inconsistent with cell sizes. "
+                f"Expected displacement magnitude: {np.sqrt(expected_mag_sq):.4f}, "
+                f"Actual: {delta_wrd_norm:.4f}"
+            )
+
+        if errors:
+            return errors
+
+        # Build orthonormal basis in the plane
+        e1 = delta_wrd / delta_wrd_norm
+
+        # Find perpendicular direction
+        if abs(e1[2]) < 0.9:
+            reference = np.array([0.0, 0.0, 1.0])
+        else:
+            reference = np.array([1.0, 0.0, 0.0])
+
+        e2 = np.cross(e1, reference)
+        e2 = e2 / np.linalg.norm(e2)
+
+        # Solve for rotation angle
+        theta = np.arctan2(-dj * v_cell_size, di * u_cell_size)
+        cos_theta = np.cos(theta)
+        sin_theta = np.sin(theta)
+
+        # Construct orthogonal basis vectors
+        u = u_cell_size * (cos_theta * e1 + sin_theta * e2)
+        v = v_cell_size * (-sin_theta * e1 + cos_theta * e2)
+
+        # Compute origin and corners
+        origin = wrd0 - pix0[0] * u - pix0[1] * v
+        corners_pix = self.default_vertices[::-1, :2].astype(np.float64)
+
+        corners_wrd = np.array(
+            [origin + pix[0] * u + pix[1] * v for pix in corners_pix]
+        )
+
+        return corners_wrd
 
     def _compute_image_corners_from_3_tie_points(
         self, points: np.ndarray
@@ -917,36 +968,39 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if errors:
             return errors
 
-        if points.shape[0] == 1:
-            if u_cell_size is None or v_cell_size is None:
+        if points.shape[0] >= 3:
+            corners = self._compute_image_corners_from_3_tie_points(points)
+
+            # check cell size is consistent
+            calc_u_cell_size = np.linalg.norm(corners[1] - corners[0]) / self.u_count
+            calc_v_cell_size = np.linalg.norm(corners[0] - corners[3]) / self.v_count
+
+            # should never happen
+            if (
+                u_cell_size is not None
+                and v_cell_size is not None
+                and (
+                    not np.isclose(calc_u_cell_size, u_cell_size, rtol=tol)
+                    or not np.isclose(calc_v_cell_size, v_cell_size, rtol=tol)
+                )
+            ):
                 return [
-                    "Cell sizes must be provided when only 1 tie point is available."
+                    "Computed cell sizes from tie points do not match provided cell sizes.\n"
+                    f"Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
+                    f"Provided: ({u_cell_size}, {v_cell_size})"
                 ]
+
+            return corners
+
+        if u_cell_size is None or v_cell_size is None:
+            return [
+                "Cell sizes must be provided when only 1 or 2 tie points are available."
+            ]
+        if points.shape[0] == 1:
             return self._compute_image_corners_from_1_tie_point(
                 points, u_cell_size, v_cell_size
             )
-        if points.shape[0] == 2:
-            corners = self._compute_image_corners_from_2_tie_points(points)
-        else:
-            corners = self._compute_image_corners_from_3_tie_points(points)
 
-        # check cell size is consistent
-        calc_u_cell_size = np.linalg.norm(corners[1] - corners[0]) / self.u_count
-        calc_v_cell_size = np.linalg.norm(corners[0] - corners[3]) / self.v_count
-
-        # should never happen
-        if (
-            u_cell_size is not None
-            and v_cell_size is not None
-            and (
-                not np.isclose(calc_u_cell_size, u_cell_size, rtol=tol)
-                or not np.isclose(calc_v_cell_size, v_cell_size, rtol=tol)
-            )
-        ):
-            return [
-                "Computed cell sizes from tie points do not match provided cell sizes.\n"
-                f"Computed: ({calc_u_cell_size}, {calc_v_cell_size}), "
-                f"Provided: ({u_cell_size}, {v_cell_size})"
-            ]
-
-        return corners
+        return self._compute_image_corners_from_2_tie_points(
+            points, u_cell_size, v_cell_size
+        )

@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -175,6 +175,14 @@ def test_attribute_setters():
 
     with pytest.raises(TypeError, match="Input 'vertices' must be provided "):
         gimage.vertices = "bidon"
+
+    # Test vertices dtype validation
+    wrong_dtype_vertices = np.array(
+        [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i"), ("j", "k", "l")],
+        dtype=[("x", "U1"), ("y", "U1"), ("z", "U1")],
+    )
+    with pytest.raises(TypeError, match="Array of 'vertices' must be of dtype"):
+        gimage.vertices = wrong_dtype_vertices
 
 
 def test_create_copy_empty_geoimage(tmp_path):
@@ -1093,6 +1101,32 @@ def test_copy_from_extent_error_conditions(tmp_path):
         ):
             geoimage_with_image.copy_from_extent(extent, inverse=True)
 
+        # Test case 4: copy_from_extent with parent parameter (workspace)
+        image2 = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        vertices2 = np.array([[0, 0, 0], [10, 0, 0], [10, 10, 0], [0, 10, 0]])
+        geoimage_for_copy = GeoImage.create(
+            workspace, name="for_copy", image=image2, vertices=vertices2
+        )
+
+        extent_inside = np.array([[2, 2, -1], [8, 8, 1]])
+        copied_with_workspace_parent = geoimage_for_copy.copy_from_extent(
+            extent_inside, parent=workspace
+        )
+        assert copied_with_workspace_parent is not None
+        assert copied_with_workspace_parent.workspace == workspace
+
+        # Test case 5: copy_from_extent with parent parameter (entity/group)
+        from geoh5py.groups import ContainerGroup
+
+        test_group = ContainerGroup.create(workspace, name="test_group")
+
+        copied_with_group_parent = geoimage_for_copy.copy_from_extent(
+            extent_inside, parent=test_group
+        )
+        assert copied_with_group_parent is not None
+        assert copied_with_group_parent.parent == test_group
+        assert copied_with_group_parent.workspace == workspace
+
 
 def test_parse_tie_points():
     """
@@ -1245,77 +1279,220 @@ def test_compute_image_corners_from_1_tie_point(tmp_path):
             )
 
 
-def test_compute_image_corners_from_2_tie_points(tmp_path):
+def build_2_tie_points_test_params():
     """
-    Test _compute_image_corners_from_2_tie_points method error handling and computation.
+    Build test parameters for _compute_image_corners_from_2_tie_points.
+
+    Tests are designed by choosing desired U and V basis vectors, then computing
+    tie points that satisfy: delta_wrd = di*U + dj*V
+    where |U| = u_cell_size, |V| = v_cell_size, U ⊥ V
+    """
+    u_cell_size = 1.0
+    v_cell_size = 1.0
+
+    # Helper function to generate test case from U and V
+    def make_test(U, V, origin, di, dj, test_id):
+        """Generate test parameters from desired basis vectors."""
+        # Corresponding world position
+        wrd1 = origin + di * U + dj * V
+
+        # Compute corners for 10x10 image
+        corners = np.array(
+            [
+                origin + 0 * U + 0 * V,  # (0,0)
+                origin + 10 * U + 0 * V,  # (10,0)
+                origin + 10 * U + 10 * V,  # (10,10)
+                origin + 0 * U + 10 * V,  # (0,10)
+            ]
+        )
+
+        return pytest.param(
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0], origin],
+                    [[di, dj, 0.0], wrd1],
+                ]
+            ),
+            u_cell_size,
+            v_cell_size,
+            corners,
+            id=test_id,
+        )
+
+    # Test 1: Axis-aligned, U along X, V along Y (no rotation)
+    U1 = np.array([1.0, 0.0, 0.0])
+    V1 = np.array([0.0, 1.0, 0.0])
+    origin1 = np.array([100.0, 200.0, 5.0])
+    test1 = make_test(U1, V1, origin1, di=5.0, dj=5.0, test_id="no_rotation")
+
+    # Test 2: 45° rotation in xy-plane, no dip
+    cos45 = np.cos(np.pi / 4)
+    sin45 = np.sin(np.pi / 4)
+    U2 = np.array([cos45, sin45, 0.0])  # Rotated X
+    V2 = np.array([-sin45, cos45, 0.0])  # Rotated Y  (perpendicular to U2)
+    origin2 = np.array([0.0, 0.0, 0.0])
+    test2 = make_test(U2, V2, origin2, di=5.0, dj=5.0, test_id="rotated_45deg")
+
+    # Test 3: No rotation but V dips 30° downward
+    U3 = np.array([1.0, 0.0, 0.0])
+    V3 = np.array([0.0, np.cos(np.pi / 6), -np.sin(np.pi / 6)])  # Dip 30° in yz-plane
+    origin3 = np.array([50.0, 50.0, 10.0])
+    test3 = make_test(U3, V3, origin3, di=3.0, dj=4.0, test_id="dip_30deg")
+
+    # Test 4: 30° rotation + 20° dip on V
+    cos30 = np.cos(np.pi / 6)
+    sin30 = np.sin(np.pi / 6)
+    dip20 = np.pi / 9
+    U4 = np.array([cos30, sin30, 0.0])
+    V4 = np.array([-sin30 * np.cos(dip20), cos30 * np.cos(dip20), -np.sin(dip20)])
+    origin4 = np.array([100.0, 100.0, 0.0])
+    test4 = make_test(U4, V4, origin4, di=6.0, dj=4.0, test_id="rotated_dipped")
+
+    # Test 5: Complex oblique orientation
+    # U at 60° rotation, V perpendicular with 45° dip
+    cos60 = np.cos(np.pi / 3)
+    sin60 = np.sin(np.pi / 3)
+    U5 = np.array([cos60, sin60, 0.0])
+    V5 = np.array([-sin60 / np.sqrt(2), cos60 / np.sqrt(2), -1 / np.sqrt(2)])  # 45° dip
+    origin5 = np.array([10.0, 20.0, 30.0])
+    test5 = make_test(U5, V5, origin5, di=4.0, dj=6.0, test_id="oblique")
+
+    return [test1, test2, test3, test4, test5]
+
+
+TWO_TIE_POINTS_PARAMS = build_2_tie_points_test_params()
+
+
+@pytest.mark.parametrize(
+    "tie_points,u_cell_size,v_cell_size,expected", TWO_TIE_POINTS_PARAMS
+)
+def test_compute_image_corners_from_2_tie_points(
+    tmp_path, tie_points, u_cell_size, v_cell_size, expected
+):
+    """
+    Test georeference method with 2 tie points and various 3D plane configurations.
+
+    Tests different scenarios with orthogonality assumption and known cell sizes:
+    - Verifies orthogonal basis vectors are constructed correctly
+    - Checks constraints: |U|=u_cell_size, |V|=v_cell_size
+    - Validates corners satisfy di*U + dj*V = delta_wrd
+
+    Note: The solution is not unique (1 DOF - rotation in plane), so we test
+    properties rather than exact corner positions.
     """
     with Workspace.create(tmp_path / "test_2_tie_points.geoh5") as workspace:
         # Create a simple test image (10x10)
         image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
         geoimage = GeoImage.create(workspace, name="test", image=image)
 
-        # Test case 1: Valid two tie points with simple 1:1 mapping
-        tie_points = np.array(
-            [
-                [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
-                [[10.0, 10.0, 0.0], [110.0, 210.0, 5.0]],
-            ]
-        )
-        result = geoimage._compute_image_corners_from_2_tie_points(tie_points)
+        geoimage.georeference(tie_points, u_cell_size, v_cell_size)
+        result = geoimage.vertices
+
         assert result.shape == (4, 3)
-        # Verify the corners match expected values
-        # default_vertices reversed = [[0,0,0], [10,0,0], [10,10,0], [0,10,0]]
-        expected = np.array(
-            [
-                [100.0, 200.0, 5.0],  # pixel (0, 0)
-                [110.0, 200.0, 5.0],  # pixel (10, 0)
-                [110.0, 210.0, 5.0],  # pixel (10, 10)
-                [100.0, 210.0, 5.0],  # pixel (0, 10)
-            ]
-        )
-        np.testing.assert_allclose(result, expected)
 
-        # Test case 2: Valid two tie points with dip
-        tie_points_dip = np.array(
-            [
-                [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
-                [[5.0, 8.0, 0.0], [105.0, 208.0, 8.0]],  # z changes with j
-            ]
-        )
-        result_dip = geoimage._compute_image_corners_from_2_tie_points(tie_points_dip)
-        assert result_dip.shape == (4, 3)
-        # z should vary with j coordinate
-        assert not np.allclose(result_dip[:, 2], result_dip[0, 2])
+        # Extract tie point data
+        pix0, pix1 = tie_points[:2, 0, :2]
+        wrd0, wrd1 = tie_points[:2, 1, :]
+        di, dj = pix1 - pix0
+        delta_wrd = wrd1 - wrd0
 
-        # Test case 3: ValueError - less than 2 tie points
+        # Reconstruct U and V from corners
+        # Corners are at pixels: (0,0), (10,0), (10,10), (0,10)
+        corner_00 = result[0]
+        corner_10_0 = result[1]
+        corner_0_10 = result[3]
+
+        U = (corner_10_0 - corner_00) / 10.0  # Displacement per pixel in i direction
+        V = (corner_0_10 - corner_00) / 10.0  # Displacement per pixel in j direction
+
+        # Verify magnitudes
+        np.testing.assert_allclose(
+            np.linalg.norm(U), u_cell_size, rtol=1e-10, atol=1e-10
+        )
+        np.testing.assert_allclose(
+            np.linalg.norm(V), v_cell_size, rtol=1e-10, atol=1e-10
+        )
+
+        # Verify constraint equation: di*U + dj*V = delta_wrd
+        computed_delta = di * U + dj * V
+        np.testing.assert_allclose(computed_delta, delta_wrd, rtol=1e-10, atol=1e-10)
+
+        # Verify origin is computed correctly
+        # origin = wrd0 - pix0[0]*U - pix0[1]*V
+        origin = wrd0 - pix0[0] * U - pix0[1] * V
+        np.testing.assert_allclose(result[0], origin, rtol=1e-10, atol=1e-10)
+
+
+def test_compute_image_corners_from_2_tie_points_errors(tmp_path):
+    """
+    Test error conditions for _compute_image_corners_from_2_tie_points method.
+    """
+    with Workspace.create(tmp_path / "test_2_tie_points_errors.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        geoimage = GeoImage.create(workspace, name="test", image=image)
+
+        u_cell_size = 1.0
+        v_cell_size = 1.0
+
+        # Test case 1: ValueError - less than 2 tie points
         with pytest.raises(ValueError, match="not enough values to unpack"):
             geoimage._compute_image_corners_from_2_tie_points(
-                np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
+                np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]]),
+                u_cell_size,
+                v_cell_size,
             )
 
-        # Test case 4: ValueError - tie points with same i coordinate
+        # Test case 2: Error - tie points with same i coordinate
         tie_points_same_i = np.array(
             [
                 [[5.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
                 [[5.0, 8.0, 0.0], [100.0, 208.0, 5.0]],  # same i=5.0
             ]
         )
-        with pytest.raises(
-            ValueError, match="Tie points must differ in i to determine x mapping"
-        ):
-            geoimage._compute_image_corners_from_2_tie_points(tie_points_same_i)
+        result = geoimage._compute_image_corners_from_2_tie_points(
+            tie_points_same_i, u_cell_size, v_cell_size
+        )
+        assert isinstance(result, list), (
+            "Should return error list for same i coordinate"
+        )
+        assert any(
+            "Tie points must differ in both pixel directions" in err for err in result
+        )
 
-        # Test case 5: ValueError - tie points with same j coordinate
+        # Test case 3: Error - tie points with same j coordinate
         tie_points_same_j = np.array(
             [
                 [[0.0, 5.0, 0.0], [100.0, 200.0, 5.0]],
                 [[8.0, 5.0, 0.0], [108.0, 200.0, 5.0]],  # same j=5.0
             ]
         )
-        with pytest.raises(
-            ValueError, match="Tie points must differ in j to determine y/z mapping"
-        ):
-            geoimage._compute_image_corners_from_2_tie_points(tie_points_same_j)
+        result = geoimage._compute_image_corners_from_2_tie_points(
+            tie_points_same_j, u_cell_size, v_cell_size
+        )
+        assert isinstance(result, list), (
+            "Should return error list for same j coordinate"
+        )
+        assert any(
+            "Tie points must differ in both pixel directions" in err for err in result
+        )
+
+        # Test case 4: Error - tie points mapping to same world coordinates
+        tie_points_same_world = np.array(
+            [
+                [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
+                [[5.0, 5.0, 0.0], [100.0, 200.0, 5.0]],  # same world coords
+            ]
+        )
+        result = geoimage._compute_image_corners_from_2_tie_points(
+            tie_points_same_world, u_cell_size, v_cell_size
+        )
+        assert isinstance(result, list), (
+            "Should return error list for same world coordinates"
+        )
+        assert any(
+            "Tie points map to the same world coordinates" in err for err in result
+        )
 
 
 def test_compute_image_corners_from_3_tie_points(tmp_path):
@@ -1478,11 +1655,9 @@ def test_compute_image_corners(tmp_path):
         assert isinstance(result, list), (
             "Should return error list for cell size mismatch"
         )
-        assert any(
-            "Computed cell sizes from tie points do not match" in err for err in result
-        )
+        assert any("inconsistent with cell sizes" in err for err in result)
 
-        # Test case 7: Valid 2 tie points
+        # Test case 7: Valid 2 tie points with cell sizes
         tie_points_2_valid = np.array(
             [
                 [[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]],
@@ -1490,7 +1665,7 @@ def test_compute_image_corners(tmp_path):
             ]
         )
         result = geoimage._compute_image_corners(
-            tie_points_2_valid, u_cell_size=None, v_cell_size=None
+            tie_points_2_valid, u_cell_size=1.0, v_cell_size=1.0
         )
         assert result.shape == (4, 3)
 
