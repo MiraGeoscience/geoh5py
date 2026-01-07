@@ -1357,7 +1357,23 @@ def build_2_tie_points_test_params():
     origin5 = np.array([10.0, 20.0, 30.0])
     test5 = make_test(U5, V5, origin5, di=4.0, dj=6.0, test_id="oblique")
 
-    return [test1, test2, test3, test4, test5]
+    # Test 6: Vertical alignment (di = 0, dj != 0)
+    # Tie points differ only in j direction
+    U6 = np.array([1.0, 0.0, 0.0])
+    V6 = np.array([0.0, 1.0, 0.0])
+    origin6 = np.array([100.0, 200.0, 0.0])
+    test6 = make_test(U6, V6, origin6, di=0.0, dj=8.0, test_id="vertical_alignment_di0")
+
+    # Test 7: Horizontal alignment (di != 0, dj = 0)
+    # Tie points differ only in i direction
+    U7 = np.array([1.0, 0.0, 0.0])
+    V7 = np.array([0.0, 1.0, 0.0])
+    origin7 = np.array([50.0, 100.0, 5.0])
+    test7 = make_test(
+        U7, V7, origin7, di=6.0, dj=0.0, test_id="horizontal_alignment_dj0"
+    )
+
+    return [test1, test2, test3, test4, test5, test6, test7]
 
 
 TWO_TIE_POINTS_PARAMS = build_2_tie_points_test_params()
@@ -1432,50 +1448,41 @@ def test_compute_image_corners_from_2_tie_points_errors(tmp_path):
         image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
         geoimage = GeoImage.create(workspace, name="test", image=image)
 
-        u_cell_size = 1.0
-        v_cell_size = 1.0
-
         # Test case 1: ValueError - less than 2 tie points
         with pytest.raises(ValueError, match="not enough values to unpack"):
             geoimage._compute_image_corners_from_2_tie_points(
-                np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]]),
-                u_cell_size,
-                v_cell_size,
+                np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
             )
 
-        # Test case 2: Error - tie points with same i coordinate
+        # Test case 2: ValueError - tie points with same i coordinate (di = 0)
+        # Note: This is now allowed since we only need one of di or dj to be non-zero
         tie_points_same_i = np.array(
             [
                 [[5.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
                 [[5.0, 8.0, 0.0], [100.0, 208.0, 5.0]],  # same i=5.0
             ]
         )
-        result = geoimage._compute_image_corners_from_2_tie_points(
-            tie_points_same_i, u_cell_size, v_cell_size
+        # This should now work since dj != 0
+        result = geoimage._compute_image_corners_from_2_tie_points(tie_points_same_i)
+        assert isinstance(result, np.ndarray), (
+            "Should return corners array when only dj differs"
         )
-        assert isinstance(result, list), (
-            "Should return error list for same i coordinate"
-        )
-        assert any(
-            "Tie points must differ in both pixel directions" in err for err in result
-        )
+        assert result.shape == (4, 3)
 
-        # Test case 3: Error - tie points with same j coordinate
+        # Test case 3: ValueError - tie points with same j coordinate (dj = 0)
+        # Note: This is now allowed since we only need one of di or dj to be non-zero
         tie_points_same_j = np.array(
             [
                 [[0.0, 5.0, 0.0], [100.0, 200.0, 5.0]],
                 [[8.0, 5.0, 0.0], [108.0, 200.0, 5.0]],  # same j=5.0
             ]
         )
-        result = geoimage._compute_image_corners_from_2_tie_points(
-            tie_points_same_j, u_cell_size, v_cell_size
+        # This should now work since di != 0
+        result = geoimage._compute_image_corners_from_2_tie_points(tie_points_same_j)
+        assert isinstance(result, np.ndarray), (
+            "Should return corners array when only di differs"
         )
-        assert isinstance(result, list), (
-            "Should return error list for same j coordinate"
-        )
-        assert any(
-            "Tie points must differ in both pixel directions" in err for err in result
-        )
+        assert result.shape == (4, 3)
 
         # Test case 4: Error - tie points mapping to same world coordinates
         tie_points_same_world = np.array(
@@ -1484,15 +1491,38 @@ def test_compute_image_corners_from_2_tie_points_errors(tmp_path):
                 [[5.0, 5.0, 0.0], [100.0, 200.0, 5.0]],  # same world coords
             ]
         )
-        result = geoimage._compute_image_corners_from_2_tie_points(
-            tie_points_same_world, u_cell_size, v_cell_size
-        )
-        assert isinstance(result, list), (
-            "Should return error list for same world coordinates"
-        )
-        assert any(
-            "Tie points map to the same world coordinates" in err for err in result
-        )
+        with pytest.raises(
+            ValueError, match="Tie points map to the same world coordinates"
+        ):
+            geoimage._compute_image_corners_from_2_tie_points(tie_points_same_world)
+
+
+def test_georeference_with_duplicate_tie_points(tmp_path):
+    """
+    Test that georeference with 2 identical tie points raises an error.
+
+    When passing 2 identical tie points to georeference(), _parse_tie_points
+    will deduplicate them, leaving only 1 unique tie point. This should
+    raise an error requiring cell sizes.
+    """
+    with Workspace.create(tmp_path / "test_duplicate_tie_points.geoh5") as workspace:
+        # Create a simple test image (10x10)
+        image = Image.fromarray(np.arange(100, dtype="uint8").reshape(10, 10), "L")
+        geoimage = GeoImage.create(workspace, name="test", image=image)
+
+        # Two identical tie points - will be deduplicated to 1 tie point
+        duplicate_tie_points = [
+            [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],
+            [[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]],  # exact duplicate
+        ]
+
+        # Should raise error because after deduplication, only 1 tie point remains
+        # and cell sizes are not provided
+        with pytest.raises(
+            ValueError,
+            match="Cell sizes must be provided when only 1 tie point is available",
+        ):
+            geoimage.georeference(duplicate_tie_points)
 
 
 def test_compute_image_corners_from_3_tie_points(tmp_path):
@@ -1581,20 +1611,16 @@ def test_compute_image_corners(tmp_path):
         assert result.shape == (4, 3)
 
         # Test case 2: ValueError - 1 tie point without cell sizes
-        result = geoimage._compute_image_corners(
-            tie_points_1, u_cell_size=None, v_cell_size=None
-        )
-        assert isinstance(result, list), (
-            "Should return error list when cell sizes missing"
-        )
-        assert any("Cell sizes must be provided" in err for err in result)
+        with pytest.raises(ValueError, match="Cell sizes must be provided"):
+            geoimage._compute_image_corners(
+                tie_points_1, u_cell_size=None, v_cell_size=None
+            )
 
         # Test case 3: ValueError - empty tie points array
-        result = geoimage._compute_image_corners(
-            np.array([]).reshape(0, 2, 3), u_cell_size=None, v_cell_size=None
-        )
-        assert isinstance(result, list), "Should return error list for empty array"
-        assert any("At least 1 tie point is required" in err for err in result)
+        with pytest.raises(ValueError, match="At least 1 tie point is required"):
+            geoimage._compute_image_corners(
+                np.array([]).reshape(0, 2, 3), u_cell_size=None, v_cell_size=None
+            )
 
         # Test case 4: ValueError - non-coplanar tie points
         # Create tie points where world coordinates are not on the same plane
@@ -1609,13 +1635,10 @@ def test_compute_image_corners(tmp_path):
                 ],  # This world point breaks coplanarity
             ]
         )
-        result = geoimage._compute_image_corners(
-            non_coplanar_points, u_cell_size=None, v_cell_size=None
-        )
-        assert isinstance(result, list), (
-            "Should return error list for non-coplanar points"
-        )
-        assert any("Tie points are not coplanar" in err for err in result)
+        with pytest.raises(ValueError, match="Tie points are not coplanar"):
+            geoimage._compute_image_corners(
+                non_coplanar_points, u_cell_size=None, v_cell_size=None
+            )
 
         # Test case 5: ValueError - non-affine tie points
         # Create tie points that don't follow an affine transformation
@@ -1631,31 +1654,27 @@ def test_compute_image_corners(tmp_path):
                 ],  # Breaks affine consistency (should be 1,1)
             ]
         )
-        result = geoimage._compute_image_corners(
-            non_affine_points, u_cell_size=None, v_cell_size=None
-        )
-        assert isinstance(result, list), (
-            "Should return error list for non-affine points"
-        )
-        assert any(
-            "Tie points are not consistent with an affine" in err for err in result
-        )
+        with pytest.raises(
+            ValueError, match="Tie points are not consistent with an affine"
+        ):
+            geoimage._compute_image_corners(
+                non_affine_points, u_cell_size=None, v_cell_size=None
+            )
 
-        # Test case 6: ValueError - cell size mismatch
-        # Create 2 tie points with specific geometry
+        # Test case 6: Valid 2 tie points (cell sizes computed internally)
+        # For 2 tie points, cell sizes are derived from the tie points
         tie_points_2 = np.array(
             [[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[10.0, 10.0, 0.0], [10.0, 10.0, 0.0]]]
         )
-        # Provide incorrect cell sizes that don't match the actual geometry
+        # Don't provide cell sizes - they'll be computed from tie points
         result = geoimage._compute_image_corners(
             tie_points_2,
-            u_cell_size=5.0,
-            v_cell_size=5.0,  # Wrong sizes
+            u_cell_size=None,
+            v_cell_size=None,
         )
-        assert isinstance(result, list), (
-            "Should return error list for cell size mismatch"
+        assert isinstance(result, np.ndarray), (
+            "Should return corners array for valid 2 tie points"
         )
-        assert any("inconsistent with cell sizes" in err for err in result)
 
         # Test case 7: Valid 2 tie points with cell sizes
         tie_points_2_valid = np.array(
