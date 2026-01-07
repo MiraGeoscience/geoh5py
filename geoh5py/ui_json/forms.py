@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -92,9 +92,8 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
-    :param verbose: Sets the level at which Geoscience Analyst will make
-        the parameter visible in a ui.json file.  Verbosity level is set
-        within Analyst menu.
+    :param placeholder_text: Text displayed in ui element when no data
+        has been provided.
     """
 
     model_config = ConfigDict(
@@ -117,6 +116,7 @@ class BaseForm(BaseModel):
     dependency_type: DependencyType = DependencyType.ENABLED
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
+    placeholder_text: str = ""
 
     @classmethod
     def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
