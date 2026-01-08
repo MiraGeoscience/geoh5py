@@ -47,7 +47,7 @@ from geoh5py.shared.validators import (
     to_uuid,
     types_to_string,
 )
-from geoh5py.ui_json.annotations import OptionalUUIDList
+from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
 from geoh5py.ui_json.validations.form import (
     empty_string_to_none,
     uuid_to_string,
@@ -142,6 +142,10 @@ class BaseForm(BaseModel):
             k in data
             for k in ["parent", "association", "dataType", "isValue", "property"]
         ):
+            if any(
+                k in data for k in ["allowComplement", "isComplement", "rangeLabel"]
+            ):
+                return DataRangeForm
             if "dataGroupType" in data:
                 return DataGroupForm
             if "multiSelect" in data:
@@ -163,7 +167,8 @@ class BaseForm(BaseModel):
         raise ValueError(f"Could not infer form from data: {data}")
 
     @property
-    def json_string(self):
+    def json_string(self) -> str:
+        """Returns the form as a json string."""
         return self.model_dump_json(exclude_unset=True, by_alias=True)
 
     def flatten(self):
@@ -177,6 +182,8 @@ class BaseForm(BaseModel):
 class StringForm(BaseForm):
     """
     String valued uijson form.
+
+    Shares documented attributes with the BaseForm.
     """
 
     value: str = ""
@@ -186,6 +193,8 @@ class RadioLabelForm(StringForm):
     """
     Radio button for two-option strings.
 
+    Shares documented attributes with the BaseForm.
+
     The uijson dialogue will render two radio buttons with label choices.  Any
     form labels within the ui.json containing the string matching the original
     button will be altered to the reflect the new button choice.
@@ -194,13 +203,15 @@ class RadioLabelForm(StringForm):
     :param alternative_label: Label for the alternative value.
     """
 
-    original_label: str
-    alternate_label: str
+    original_label: str = ""
+    alternate_label: str = ""
 
 
 class BoolForm(BaseForm):
     """
     Boolean valued uijson form.
+
+    Shares documented attributes with the BaseForm.
     """
 
     value: bool = True
@@ -209,6 +220,13 @@ class BoolForm(BaseForm):
 class IntegerForm(BaseForm):
     """
     Integer valued uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param min: Minimum value accepted by the rendered form in
+        Geoscience ANALYST.
+    :param max: Maximum value accepted by the rendered form in
+        Geoscience ANALYST.
     """
 
     value: int = 1
@@ -219,6 +237,17 @@ class IntegerForm(BaseForm):
 class FloatForm(BaseForm):
     """
     Float valued uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param min: Minimum value accepted by the rendered form in
+        Geoscience ANALYST.
+    :param max: Maximum value accepted by the rendered form in
+        Geoscience ANALYST.
+    :param precision: Number of decimal places rendered in Geoscience
+        ANALYST.
+    :param line_edit: If True, Geoscience ANALYST will render a spin box
+        for adjusting the value by an increment controlled by the precision.
     """
 
     value: float = 1.0
@@ -231,9 +260,15 @@ class FloatForm(BaseForm):
 class ChoiceForm(BaseForm):
     """
     Choice list uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param choice_list: List of valid choices for the form.  The choices
+        are rendered in Geoscience ANALYST as a dropdown menu.
+
     """
 
-    value: str
+    value: str = ""
     choice_list: list[str]
 
     @model_validator(mode="after")
@@ -245,7 +280,16 @@ class ChoiceForm(BaseForm):
 
 
 class MultiChoiceForm(BaseForm):
-    """Multi-choice list uijson form."""
+    """
+    Multi-choice list uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param choice_list: List of valid choices for the form.  The choices
+        are rendered in Geoscience ANALYST as a multi-selection dropdown
+        menu.
+    :param multi_select: Must be True for MultiChoiceForm.
+    """
 
     value: list[str]
     choice_list: list[str]
@@ -260,7 +304,7 @@ class MultiChoiceForm(BaseForm):
 
     @field_validator("value", mode="before")
     @classmethod
-    def to_list(cls, value):
+    def to_list(cls, value: str | list[str]) -> list[str]:
         if not isinstance(value, list):
             value = [value]
         return value
@@ -286,7 +330,16 @@ PathList = Annotated[
 
 class FileForm(BaseForm):
     """
-    File path uijson form
+    File path uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param file_description: List of file descriptions for each file type.
+    :param file_type: List of file extensions (without the dot) for each file type.
+    :param file_multi: If True, Geoscience ANALYST will allow multi-selection of
+        files.
+    :param directory_only: If True, Geoscience ANALYST will restrict selecitons
+        to directories only.
     """
 
     value: PathList
@@ -296,7 +349,7 @@ class FileForm(BaseForm):
     directory_only: bool = False
 
     @field_serializer("value", when_used="json")
-    def to_string(self, value):
+    def to_string(self, value: list[Path]) -> str:
         return ";".join([str(path) for path in value])
 
     @field_validator("value")
@@ -360,6 +413,11 @@ OptionalUUID = Annotated[
 class ObjectForm(BaseForm):
     """
     Geoh5py object uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param mesh_type: List of object types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
     """
 
     value: OptionalUUID
@@ -378,6 +436,11 @@ GroupTypes = Annotated[
 class GroupForm(BaseForm):
     """
     Geoh5py group uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param group_type: List of group types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
     """
 
     value: OptionalUUID
@@ -402,7 +465,19 @@ UUIDOrNumber = Annotated[
 
 
 class DataFormMixin(BaseModel):
-    """Mixin class to add common attributes a series of data classes."""
+    """
+    Mixin class to add common attributes a series of data classes.
+
+    Shares documented attributes with the BaseForm.
+
+    :param parent: The name of the parameter in the ui.json that contains
+        the data to select from.
+    :param association: The data association, eg: 'Cell', 'Face', 'Vertex'
+        of a grid object, that filters the options in the Geoscience ANALYST
+        ui.json dropdown.
+    :param data_type: The data type, eg: 'Integer', 'Float', that filters
+        the options in the Geoscience ANALYST ui.json dropdown.
+    """
 
     parent: str
     association: Association | list[Association]
@@ -412,6 +487,8 @@ class DataFormMixin(BaseModel):
 class DataForm(DataFormMixin, BaseForm):
     """
     Geoh5py uijson form for data associated with an object.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
     """
 
     value: OptionalUUID
@@ -420,6 +497,11 @@ class DataForm(DataFormMixin, BaseForm):
 class DataGroupForm(DataForm):
     """
     Geoh5py uijson form for grouped data associated with an object.
+
+    Shares documented attributes with the BaseForm.
+
+    :param data_group_type: The group type, eg: 'Multi-Element', '3d Vector'
+        that filters the groups available in the Geoscience ANALYST ui.json.
     """
 
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
@@ -428,6 +510,10 @@ class DataGroupForm(DataForm):
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
     Geoh5py uijson data form that also accepts a single value.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    :param is_value: If True, the value field is used to provide a scalar value.
     """
 
     value: UUIDOrNumber
@@ -456,7 +542,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             raise ValueError("A property must be provided if is_value is used.")
         return self
 
-    def flatten(self):
+    def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
         if (
             "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
@@ -467,14 +553,21 @@ class DataOrValueForm(DataFormMixin, BaseForm):
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
-    """Geoh5py uijson data form with multi-selection."""
+    """
+    Geoh5py uijson data form with multi-selection.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    :param multi_select: Must be True for MultiSelectDataForm.
+    """
 
     value: OptionalUUIDList
     multi_select: bool = True
 
     @field_validator("multi_select", mode="before")
     @classmethod
-    def only_multi_select(cls, value):
+    def only_multi_select(cls, value: bool) -> bool:
+        """Validate that multi_select is True."""
         if not value:
             raise ValueError("MultiSelectForm must have multi_select: True.")
         return value
@@ -485,3 +578,27 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
         if not isinstance(value, list):
             value = [value]
         return value
+
+
+class DataRangeForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py data range uijson form.
+
+    Shares documented attributes with the BaseForm and the DataFormMixin.
+
+    :param value: The value can be a single float or a list of two floats.
+        Geoscience ANALYST will estimate a range on load if a single float
+        is provided, but will always return a list.
+    :param property: The UUID of the property to which the range applies.
+    :param range_label: Label for the range.
+    :param allow_complement: If True, the complement option will be available
+        in Geoscience ANALYST as a checkbox.
+    :param is_complement: If True, the range slider in Geoscience ANALYST will
+        be inverted and the implied selection is outside of the range provided.
+    """
+
+    value: OptionalValueList
+    property: OptionalUUID
+    range_label: str
+    allow_complement: bool = False
+    is_complement: bool = False

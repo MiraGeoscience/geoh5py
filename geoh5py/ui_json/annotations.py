@@ -34,6 +34,11 @@ OptionalUUIDList = Annotated[
     PlainSerializer(uuid_to_string),
 ]
 
+OptionalValueList = Annotated[
+    float | list[float] | None,
+    BeforeValidator(empty_string_to_none),
+]
+
 
 def deprecate(value, info):
     """Issue deprecation warning."""
