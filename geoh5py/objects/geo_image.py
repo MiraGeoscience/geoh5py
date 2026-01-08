@@ -911,8 +911,8 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     def _compute_image_corners(
         self,
         points: np.ndarray,
-        u_cell_size: float | None,
-        v_cell_size: float | None,
+        u_cell_size: float | None = None,
+        v_cell_size: float | None = None,
         tol: float = 1e-4,
     ) -> np.ndarray:
         """
