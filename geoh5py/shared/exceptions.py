@@ -56,31 +56,6 @@ class JSONParameterValidationError(Exception):
         return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
 
 
-class UIJsonFormatError(BaseValidationError):
-    def __init__(self, name, msg):
-        super().__init__(f"Invalid UIJson format for parameter '{name}'. {msg}")
-
-    @classmethod
-    def message(cls, name, value, validation):
-        pass
-
-
-class AggregateValidationError(BaseValidationError):
-    def __init__(
-        self,
-        name: str,
-        value: list[BaseValidationError],
-    ):
-        super().__init__(AggregateValidationError.message(name, value))
-
-    @classmethod
-    def message(cls, name, value, validation=None):
-        msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
-        for i, err in enumerate(value):
-            msg += f"\t{i}. {err!s}\n"
-        return msg
-
-
 class OptionalValidationError(BaseValidationError):
     """Error if None value provided to non-optional parameter."""
 
@@ -140,24 +115,6 @@ class AtLeastOneValidationError(BaseValidationError):
         return f"Must provide at least one {name}.  Options are: {opts}"
 
 
-class TypeUIDValidationError(BaseValidationError):
-    """Error on type uid validation."""
-
-    def __init__(self, name: str, value, validation: list[str]):
-        super().__init__(
-            TypeUIDValidationError.message(
-                name, value.default_type_uid(), list(validation)
-            )
-        )
-
-    @classmethod
-    def message(cls, name, value, validation):
-        return (
-            f"Type uid '{value}' provided for '{name}' is invalid."
-            + iterable_message(validation)
-        )
-
-
 class RequiredValidationError(BaseValidationError):
     def __init__(self, name: str):
         super().__init__(RequiredValidationError.message(name))
@@ -165,47 +122,6 @@ class RequiredValidationError(BaseValidationError):
     @classmethod
     def message(cls, name, value=None, validation=None):
         return f"Missing required parameter: '{name}'."
-
-
-class InCollectionValidationError(BaseValidationError):
-    collection = "Collection"
-    item = "data"
-
-    def __init__(self, name: str, value: list[str]):
-        super().__init__(self.message(name, value))
-
-    @classmethod
-    def message(cls, name, value, validation=None):
-        _ = validation
-        return f"{cls.collection}: '{name}' is missing required {cls.item}(s): {value}."
-
-
-class RequiredFormMemberValidationError(InCollectionValidationError):
-    collection = "Form"
-    item = "member"
-
-
-class RequiredUIJsonParameterValidationError(InCollectionValidationError):
-    collection = "UIJson"
-    item = "parameter"
-
-
-class RequiredWorkspaceObjectValidationError(InCollectionValidationError):
-    collection = "Workspace"
-    item = "object"
-
-
-class RequiredObjectDataValidationError(BaseValidationError):
-    def __init__(self, name: str, value: list[tuple[str, str]]):
-        super().__init__(self.message(name, value))
-
-    @classmethod
-    def message(cls, name, value, validation=None):
-        _ = validation
-        return (
-            f"Workspace: '{name}' object(s) {[k[0] for k in value]} "
-            f"are missing required children {[k[1] for k in value]}."
-        )
 
 
 class ShapeValidationError(BaseValidationError):
