@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
@@ -65,7 +66,7 @@ class DependencyType(str, Enum):
     HIDE = "hide"
 
 
-class BaseForm(BaseModel):
+class BaseForm(ABC, BaseModel):
     """
     Base class for uijson forms
 
@@ -166,6 +167,10 @@ class BaseForm(BaseModel):
 
         raise ValueError(f"Could not infer form from data: {data}")
 
+    @abstractmethod
+    def type_check(self, form: dict[str, Any]) -> bool:
+        pass
+
     @property
     def json_string(self) -> str:
         """Returns the form as a json string."""
@@ -187,6 +192,15 @@ class StringForm(BaseForm):
     """
 
     value: str = ""
+
+    def type_check(self, form: dict[str, Any]):
+        check = False
+        if isinstance(form.get("value", None), str):
+            is_choice_form = "choice_list" in form
+            is_radio_label_form = "original_label" in form or "alternate_label" in form
+            if not is_choice_form or not is_radio_label_form:
+                check = True
+        return check
 
 
 class RadioLabelForm(StringForm):
