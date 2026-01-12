@@ -20,7 +20,13 @@
 from uuid import UUID
 
 
+UidOrNumeric = UUID | float | int | None
+StringOrNumeric = str | float | int
+
+
 def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
+    """Serialize UUID(s) as a string."""
+
     def convert(value: UUID | None) -> str:
         if value is None:
             return ""
@@ -38,10 +44,6 @@ def empty_string_to_none(value):
     if value == "":
         return None
     return value
-
-
-UidOrNumeric = UUID | float | int | None
-StringOrNumeric = str | float | int
 
 
 def uuid_to_string_or_numeric(
