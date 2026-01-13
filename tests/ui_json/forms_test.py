@@ -112,7 +112,7 @@ def test_base_form_config_alias(sample_form):
     assert not hasattr(form, "dependencyType")
 
     with pytest.raises(ValidationError, match="dependencyType"):
-        form = sample_form(
+        _ = sample_form(
             label="name", value="test", dependency="my_param", dependencyType=1
         )
 
