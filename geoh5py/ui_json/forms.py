@@ -35,12 +35,13 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from pydantic.alias_generators import to_camel
+from pydantic.alias_generators import to_camel, to_snake
 from pydantic.functional_validators import BeforeValidator
 
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import all_subclasses, is_uuid
 from geoh5py.shared.validators import (
     to_class,
     to_list,
@@ -120,55 +121,23 @@ class BaseForm(ABC, BaseModel):
     placeholder_text: str = ""
 
     @classmethod
-    def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
+    def infer(cls, form: dict[str, Any]) -> type[BaseForm]:
         """
         Infer and return the appropriate form.
 
-        :param data: Dictionary of form data.
+        :param form: Form data.
         """
-        data = {to_camel(k): v for k, v in data.items()}
-        if "choiceList" in data:
-            if data.get("multiSelect", False):
-                return MultiChoiceForm
-            return ChoiceForm
-        if "originalLabel" in data and "alternateLabel" in data:
-            return RadioLabelForm
-        if any(k in data for k in ["fileDescription", "fileType"]):
-            return FileForm
-        if "meshType" in data:
-            return ObjectForm
-        if "groupType" in data:
-            return GroupForm
-        if any(
-            k in data
-            for k in ["parent", "association", "dataType", "isValue", "property"]
-        ):
-            if any(
-                k in data for k in ["allowComplement", "isComplement", "rangeLabel"]
-            ):
-                return DataRangeForm
-            if "dataGroupType" in data:
-                return DataGroupForm
-            if "multiSelect" in data:
-                return MultiSelectDataForm
-            if any(
-                k in data for k in ["min", "max", "precision", "isValue", "property"]
-            ):
-                return DataOrValueForm
-            return DataForm
-        if isinstance(data.get("value"), str):
-            return StringForm
-        if isinstance(data.get("value"), bool):
-            return BoolForm
-        if isinstance(data.get("value"), int):
-            return IntegerForm
-        if isinstance(data.get("value"), float):
-            return FloatForm
+        form = {to_snake(k): v for k, v in form.items()}
+        for form_class in all_subclasses(BaseForm):
+            assert hasattr(form_class, "type_check")
+            if form_class.type_check(form):
+                return form_class
 
-        raise ValueError(f"Could not infer form from data: {data}")
+        raise ValueError(f"Could not infer form from data: {form}")
 
+    @staticmethod
     @abstractmethod
-    def type_check(self, form: dict[str, Any]) -> bool:
+    def type_check(form: dict[str, Any]) -> bool:
         pass
 
     @property
@@ -193,13 +162,20 @@ class StringForm(BaseForm):
 
     value: str = ""
 
-    def type_check(self, form: dict[str, Any]):
+    @staticmethod
+    def type_check(form: dict[str, Any]):
+        """StringForm if value field is a string and other checks fail."""
         check = False
-        if isinstance(form.get("value", None), str):
-            is_choice_form = "choice_list" in form
-            is_radio_label_form = "original_label" in form or "alternate_label" in form
-            if not is_choice_form or not is_radio_label_form:
+        value = form.get("value", None)
+        if isinstance(value, str):
+            if (
+                not ChoiceForm.type_check(form)
+                and not RadioLabelForm.type_check(form)
+                and not FileForm.type_check(form)
+                and not is_uuid(value)
+            ):
                 check = True
+
         return check
 
 
@@ -220,6 +196,14 @@ class RadioLabelForm(StringForm):
     original_label: str = ""
     alternate_label: str = ""
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        check = False
+        if any(k in form for k in ["original_label", "alternate_label"]):
+            check = True
+
+        return check
+
 
 class BoolForm(BaseForm):
     """
@@ -229,6 +213,15 @@ class BoolForm(BaseForm):
     """
 
     value: bool = True
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """BoolForm if value field is a boolean."""
+        check = False
+        if isinstance(form.get("value", None), bool):
+            check = True
+
+        return check
 
 
 class IntegerForm(BaseForm):
@@ -246,6 +239,16 @@ class IntegerForm(BaseForm):
     value: int = 1
     min: float = -np.inf
     max: float = np.inf
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """IntegerForm if value field is an integer."""
+        check = False
+        if isinstance(form.get("value", None), int):
+            if not DataOrValueForm.type_check(form):
+                check = True
+
+        return check
 
 
 class FloatForm(BaseForm):
@@ -270,6 +273,16 @@ class FloatForm(BaseForm):
     precision: int = 2
     line_edit: bool = True
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """FloatForm if value field is a float and DataOrValueForm check fails."""
+        check = False
+        if isinstance(form.get("value", None), float):
+            if not DataOrValueForm.type_check(form):
+                check = True
+
+        return check
+
 
 class ChoiceForm(BaseForm):
     """
@@ -291,6 +304,15 @@ class ChoiceForm(BaseForm):
             raise ValueError(f"Provided value: '{self.value}' is not a valid choice.")
 
         return self
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """ChoiceForm if choice_list but not multi_select is in the dictionary."""
+        check = False
+        if "choice_list" in form and "multi_select" not in form:
+            check = True
+
+        return check
 
 
 class MultiChoiceForm(BaseForm):
@@ -333,6 +355,15 @@ class MultiChoiceForm(BaseForm):
             raise ValueError(f"Provided value(s): {bad_choices} are not valid choices.")
 
         return self
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """MultiChoiceForm if choice_list and multi_select keys are in the dictionary."""
+        check = False
+        if "choice_list" in form and "multi_select" in form:
+            check = True
+
+        return check
 
 
 PathList = Annotated[
@@ -408,6 +439,21 @@ class FileForm(BaseForm):
             )
         return data
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """FileForm if any of the indicator keys are in the dictionary."""
+        check = False
+        indicator_keys = [
+            "file_description",
+            "file_type",
+            "file_multi",
+            "directory_only",
+        ]
+        if any(k in form for k in indicator_keys):
+            check = True
+
+        return check
+
 
 MeshTypes = Annotated[
     list[type[ObjectBase]],
@@ -437,6 +483,15 @@ class ObjectForm(BaseForm):
     value: OptionalUUID
     mesh_type: MeshTypes
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """ObjectForm if mesh_type key is in the dictionary."""
+        check = False
+        if "mesh_type" in form:
+            check = True
+
+        return check
+
 
 GroupTypes = Annotated[
     list[type[Group]],
@@ -459,6 +514,15 @@ class GroupForm(BaseForm):
 
     value: OptionalUUID
     group_type: GroupTypes
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """GroupForm if group_type key is in the dictionary."""
+        check = False
+        if "group_type" in form:
+            check = True
+
+        return check
 
 
 Association = Enum(  # type: ignore
@@ -507,6 +571,26 @@ class DataForm(DataFormMixin, BaseForm):
 
     value: OptionalUUID
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """DataForm if indicator keys are in the dictionary."""
+        check = False
+        indicator_keys = ["parent", "association", "data_type"]
+        if any(k in form for k in indicator_keys):
+            is_data_group_form = DataGroupForm.type_check(form)
+            is_data_or_value_form = DataOrValueForm.type_check(form)
+            is_data_multi_select_data_form = MultiSelectDataForm.type_check(form)
+            is_data_range_form = DataRangeForm.type_check(form)
+            if (
+                not is_data_group_form
+                and not is_data_or_value_form
+                and not is_data_multi_select_data_form
+                and not is_data_range_form
+            ):
+                check = True
+
+        return check
+
 
 class DataGroupForm(DataForm):
     """
@@ -519,6 +603,15 @@ class DataGroupForm(DataForm):
     """
 
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """DataGroupForm if data_group_type key is in the dictionary."""
+        check = False
+        if "data_group_type" in form:
+            check = True
+
+        return check
 
 
 class DataOrValueForm(DataFormMixin, BaseForm):
@@ -565,6 +658,15 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             return self.property
         return self.value
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """DataOrValueForm if parent and is_value keys are in the dictionary."""
+        check = False
+        if "parent" in form and "is_value" in form:
+            check = True
+
+        return check
+
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
@@ -593,6 +695,15 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
             value = [value]
         return value
 
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """MultiSelectDataForm if parent and multi_select keys are in the dictionary."""
+        check = False
+        if "parent" in form and "multi_select" in form:
+            check = True
+
+        return check
+
 
 class DataRangeForm(DataFormMixin, BaseForm):
     """
@@ -616,3 +727,13 @@ class DataRangeForm(DataFormMixin, BaseForm):
     range_label: str
     allow_complement: bool = False
     is_complement: bool = False
+
+    @staticmethod
+    def type_check(form: dict[str, Any]) -> bool:
+        """DataRangeForm if indicator keys are in the dictionary."""
+        check = False
+        indicator_keys = ["range_label", "allow_complement", "is_complement"]
+        if any(k in form for k in indicator_keys):
+            check = True
+
+        return check

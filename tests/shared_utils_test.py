@@ -30,6 +30,7 @@ from geoh5py import Workspace
 from geoh5py.objects import Points
 from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
+    all_subclasses,
     as_str_if_uuid,
     box_intersect,
     dict_to_json_str,
@@ -181,3 +182,24 @@ def test_uuid_from_values():
     data["key5"] = "abc"
 
     assert uid_a != uuid_from_values(data)
+
+
+def test_all_subclasses():
+    class TestOne:
+        pass
+
+    class TestTwo(TestOne):
+        pass
+
+    class TestThree(TestTwo):
+        pass
+
+    class TestFour(TestOne):
+        pass
+
+    assert len(all_subclasses(TestOne)) == 3
+    assert all(k in all_subclasses(TestOne) for k in [TestTwo, TestThree, TestFour])
+    assert len(all_subclasses(TestTwo)) == 1
+    assert all_subclasses(TestTwo)[0] == TestThree
+    assert all_subclasses(TestThree) == []
+    assert all_subclasses(TestFour) == []

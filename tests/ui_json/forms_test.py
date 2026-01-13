@@ -70,27 +70,37 @@ def setup_from_uijson(workspace, form):
     return uijson.my_param
 
 
-def test_base_form():
-    form = BaseForm(label="name", value="test")
+@pytest.fixture
+def sample_form():
+    class MyForm(BaseForm):
+        @staticmethod
+        def type_check(form):
+            return False
+
+    return MyForm
+
+
+def test_base_form(sample_form):
+    form = sample_form(label="name", value="test")
     assert form.label == "name"
     assert form.value == "test"
     assert form.model_fields_set == {"label", "value"}
 
 
-def test_base_form_config_extra():
-    form = BaseForm(label="name", value="test", extra="stuff")
+def test_base_form_config_extra(sample_form):
+    form = sample_form(label="name", value="test", extra="stuff")
     assert form.extra == "stuff"
     assert form.model_extra == {"extra": "stuff"}
 
 
-def test_base_form_config_frozen():
-    form = BaseForm(label="name", value="test")
+def test_base_form_config_frozen(sample_form):
+    form = sample_form(label="name", value="test")
     with pytest.raises(ValidationError, match="Instance is frozen"):
         form.label = "new"
 
 
-def test_base_form_config_alias():
-    form = BaseForm(
+def test_base_form_config_alias(sample_form):
+    form = sample_form(
         label="name",
         value="test",
         dependency="my_param",
@@ -102,13 +112,13 @@ def test_base_form_config_alias():
     assert not hasattr(form, "dependencyType")
 
     with pytest.raises(ValidationError, match="dependencyType"):
-        form = BaseForm(
+        form = sample_form(
             label="name", value="test", dependency="my_param", dependencyType=1
         )
 
 
-def test_dependency_type_enum():
-    form = BaseForm(
+def test_dependency_type_enum(sample_form):
+    form = sample_form(
         label="name", value="test", dependency="my_param", dependency_type="enabled"
     )
     assert form.dependency_type == "enabled"
@@ -116,16 +126,16 @@ def test_dependency_type_enum():
     with pytest.raises(
         ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
-        _ = BaseForm(
+        _ = sample_form(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
         )
 
 
-def test_base_form_serieralization():
-    form = BaseForm(label="name", value="test", extra="stuff")
+def test_base_form_serieralization(sample_form):
+    form = sample_form(label="name", value="test", extra="stuff")
     json = form.json_string
     assert all(k in json for k in ["label", "value", "extra"])
-    form = BaseForm(label="name", value="test", dependency_type="disabled")
+    form = sample_form(label="name", value="test", dependency_type="disabled")
     json = form.json_string
     assert "dependencyType" in json
 
@@ -560,8 +570,8 @@ def test_data_range_form():
     assert form.range_label == "value range"
 
 
-def test_flatten():
-    param = BaseForm(label="my_param", value=2)
+def test_flatten(sample_form):
+    param = sample_form(label="my_param", value=2)
     assert param.flatten() == 2
 
     data_uid = str(uuid.uuid4())
@@ -687,3 +697,11 @@ def test_base_form_infer(tmp_path):
         }
     )
     assert form == DataRangeForm
+
+
+def test_type_check_method_must_be_implemented():
+    class MyForm(BaseForm):
+        pass
+
+    with pytest.raises(TypeError, match="Can't instantiate abstract class MyForm"):
+        _ = MyForm(label="test", value="test")

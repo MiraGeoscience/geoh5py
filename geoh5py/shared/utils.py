@@ -1330,3 +1330,13 @@ def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
     if not np.isclose(np.linalg.norm(value), 1.0, atol=1e-6):
         raise ValueError("Vector is not normalized.")
     return value
+
+
+def all_subclasses(type_object: type) -> list[type]:
+    """Recursively find all subclasses of input type object."""
+    collection = []
+    subclasses = type_object.__subclasses__()
+    collection += subclasses
+    for subclass in subclasses:
+        collection += all_subclasses(subclass)
+    return collection
