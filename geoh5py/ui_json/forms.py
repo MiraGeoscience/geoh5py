@@ -164,18 +164,18 @@ class StringForm(BaseForm):
     @staticmethod
     def type_check(form: dict[str, Any]):
         """StringForm if value field is a string and other checks fail."""
-        check = False
         value = form.get("value", None)
-        if isinstance(value, str):
-            if (
-                not ChoiceForm.type_check(form)
-                and not RadioLabelForm.type_check(form)
-                and not FileForm.type_check(form)
-                and not is_uuid(value)
+        if isinstance(value, str)
+            and not (
+                ChoiceForm.type_check(form)
+                or RadioLabelForm.type_check(form)
+                or FileForm.type_check(form)
+                or is_uuid(value)
             ):
-                check = True
+                return True
 
-        return check
+        return False
+
 
 
 class RadioLabelForm(StringForm):
