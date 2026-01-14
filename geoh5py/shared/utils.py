@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import NAMESPACE_DNS, UUID, uuid5
 from warnings import warn
 
@@ -38,6 +38,7 @@ from .exceptions import Geoh5FileClosedError
 
 # pylint: disable=too-many-lines
 
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
@@ -1332,7 +1333,7 @@ def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
     return value
 
 
-def all_subclasses(type_object: type) -> list[type]:
+def all_subclasses(type_object: T) -> list[T]:
     """Recursively find all subclasses of input type object."""
     collection = []
     subclasses = type_object.__subclasses__()

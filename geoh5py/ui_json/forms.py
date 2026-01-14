@@ -129,7 +129,6 @@ class BaseForm(ABC, BaseModel):
         """
         form = {to_snake(k): v for k, v in form.items()}
         for form_class in all_subclasses(BaseForm):
-            assert hasattr(form_class, "type_check")
             if form_class.type_check(form):
                 return form_class
 
