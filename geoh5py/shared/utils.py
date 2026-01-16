@@ -1364,7 +1364,9 @@ def model_fields_difference(
     return set(child.model_fields) - set(parent.model_fields)
 
 
-def indicator_attributes(parent: T, children: list[T]) -> tuple[set[str], set[str]]:
+def indicator_attributes(
+    parent: T, children: list[T]
+) -> tuple[list[set[str]], list[set[str]]]:
     """
     List all the strong (required) and weak (optional) indicator attributes.
 
