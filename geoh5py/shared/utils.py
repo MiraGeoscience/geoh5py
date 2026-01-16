@@ -1352,7 +1352,7 @@ def all_subclasses(type_object: T) -> list[T]:
 def model_fields_difference(
     parent: T,
     child: T,
-) -> list[str]:
+) -> set[str]:
     """
     Find fields added in the child class.
 
