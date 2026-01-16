@@ -1334,7 +1334,13 @@ def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
 
 
 def all_subclasses(type_object: T) -> list[T]:
-    """Recursively find all subclasses of input type object."""
+    """
+    Recursively find all subclasses of input type object.
+
+    :param type_object: Class containing possibly nested subclasses.
+
+    :returns: List of all the subclasses for the entire hierarchy.
+    """
     collection = []
     subclasses = type_object.__subclasses__()
     collection += subclasses
@@ -1347,12 +1353,29 @@ def model_fields_difference(
     parent: T,
     child: T,
 ) -> list[str]:
-    """Find fields added in the child class."""
+    """
+    Find fields added in the child class.
+
+    :param parent: Parent class.
+    :param child: Child class.
+
+    :returns: All fields in the child class but not the parent.
+    """
     return set(child.model_fields) - set(parent.model_fields)
 
 
 def indicator_attributes(parent: T, children: list[T]) -> tuple[set[str], set[str]]:
-    """List all the strong (required) and weak (optional) indicator attributes."""
+    """
+    List all the strong (required) and weak (optional) indicator attributes.
+
+    :param parent: Parent class.
+    :param children: A children of the parent.
+
+    :return strong_indicators: List of all required attributes not in the
+        parent for each of the children.
+    :return weak_indicators: List of all optional attributes not in the
+        parent for each of the children.
+    """
     strong_indicators = []
     weak_indicators = []
     for child in children:
@@ -1371,7 +1394,15 @@ def indicator_attributes(parent: T, children: list[T]) -> tuple[set[str], set[st
 
 
 def best_match_subclass(parent: T, children: list[T], data: dict[str, Any]) -> T:
-    """Choose the subclass with the best matching attributes"""
+    """
+    Choose the subclass with the best matching attributes.
+
+    :param parent: Parent class.
+    :param children: All children of the parent.
+    :param data: Dictionary of attribute data to match.
+
+    :returns: The best matching subclass.
+    """
 
     strong_indicators, weak_indicators = indicator_attributes(parent, children)
     n_strong = np.array(
@@ -1400,17 +1431,6 @@ def best_match_subclass(parent: T, children: list[T], data: dict[str, Any]) -> T
             return candidate
 
     raise ValueError(f"Could not match data: {data} to any of the children.")
-
-
-def no_required_indicators(parent: T, children: list[T]) -> list[T]:
-    """Find all subclasses without any required fields."""
-    out = []
-    for child in children:
-        indicators = model_fields_difference(parent, child)
-        if not any(child.model_fields[field].is_required() for field in indicators):
-            out.append(child)
-
-    return out
 
 
 def are_coplanar(points: np.ndarray, tol: float = 1e-6) -> bool:

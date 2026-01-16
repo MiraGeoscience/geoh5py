@@ -40,7 +40,6 @@ from geoh5py.shared.utils import (
     mask_by_extent,
     model_fields_difference,
     nan2str,
-    no_required_indicators,
     uuid_from_values,
 )
 
@@ -217,12 +216,14 @@ def test_model_fields_difference():
         b: int
         c: float
 
-    class MyOtherChild(MyParent):
+    class MyOtherChild(MyChild):
         d: float
         e: float = 1.0
 
     diff = model_fields_difference(MyParent, MyChild)
     assert diff == {"b", "c"}
+    diff = model_fields_difference(MyParent, MyOtherChild)
+    assert diff == {"b", "c", "d", "e"}
 
 
 def test_best_match_subclass():
@@ -254,18 +255,3 @@ def test_best_match_subclass():
     )
 
     assert best_match == ChildA
-
-
-def test_no_required_indicators():
-    class Parent(BaseModel):
-        a: str
-        b: int
-
-    class ChildA(Parent):
-        c: float = 1.0
-
-    class ChildB(Parent):
-        d: float
-
-    candidates = no_required_indicators(Parent, [ChildA, ChildB])
-    assert candidates == [ChildA]
