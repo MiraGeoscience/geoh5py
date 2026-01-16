@@ -1343,6 +1343,76 @@ def all_subclasses(type_object: T) -> list[T]:
     return collection
 
 
+def model_fields_difference(
+    parent: T,
+    child: T,
+) -> list[str]:
+    """Find fields added in the child class."""
+    return set(child.model_fields) - set(parent.model_fields)
+
+
+def indicator_attributes(parent: T, children: list[T]) -> tuple[set[str], set[str]]:
+    """List all the strong (required) and weak (optional) indicator attributes."""
+    strong_indicators = []
+    weak_indicators = []
+    for child in children:
+        indicators = model_fields_difference(parent, child)
+        strong_indicators_set = set()
+        weak_indicators_set = set()
+        for field in indicators:
+            if child.model_fields[field].is_required():
+                strong_indicators_set.add(field)
+            else:
+                weak_indicators_set.add(field)
+        strong_indicators.append(strong_indicators_set)
+        weak_indicators.append(weak_indicators_set)
+
+    return strong_indicators, weak_indicators
+
+
+def best_match_subclass(parent: T, children: list[T], data: dict[str, Any]) -> T:
+    """Choose the subclass with the best matching attributes"""
+
+    strong_indicators, weak_indicators = indicator_attributes(parent, children)
+    n_strong = np.array(
+        [len(strong_indicators[i].intersection(data)) for i, c in enumerate(children)]
+    )
+    n_weak = np.array(
+        [len(weak_indicators[i].intersection(data)) for i, c in enumerate(children)]
+    )
+
+    total_indicators = n_strong + n_weak
+    candidates = np.array(children)[total_indicators == np.max(total_indicators)]
+    if len(candidates) == 1:
+        return candidates[0]
+
+    candidates = np.array(children)[n_strong == np.max(n_strong)]
+    if len(candidates) == 1:
+        return candidates
+    if len(candidates) > 1 and len(candidates) < len(children):
+        return candidates[np.argmin([len(k.model_fields) for k in candidates])]
+
+    candidates = [c for i, c in enumerate(children) if not strong_indicators[i]]
+    value = data.get("value", None)
+    for candidate in candidates:
+        annotation = candidate.model_fields["value"].annotation
+        if type(value) == annotation:  # pylint: disable=unidiomatic-typecheck
+            return candidate
+
+    raise ValueError(f"Could not match data: {data} to any of the children.")
+
+
+def no_required_indicators(parent: T, children: list[T]) -> list[T]:
+    """Find all subclasses without any required fields."""
+    out = []
+    for child in children:
+        indicators = model_fields_difference(parent, child)
+        if not any(child.model_fields[field].is_required() for field in indicators):
+            out.append(child)
+
+    return out
+
+
 def are_coplanar(points: np.ndarray, tol: float = 1e-6) -> bool:
     """
     Check if a set of points are coplanar.

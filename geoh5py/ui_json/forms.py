@@ -20,7 +20,6 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
@@ -41,7 +40,10 @@ from pydantic.functional_validators import BeforeValidator
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import all_subclasses, is_uuid
+from geoh5py.shared.utils import (
+    all_subclasses,
+    best_match_subclass,
+)
 from geoh5py.shared.validators import (
     to_class,
     to_list,
@@ -67,7 +69,7 @@ class DependencyType(str, Enum):
     HIDE = "hide"
 
 
-class BaseForm(ABC, BaseModel):
+class BaseForm(BaseModel):
     """
     Base class for uijson forms
 
@@ -125,19 +127,22 @@ class BaseForm(ABC, BaseModel):
         """
         Infer and return the appropriate form.
 
+        The strategy involves first polling all the subclasses for indicator
+        attributes that match the form data.  An indicator attribute is one that
+        exists only on the subclass. If a single subclass contains the most
+        matching indicators, we instantly return that result.
+
+        If there is more than one candidate we first check if the form is a base
+        class and lastly fall back on type checking the value field of the form.
+        The type checking is performed on subclasses without required indicator
+        fields to avoid false positives.
+
         :param form: Form data.
         """
+
         form = {to_snake(k): v for k, v in form.items()}
-        for form_class in all_subclasses(BaseForm):
-            if form_class.type_check(form):
-                return form_class
-
-        raise ValueError(f"Could not infer form from data: {form}")
-
-    @staticmethod
-    @abstractmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        pass
+        children = all_subclasses(cls)
+        return best_match_subclass(cls, children, form)
 
     @property
     def json_string(self) -> str:
@@ -159,21 +164,7 @@ class StringForm(BaseForm):
     Shares documented attributes with the BaseForm.
     """
 
-    value: str = ""
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """StringForm if value field is a string and other checks fail."""
-        value = form.get("value", None)
-        if isinstance(value, str) and not (
-            ChoiceForm.type_check(form)
-            or RadioLabelForm.type_check(form)
-            or FileForm.type_check(form)
-            or is_uuid(value)
-        ):
-            return True
-
-        return False
+    value: str
 
 
 class RadioLabelForm(StringForm):
@@ -190,15 +181,8 @@ class RadioLabelForm(StringForm):
     :param alternative_label: Label for the alternative value.
     """
 
-    original_label: str = ""
-    alternate_label: str = ""
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        if any(k in form for k in ["original_label", "alternate_label"]):
-            return True
-
-        return False
+    original_label: str
+    alternate_label: str
 
 
 class BoolForm(BaseForm):
@@ -208,15 +192,7 @@ class BoolForm(BaseForm):
     Shares documented attributes with the BaseForm.
     """
 
-    value: bool = True
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """BoolForm if value field is a boolean."""
-        if isinstance(form.get("value", None), bool):
-            return True
-
-        return False
+    value: bool
 
 
 class IntegerForm(BaseForm):
@@ -231,19 +207,9 @@ class IntegerForm(BaseForm):
         Geoscience ANALYST.
     """
 
-    value: int = 1
+    value: int
     min: float = -np.inf
     max: float = np.inf
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """IntegerForm if value field is an integer."""
-        if isinstance(form.get("value", None), int) and not DataOrValueForm.type_check(
-            form
-        ):
-            return True
-
-        return False
 
 
 class FloatForm(BaseForm):
@@ -262,21 +228,11 @@ class FloatForm(BaseForm):
         for adjusting the value by an increment controlled by the precision.
     """
 
-    value: float = 1.0
+    value: float
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
     line_edit: bool = True
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """FloatForm if value field is a float and DataOrValueForm check fails."""
-        if isinstance(
-            form.get("value", None), float
-        ) and not DataOrValueForm.type_check(form):
-            return True
-
-        return False
 
 
 class ChoiceForm(BaseForm):
@@ -290,7 +246,7 @@ class ChoiceForm(BaseForm):
 
     """
 
-    value: str = ""
+    value: str
     choice_list: list[str]
 
     @model_validator(mode="after")
@@ -299,14 +255,6 @@ class ChoiceForm(BaseForm):
             raise ValueError(f"Provided value: '{self.value}' is not a valid choice.")
 
         return self
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """ChoiceForm if choice_list but not multi_select is in the dictionary."""
-        if "choice_list" in form and "multi_select" not in form:
-            return True
-
-        return False
 
 
 class MultiChoiceForm(BaseForm):
@@ -349,14 +297,6 @@ class MultiChoiceForm(BaseForm):
             raise ValueError(f"Provided value(s): {bad_choices} are not valid choices.")
 
         return self
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """MultiChoiceForm if choice_list and multi_select keys are in the dictionary."""
-        if "choice_list" in form and "multi_select" in form:
-            return True
-
-        return False
 
 
 PathList = Annotated[
@@ -432,20 +372,6 @@ class FileForm(BaseForm):
             )
         return data
 
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """FileForm if any of the indicator keys are in the dictionary."""
-        indicator_keys = [
-            "file_description",
-            "file_type",
-            "file_multi",
-            "directory_only",
-        ]
-        if any(k in form for k in indicator_keys):
-            return True
-
-        return False
-
 
 MeshTypes = Annotated[
     list[type[ObjectBase]],
@@ -475,14 +401,6 @@ class ObjectForm(BaseForm):
     value: OptionalUUID
     mesh_type: MeshTypes
 
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """ObjectForm if mesh_type key is in the dictionary."""
-        if "mesh_type" in form:
-            return True
-
-        return False
-
 
 GroupTypes = Annotated[
     list[type[Group]],
@@ -505,14 +423,6 @@ class GroupForm(BaseForm):
 
     value: OptionalUUID
     group_type: GroupTypes
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """GroupForm if group_type key is in the dictionary."""
-        if "group_type" in form:
-            return True
-
-        return False
 
 
 Association = Enum(  # type: ignore
@@ -561,41 +471,18 @@ class DataForm(DataFormMixin, BaseForm):
 
     value: OptionalUUID
 
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """DataForm if indicator keys are in the dictionary."""
-        indicator_keys = ["parent", "association", "data_type"]
-        if (
-            any(k in form for k in indicator_keys)
-            and not DataGroupForm.type_check(form)
-            and not DataOrValueForm.type_check(form)
-            and not MultiSelectDataForm.type_check(form)
-            and not DataRangeForm.type_check(form)
-        ):
-            return True
-
-        return False
-
 
 class DataGroupForm(DataForm):
     """
     Geoh5py uijson form for grouped data associated with an object.
 
-    Shares documented attributes with the BaseForm.
+    Shares documented attributes with the BaseForm and DataFormMixin.
 
     :param data_group_type: The group type, eg: 'Multi-Element', '3d Vector'
         that filters the groups available in the Geoscience ANALYST ui.json.
     """
 
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """DataGroupForm if data_group_type key is in the dictionary."""
-        if "data_group_type" in form:
-            return True
-
-        return False
 
 
 class DataOrValueForm(DataFormMixin, BaseForm):
@@ -607,28 +494,19 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     :param is_value: If True, the value field is used to provide a scalar value.
     """
 
-    value: UUIDOrNumber
-    is_value: bool = False
-    property: OptionalUUID = None
+    value: float | int
+    is_value: bool
+    property: OptionalUUID
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
 
     @model_validator(mode="after")
-    def value_if_is_value(self):
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and self.is_value
-        ):
-            if isinstance(self.value, UUID):
-                raise ValueError("Value must be numeric if is_value is True.")
-        return self
-
-    @model_validator(mode="after")
     def property_if_not_is_value(self):
         if (
             "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and "property" not in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and not self.is_value
+            and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
         return self
@@ -642,14 +520,6 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             return self.property
         return self.value
 
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """DataOrValueForm if parent and is_value keys are in the dictionary."""
-        if "parent" in form and "is_value" in form:
-            return True
-
-        return False
-
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
@@ -661,7 +531,7 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
 
     value: OptionalUUIDList
-    multi_select: bool = True
+    multi_select: bool
 
     @field_validator("multi_select", mode="before")
     @classmethod
@@ -678,20 +548,12 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
             value = [value]
         return value
 
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """MultiSelectDataForm if parent and multi_select keys are in the dictionary."""
-        if "parent" in form and "multi_select" in form:
-            return True
-
-        return False
-
 
 class DataRangeForm(DataFormMixin, BaseForm):
     """
     Geoh5py data range uijson form.
 
-    Shares documented attributes with the BaseForm and the DataFormMixin.
+    Shares documented attributes with the BaseForm and DataFormMixin.
 
     :param value: The value can be a single float or a list of two floats.
         Geoscience ANALYST will estimate a range on load if a single float
@@ -709,12 +571,3 @@ class DataRangeForm(DataFormMixin, BaseForm):
     range_label: str
     allow_complement: bool = False
     is_complement: bool = False
-
-    @staticmethod
-    def type_check(form: dict[str, Any]) -> bool:
-        """DataRangeForm if indicator keys are in the dictionary."""
-        indicator_keys = ["range_label", "allow_complement", "is_complement"]
-        if any(k in form for k in indicator_keys):
-            return True
-
-        return False

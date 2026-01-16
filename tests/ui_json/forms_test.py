@@ -463,17 +463,6 @@ def test_data_or_value_form():
     assert form.property == uuid.UUID(data_uid)
 
     with pytest.raises(
-        ValidationError, match="Value must be numeric if is_value is True."
-    ):
-        _ = DataOrValueForm(
-            label="name",
-            value=data_uid,
-            parent="my_param",
-            association="Vertex",
-            data_type="Float",
-            is_value=True,
-        )
-    with pytest.raises(
         ValidationError, match="A property must be provided if is_value is used"
     ):
         _ = DataOrValueForm(
@@ -483,6 +472,7 @@ def test_data_or_value_form():
             association="Vertex",
             data_type="Float",
             is_value=False,
+            property="",
         )
 
 
@@ -496,6 +486,7 @@ def test_multichoice_data_form():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     assert form.label == "name"
     assert form.value == [uuid.UUID(data_uid_1)]
@@ -509,6 +500,7 @@ def test_multichoice_data_form():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     assert form.value == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
 
@@ -522,6 +514,7 @@ def test_multichoice_data_form_serialization():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     data = form.model_dump()
     assert data["value"] == [data_uid_1, data_uid_2]
@@ -532,6 +525,7 @@ def test_multichoice_data_form_serialization():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     data = form.model_dump()
     assert data["value"] == [data_uid_1]
@@ -544,6 +538,7 @@ def test_multichoice_data_form_serialization():
         data_type="Float",
         is_value=False,
         property=[data_uid_1, data_uid_2],
+        multi_select=True,
     )
     data = form.model_dump()
     assert data["property"] == [data_uid_1, data_uid_2]
@@ -590,7 +585,7 @@ def test_flatten(sample_form):
         parent="my_param",
         association="Vertex",
         data_type="Float",
-        property="",
+        property=uuid.uuid4(),
         is_value=True,
     )
     assert form.flatten() == 0.0
@@ -699,9 +694,15 @@ def test_base_form_infer(tmp_path):
     assert form == DataRangeForm
 
 
-def test_type_check_method_must_be_implemented():
-    class MyForm(BaseForm):
-        pass
-
-    with pytest.raises(TypeError, match="Can't instantiate abstract class MyForm"):
-        _ = MyForm(label="test", value="test")
+def test_something():
+    BaseForm.infer(
+        {
+            "min": 0,
+            "group": "Sparse/blocky model",
+            "label": "Maximum IRLS iterations",
+            "tooltip": "Incomplete Re-weighted Least Squares iterations for non-L2 problems",
+            "value": 25,
+            "enabled": True,
+            "verbose": 2,
+        }
+    )

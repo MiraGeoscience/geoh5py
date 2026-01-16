@@ -25,6 +25,7 @@ import uuid
 
 import numpy as np
 import pytest
+from pydantic import BaseModel
 
 from geoh5py import Workspace
 from geoh5py.objects import Points
@@ -32,11 +33,14 @@ from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
     all_subclasses,
     as_str_if_uuid,
+    best_match_subclass,
     box_intersect,
     dict_to_json_str,
     inf2str,
     mask_by_extent,
+    model_fields_difference,
     nan2str,
+    no_required_indicators,
     uuid_from_values,
 )
 
@@ -203,3 +207,65 @@ def test_all_subclasses():
     assert all_subclasses(TestTwo)[0] == TestThree
     assert all_subclasses(TestThree) == []
     assert all_subclasses(TestFour) == []
+
+
+def test_model_fields_difference():
+    class MyParent(BaseModel):
+        a: str
+
+    class MyChild(MyParent):
+        b: int
+        c: float
+
+    class MyOtherChild(MyParent):
+        d: float
+        e: float = 1.0
+
+    diff = model_fields_difference(MyParent, MyChild)
+    assert diff == {"b", "c"}
+
+
+def test_best_match_subclass():
+    class Parent(BaseModel):
+        a: str
+        b: int
+
+    class ChildA(Parent):
+        c: float
+
+    class ChildB(ChildA):
+        d: float
+
+    class ChildC(Parent):
+        e: float
+
+    best_match = best_match_subclass(
+        parent=Parent,
+        children=[ChildA, ChildB, ChildC],
+        data={"a": "test", "b": 1, "c": 1.0, "d": 1.0},
+    )
+
+    assert best_match == ChildB
+
+    best_match = best_match_subclass(
+        parent=Parent,
+        children=[ChildA, ChildB, ChildC],
+        data={"a": "test", "b": 1, "c": 1.0},
+    )
+
+    assert best_match == ChildA
+
+
+def test_no_required_indicators():
+    class Parent(BaseModel):
+        a: str
+        b: int
+
+    class ChildA(Parent):
+        c: float = 1.0
+
+    class ChildB(Parent):
+        d: float
+
+    candidates = no_required_indicators(Parent, [ChildA, ChildB])
+    assert candidates == [ChildA]
