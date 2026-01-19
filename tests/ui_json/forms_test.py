@@ -29,6 +29,7 @@ from pydantic import BaseModel, ValidationError
 from geoh5py import Workspace
 from geoh5py.groups import GroupTypeEnum, PropertyGroup
 from geoh5py.objects import Curve, Points, Surface
+from geoh5py.ui_json.form_utils import model_fields_difference
 from geoh5py.ui_json.forms import (
     Association,
     BaseForm,
@@ -49,8 +50,6 @@ from geoh5py.ui_json.forms import (
     RadioLabelForm,
     StringForm,
     all_subclasses,
-    best_match_subclass,
-    model_fields_difference,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
 
@@ -748,32 +747,3 @@ def test_model_fields_difference():
     assert diff == {"b", "c"}
     diff = model_fields_difference(MyParent, MyOtherChild)
     assert diff == {"b", "c", "d", "e"}
-
-
-def test_best_match_subclass():
-    class Parent(BaseModel):
-        a: str
-        b: int
-
-    class ChildA(Parent):
-        c: float
-
-    class ChildB(ChildA):
-        d: float
-
-    class ChildC(Parent):
-        e: float
-
-    best_match = best_match_subclass(
-        parent=Parent,
-        data={"a": "test", "b": 1, "c": 1.0, "d": 1.0},
-    )
-
-    assert best_match == ChildB
-
-    best_match = best_match_subclass(
-        parent=Parent,
-        data={"a": "test", "b": 1, "c": 1.0},
-    )
-
-    assert best_match == ChildA
