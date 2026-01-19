@@ -29,7 +29,11 @@ from pydantic import BaseModel, ValidationError
 from geoh5py import Workspace
 from geoh5py.groups import GroupTypeEnum, PropertyGroup
 from geoh5py.objects import Curve, Points, Surface
-from geoh5py.ui_json.form_utils import model_fields_difference
+from geoh5py.ui_json.form_utils import (
+    all_subclasses,
+    indicator_attributes,
+    model_fields_difference,
+)
 from geoh5py.ui_json.forms import (
     Association,
     BaseForm,
@@ -49,7 +53,6 @@ from geoh5py.ui_json.forms import (
     ObjectForm,
     RadioLabelForm,
     StringForm,
-    all_subclasses,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
 
@@ -606,20 +609,26 @@ def test_flatten(sample_form):
 
 
 def test_base_form_infer(tmp_path):
-    form = BaseForm.infer({"label": "test", "value": "test"})
+    form_types = all_subclasses(BaseForm)
+    indicators = indicator_attributes(BaseForm, form_types)
+    form = BaseForm.infer({"label": "test", "value": "test"}, form_types, indicators)
     assert form == StringForm
-    form = BaseForm.infer({"label": "test", "value": 1})
+    form = BaseForm.infer({"label": "test", "value": 1}, form_types, indicators)
     assert form == IntegerForm
-    form = BaseForm.infer({"label": "test", "value": 1.0})
+    form = BaseForm.infer({"label": "test", "value": 1.0}, form_types, indicators)
     assert form == FloatForm
-    form = BaseForm.infer({"label": "test", "value": True})
+    form = BaseForm.infer({"label": "test", "value": True}, form_types, indicators)
     assert form == BoolForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]}
+        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]},
+        form_types,
+        indicators,
     )
     assert form == ObjectForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points}
+        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points},
+        form_types,
+        indicators,
     )
     assert form == ObjectForm
     form = BaseForm.infer(
@@ -629,7 +638,9 @@ def test_base_form_infer(tmp_path):
             "parent": "my_param",
             "association": "Vertex",
             "dataType": "Float",
-        }
+        },
+        form_types,
+        indicators,
     )
     assert form == DataForm
     form = BaseForm.infer(
@@ -640,7 +651,9 @@ def test_base_form_infer(tmp_path):
             "association": "Vertex",
             "dataType": "Float",
             "multiSelect": True,
-        }
+        },
+        form_types,
+        indicators,
     )
     assert form == MultiSelectDataForm
     form = BaseForm.infer(
@@ -652,11 +665,15 @@ def test_base_form_infer(tmp_path):
             "dataType": "Float",
             "isValue": True,
             "property": str(uuid.uuid4()),
-        }
+        },
+        form_types,
+        indicators,
     )
     assert form == DataOrValueForm
     form = BaseForm.infer(
-        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())}
+        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())},
+        form_types,
+        indicators,
     )
     assert form == GroupForm
     form = BaseForm.infer(
@@ -666,11 +683,15 @@ def test_base_form_infer(tmp_path):
             "directoryOnly": True,
             "fileType": ["ext"],
             "fileDescription": ["something"],
-        }
+        },
+        form_types,
+        indicators,
     )
     assert form == FileForm
     form = BaseForm.infer(
-        {"label": "test", "value": "test", "choiceList": ["test", "other"]}
+        {"label": "test", "value": "test", "choiceList": ["test", "other"]},
+        form_types,
+        indicators,
     )
     assert form == ChoiceForm
     form = BaseForm.infer(
@@ -679,7 +700,9 @@ def test_base_form_infer(tmp_path):
             "multiSelect": True,
             "value": ["test", "other"],
             "choice_list": ["test", "other", "another"],
-        }
+        },
+        form_types,
+        indicators,
     )
     assert form == MultiChoiceForm
     form = BaseForm.infer(
@@ -691,23 +714,11 @@ def test_base_form_infer(tmp_path):
             "association": "Vertex",
             "dataType": "Float",
             "rangeLabel": "value range",
-        }
+        },
+        form_types,
+        indicators,
     )
     assert form == DataRangeForm
-
-
-def test_something():
-    BaseForm.infer(
-        {
-            "min": 0,
-            "group": "Sparse/blocky model",
-            "label": "Maximum IRLS iterations",
-            "tooltip": "Incomplete Re-weighted Least Squares iterations for non-L2 problems",
-            "value": 25,
-            "enabled": True,
-            "verbose": 2,
-        }
-    )
 
 
 def test_all_subclasses():

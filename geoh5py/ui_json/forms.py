@@ -49,9 +49,7 @@ from geoh5py.shared.validators import (
 )
 from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
 from geoh5py.ui_json.form_utils import (
-    all_subclasses,
     filter_candidates_by_indicator_polling,
-    indicator_attributes,
 )
 from geoh5py.ui_json.validations.form import (
     empty_string_to_none,
@@ -121,7 +119,12 @@ class BaseForm(BaseModel):
     placeholder_text: str = ""
 
     @classmethod
-    def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
+    def infer(
+        cls,
+        data: dict[str, Any],
+        form_types: list[type[BaseForm]],
+        indicators: list[set[str]],
+    ) -> type[BaseForm]:
         """
         Infer and return the appropriate form.
 
@@ -139,10 +142,10 @@ class BaseForm(BaseModel):
         """
 
         data = {to_snake(k): v for k, v in data.items()}
-        children = all_subclasses(cls)
-        indicators = indicator_attributes(cls, children)
 
-        candidates = filter_candidates_by_indicator_polling(indicators, data, children)
+        candidates = filter_candidates_by_indicator_polling(
+            indicators, data, form_types
+        )
         if len(candidates) == 1:
             return candidates[0]
 
