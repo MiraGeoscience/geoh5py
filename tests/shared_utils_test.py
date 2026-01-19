@@ -25,20 +25,16 @@ import uuid
 
 import numpy as np
 import pytest
-from pydantic import BaseModel
 
 from geoh5py import Workspace
 from geoh5py.objects import Points
 from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
-    all_subclasses,
     as_str_if_uuid,
-    best_match_subclass,
     box_intersect,
     dict_to_json_str,
     inf2str,
     mask_by_extent,
-    model_fields_difference,
     nan2str,
     uuid_from_values,
 )
@@ -185,73 +181,3 @@ def test_uuid_from_values():
     data["key5"] = "abc"
 
     assert uid_a != uuid_from_values(data)
-
-
-def test_all_subclasses():
-    class TestOne:
-        pass
-
-    class TestTwo(TestOne):
-        pass
-
-    class TestThree(TestTwo):
-        pass
-
-    class TestFour(TestOne):
-        pass
-
-    assert len(all_subclasses(TestOne)) == 3
-    assert all(k in all_subclasses(TestOne) for k in [TestTwo, TestThree, TestFour])
-    assert len(all_subclasses(TestTwo)) == 1
-    assert all_subclasses(TestTwo)[0] == TestThree
-    assert all_subclasses(TestThree) == []
-    assert all_subclasses(TestFour) == []
-
-
-def test_model_fields_difference():
-    class MyParent(BaseModel):
-        a: str
-
-    class MyChild(MyParent):
-        b: int
-        c: float
-
-    class MyOtherChild(MyChild):
-        d: float
-        e: float = 1.0
-
-    diff = model_fields_difference(MyParent, MyChild)
-    assert diff == {"b", "c"}
-    diff = model_fields_difference(MyParent, MyOtherChild)
-    assert diff == {"b", "c", "d", "e"}
-
-
-def test_best_match_subclass():
-    class Parent(BaseModel):
-        a: str
-        b: int
-
-    class ChildA(Parent):
-        c: float
-
-    class ChildB(ChildA):
-        d: float
-
-    class ChildC(Parent):
-        e: float
-
-    best_match = best_match_subclass(
-        parent=Parent,
-        children=[ChildA, ChildB, ChildC],
-        data={"a": "test", "b": 1, "c": 1.0, "d": 1.0},
-    )
-
-    assert best_match == ChildB
-
-    best_match = best_match_subclass(
-        parent=Parent,
-        children=[ChildA, ChildB, ChildC],
-        data={"a": "test", "b": 1, "c": 1.0},
-    )
-
-    assert best_match == ChildA

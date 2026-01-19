@@ -40,10 +40,6 @@ from pydantic.functional_validators import BeforeValidator
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import (
-    all_subclasses,
-    best_match_subclass,
-)
 from geoh5py.shared.validators import (
     to_class,
     to_list,
@@ -59,14 +55,92 @@ from geoh5py.ui_json.validations.form import (
 )
 
 
-# pylint: disable=too-many-return-statements, too-many-branches
-
-
 class DependencyType(str, Enum):
     ENABLED = "enabled"
     DISABLED = "disabled"
     SHOW = "show"
     HIDE = "hide"
+
+
+def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
+    """Recursively find all subclasses of input type object."""
+    collection = []
+    subclasses = type_object.__subclasses__()
+    collection += subclasses
+    for subclass in subclasses:
+        collection += all_subclasses(subclass)
+    return collection
+
+
+def model_fields_difference(parent: type[BaseForm], child: type[BaseForm]) -> set[str]:
+    """Isolate fields added in the child class."""
+    return set(child.model_fields) - set(parent.model_fields)
+
+
+def indicator_attributes(
+    parent: type[BaseForm], children: list[type[BaseForm]]
+) -> list[set[str]]:
+    """List all the attributes defined in a subclass."""
+    return [model_fields_difference(parent, c) for c in children]
+
+
+def count_indicators(indicators: list[set[str]], data: dict[str, Any]) -> np.ndarray:
+    """Return the number of matching indicators for each child class."""
+    return np.array([len(i.intersection(data)) for i in indicators])
+
+
+def filter_candidates_by_indicator_polling(
+    indicators: list[set[str]],
+    data: dict[str, Any],
+    candidates: list[type[BaseForm]],
+) -> list[type[BaseForm]]:
+    """Return candidate subclass(es) with most matching indicators."""
+    n_indicators = count_indicators(indicators, data)
+    candidates = np.array(candidates)[n_indicators == np.max(n_indicators)]
+
+    candidates = baseclass_if_overlapping(candidates, len(indicators))
+
+    return candidates
+
+
+def baseclass_if_overlapping(
+    candidates: list[type[BaseForm]],
+    n_children: int,
+):
+    if len(candidates) > 1 and len(candidates) < n_children:
+        n_attributes = [len(k.model_fields) for k in candidates]
+        candidates = candidates[n_attributes == np.min(n_attributes)]
+
+    return candidates
+
+
+def best_match_subclass(parent: type[BaseForm], data: dict[str, Any]) -> type[BaseForm]:
+    """
+    Choose the subclass with the best matching attributes.
+
+    :param parent: Parent class.
+    :param children: All children of the parent.
+    :param data: Dictionary of attribute data to match.
+
+    :returns: The best matching subclass.
+    """
+
+    children = all_subclasses(parent)
+    indicators = indicator_attributes(parent, children)
+
+    candidates = filter_candidates_by_indicator_polling(indicators, data, children)
+    if len(candidates) == 1:
+        return candidates[0]
+
+    candidates = [BoolForm, StringForm, IntegerForm, FloatForm]
+    value = data.get("value", None)
+    for candidate in candidates:
+        model_fields = candidate.model_fields
+        annotation = model_fields["value"].annotation  # pylint: disable=unsubscriptable-object
+        if type(value) == annotation:  # pylint: disable=unidiomatic-typecheck
+            return candidate
+
+    raise ValueError(f"Could not match data: {data} to any of the children.")
 
 
 class BaseForm(BaseModel):
@@ -123,7 +197,7 @@ class BaseForm(BaseModel):
     placeholder_text: str = ""
 
     @classmethod
-    def infer(cls, form: dict[str, Any]) -> type[BaseForm]:
+    def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
         """
         Infer and return the appropriate form.
 
@@ -140,9 +214,8 @@ class BaseForm(BaseModel):
         :param form: Form data.
         """
 
-        form = {to_snake(k): v for k, v in form.items()}
-        children = all_subclasses(cls)
-        return best_match_subclass(cls, children, form)
+        data = {to_snake(k): v for k, v in data.items()}
+        return best_match_subclass(cls, data)
 
     @property
     def json_string(self) -> str:
