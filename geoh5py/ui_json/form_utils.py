@@ -59,22 +59,34 @@ def filter_candidates_by_indicator_polling(
     indicators: list[set[str]],
     data: dict[str, Any],
     candidates: list[type[BaseForm]],
-) -> list[type[BaseForm]]:
-    """Return candidate subclass(es) with most matching indicators."""
-    n_indicators = count_indicators(indicators, data)
-    candidates = np.array(candidates)[n_indicators == np.max(n_indicators)]
+) -> np.ndarray:
+    """
+    Return candidate subclass(es) with most matching indicators.
 
-    candidates = baseclass_if_overlapping(candidates, len(indicators))
+    Polling will return a single correct candidate subclass if the
+    form data includes any unique indicators.  It will also resolve
+    any ambiguity between non-unique indicators such as 'choice_list'
+    and 'multi_select'.
 
-    return candidates
-
-
-def baseclass_if_overlapping(
-    candidates: list[type[BaseForm]],
-    n_children: int,
-):
-    if len(candidates) > 1 and len(candidates) < n_children:
-        n_attributes = [len(k.model_fields) for k in candidates]
-        candidates = candidates[n_attributes == np.min(n_attributes)]
+    """
+    counts = count_indicators(indicators, data)
+    candidates = np.array(candidates)[counts == np.max(counts)]
+    if len(candidates) > 1 and len(candidates) < len(indicators):
+        candidates = baseclass_if_equal_indicators(candidates)
 
     return candidates
+
+
+def baseclass_if_equal_indicators(candidates: np.ndarray) -> np.ndarray:
+    """
+    Choose the base class for overlapping indicators.
+
+    If multiple subclasses returned the same number of matching indicators,
+    this is because they form a hierarchy and the correct choice is the base
+    class.  Eg. If 'parent', 'association', and 'data_type' are indicators
+    for a particular form, then all forms will count three matching
+    indicators. However, the correct choice is the form with the least number
+    of attributes, (DataForm).
+    """
+    n_attributes = [len(k.model_fields) for k in candidates]
+    return candidates[n_attributes == np.min(n_attributes)]

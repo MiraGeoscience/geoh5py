@@ -138,7 +138,9 @@ class BaseForm(BaseModel):
         The type checking is performed on subclasses without required indicator
         fields to avoid false positives.
 
-        :param form: Form data.
+        :param data: Form data.
+        :param form_types: Pre-compute all the base classes to check against.
+        :param indicators: Pre-compute the indicator attributes for each subclass.
         """
 
         data = {to_snake(k): v for k, v in data.items()}
