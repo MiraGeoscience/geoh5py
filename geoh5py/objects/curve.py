@@ -197,3 +197,30 @@ class Curve(CellObject):
             raise ValueError("Found cell indices larger than the number of vertices.")
 
         return indices
+
+    def get_segment_indices(self, index: int, distance: float = np.inf) -> np.ndarray:
+        """
+        Get indices of line segment for a given node index.
+
+        Optionally, a distance buffer can be provided to limit the extent of
+        returned indices.
+
+        :param index: Nearest vertex index.
+        :param distance: Distance buffer to include neighboring vertices.
+
+        :return: Indices of vertices within the specified distance on the same segment.
+        """
+        if not isinstance(index, int) or abs(index) >= self.n_vertices:
+            raise ValueError(
+                f"Input 'index' must be an integer between 0 and {self.n_vertices - 1}."
+            )
+
+        line_mask = np.where(self.parts == self.parts[index])[0]
+        distances = np.linalg.norm(
+            self.vertices[index, :2] - self.vertices[line_mask, :2],
+            axis=1,
+        )
+        dist_mask = distances < distance
+        indices = line_mask[dist_mask]
+
+        return indices
