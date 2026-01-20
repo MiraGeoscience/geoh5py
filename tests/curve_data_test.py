@@ -306,7 +306,10 @@ def test_segment_from_part(tmp_path):
     with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         curve = Curve.create(workspace, vertices=locations, parts=y.flatten())
 
-    with pytest.raises(ValueError, match="Input 'index' must be an integer between 0"):
+    with pytest.raises(
+        ValueError,
+        match=r"Input 'index' must be an integer with value in range \[-95, 95\]",
+    ):
         curve.get_segment_indices(-200)
 
     indices = curve.get_segment_indices(-1)

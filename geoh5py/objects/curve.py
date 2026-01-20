@@ -212,7 +212,8 @@ class Curve(CellObject):
         """
         if not isinstance(index, int) or abs(index) >= self.n_vertices:
             raise ValueError(
-                f"Input 'index' must be an integer between 0 and {self.n_vertices - 1}."
+                f"Input 'index' must be an integer with value "
+                f"in range [-{self.n_vertices - 1}, {self.n_vertices - 1}]."
             )
 
         line_mask = np.where(self.parts == self.parts[index])[0]
