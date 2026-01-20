@@ -40,7 +40,6 @@ from geoh5py.groups import PropertyGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.shared.validators import none_to_empty_string
-from geoh5py.ui_json.form_utils import all_subclasses, indicator_attributes
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
 from geoh5py.ui_json.validations.form import empty_string_to_none
@@ -128,15 +127,12 @@ class BaseUIJson(BaseModel):
             kwargs = json.load(file)
 
         if cls == BaseUIJson:
-            form_types = all_subclasses(BaseForm)
-            indicators = indicator_attributes(BaseForm, form_types)
-
             fields = {}
             for name, value in kwargs.items():
                 if name in BaseUIJson.model_fields:
                     continue
                 if isinstance(value, dict):
-                    form_type = BaseForm.infer(value, form_types, indicators)
+                    form_type = BaseForm.infer(value)
                     logger.info(
                         "Parameter: %s interpreted as a %s.", name, form_type.__name__
                     )
