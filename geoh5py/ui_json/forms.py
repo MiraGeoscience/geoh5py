@@ -30,6 +30,8 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     PlainSerializer,
+    TypeAdapter,
+    ValidationError,
     field_serializer,
     field_validator,
     model_validator,
@@ -144,14 +146,6 @@ class BaseForm(BaseModel):
 
         if len(candidates) == 1:
             return candidates[0]
-
-        candidates = [BoolForm, StringForm, IntegerForm, FloatForm]
-        value = data.get("value", None)
-        for candidate in candidates:
-            model_fields = candidate.model_fields
-            annotation = model_fields["value"].annotation  # pylint: disable=unsubscriptable-object
-            if type(value) == annotation:  # pylint: disable=unidiomatic-typecheck
-                return candidate
 
         raise ValueError(f"Could not match data: {data} to any of the children.")
 
@@ -620,7 +614,12 @@ def filter_candidates_by_indicator_polling(
     """
     counts = count_indicators(INDICATORS, data)
     candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
-    if 1 < len(candidates) < len(INDICATORS):
+    if len(candidates) == len(FORM_TYPES):
+        candidates = np.array([StringForm, BoolForm, IntegerForm, FloatForm])
+    if len(candidates) > 1:
+        type_matches = filter_candidates_by_type_checking(candidates, data)
+        candidates = type_matches if len(type_matches) > 0 else candidates
+    if len(candidates) > 1:
         candidates = baseclass_if_equal_indicators(candidates)
 
     return candidates
@@ -629,6 +628,26 @@ def filter_candidates_by_indicator_polling(
 def count_indicators(indicators: list[set[str]], data: dict[str, Any]) -> np.ndarray:
     """Return the number of matching indicators for each child class."""
     return np.array([len(i.intersection(data)) for i in indicators])
+
+
+def filter_candidates_by_type_checking(
+    candidates: np.ndarray, data: dict[str, Any]
+) -> np.ndarray:
+    """Check if the 'value' field passes validation for the annotated type."""
+
+    filtered_candidates = []
+    for candidate in candidates:
+        annotation = candidate.model_fields["value"].annotation
+        validation = TypeAdapter(annotation)
+        try:
+            value = data.get("value")
+            strict = isinstance(value, (int, float, bool))
+            validation.validate_python(value, strict=strict)
+            filtered_candidates.append(candidate)
+        except ValidationError:
+            pass
+
+    return np.array(filtered_candidates)
 
 
 def baseclass_if_equal_indicators(candidates: np.ndarray) -> np.ndarray:
