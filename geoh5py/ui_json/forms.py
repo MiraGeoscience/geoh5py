@@ -646,5 +646,6 @@ def baseclass_if_equal_indicators(candidates: np.ndarray) -> np.ndarray:
     return candidates[n_attributes == np.min(n_attributes)]
 
 
+# Must remain at the end of the file to catch all subclasses.
 FORM_TYPES = all_subclasses(BaseForm)
 INDICATORS = indicator_attributes(BaseForm, FORM_TYPES)
