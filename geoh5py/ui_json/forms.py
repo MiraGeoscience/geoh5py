@@ -140,9 +140,8 @@ class BaseForm(BaseModel):
 
         data = {to_snake(k): v for k, v in data.items()}
 
-        candidates = filter_candidates_by_indicator_polling(
-            INDICATORS, data, FORM_TYPES
-        )
+        candidates = filter_candidates_by_indicator_polling(data)
+
         if len(candidates) == 1:
             return candidates[0]
 
@@ -608,9 +607,7 @@ def indicator_attributes(
 
 
 def filter_candidates_by_indicator_polling(
-    indicators: list[set[str]],
     data: dict[str, Any],
-    candidates: list[type[BaseForm]],
 ) -> np.ndarray:
     """
     Return candidate subclass(es) with most matching indicators.
@@ -621,9 +618,9 @@ def filter_candidates_by_indicator_polling(
     and 'multi_select'.
 
     """
-    counts = count_indicators(indicators, data)
-    candidates = np.array(candidates)[counts == np.max(counts)]
-    if len(candidates) > 1 and len(candidates) < len(indicators):
+    counts = count_indicators(INDICATORS, data)
+    candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
+    if 1 < len(candidates) < len(INDICATORS):
         candidates = baseclass_if_equal_indicators(candidates)
 
     return candidates
