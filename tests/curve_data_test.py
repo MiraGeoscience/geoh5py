@@ -294,3 +294,25 @@ def test_cell_from_part(tmp_path):
     ascending[end_points] = True
 
     assert np.all(ascending), "Error creating sorted cells from parts."
+
+
+def test_segment_from_part(tmp_path):
+    n_vertices = 32
+    n_parts = 3
+
+    x, y = np.meshgrid(np.linspace(0, 100, n_vertices), np.arange(n_parts))
+    locations = np.c_[x.flatten(), y.flatten(), np.zeros(n_vertices * n_parts)]
+
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        curve = Curve.create(workspace, vertices=locations, parts=y.flatten())
+
+    with pytest.raises(
+        ValueError,
+        match=r"Input 'index' must be an integer with value in range \[-95, 95\]",
+    ):
+        curve.get_segment_indices(-200)
+
+    indices = curve.get_segment_indices(-1)
+    assert len(indices) == n_vertices
+    assert len(set(curve.parts[indices])) == 1
+    assert len(curve.get_segment_indices(16, 25)) == 15  # Half one of the lines
