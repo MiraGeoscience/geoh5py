@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 from uuid import NAMESPACE_DNS, UUID, uuid5
 from warnings import warn
 
@@ -37,8 +37,6 @@ from .exceptions import Geoh5FileClosedError
 
 
 # pylint: disable=too-many-lines
-
-T = TypeVar("T")
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
