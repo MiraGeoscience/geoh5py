@@ -645,6 +645,7 @@ def filter_candidates_by_type_checking(
             validation.validate_python(value, strict=strict)
             filtered_candidates.append(candidate)
         except ValidationError:
+            #  Type checking failed so candidate is ignored
             pass
 
     return np.array(filtered_candidates)
