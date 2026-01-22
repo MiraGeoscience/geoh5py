@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -101,19 +102,24 @@ class VisualParameters(TextData):
 
         c_string = (int(element.text)).to_bytes(4, byteorder="little").hex()
 
-        return [int(c_string[i : i + 2], 16) for i in range(0, 8, 2)][:3]
+        # Flip the colour order from BGR to RGB
+        return [int(c_string[i : i + 2], 16) for i in range(0, 8, 2)][2::-1]
 
     @colour.setter
-    def colour(self, rgb: list | tuple | np.ndarray):
+    def colour(self, rgb: Sequence):
         if (
-            not isinstance(rgb, (list, tuple, np.ndarray))
+            not isinstance(rgb, Sequence)
             or len(rgb) not in [3, 4]
             or not all(isinstance(val, int) for val in rgb)
         ):
             raise TypeError("Input 'colour' values must be a list of 3 or 4 integers.")
 
+        rgb = list(rgb)
         if len(rgb) == 3:
-            rgb = list(rgb) + [255]
+            rgb += [255]
+
+        # Flip the colour order from RGB to BGR
+        rgb = rgb[2::-1] + [rgb[3]]
 
         byte_string = "".join(f"{val:02x}" for val in rgb)
         byte_string.join(f"{255:02x}")  # alpha value
