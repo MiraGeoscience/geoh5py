@@ -59,11 +59,11 @@ def test_visual_parameters(tmp_path, caplog):
         assert copy.visual_parameters.colour == viz_params.colour
 
         # Repeat with known color
-        points.visual_parameters.colour = [0, 255, 0]
+        points.visual_parameters.colour = [255, 0, 0]  # Should be red
 
     with Workspace(h5file_path) as workspace:
         points = workspace.get_entity(name)[0]
-        assert points.visual_parameters.colour == [0, 255, 0]
+        assert points.visual_parameters.colour == [255, 0, 0]
 
         viz_params = points.visual_parameters
         viz_params_b = viz_params.copy()
