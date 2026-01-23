@@ -30,11 +30,13 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     PlainSerializer,
+    TypeAdapter,
+    ValidationError,
     field_serializer,
     field_validator,
     model_validator,
 )
-from pydantic.alias_generators import to_camel
+from pydantic.alias_generators import to_camel, to_snake
 from pydantic.functional_validators import BeforeValidator
 
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
@@ -53,9 +55,6 @@ from geoh5py.ui_json.validations.form import (
     uuid_to_string,
     uuid_to_string_or_numeric,
 )
-
-
-# pylint: disable=too-many-return-statements, too-many-branches
 
 
 class DependencyType(str, Enum):
@@ -119,52 +118,36 @@ class BaseForm(BaseModel):
     placeholder_text: str = ""
 
     @classmethod
-    def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
+    def infer(
+        cls,
+        data: dict[str, Any],
+    ) -> type[BaseForm]:
         """
         Infer and return the appropriate form.
 
-        :param data: Dictionary of form data.
-        """
-        data = {to_camel(k): v for k, v in data.items()}
-        if "choiceList" in data:
-            if data.get("multiSelect", False):
-                return MultiChoiceForm
-            return ChoiceForm
-        if "originalLabel" in data and "alternateLabel" in data:
-            return RadioLabelForm
-        if any(k in data for k in ["fileDescription", "fileType"]):
-            return FileForm
-        if "meshType" in data:
-            return ObjectForm
-        if "groupType" in data:
-            return GroupForm
-        if any(
-            k in data
-            for k in ["parent", "association", "dataType", "isValue", "property"]
-        ):
-            if any(
-                k in data for k in ["allowComplement", "isComplement", "rangeLabel"]
-            ):
-                return DataRangeForm
-            if "dataGroupType" in data:
-                return DataGroupForm
-            if "multiSelect" in data:
-                return MultiSelectDataForm
-            if any(
-                k in data for k in ["min", "max", "precision", "isValue", "property"]
-            ):
-                return DataOrValueForm
-            return DataForm
-        if isinstance(data.get("value"), str):
-            return StringForm
-        if isinstance(data.get("value"), bool):
-            return BoolForm
-        if isinstance(data.get("value"), int):
-            return IntegerForm
-        if isinstance(data.get("value"), float):
-            return FloatForm
+        The strategy involves first polling all the subclasses for indicator
+        attributes that match the form data.  An indicator attribute is one that
+        exists only on the subclass. If a single subclass contains the most
+        matching indicators, we instantly return that result.
 
-        raise ValueError(f"Could not infer form from data: {data}")
+        If there is more than one candidate we first check if the form is a base
+        class and lastly fall back on type checking the value field of the form.
+        The type checking is performed on subclasses without required indicator
+        fields to avoid false positives.
+
+        :param data: Form data.
+        :param form_types: Pre-compute all the base classes to check against.
+        :param indicators: Pre-compute the indicator attributes for each subclass.
+        """
+
+        data = {to_snake(k): v for k, v in data.items()}
+
+        candidates = filter_candidates_by_indicator_polling(data)
+
+        if len(candidates) == 1:
+            return candidates[0]
+
+        raise ValueError(f"Could not match data: {data} to any of the children.")
 
     @property
     def json_string(self) -> str:
@@ -186,7 +169,7 @@ class StringForm(BaseForm):
     Shares documented attributes with the BaseForm.
     """
 
-    value: str = ""
+    value: str
 
 
 class RadioLabelForm(StringForm):
@@ -203,8 +186,8 @@ class RadioLabelForm(StringForm):
     :param alternative_label: Label for the alternative value.
     """
 
-    original_label: str = ""
-    alternate_label: str = ""
+    original_label: str
+    alternate_label: str
 
 
 class BoolForm(BaseForm):
@@ -214,7 +197,7 @@ class BoolForm(BaseForm):
     Shares documented attributes with the BaseForm.
     """
 
-    value: bool = True
+    value: bool
 
 
 class IntegerForm(BaseForm):
@@ -229,7 +212,7 @@ class IntegerForm(BaseForm):
         Geoscience ANALYST.
     """
 
-    value: int = 1
+    value: int
     min: float = -np.inf
     max: float = np.inf
 
@@ -250,7 +233,7 @@ class FloatForm(BaseForm):
         for adjusting the value by an increment controlled by the precision.
     """
 
-    value: float = 1.0
+    value: float
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
@@ -268,7 +251,7 @@ class ChoiceForm(BaseForm):
 
     """
 
-    value: str = ""
+    value: str
     choice_list: list[str]
 
     @model_validator(mode="after")
@@ -498,7 +481,7 @@ class DataGroupForm(DataForm):
     """
     Geoh5py uijson form for grouped data associated with an object.
 
-    Shares documented attributes with the BaseForm.
+    Shares documented attributes with the BaseForm and DataFormMixin.
 
     :param data_group_type: The group type, eg: 'Multi-Element', '3d Vector'
         that filters the groups available in the Geoscience ANALYST ui.json.
@@ -516,28 +499,19 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     :param is_value: If True, the value field is used to provide a scalar value.
     """
 
-    value: UUIDOrNumber
-    is_value: bool = False
-    property: OptionalUUID = None
+    value: float | int
+    is_value: bool
+    property: OptionalUUID
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
 
     @model_validator(mode="after")
-    def value_if_is_value(self):
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and self.is_value
-        ):
-            if isinstance(self.value, UUID):
-                raise ValueError("Value must be numeric if is_value is True.")
-        return self
-
-    @model_validator(mode="after")
     def property_if_not_is_value(self):
         if (
             "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and "property" not in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and not self.is_value
+            and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
         return self
@@ -562,7 +536,7 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
 
     value: OptionalUUIDList
-    multi_select: bool = True
+    multi_select: bool
 
     @field_validator("multi_select", mode="before")
     @classmethod
@@ -584,7 +558,7 @@ class DataRangeForm(DataFormMixin, BaseForm):
     """
     Geoh5py data range uijson form.
 
-    Shares documented attributes with the BaseForm and the DataFormMixin.
+    Shares documented attributes with the BaseForm and DataFormMixin.
 
     :param value: The value can be a single float or a list of two floats.
         Geoscience ANALYST will estimate a range on load if a single float
@@ -602,3 +576,96 @@ class DataRangeForm(DataFormMixin, BaseForm):
     range_label: str
     allow_complement: bool = False
     is_complement: bool = False
+
+
+def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
+    """Recursively find all subclasses of input type object."""
+    collection = []
+    subclasses = type_object.__subclasses__()
+    collection += subclasses
+    for subclass in subclasses:
+        collection += all_subclasses(subclass)
+    return collection
+
+
+def model_fields_difference(parent: type[BaseForm], child: type[BaseForm]) -> set[str]:
+    """Isolate fields added in the child class."""
+    return set(child.model_fields) - set(parent.model_fields)
+
+
+def indicator_attributes(
+    parent: type[BaseForm], children: list[type[BaseForm]]
+) -> list[set[str]]:
+    """List all the attributes defined in a subclass."""
+    return [model_fields_difference(parent, c) for c in children]
+
+
+def filter_candidates_by_indicator_polling(
+    data: dict[str, Any],
+) -> np.ndarray:
+    """
+    Return candidate subclass(es) with most matching indicators.
+
+    Polling will return a single correct candidate subclass if the
+    form data includes any unique indicators.  It will also resolve
+    any ambiguity between non-unique indicators such as 'choice_list'
+    and 'multi_select'.
+
+    """
+    counts = count_indicators(INDICATORS, data)
+    candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
+    if len(candidates) == len(FORM_TYPES):
+        candidates = np.array([StringForm, BoolForm, IntegerForm, FloatForm])
+    if len(candidates) > 1:
+        type_matches = filter_candidates_by_type_checking(candidates, data)
+        candidates = type_matches if len(type_matches) > 0 else candidates
+    if len(candidates) > 1:
+        candidates = baseclass_if_equal_indicators(candidates)
+
+    return candidates
+
+
+def count_indicators(indicators: list[set[str]], data: dict[str, Any]) -> np.ndarray:
+    """Return the number of matching indicators for each child class."""
+    return np.array([len(i.intersection(data)) for i in indicators])
+
+
+def filter_candidates_by_type_checking(
+    candidates: np.ndarray, data: dict[str, Any]
+) -> np.ndarray:
+    """Check if the 'value' field passes validation for the annotated type."""
+
+    filtered_candidates = []
+    for candidate in candidates:
+        annotation = candidate.model_fields["value"].annotation
+        validation = TypeAdapter(annotation)
+        try:
+            value = data.get("value")
+            strict = isinstance(value, (int, float, bool))
+            validation.validate_python(value, strict=strict)
+            filtered_candidates.append(candidate)
+        except ValidationError:
+            #  Type checking failed so candidate is ignored
+            pass
+
+    return np.array(filtered_candidates)
+
+
+def baseclass_if_equal_indicators(candidates: np.ndarray) -> np.ndarray:
+    """
+    Choose the base class for overlapping indicators.
+
+    If multiple subclasses returned the same number of matching indicators,
+    this is because they form a hierarchy and the correct choice is the base
+    class.  Eg. If 'parent', 'association', and 'data_type' are indicators
+    for a particular form, then all forms will count three matching
+    indicators. However, the correct choice is the form with the least number
+    of attributes, (DataForm).
+    """
+    n_attributes = [len(k.model_fields) for k in candidates]
+    return candidates[n_attributes == np.min(n_attributes)]
+
+
+# Must remain at the end of the file to catch all subclasses.
+FORM_TYPES = all_subclasses(BaseForm)
+INDICATORS = indicator_attributes(BaseForm, FORM_TYPES)

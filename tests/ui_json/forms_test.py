@@ -24,7 +24,7 @@ import uuid
 
 import numpy as np
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from geoh5py import Workspace
 from geoh5py.groups import GroupTypeEnum, PropertyGroup
@@ -48,6 +48,9 @@ from geoh5py.ui_json.forms import (
     ObjectForm,
     RadioLabelForm,
     StringForm,
+    all_subclasses,
+    indicator_attributes,
+    model_fields_difference,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
 
@@ -70,27 +73,37 @@ def setup_from_uijson(workspace, form):
     return uijson.my_param
 
 
-def test_base_form():
-    form = BaseForm(label="name", value="test")
+@pytest.fixture
+def sample_form():
+    class MyForm(BaseForm):
+        @staticmethod
+        def type_check(form):
+            return False
+
+    return MyForm
+
+
+def test_base_form(sample_form):
+    form = sample_form(label="name", value="test")
     assert form.label == "name"
     assert form.value == "test"
     assert form.model_fields_set == {"label", "value"}
 
 
-def test_base_form_config_extra():
-    form = BaseForm(label="name", value="test", extra="stuff")
+def test_base_form_config_extra(sample_form):
+    form = sample_form(label="name", value="test", extra="stuff")
     assert form.extra == "stuff"
     assert form.model_extra == {"extra": "stuff"}
 
 
-def test_base_form_config_frozen():
-    form = BaseForm(label="name", value="test")
+def test_base_form_config_frozen(sample_form):
+    form = sample_form(label="name", value="test")
     with pytest.raises(ValidationError, match="Instance is frozen"):
         form.label = "new"
 
 
-def test_base_form_config_alias():
-    form = BaseForm(
+def test_base_form_config_alias(sample_form):
+    form = sample_form(
         label="name",
         value="test",
         dependency="my_param",
@@ -102,13 +115,13 @@ def test_base_form_config_alias():
     assert not hasattr(form, "dependencyType")
 
     with pytest.raises(ValidationError, match="dependencyType"):
-        form = BaseForm(
+        _ = sample_form(
             label="name", value="test", dependency="my_param", dependencyType=1
         )
 
 
-def test_dependency_type_enum():
-    form = BaseForm(
+def test_dependency_type_enum(sample_form):
+    form = sample_form(
         label="name", value="test", dependency="my_param", dependency_type="enabled"
     )
     assert form.dependency_type == "enabled"
@@ -116,16 +129,16 @@ def test_dependency_type_enum():
     with pytest.raises(
         ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
-        _ = BaseForm(
+        _ = sample_form(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
         )
 
 
-def test_base_form_serieralization():
-    form = BaseForm(label="name", value="test", extra="stuff")
+def test_base_form_serieralization(sample_form):
+    form = sample_form(label="name", value="test", extra="stuff")
     json = form.json_string
     assert all(k in json for k in ["label", "value", "extra"])
-    form = BaseForm(label="name", value="test", dependency_type="disabled")
+    form = sample_form(label="name", value="test", dependency_type="disabled")
     json = form.json_string
     assert "dependencyType" in json
 
@@ -453,17 +466,6 @@ def test_data_or_value_form():
     assert form.property == uuid.UUID(data_uid)
 
     with pytest.raises(
-        ValidationError, match="Value must be numeric if is_value is True."
-    ):
-        _ = DataOrValueForm(
-            label="name",
-            value=data_uid,
-            parent="my_param",
-            association="Vertex",
-            data_type="Float",
-            is_value=True,
-        )
-    with pytest.raises(
         ValidationError, match="A property must be provided if is_value is used"
     ):
         _ = DataOrValueForm(
@@ -473,6 +475,7 @@ def test_data_or_value_form():
             association="Vertex",
             data_type="Float",
             is_value=False,
+            property="",
         )
 
 
@@ -486,6 +489,7 @@ def test_multichoice_data_form():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     assert form.label == "name"
     assert form.value == [uuid.UUID(data_uid_1)]
@@ -499,6 +503,7 @@ def test_multichoice_data_form():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     assert form.value == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
 
@@ -512,6 +517,7 @@ def test_multichoice_data_form_serialization():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     data = form.model_dump()
     assert data["value"] == [data_uid_1, data_uid_2]
@@ -522,6 +528,7 @@ def test_multichoice_data_form_serialization():
         parent="my_param",
         association="Vertex",
         data_type="Float",
+        multi_select=True,
     )
     data = form.model_dump()
     assert data["value"] == [data_uid_1]
@@ -534,6 +541,7 @@ def test_multichoice_data_form_serialization():
         data_type="Float",
         is_value=False,
         property=[data_uid_1, data_uid_2],
+        multi_select=True,
     )
     data = form.model_dump()
     assert data["property"] == [data_uid_1, data_uid_2]
@@ -560,8 +568,8 @@ def test_data_range_form():
     assert form.range_label == "value range"
 
 
-def test_flatten():
-    param = BaseForm(label="my_param", value=2)
+def test_flatten(sample_form):
+    param = sample_form(label="my_param", value=2)
     assert param.flatten() == 2
 
     data_uid = str(uuid.uuid4())
@@ -580,7 +588,7 @@ def test_flatten():
         parent="my_param",
         association="Vertex",
         data_type="Float",
-        property="",
+        property=uuid.uuid4(),
         is_value=True,
     )
     assert form.flatten() == 0.0
@@ -608,11 +616,11 @@ def test_base_form_infer(tmp_path):
     form = BaseForm.infer({"label": "test", "value": True})
     assert form == BoolForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]}
+        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]},
     )
     assert form == ObjectForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points}
+        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points},
     )
     assert form == ObjectForm
     form = BaseForm.infer(
@@ -622,7 +630,7 @@ def test_base_form_infer(tmp_path):
             "parent": "my_param",
             "association": "Vertex",
             "dataType": "Float",
-        }
+        },
     )
     assert form == DataForm
     form = BaseForm.infer(
@@ -633,7 +641,7 @@ def test_base_form_infer(tmp_path):
             "association": "Vertex",
             "dataType": "Float",
             "multiSelect": True,
-        }
+        },
     )
     assert form == MultiSelectDataForm
     form = BaseForm.infer(
@@ -645,11 +653,11 @@ def test_base_form_infer(tmp_path):
             "dataType": "Float",
             "isValue": True,
             "property": str(uuid.uuid4()),
-        }
+        },
     )
     assert form == DataOrValueForm
     form = BaseForm.infer(
-        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())}
+        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())},
     )
     assert form == GroupForm
     form = BaseForm.infer(
@@ -659,11 +667,11 @@ def test_base_form_infer(tmp_path):
             "directoryOnly": True,
             "fileType": ["ext"],
             "fileDescription": ["something"],
-        }
+        },
     )
     assert form == FileForm
     form = BaseForm.infer(
-        {"label": "test", "value": "test", "choiceList": ["test", "other"]}
+        {"label": "test", "value": "test", "choiceList": ["test", "other"]},
     )
     assert form == ChoiceForm
     form = BaseForm.infer(
@@ -672,7 +680,7 @@ def test_base_form_infer(tmp_path):
             "multiSelect": True,
             "value": ["test", "other"],
             "choice_list": ["test", "other", "another"],
-        }
+        },
     )
     assert form == MultiChoiceForm
     form = BaseForm.infer(
@@ -684,6 +692,45 @@ def test_base_form_infer(tmp_path):
             "association": "Vertex",
             "dataType": "Float",
             "rangeLabel": "value range",
-        }
+        },
     )
     assert form == DataRangeForm
+
+
+def test_all_subclasses():
+    class TestOne:
+        pass
+
+    class TestTwo(TestOne):
+        pass
+
+    class TestThree(TestTwo):
+        pass
+
+    class TestFour(TestOne):
+        pass
+
+    assert len(all_subclasses(TestOne)) == 3
+    assert all(k in all_subclasses(TestOne) for k in [TestTwo, TestThree, TestFour])
+    assert len(all_subclasses(TestTwo)) == 1
+    assert all_subclasses(TestTwo)[0] == TestThree
+    assert all_subclasses(TestThree) == []
+    assert all_subclasses(TestFour) == []
+
+
+def test_model_fields_difference():
+    class MyParent(BaseModel):
+        a: str
+
+    class MyChild(MyParent):
+        b: int
+        c: float
+
+    class MyOtherChild(MyChild):
+        d: float
+        e: float = 1.0
+
+    diff = model_fields_difference(MyParent, MyChild)
+    assert diff == {"b", "c"}
+    diff = model_fields_difference(MyParent, MyOtherChild)
+    assert diff == {"b", "c", "d", "e"}

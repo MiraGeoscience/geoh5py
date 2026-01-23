@@ -548,7 +548,11 @@ def test_unknown_uijson(tmp_path):
 
 def test_str_and_repr(tmp_path):
     Workspace.create(tmp_path / "test.geoh5")
-    uijson = BaseUIJson(
+
+    class MyUIJson(BaseUIJson):
+        param: StringForm
+
+    uijson = MyUIJson(
         version="0.1.0",
         title="my application",
         geoh5=str(tmp_path / "test.geoh5"),
@@ -556,7 +560,9 @@ def test_str_and_repr(tmp_path):
         monitoring_directory=None,
         conda_environment="test",
         workspace_geoh5=None,
+        param={"label": "a", "value": "test"},
     )
+
     str_uijson = str(uijson)
     repr_uijson = repr(uijson)
     assert "UIJson('my application')" in repr_uijson

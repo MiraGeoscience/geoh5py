@@ -88,7 +88,16 @@ class BaseUIJson(BaseModel):
 
     def __str__(self) -> str:
         """String level shows the full json representation."""
+
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        for field in self.model_fields:
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                type_string = type(value).__name__
+                json_string = json_string.replace(
+                    f'"{field}": {{', f'"{field}": {type_string} {{'
+                )
+
         return f"{self!r} -> {json_string}"
 
     @field_validator("geoh5", mode="after")

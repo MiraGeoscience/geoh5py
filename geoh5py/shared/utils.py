@@ -38,7 +38,6 @@ from .exceptions import Geoh5FileClosedError
 
 # pylint: disable=too-many-lines
 
-
 if TYPE_CHECKING:
     from ..workspace import Workspace
     from .entity import Entity
