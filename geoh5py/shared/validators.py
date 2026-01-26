@@ -83,6 +83,7 @@ def to_type_uid_or_class(values):
             try:
                 val = UUID(val)
             except ValueError:
+                val = val.replace(" ", "").lower()
                 val = GA_STRING_TO_OBJECT.get(val, None) or GA_STRING_TO_GROUP.get(
                     val, None
                 )

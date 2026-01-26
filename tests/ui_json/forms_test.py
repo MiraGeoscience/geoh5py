@@ -28,7 +28,7 @@ from pydantic import BaseModel, ValidationError
 
 from geoh5py import Workspace
 from geoh5py.groups import GroupTypeEnum, PropertyGroup
-from geoh5py.objects import Curve, Points, Surface
+from geoh5py.objects import Curve, DrapeModel, Points, Surface
 from geoh5py.ui_json.forms import (
     Association,
     BaseForm,
@@ -388,6 +388,19 @@ def test_object_form_mesh_type():
 
     form = ObjectForm(label="name", value=obj_uid, mesh_type=["Points", "Curve"])
     assert form.mesh_type == [Points, Curve]
+
+    form = ObjectForm(
+        label="name",
+        value=obj_uid,
+        mesh_type=[
+            "Draped Model",
+            "Draped model",
+            "draped Model",
+            "DrapedModel",
+            "drapedmodel",
+        ],
+    )
+    assert form.mesh_type == [DrapeModel] * 5
 
 
 def test_object_form_mesh_type_as_classes(tmp_path):

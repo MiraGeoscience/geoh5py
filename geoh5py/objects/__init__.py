@@ -72,11 +72,11 @@ from .text import TextObject
 from .vp_model import VPModel
 
 GA_STRING_TO_OBJECT = {
-    "Block Model": BlockModel,
-    "Curve": Curve,
-    "Draped Model": DrapeModel,
-    "2D Grid": Grid2D,
-    "Octree": Octree,
-    "Points": Points,
-    "Surface": Surface,
+    "blockmodel": BlockModel,
+    "curve": Curve,
+    "drapedmodel": DrapeModel,
+    "2dgrid": Grid2D,
+    "octreegrid": Octree,
+    "points": Points,
+    "surface": Surface,
 }

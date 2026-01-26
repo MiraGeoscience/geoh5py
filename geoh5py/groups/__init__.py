@@ -58,8 +58,8 @@ from .survey import AirborneGeophysics
 from .uijson import UIJsonGroup
 
 GA_STRING_TO_GROUP = {
-    "Container Group": ContainerGroup,
-    "SimPEG Group": SimPEGGroup,
-    "Drillhole Group": DrillholeGroup,
-    "Python Plugin Group": UIJsonGroup,
+    "containergroup": ContainerGroup,
+    "simpeggroup": SimPEGGroup,
+    "drillholegroup": DrillholeGroup,
+    "pythonplugingroup": UIJsonGroup,
 }
