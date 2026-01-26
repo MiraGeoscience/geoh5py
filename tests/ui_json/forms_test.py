@@ -383,6 +383,12 @@ def test_object_form_mesh_type():
     )
     assert form.mesh_type == [Points, Curve]
 
+    form = ObjectForm(label="name", value=obj_uid, mesh_type="Points")
+    assert form.mesh_type == [Points]
+
+    form = ObjectForm(label="name", value=obj_uid, mesh_type=["Points", "Curve"])
+    assert form.mesh_type == [Points, Curve]
+
 
 def test_object_form_mesh_type_as_classes(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")

@@ -70,3 +70,13 @@ from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.magnetics import AirborneMagnetics
 from .text import TextObject
 from .vp_model import VPModel
+
+GA_STRING_TO_OBJECT = {
+    "Block Model": BlockModel,
+    "Curve": Curve,
+    "Draped Model": DrapeModel,
+    "2D Grid": Grid2D,
+    "Octree": Octree,
+    "Points": Points,
+    "Surface": Surface,
+}

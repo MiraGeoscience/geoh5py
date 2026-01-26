@@ -30,8 +30,8 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.groups import Group, PropertyGroup
-from geoh5py.objects import ObjectBase
+from geoh5py.groups import GA_STRING_TO_GROUP, Group, PropertyGroup
+from geoh5py.objects import GA_STRING_TO_OBJECT, ObjectBase
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -68,13 +68,32 @@ def to_list(value: Any) -> list[Any]:
     return value
 
 
-def to_uuid(values):
-    """Promote strings to uuid and pass anything else."""
+def to_type_uid_or_class(values):
+    """
+    Promote strings to uuid and pass anything else.
+
+    Strings can represent both uid(s) or names that represent geoh5py objects.
+    We first attempt to convert strings to uid(s) and then fall back on conversion
+    from name to class(es), and finally to type uid(s).  GA naming doesn't match
+    geoh5py naming, so we must map names to classes before type uid conversion.
+    """
     out = []
     for val in values:
         if isinstance(val, str):
-            val = UUID(val)
+            try:
+                val = UUID(val)
+            except ValueError:
+                val = GA_STRING_TO_OBJECT.get(val, None) or GA_STRING_TO_GROUP.get(
+                    val, None
+                )
+                if val is None:
+                    raise ValueError(
+                        f"Provided string {val!s} is not a recognized "
+                        f"geoh5py object or group type."
+                    ) from None
+
         out.append(val)
+
     return out
 
 
