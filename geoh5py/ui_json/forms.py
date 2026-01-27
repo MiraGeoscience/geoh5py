@@ -46,7 +46,7 @@ from geoh5py.shared.validators import (
     to_class,
     to_list,
     to_path,
-    to_uuid,
+    to_type_uid_or_class,
     types_to_string,
 )
 from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
@@ -431,7 +431,7 @@ class DirectoryForm(BaseForm):
 MeshTypes = Annotated[
     list[type[ObjectBase]],
     BeforeValidator(to_class),
-    BeforeValidator(to_uuid),
+    BeforeValidator(to_type_uid_or_class),
     BeforeValidator(to_list),
     PlainSerializer(types_to_string, when_used="json"),
 ]
@@ -460,7 +460,7 @@ class ObjectForm(BaseForm):
 GroupTypes = Annotated[
     list[type[Group]],
     BeforeValidator(to_class),
-    BeforeValidator(to_uuid),
+    BeforeValidator(to_type_uid_or_class),
     BeforeValidator(to_list),
     PlainSerializer(types_to_string, when_used="json"),
 ]
