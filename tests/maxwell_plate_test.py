@@ -23,103 +23,44 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from geoh5py.objects import Curve
-from geoh5py.shared.merging import CurveMerger
+from geoh5py.objects.maxwell_plate import MaxwellPlate, PlateGeometry
 from geoh5py.workspace import Workspace
 
 
 # import pytest
 
 
-def test_merge_curve(tmp_path):
-    h5file_path = tmp_path / r"testCurve.geoh5"
-    curves = []
-    data = []
-    with Workspace.create(h5file_path) as workspace:
-        curves.append(
-            Curve.create(
-                workspace,
-                name="points1",
-                vertices=np.random.randn(10, 3),
-                parts=[0, 0, 0, 0, 1, 1, 1, 2, 2, 2],
-                allow_move=False,
-            )
+def test_read_file(tmp_path):
+    h5file_path = r"C:\Users\dominiquef\Desktop\maxwell_plate.geoh5"
+
+    with Workspace(h5file_path) as ws:
+        viz = ws.objects[0].visual_parameters
+        xml = viz.xml
+
+        options = {child.tag: child.text for child in xml}
+        geometry = PlateGeometry(parent=viz, **options)
+        print(geometry.position.x)
+        geometry.width = 123.0
+        geometry.position.x = geometry.position.x + 10.0
+
+
+def test_create_plate(tmp_path):
+    filepath = tmp_path / "maxwell_plate_test.geoh5"
+    with Workspace.create(filepath) as ws:
+        plate = MaxwellPlate.create(
+            ws,
+            name="Test Plate",
+            position={
+                "x": 100.0,
+                "y": 200.0,
+                "z": -50.0,
+            },
+            width=300.0,
+            height=150.0,
+            thickness=20.0,
+            length=45.0,
+            dip=30.0,
         )
-
-        data.append(
-            curves[0].add_data(
-                {
-                    "DataValues0": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                    }
-                }
-            )
-        )
-
-        data.append(
-            curves[0].add_data(
-                {
-                    "DataValues1": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                    }
-                }
-            )
-        )
-
-        curves[0].add_data(
-            {
-                "TestText": {
-                    "type": "text",
-                    "values": np.asarray(["values"]),
-                }
-            }
-        )
-
-        entity_type = data[0].entity_type
-
-        curves.append(
-            Curve.create(
-                workspace,
-                name="points2",
-                vertices=np.random.randn(10, 3),
-                parts=[0, 0, 0, 0, 1, 1, 1, 2, 2, 2],
-                allow_move=False,
-            )
-        )
-        data.append(
-            curves[1].add_data(
-                {
-                    "DataValues0": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                        "entity_type": entity_type,
-                    }
-                }
-            )
-        )
-        data.append(
-            curves[1].add_data(
-                {
-                    "DataValues3": {
-                        "association": "VERTEX",
-                        "values": np.random.randn(10),
-                    }
-                }
-            )
-        )
-
-        merged_curve = CurveMerger.merge_objects(workspace, curves)
-
-        assert (
-            merged_curve.parts
-            == [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 5]
-        ).all()
-
-        assert (
-            merged_curve.vertices == np.vstack((curves[0].vertices, curves[1].vertices))
-        ).all()
-
-        with pytest.raises(TypeError, match="The input entities must be a list of"):
-            CurveMerger.validate_type("bidon")
+        assert isinstance(plate, MaxwellPlate)
+        assert plate.visual_parameters.get_child("position_x").value == 100.0
+        assert plate.visual_parameters.get_child("width").value == 300.0

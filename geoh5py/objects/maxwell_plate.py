@@ -22,27 +22,56 @@ from __future__ import annotations
 
 import re
 import uuid
+from contextvars import ContextVar
+from typing import Any
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     SerializerFunctionWrapHandler,
+    ValidationInfo,
     field_validator,
     model_serializer,
 )
 
+from ..data import VisualParameters
 from .object_base import ObjectBase
 
 
+CONTEXT_PARENT: ContextVar[VisualParameters] = ContextVar("parent")
+
+
 class PlatePosition(BaseModel):
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
     increment: float = 0.0
 
-    @model_serializer(mode="plain")
-    def serialize_model(self) -> str:
-        return "%1f;{%2f,%2f,%2f}" % (self.increment, self.x, self.y, self.z)
+    parent: VisualParameters | None = Field(None, exclude=True)
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def save_to_visual_parameters(cls, value: str, info: ValidationInfo):
+        if (
+            len(cls.model_fields.keys()) != len(info.data) + 1
+            or info.field_name == "parent"
+        ):
+            return value
+
+        element = CONTEXT_PARENT.get().xml.find("Position")
+
+        if element is not None:
+            element.text = "%.1f;{%.2f,%.2f,%.2f}" % tuple(
+                info.data.get(key, value) for key in ["increment", "x", "y", "z"]
+            )
+            CONTEXT_PARENT.get().workspace.update_attribute(
+                CONTEXT_PARENT.get(), "values"
+            )
+
+        return value
 
 
 class PlateGeometry(BaseModel):
@@ -61,7 +90,11 @@ class PlateGeometry(BaseModel):
         as a ratio (>1: higher, 1: centered, [0, 1]: lower).
     """
 
-    position: PlatePosition = Field(PlatePosition(), alias="Position")
+    model_config = ConfigDict(
+        validate_assignment=True, arbitrary_types_allowed=True, extra="ignore"
+    )
+
+    position: PlatePosition = Field(alias="Position")
     dip: float = Field(90.0, alias="Dip")
     dip_direction: float = Field(90.0, alias="Dipdirection")
     rotation: float = Field(0.0, alias="Rotation")
@@ -71,10 +104,12 @@ class PlateGeometry(BaseModel):
     number: int = Field(10, alias="Number")
     skew: float = Field(1.0, alias="Skew")
 
+    parent: VisualParameters = Field(exclude=True)
+
     @field_validator("position", mode="before")
     @classmethod
     def parse_position(cls, value: str):
-        args = {"increment": value.split(";")[0]}
+        args: dict[str, Any] = {"increment": value.split(";")[0]}
 
         coords = re.findall(r"[-+]?\d+\.\d+", value)
 
@@ -85,6 +120,7 @@ class PlateGeometry(BaseModel):
         ):
             args[key] = val
 
+        args["parent"] = None
         return args
 
     @model_serializer(mode="wrap")
@@ -96,6 +132,35 @@ class PlateGeometry(BaseModel):
             serialized[key] = str(val)
 
         return serialized
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def save_to_visual_parameters(cls, value, info: ValidationInfo):
+        # Skip during initialization
+        if len(cls.model_fields.keys()) != len(info.data) + 1:
+            return value
+
+        if info.field_name == "parent":
+            CONTEXT_PARENT.set(value)
+            return value
+
+        if info.field_name is None:
+            return value
+
+        alias = cls.model_fields[info.field_name].alias  # pylint: disable=unsubscriptable-object
+
+        if alias is None:
+            return value
+
+        element = CONTEXT_PARENT.get().xml.find(alias)
+
+        if element is not None:
+            element.text = str(value)
+            CONTEXT_PARENT.get().parent.workspace.update_attribute(
+                CONTEXT_PARENT.get(), "values"
+            )
+
+        return value
 
 
 class MaxwellPlate(ObjectBase):
@@ -120,12 +185,11 @@ class MaxwellPlate(ObjectBase):
         Define the geometry of the Maxwell Plate.
         """
         if self._geometry is None:
-            if self.visual_parameters is None:
-                self._geometry = PlateGeometry()
-            else:
+            if self.visual_parameters is not None:
                 xml = self.visual_parameters.xml
                 self._geometry = PlateGeometry(
-                    **{child.tag: child.text for child in xml}
+                    parent=self.visual_parameters,
+                    **{child.tag: child.text for child in xml},
                 )
 
         return self._geometry
