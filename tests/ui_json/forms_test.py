@@ -39,17 +39,18 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     DataRangeForm,
     DataType,
+    DirectoryForm,
     FileForm,
     FloatForm,
     GroupForm,
     IntegerForm,
     MultiChoiceForm,
+    MultiFileForm,
     MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
     all_subclasses,
-    indicator_attributes,
     model_fields_difference,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
@@ -239,12 +240,12 @@ def test_multi_choice_form():
 
 def test_file_form(tmp_path):
     with Workspace.create(tmp_path / "test.geoh5") as geoh5:
-        paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
-        _ = [p.touch() for p in paths]
+        filepath = tmp_path / "my_file.ext"
+        filepath.touch()
 
         file_form = FileForm(
             label="file",
-            value=paths[0],
+            value=filepath,
             file_description=["something"],
             file_type=["ext"],
         )
@@ -252,91 +253,98 @@ def test_file_form(tmp_path):
         file_form = setup_from_uijson(geoh5, file_form)
 
         assert file_form.label == "file"
-        assert file_form.value == [paths[0]]
+        assert file_form.value == filepath
         assert file_form.file_description == ["something"]
         assert file_form.file_type == ["ext"]
-        assert not file_form.file_multi
         assert 'my_file.ext",' in file_form.json_string
 
-        file_form = FileForm(
+    with pytest.raises(ValidationError, match="has an invalid extension"):
+        _ = FileForm(
             label="file",
-            value=";".join([str(p) for p in paths]),
+            value=tmp_path / "my_file.ext",
+            file_description=["something"],
+            file_type=["wrong_ext"],
+        )
+
+
+def test_multi_file_form(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as geoh5:
+        paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
+        _ = [p.touch() for p in paths]
+
+        multi_file_form = MultiFileForm(
+            label="Files",
+            value=[str(p) for p in paths],
+            file_description=["something"],
+            file_type=["ext"],
+            file_multi=None,
+        )
+
+        multi_file_form = setup_from_uijson(geoh5, multi_file_form)
+
+        assert multi_file_form.label == "Files"
+        assert multi_file_form.value == paths
+        assert multi_file_form.file_description == ["something"]
+        assert multi_file_form.file_type == ["ext"]
+        assert multi_file_form.file_multi
+        assert "my_file.ext;C:" in multi_file_form.json_string
+
+    with pytest.raises(ValidationError, match="does not exist"):
+        _ = MultiFileForm(
+            label="Files",
+            value=[str(tmp_path / "non_existent.ext")],
             file_description=["something"],
             file_type=["ext"],
             file_multi=True,
         )
-        file_form = setup_from_uijson(geoh5, file_form)
 
-        assert file_form.label == "file"
-        assert file_form.value == paths
-        assert file_form.file_description == ["something"]
-        assert file_form.file_type == ["ext"]
-        assert file_form.file_multi
+    with pytest.raises(ValidationError, match="must be the same length"):
+        _ = MultiFileForm(
+            label="Files",
+            value=[str(p) for p in paths],
+            file_description=["something"],
+            file_type=["ext", "extra"],
+            file_multi=True,
+        )
 
-        msg = "does not exist"
-        with pytest.raises(ValidationError, match=msg):
-            form = FileForm.model_construct(
-                label="file",
-                value=str(tmp_path / "not_a_file.ext"),
-                file_description=["something"],
-                file_type=["ext"],
-            )
-            setup_from_uijson(geoh5, form)
-
-        msg = "File description and type lists must be the same length"
-        with pytest.raises(ValidationError, match=msg):
-            form = FileForm.model_construct(
-                label="file",
-                value=[paths[0]],
-                file_description=["something", "else"],
-                file_type=["ext"],
-            )
-            setup_from_uijson(geoh5, form)
-
-        msg = "have invalid extensions"
-        with pytest.raises(ValidationError, match=msg):
-            form = FileForm.model_construct(
-                label="file",
-                value=[paths[0]],
-                file_description=["something"],
-                file_type=["doc"],
-            )
-            setup_from_uijson(geoh5, form)
+    with pytest.raises(ValidationError, match="have invalid extensions"):
+        _ = MultiFileForm(
+            label="Files",
+            value=[str(p) for p in paths],
+            file_description=["something"],
+            file_type=["wrong_ext"],
+            file_multi=True,
+        )
 
 
 def test_directory_form(tmp_path):
-    file_form = FileForm(
-        label="working directory",
-        file_description=["Directory"],
-        file_type=["directory"],
-        directory_only=True,
-        value=str(tmp_path),
-    )
     with Workspace.create(tmp_path / "test.geoh5") as geoh5:
+        file_form = DirectoryForm(
+            label="working directory",
+            file_description=["anything"],
+            file_type=["clueless"],
+            directory_only=False,
+            value=str(tmp_path),
+        )
         file_form = setup_from_uijson(geoh5, file_form)
-        assert file_form.value[0] == tmp_path
+        assert file_form.value == tmp_path
+        assert file_form.file_type == ["directory"]
+        assert file_form.file_description == ["Directory"]
+        assert file_form.directory_only
 
-        with pytest.raises(ValidationError, match="File type must be"):
-            file_form = FileForm.model_construct(
-                label="working directory",
-                file_description=["Directory"],
-                file_type=["ext"],
-                directory_only=True,
-                value=[str(tmp_path)],
-            )
-            file_form = setup_from_uijson(geoh5, file_form)
-            assert True
+    with pytest.raises(ValidationError, match="is not a valid directory"):
+        filepath = tmp_path / "my_file.ext"
+        filepath.touch()
+        _ = DirectoryForm(
+            label="working directory",
+            value=tmp_path / "my_file.ext",
+        )
 
-        with pytest.raises(ValidationError, match="File description must be"):
-            file_form = FileForm(
-                label="working directory",
-                file_description=["something else"],
-                file_type=["directory"],
-                directory_only=True,
-                value=[str(tmp_path)],
-            )
-            file_form = setup_from_uijson(geoh5, file_form)
-            assert True
+    with pytest.raises(ValidationError, match="is not a valid directory"):
+        _ = DirectoryForm(
+            label="working directory",
+            value=tmp_path / "non_existent_dir",
+        )
 
 
 def test_object_form():
@@ -663,13 +671,32 @@ def test_base_form_infer(tmp_path):
     form = BaseForm.infer(
         {
             "label": "test",
+            "value": tmp_path / "my_file.ext",
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
+        }
+    )
+    assert form == FileForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"],
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
+            "fileMulti": True,
+        }
+    )
+    assert form == MultiFileForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
             "value": tmp_path,
             "directoryOnly": True,
             "fileType": ["ext"],
             "fileDescription": ["something"],
         },
     )
-    assert form == FileForm
+    assert form == DirectoryForm
     form = BaseForm.infer(
         {"label": "test", "value": "test", "choiceList": ["test", "other"]},
     )
