@@ -287,7 +287,10 @@ def test_multi_file_form(tmp_path):
         assert multi_file_form.file_description == ["something"]
         assert multi_file_form.file_type == ["ext"]
         assert multi_file_form.file_multi
-        assert "my_file.ext;C:" in multi_file_form.json_string
+        assert (
+            "my_file.ext;C:" in multi_file_form.json_string
+            or "my_file.ext;/tmp" in multi_file_form.json_string
+        )
 
     with pytest.raises(ValidationError, match="does not exist"):
         _ = MultiFileForm(
