@@ -23,7 +23,13 @@ from __future__ import annotations
 import re
 import uuid
 
-from pydantic import AliasChoices, BaseModel, Field, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+)
 
 from .object_base import ObjectBase
 
@@ -34,15 +40,16 @@ class PlatePosition(BaseModel):
     z: float = 0.0
     increment: float = 0.0
 
+    @model_serializer(mode="plain")
+    def serialize_model(self) -> str:
+        return "%1f;{%2f,%2f,%2f}" % (self.increment, self.x, self.y, self.z)
+
 
 class PlateGeometry(BaseModel):
     """
     Geometry parameters for a Maxwell Plate.
 
-    :param center_x: X coordinate of the plate top center.
-    :param center_y: Y coordinate of the plate top center.
-    :param center_z: Z coordinate of the plate top center.
-    :param increment: Distance increment when shifting the position.
+    :param position: Top center coordinate of the plate with skew.
     :param dip: Dip angle of the plate in degrees.
     :param dip_direction: Dip direction of the plate in degrees.
     :param rotation: Rotation angle on the plane, about the top center coordinate.
@@ -54,21 +61,15 @@ class PlateGeometry(BaseModel):
         as a ratio (>1: higher, 1: centered, [0, 1]: lower).
     """
 
-    position: PlatePosition = Field(
-        PlatePosition(), validation_alias=AliasChoices("Position", "position")
-    )
-    dip: float = Field(90.0, validation_alias=AliasChoices("Dip", "dip"))
-    dip_direction: float = Field(
-        90.0, validation_alias=AliasChoices("Dipdirection", "dip_direction")
-    )
-    rotation: float = Field(0.0, validation_alias=AliasChoices("Rotation", "rotation"))
-    length: float = Field(1.0, validation_alias=AliasChoices("Length", "length"))
-    width: float = Field(1.0, validation_alias=AliasChoices("Width", "width"))
-    thickness: float = Field(
-        1.0, validation_alias=AliasChoices("Thickness", "thickness")
-    )
-    number: int = Field(10, validation_alias=AliasChoices("Number", "number"))
-    skew: float = Field(1.0, validation_alias=AliasChoices("Skew", "skew"))
+    position: PlatePosition = Field(PlatePosition(), alias="Position")
+    dip: float = Field(90.0, alias="Dip")
+    dip_direction: float = Field(90.0, alias="Dipdirection")
+    rotation: float = Field(0.0, alias="Rotation")
+    length: float = Field(1.0, alias="Length")
+    width: float = Field(1.0, alias="Width")
+    thickness: float = Field(1.0, alias="Thickness")
+    number: int = Field(10, alias="Number")
+    skew: float = Field(1.0, alias="Skew")
 
     @field_validator("position", mode="before")
     @classmethod
@@ -85,6 +86,16 @@ class PlateGeometry(BaseModel):
             args[key] = val
 
         return args
+
+    @model_serializer(mode="wrap")
+    def serialize_to_str(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, object]:
+        serialized = handler(self)
+        for key, val in serialized.items():
+            serialized[key] = str(val)
+
+        return serialized
 
 
 class MaxwellPlate(ObjectBase):
