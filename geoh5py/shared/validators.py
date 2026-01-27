@@ -68,7 +68,9 @@ def to_list(value: Any) -> list[Any]:
     return value
 
 
-def to_type_uid_or_class(values):
+def to_type_uid_or_class(
+    values: list[str | UUID | type[ObjectBase] | type[Group]],
+) -> list[UUID | type[ObjectBase] | type[Group]]:
     """
     Promote strings to uuid and pass anything else.
 
@@ -76,24 +78,29 @@ def to_type_uid_or_class(values):
     We first attempt to convert strings to uid(s) and then fall back on conversion
     from name to class(es), and finally to type uid(s).  GA naming doesn't match
     geoh5py naming, so we must map names to classes before type uid conversion.
+
+    :param values: List of strings representing either geoh5py type uids or class names.
+    :return: List of UUID or geoh5py objects/groups.
     """
-    out = []
+    out: list[UUID | type[ObjectBase] | type[Group]] = []
     for val in values:
         if isinstance(val, str):
             try:
-                val = UUID(val)
+                out += [UUID(val)]
             except ValueError:
                 val = val.replace(" ", "").lower()
-                val = GA_STRING_TO_OBJECT.get(val, None) or GA_STRING_TO_GROUP.get(
+                obj: type[ObjectBase] | type[Group] | None = GA_STRING_TO_OBJECT.get(
                     val, None
-                )
-                if val is None:
+                ) or GA_STRING_TO_GROUP.get(val, None)
+                if obj is None:
                     raise ValueError(
                         f"Provided string {val!s} is not a recognized "
                         f"geoh5py object or group type."
                     ) from None
 
-        out.append(val)
+                out += [obj]
+        else:
+            out += [val]
 
     return out
 

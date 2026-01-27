@@ -71,7 +71,7 @@ from .surveys.magnetics import AirborneMagnetics
 from .text import TextObject
 from .vp_model import VPModel
 
-GA_STRING_TO_OBJECT = {
+GA_STRING_TO_OBJECT: dict[str, type[ObjectBase]] = {
     "blockmodel": BlockModel,
     "curve": Curve,
     "drapedmodel": DrapeModel,

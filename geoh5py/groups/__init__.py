@@ -57,7 +57,7 @@ from .simpeg import SimPEGGroup
 from .survey import AirborneGeophysics
 from .uijson import UIJsonGroup
 
-GA_STRING_TO_GROUP = {
+GA_STRING_TO_GROUP: dict[str, type[Group]] = {
     "containergroup": ContainerGroup,
     "simpeggroup": SimPEGGroup,
     "drillholegroup": DrillholeGroup,

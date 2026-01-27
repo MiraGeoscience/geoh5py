@@ -402,6 +402,9 @@ def test_object_form_mesh_type():
     )
     assert form.mesh_type == [DrapeModel] * 5
 
+    with pytest.raises(ValidationError, match="not a recognized geoh5py object"):
+        _ = ObjectForm(label="name", value=obj_uid, mesh_type="DrapeModel")
+
 
 def test_object_form_mesh_type_as_classes(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
