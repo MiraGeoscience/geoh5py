@@ -331,7 +331,7 @@ class FileForm(BaseForm):
 
     @model_validator(mode="after")
     def value_file_type(self):
-        if any(self.value.suffix[1:] != t for t in self.file_type):
+        if self.value.suffix[1:] not in self.file_type:
             raise ValueError(f"Provided file {self.value} has an invalid extension.")
         return self
 
