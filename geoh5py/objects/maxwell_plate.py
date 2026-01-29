@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import re
 import uuid
-from contextvars import ContextVar
 from typing import Any
 
 from pydantic import (
@@ -33,13 +32,11 @@ from pydantic import (
     ValidationInfo,
     field_validator,
     model_serializer,
+    model_validator,
 )
 
 from ..data import VisualParameters
 from .object_base import ObjectBase
-
-
-CONTEXT_PARENT: ContextVar[VisualParameters] = ContextVar("parent")
 
 
 class PlatePosition(BaseModel):
@@ -58,17 +55,18 @@ class PlatePosition(BaseModel):
         if (
             len(cls.model_fields.keys()) != len(info.data) + 1
             or info.field_name == "parent"
+            or info.data.get("parent") is None
         ):
             return value
 
-        element = CONTEXT_PARENT.get().xml.find("Position")
+        element = info.data["parent"].xml.find("Position")
 
         if element is not None:
             element.text = "%.1f;{%.2f,%.2f,%.2f}" % tuple(
                 info.data.get(key, value) for key in ["increment", "x", "y", "z"]
             )
-            CONTEXT_PARENT.get().workspace.update_attribute(
-                CONTEXT_PARENT.get(), "values"
+            info.data["parent"].workspace.update_attribute(
+                info.data["parent"], "values"
             )
 
         return value
@@ -108,9 +106,11 @@ class PlateGeometry(BaseModel):
 
     @field_validator("position", mode="before")
     @classmethod
-    def parse_position(cls, value: str):
-        args: dict[str, Any] = {"increment": value.split(";")[0]}
+    def parse_position(cls, value: str | PlatePosition):
+        if isinstance(value, PlatePosition):
+            return value
 
+        args: dict[str, Any] = {"increment": value.split(";")[0]}
         coords = re.findall(r"[-+]?\d+\.\d+", value)
 
         for key, val in zip(
@@ -122,6 +122,11 @@ class PlateGeometry(BaseModel):
 
         args["parent"] = None
         return args
+
+    @model_validator(mode="after")
+    def set_parent(self):
+        self.position.parent = self.parent
+        return self
 
     @model_serializer(mode="wrap")
     def serialize_to_str(
@@ -140,11 +145,7 @@ class PlateGeometry(BaseModel):
         if len(cls.model_fields.keys()) != len(info.data) + 1:
             return value
 
-        if info.field_name == "parent":
-            CONTEXT_PARENT.set(value)
-            return value
-
-        if info.field_name is None:
+        if info.field_name == "parent" or info.field_name is None:
             return value
 
         alias = cls.model_fields[info.field_name].alias  # pylint: disable=unsubscriptable-object
@@ -152,12 +153,12 @@ class PlateGeometry(BaseModel):
         if alias is None:
             return value
 
-        element = CONTEXT_PARENT.get().xml.find(alias)
+        element = info.data["parent"].xml.find(alias)
 
         if element is not None:
             element.text = str(value)
-            CONTEXT_PARENT.get().parent.workspace.update_attribute(
-                CONTEXT_PARENT.get(), "values"
+            info.data["parent"].parent.workspace.update_attribute(
+                info.data["parent"], "values"
             )
 
         return value
