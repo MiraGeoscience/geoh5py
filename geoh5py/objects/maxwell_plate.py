@@ -22,15 +22,12 @@ from __future__ import annotations
 
 import re
 import uuid
-from typing import Any
 
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
-    SerializerFunctionWrapHandler,
-    ValidationInfo,
-    field_validator,
     model_serializer,
     model_validator,
 )
@@ -45,31 +42,47 @@ class PlatePosition(BaseModel):
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
-    increment: float = 0.0
+    increment: float = Field(1.0, ge=1.0)
 
     parent: VisualParameters | None = Field(None, exclude=True)
 
-    @field_validator("*", mode="after")
+    _initialized: bool = False
+
+    @model_validator(mode="before")
     @classmethod
-    def save_to_visual_parameters(cls, value: str, info: ValidationInfo):
-        if (
-            len(cls.model_fields.keys()) != len(info.data) + 1
-            or info.field_name == "parent"
-            or info.data.get("parent") is None
-        ):
+    def parse_str(cls, value: str | dict):
+        """
+        Parse a string representation of the position stored
+        as `inc; {x, y, z}`.
+        """
+        if isinstance(value, dict):
             return value
 
-        element = info.data["parent"].xml.find("Position")
+        coords = re.findall(r"[-+]?\d+\.\d+", value)
+        args = dict(zip(["increment", "x", "y", "z"], coords, strict=False))
+        return args
 
-        if element is not None:
-            element.text = "%.1f;{%.2f,%.2f,%.2f}" % tuple(
-                info.data.get(key, value) for key in ["increment", "x", "y", "z"]
-            )
-            info.data["parent"].workspace.update_attribute(
-                info.data["parent"], "values"
-            )
+    @model_serializer(mode="plain")
+    def format_to_str(self) -> str:
+        str_rep = "%.1f;{%.2f,%.2f,%.2f}" % tuple(
+            getattr(self, key) for key in ["increment", "x", "y", "z"]
+        )
 
-        return value
+        return str_rep
+
+    @model_validator(mode="after")
+    def validate_and_save(self):
+        if not self._initialized:
+            # Won't be initialized until a parent is assigned
+            if self.parent is not None:
+                self._initialized = True
+            return self
+
+        if self.parent is not None:
+            # Model_dump configured to return a string representation
+            self.parent.set_tags({"Position": self.model_dump()})  # pylint: disable=no-member
+
+        return self
 
 
 class PlateGeometry(BaseModel):
@@ -92,76 +105,70 @@ class PlateGeometry(BaseModel):
         validate_assignment=True, arbitrary_types_allowed=True, extra="ignore"
     )
 
-    position: PlatePosition = Field(alias="Position")
-    dip: float = Field(90.0, alias="Dip")
-    dip_direction: float = Field(90.0, alias="Dipdirection")
-    rotation: float = Field(0.0, alias="Rotation")
-    length: float = Field(1.0, alias="Length")
-    width: float = Field(1.0, alias="Width")
-    thickness: float = Field(1.0, alias="Thickness")
-    number: int = Field(10, alias="Number")
-    skew: float = Field(1.0, alias="Skew")
+    position: PlatePosition = Field(
+        alias="Position", validation_alias=AliasChoices("Position", "position")
+    )
+    dip: float = Field(
+        90.0, alias="Dip", validation_alias=AliasChoices("Dip", "dip"), ge=-90, le=90
+    )
+    dip_direction: float = Field(
+        90.0,
+        alias="Dipdirection",
+        validation_alias=AliasChoices("Dipdirection", "dip_direction"),
+        ge=0,
+        le=360,
+    )
+    rotation: float = Field(
+        0.0,
+        alias="Rotation",
+        validation_alias=AliasChoices("Rotation", "rotation"),
+        ge=-180,
+        le=180,
+    )
+    length: float = Field(
+        1.0, alias="Length", validation_alias=AliasChoices("Length", "length"), ge=0
+    )
+    width: float = Field(
+        1.0, alias="Width", validation_alias=AliasChoices("Width", "width"), ge=0
+    )
+    thickness: float = Field(
+        1.0,
+        alias="Thickness",
+        validation_alias=AliasChoices("Thickness", "thickness"),
+        ge=0,
+    )
+    number: int = Field(
+        10,
+        alias="Number",
+        validation_alias=AliasChoices("Number", "number"),
+        ge=0,
+        le=50,
+    )
+    skew: float = Field(
+        1.0,
+        alias="Skew",
+        validation_alias=AliasChoices("Skew", "skew"),
+        ge=0.52,
+        le=200.0,
+    )
 
-    parent: VisualParameters = Field(exclude=True)
+    parent: VisualParameters | None = Field(None, exclude=True)
 
-    @field_validator("position", mode="before")
-    @classmethod
-    def parse_position(cls, value: str | PlatePosition):
-        if isinstance(value, PlatePosition):
-            return value
-
-        args: dict[str, Any] = {"increment": value.split(";")[0]}
-        coords = re.findall(r"[-+]?\d+\.\d+", value)
-
-        for key, val in zip(
-            ["x", "y", "z"],
-            coords,
-            strict=False,
-        ):
-            args[key] = val
-
-        args["parent"] = None
-        return args
+    _initialized: bool = False
 
     @model_validator(mode="after")
-    def set_parent(self):
-        self.position.parent = self.parent
+    def validate_and_save(self):
+        if not self._initialized:
+            # Won't be initialized until a parent is assigned
+            if self.parent is not None:
+                self._initialized = True
+                self.position.parent = self.parent
+            return self
+
+        if self.parent is not None:
+            self.parent.set_tags(self.model_dump(by_alias=True))  # pylint: disable=no-member
+
         return self
-
-    @model_serializer(mode="wrap")
-    def serialize_to_str(
-        self, handler: SerializerFunctionWrapHandler
-    ) -> dict[str, object]:
-        serialized = handler(self)
-        for key, val in serialized.items():
-            serialized[key] = str(val)
-
-        return serialized
-
-    @field_validator("*", mode="after")
-    @classmethod
-    def save_to_visual_parameters(cls, value, info: ValidationInfo):
-        # Skip during initialization
-        if len(cls.model_fields.keys()) != len(info.data) + 1:
-            return value
-
-        if info.field_name == "parent" or info.field_name is None:
-            return value
-
-        alias = cls.model_fields[info.field_name].alias  # pylint: disable=unsubscriptable-object
-
-        if alias is None:
-            return value
-
-        element = info.data["parent"].xml.find(alias)
-
-        if element is not None:
-            element.text = str(value)
-            info.data["parent"].parent.workspace.update_attribute(
-                info.data["parent"], "values"
-            )
-
-        return value
 
 
 class MaxwellPlate(ObjectBase):
@@ -185,12 +192,50 @@ class MaxwellPlate(ObjectBase):
         """
         Define the geometry of the Maxwell Plate.
         """
-        if self._geometry is None:
-            if self.visual_parameters is not None:
-                xml = self.visual_parameters.xml
-                self._geometry = PlateGeometry(
-                    parent=self.visual_parameters,
-                    **{child.tag: child.text for child in xml},
-                )
+        if self._geometry is None and self.visual_parameters is not None:
+            xml = self.visual_parameters.xml
+            self._geometry = PlateGeometry(
+                parent=self.visual_parameters,
+                **{child.tag: child.text for child in xml},
+            )
 
         return self._geometry
+
+    @geometry.setter
+    def geometry(self, value: PlateGeometry):
+        """
+        Set the geometry of the Maxwell Plate.
+
+        :param value: Geometry parameters for the Maxwell Plate.
+        """
+        if not isinstance(value, PlateGeometry):
+            raise TypeError("Input 'geometry' must be a PlateGeometry instance.")
+
+        viz_params = self.visual_parameters
+        if viz_params is None:
+            viz_params = self.add_default_visual_parameters()
+
+        value.parent = viz_params
+        viz_params.set_tags(value.model_dump(by_alias=True))
+
+        self._geometry = value
+
+    @classmethod
+    def create(
+        cls, workspace, geometry: PlateGeometry | None = None, **kwargs
+    ) -> MaxwellPlate:
+        """
+        Function to create an entity.
+
+        :param workspace: Workspace to be added to.
+        :param geometry: Geometry parameters for the Maxwell Plate.
+        :param kwargs: List of keyword arguments defining the properties of a class.
+
+        :return entity: Registered Entity to the workspace.
+        """
+        plate = super().create(workspace, **kwargs)
+
+        if geometry is not None:
+            plate.geometry = geometry
+
+        return plate

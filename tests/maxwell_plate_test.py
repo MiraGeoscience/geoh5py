@@ -23,44 +23,50 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from geoh5py.objects.maxwell_plate import MaxwellPlate, PlateGeometry
+from geoh5py.objects.maxwell_plate import MaxwellPlate, PlateGeometry, PlatePosition
 from geoh5py.workspace import Workspace
 
 
 # import pytest
-
-
-def test_read_file(tmp_path):
-    h5file_path = r"C:\Users\dominiquef\Desktop\maxwell_plate.geoh5"
-
-    with Workspace(h5file_path) as ws:
-        viz = ws.objects[0].visual_parameters
-        xml = viz.xml
-
-        options = {child.tag: child.text for child in xml}
-        geometry = PlateGeometry(parent=viz, **options)
-        print(geometry.position.x)
-        geometry.width = 123.0
-        geometry.position.x = geometry.position.x + 10.0
+TEST_PARAMETERS = {
+    "position": {
+        "x": 100.0,
+        "y": 200.0,
+        "z": -50.0,
+    },
+    "width": 300.0,
+    "thickness": 20.0,
+    "length": 45.0,
+    "dip": 30.0,
+}
 
 
 def test_create_plate(tmp_path):
-    filepath = tmp_path / "maxwell_plate_test.geoh5"
+    filepath = tmp_path / f"{__name__}_test.geoh5"
     with Workspace.create(filepath) as ws:
         plate = MaxwellPlate.create(
-            ws,
-            name="Test Plate",
-            position={
-                "x": 100.0,
-                "y": 200.0,
-                "z": -50.0,
-            },
-            width=300.0,
-            height=150.0,
-            thickness=20.0,
-            length=45.0,
-            dip=30.0,
+            ws, geometry=PlateGeometry.model_validate(TEST_PARAMETERS)
         )
+        assert isinstance(plate.geometry, PlateGeometry)
         assert isinstance(plate, MaxwellPlate)
-        assert plate.visual_parameters.get_child("position_x").value == 100.0
-        assert plate.visual_parameters.get_child("width").value == 300.0
+
+    # Reopen and check values
+    with Workspace(filepath) as ws:
+        plate = ws.objects[0]
+        for key, val in TEST_PARAMETERS.items():
+            plate_val = getattr(plate.geometry, key)
+            if isinstance(plate_val, PlatePosition):
+                for coord in ["x", "y", "z"]:
+                    assert np.isclose(getattr(plate_val, coord), val.get(coord))
+            else:
+                assert np.isclose(plate_val, val)
+
+        # Change another value and save
+        plate.geometry.dip_direction = 90
+        plate.geometry.position.increment = 20
+
+    # Reopen and check updated value
+    with Workspace(filepath) as ws:
+        plate = ws.objects[0]
+        assert np.isclose(plate.geometry.dip_direction, 90)
+        assert np.isclose(plate.geometry.position.increment, 20)

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -125,7 +126,7 @@ class VisualParameters(TextData):
         byte_string.join(f"{255:02x}")  # alpha value
         value = int.from_bytes(bytes.fromhex(byte_string), "little")
 
-        self.set_tag("Colour", str(value))
+        self.set_tags({"Colour": str(value)})
 
     @property
     def filter_basement(self) -> None | float:
@@ -149,7 +150,7 @@ class VisualParameters(TextData):
         if not isinstance(value, (int, float)):
             raise TypeError("Input 'filter_basement' must be a number.")
 
-        self.set_tag("Filterbasement", str(value))
+        self.set_tags({"Filterbasement": str(value)})
 
     def get_tag(self, tag: str) -> None | ET.Element:
         """
@@ -162,24 +163,17 @@ class VisualParameters(TextData):
         element = self.xml.find(tag)
         return element  # type: ignore
 
-    def set_tag(self, tag: str, value: str):
+    def set_tags(self, values: dict[str, Any]):
         """
         Set the value for the tag.
 
-        :param tag: The name of the tag.
-        :param value: the value to set.
+        :param values: Dictionary of tag names and values.
         """
+        for tag, value in values.items():
+            element = self.xml.find(tag)
+            if element is None:
+                element = ET.SubElement(self.xml, tag)
 
-        if not isinstance(value, str):
-            raise TypeError(
-                f"Input 'value' for VisualParameters.{tag} must be of type {str}."
-            )
+            element.text = str(value)
 
-        if self.xml.find(tag) is None:
-            ET.SubElement(self.xml, tag)
-
-        element = self.get_tag(tag)
-
-        if element is not None:
-            element.text = value
-            self.workspace.update_attribute(self, "values")
+        self.workspace.update_attribute(self, "values")
