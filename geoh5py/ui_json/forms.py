@@ -46,7 +46,7 @@ from geoh5py.shared.validators import (
     to_class,
     to_list,
     to_path,
-    to_uuid,
+    to_type_uid_or_class,
     types_to_string,
 )
 from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
@@ -319,21 +319,47 @@ class FileForm(BaseForm):
 
     :param file_description: List of file descriptions for each file type.
     :param file_type: List of file extensions (without the dot) for each file type.
-    :param file_multi: If True, Geoscience ANALYST will allow multi-selection of
-        files.
-    :param directory_only: If True, Geoscience ANALYST will restrict selecitons
-        to directories only.
+    """
+
+    value: Path
+    file_description: list[str]
+    file_type: list[str]
+
+    @field_serializer("value", when_used="json")
+    def to_string(self, value: Path) -> str:
+        return str(value)
+
+    @model_validator(mode="after")
+    def value_file_type(self):
+        if self.value.suffix[1:] not in self.file_type:
+            raise ValueError(f"Provided file {self.value} has an invalid extension.")
+        return self
+
+
+class MultiFileForm(BaseForm):
+    """
+    Multi-file path uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param file_description: List of file descriptions for each file type.
+    :param file_type: List of file extensions (without the dot) for each file type.
+    :param file_multi: Indicates that multi-selection is enabled.
     """
 
     value: PathList
     file_description: list[str]
     file_type: list[str]
-    file_multi: bool = False
-    directory_only: bool = False
+    file_multi: bool = True
 
     @field_serializer("value", when_used="json")
     def to_string(self, value: list[Path]) -> str:
         return ";".join([str(path) for path in value])
+
+    @field_validator("file_multi", mode="before")
+    @classmethod
+    def force_file_multi(cls, _):
+        return True
 
     @field_validator("value")
     @classmethod
@@ -356,32 +382,56 @@ class FileForm(BaseForm):
     def value_file_type(self):
         bad_paths = []
         for path in self.value:
-            if not self.directory_only and Path(path).suffix[1:] not in self.file_type:
+            if path.suffix[1:] not in self.file_type:
                 bad_paths.append(path)
         if any(bad_paths):
             raise ValueError(f"Provided paths {bad_paths} have invalid extensions.")
         return self
 
-    @model_validator(mode="before")
+
+class DirectoryForm(BaseForm):
+    """
+    Directory path uijson form.
+
+    Shares documented attributes with the BaseForm.
+    """
+
+    value: Path
+    file_type: list[str] = ["directory"]
+    file_description: list[str] = ["Directory"]
+    directory_only: bool = True
+
+    @field_serializer("value", when_used="json")
+    def to_string(self, value: Path) -> str:
+        return str(value)
+
+    @field_validator("value")
     @classmethod
-    def directory_file_type(cls, data):
-        if data.get("directoryOnly", False) and data["fileType"] != ["directory"]:
-            raise ValueError(
-                "File type must be ['directory'] if directory_only is True."
-            )
-        if data.get("directoryOnly", False) and data["fileDescription"] != [
-            "Directory"
-        ]:
-            raise ValueError(
-                "File description must be ['Directory'] if directory_only is True."
-            )
-        return data
+    def valid_directory(cls, value: Path) -> Path:
+        if not value.exists() or not value.is_dir():
+            raise ValueError(f"Provided path {value} is not a valid directory.")
+        return value
+
+    @field_validator("directory_only", mode="before")
+    @classmethod
+    def force_directory_only(cls, _):
+        return True
+
+    @field_validator("file_type", mode="before")
+    @classmethod
+    def force_file_type(cls, _):
+        return ["directory"]
+
+    @field_validator("file_description")
+    @classmethod
+    def force_file_description(cls, _):
+        return ["Directory"]
 
 
 MeshTypes = Annotated[
     list[type[ObjectBase]],
     BeforeValidator(to_class),
-    BeforeValidator(to_uuid),
+    BeforeValidator(to_type_uid_or_class),
     BeforeValidator(to_list),
     PlainSerializer(types_to_string, when_used="json"),
 ]
@@ -410,7 +460,7 @@ class ObjectForm(BaseForm):
 GroupTypes = Annotated[
     list[type[Group]],
     BeforeValidator(to_class),
-    BeforeValidator(to_uuid),
+    BeforeValidator(to_type_uid_or_class),
     BeforeValidator(to_list),
     PlainSerializer(types_to_string, when_used="json"),
 ]
