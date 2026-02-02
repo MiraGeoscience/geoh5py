@@ -40,8 +40,6 @@ class TipperSurvey(FEMSurvey):
     """
 
     __INPUT_TYPE = ["Rx and base stations"]
-    _base_stations = None
-    _receivers = None
 
     def __init__(
         self,
