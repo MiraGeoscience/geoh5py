@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from geoh5py.objects.maxwell_plate import MaxwellPlate, PlateGeometry, PlatePosition
 from geoh5py.workspace import Workspace
@@ -39,6 +40,45 @@ TEST_PARAMETERS = {
     "length": 45.0,
     "dip": 30.0,
 }
+
+
+def test_plate_position_validation():
+    input_str = "100.0;{200.00,300.00,-400.00}"
+    # Test valid parameters
+    position = PlatePosition.model_validate(input_str)
+    assert isinstance(position, PlatePosition)
+
+    assert position.x == 200.0
+    assert not position._initialized
+
+    # Test invalid parameters
+    invalid_params = TEST_PARAMETERS["position"].copy()
+    invalid_params["x"] = "invalid"  # Invalid x position
+    with pytest.raises(ValidationError):
+        PlatePosition.model_validate(invalid_params)
+
+    str_rep = position.model_dump()
+    assert isinstance(str_rep, str)
+
+    assert str_rep == input_str
+
+
+def test_plate_geometry_validation():
+    # Test valid parameters
+    geometry = PlateGeometry.model_validate(TEST_PARAMETERS)
+    assert isinstance(geometry, PlateGeometry)
+    assert not geometry._initialized
+
+    # Test invalid parameters
+    invalid_params = TEST_PARAMETERS.copy()
+    invalid_params["width"] = -100.0  # Invalid width
+    with pytest.raises(ValueError):
+        PlateGeometry.model_validate(invalid_params)
+
+    invalid_params = TEST_PARAMETERS.copy()
+    invalid_params["position"]["z"] = "invalid"  # Invalid z position
+    with pytest.raises(ValidationError):
+        PlateGeometry.model_validate(invalid_params)
 
 
 def test_create_plate(tmp_path):
