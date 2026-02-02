@@ -37,6 +37,15 @@ from .object_base import ObjectBase
 
 
 class PlatePosition(BaseModel):
+    """
+    Position of the top center of a Maxwell Plate.
+
+    :param x: East coordinate.
+    :param y: North coordinate.
+    :param z: Elevation coordinate.
+    :param increment: Increment value for the position.
+    """
+
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     x: float = 0.0
@@ -50,10 +59,14 @@ class PlatePosition(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def parse_str(cls, value: str | dict):
+    def parse_str(cls, value: str | dict) -> dict:
         """
         Parse a string representation of the position stored
         as `inc; {x, y, z}`.
+
+        :param value: String or dict representation of the position.
+
+        :return: Dictionary of position parameters.
         """
         if isinstance(value, dict):
             return value
@@ -64,6 +77,11 @@ class PlatePosition(BaseModel):
 
     @model_serializer(mode="plain")
     def format_to_str(self) -> str:
+        """
+        Format the position and increment to a string representation.
+
+        :return: String representation of the position.
+        """
         str_rep = "%.1f;{%.2f,%.2f,%.2f}" % tuple(
             getattr(self, key) for key in ["increment", "x", "y", "z"]
         )
@@ -72,6 +90,12 @@ class PlatePosition(BaseModel):
 
     @model_validator(mode="after")
     def validate_and_save(self):
+        """
+        Validate and save the position to the parent visual parameters.
+
+        The initialization is deferred until a parent is assigned to
+        prevent writing during model creation.
+        """
         if not self._initialized:
             # Won't be initialized until a parent is assigned
             if self.parent is not None:
@@ -158,6 +182,12 @@ class PlateGeometry(BaseModel):
 
     @model_validator(mode="after")
     def validate_and_save(self):
+        """
+        Validate and save the geometry to the parent visual parameters.
+
+        The initialization is deferred until a parent is assigned to
+        prevent writing during model creation.
+        """
         if not self._initialized:
             # Won't be initialized until a parent is assigned
             if self.parent is not None:
@@ -174,7 +204,6 @@ class PlateGeometry(BaseModel):
 class MaxwellPlate(ObjectBase):
     """
     Maxwell Plate object made up of visual parameters.
-
     """
 
     _default_name = "Maxwell Plate"
@@ -188,7 +217,7 @@ class MaxwellPlate(ObjectBase):
         super().__init__(**kwargs)
 
     @property
-    def geometry(self):
+    def geometry(self) -> PlateGeometry | None:
         """
         Define the geometry of the Maxwell Plate.
         """
