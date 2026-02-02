@@ -82,16 +82,23 @@ def to_type_uid_or_class(
     :param values: List of strings representing either geoh5py type uids or class names.
     :return: List of UUID or geoh5py objects/groups.
     """
+
+    def equalize_string(x):
+        return x.replace(" ", "").lower()
+
+    object_mapper = {equalize_string(k): v for k, v in GA_STRING_TO_OBJECT.items()}
+    group_mapper = {equalize_string(k): v for k, v in GA_STRING_TO_GROUP.items()}
+
     out: list[UUID | type[ObjectBase] | type[Group]] = []
     for val in values:
         if isinstance(val, str):
             try:
                 out += [UUID(val)]
             except ValueError:
-                val = val.replace(" ", "").lower()
-                obj: type[ObjectBase] | type[Group] | None = GA_STRING_TO_OBJECT.get(
+                val = equalize_string(val)
+                obj: type[ObjectBase] | type[Group] | None = object_mapper.get(
                     val, None
-                ) or GA_STRING_TO_GROUP.get(val, None)
+                ) or group_mapper.get(val, None)
                 if obj is None:
                     raise ValueError(
                         f"Provided string {val!s} is not a recognized "
