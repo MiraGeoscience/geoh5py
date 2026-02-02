@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -65,20 +67,19 @@ def test_plate_position_validation():
 
 def test_plate_geometry_validation():
     # Test valid parameters
-    geometry = PlateGeometry.model_validate(TEST_PARAMETERS)
+    test_params = deepcopy(TEST_PARAMETERS)
+    geometry = PlateGeometry.model_validate(test_params)
     assert isinstance(geometry, PlateGeometry)
     assert not geometry._initialized
 
     # Test invalid parameters
-    invalid_params = TEST_PARAMETERS.copy()
-    invalid_params["width"] = -100.0  # Invalid width
+    test_params["width"] = -100.0  # Invalid width
     with pytest.raises(ValueError):
-        PlateGeometry.model_validate(invalid_params)
+        PlateGeometry.model_validate(test_params)
 
-    invalid_params = TEST_PARAMETERS.copy()
-    invalid_params["position"]["z"] = "invalid"  # Invalid z position
+    test_params["position"]["z"] = "invalid"  # Invalid z position
     with pytest.raises(ValidationError):
-        PlateGeometry.model_validate(invalid_params)
+        PlateGeometry.model_validate(test_params)
 
 
 def test_create_plate(tmp_path):
