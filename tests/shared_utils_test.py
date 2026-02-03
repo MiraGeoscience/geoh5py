@@ -193,7 +193,6 @@ def test_equalize_string():
 
 
 def test_map_to_class():
-    mapper = map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects])
     mapper = map_to_class(ClassIdentifierEnum.DEFAULT_TYPE_UID, [objects, groups])
     assert mapper[objects.Points.default_type_uid()] == objects.Points
     assert mapper[groups.ContainerGroup.default_type_uid()] == groups.ContainerGroup

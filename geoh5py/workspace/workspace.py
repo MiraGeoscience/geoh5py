@@ -22,7 +22,6 @@
 
 from __future__ import annotations
 
-import inspect
 import subprocess
 import tempfile
 import uuid
@@ -71,10 +70,12 @@ from geoh5py.shared.entity import Entity
 from geoh5py.shared.entity_type import EntityType
 from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import (
+    ClassIdentifierEnum,
     as_str_if_utf8_bytes,
     clear_array_attributes,
     dict_mapper,
     get_attributes,
+    map_to_class,
     str2uuid,
 )
 
@@ -91,22 +92,9 @@ NETWORK_DRIVES = [
     "iCloud",
 ]
 
-
-def get_type_uid_classes() -> list[type[ObjectBase] | type[Group]]:
-    """Returns list of all classes that contain a default_type_uid attribute."""
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
-
-    return members
-
-
-TYPE_UID_TO_CLASS = {
-    k.default_type_uid(): k
-    for k in get_type_uid_classes()
-    if k.default_type_uid() is not None
-}
+TYPE_UID_TO_CLASS = map_to_class(
+    ClassIdentifierEnum.DEFAULT_TYPE_UID, [groups, objects]
+)
 
 
 # pylint: disable=too-many-instance-attributes
