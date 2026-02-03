@@ -38,7 +38,7 @@ def setup_survey(workspace):
 
     base_stations = AirborneAppConBaseStations.create(workspace, vertices=vertices)
     base_stations.tx_id_property = np.arange(1, base_stations.n_vertices + 1)
-    receivers.tx_id_property = np.random.randint(1, 10, receivers.n_vertices)
+    receivers.tx_id_property = np.arange(1, 11)
 
     receivers.base_stations = base_stations
 
@@ -145,6 +145,7 @@ def test_copy_by_extent(tmp_path):
                 np.vstack([[0, -np.inf], [2000, np.inf]]), new_workspace
             )
 
+            # Only a sub set of base stations left
             assert base_stations_rec.receivers.n_vertices == np.sum(
                 receivers.tx_id_property.values > 5
             )
