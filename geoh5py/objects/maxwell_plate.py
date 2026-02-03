@@ -102,9 +102,9 @@ class PlatePosition(BaseModel):
                 self._initialized = True
             return self
 
-        if self.parent is not None:
+        if isinstance(self.parent, VisualParameters):
             # Model_dump configured to return a string representation
-            self.parent.set_tags({"Position": self.model_dump()})  # pylint: disable=no-member
+            self.parent.set_tags(position=str(self.model_dump()))  # pylint: disable=no-member
 
         return self
 
@@ -196,7 +196,7 @@ class PlateGeometry(BaseModel):
             return self
 
         if self.parent is not None:
-            self.parent.set_tags(self.model_dump(by_alias=True))  # pylint: disable=no-member
+            self.parent.set_tags(**self.model_dump(by_alias=True))  # pylint: disable=no-member
 
         return self
 
@@ -245,7 +245,7 @@ class MaxwellPlate(ObjectBase):
             viz_params = self.add_default_visual_parameters()
 
         value.parent = viz_params
-        viz_params.set_tags(value.model_dump(by_alias=True))
+        viz_params.set_tags(**value.model_dump(by_alias=True))
 
         self._geometry = value
 
