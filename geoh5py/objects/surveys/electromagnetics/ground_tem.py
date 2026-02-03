@@ -72,10 +72,10 @@ class MovingLoopGroundTEMReceivers(MovingLoopGroundTEMSurvey):  # pylint: disabl
     """
 
     _TYPE_UID = uuid.UUID("{41018a45-01a0-4c61-a7cb-9f32d8159df4}")
+    _default_name = "Survey Ground TEM Rx"
     __TYPE = "Receivers"
 
     _transmitters: MovingLoopGroundTEMTransmitters | None = None
-    _default_name = "Airborne TEM Rx"
 
     @property
     def complement(self):
@@ -100,8 +100,8 @@ class MovingLoopGroundTEMTransmitters(MovingLoopGroundTEMSurvey):  # pylint: dis
     """
 
     _TYPE_UID = uuid.UUID("{98a96d44-6144-4adb-afbe-0d5e757c9dfc}")
+    _default_name = "Survey Ground TEM Tx"
     __TYPE = "Transmitters"
-    _default_name = "Ground TEM Tx"
 
     @property
     def complement(self):
@@ -160,10 +160,10 @@ class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
     """
 
     _TYPE_UID = uuid.UUID("{deebe11a-b57b-4a03-99d6-8f27b25eb2a8}")
+    _default_name = "Ground TEM Rx (large-loop)"
     __TYPE = "Receivers"
 
     _transmitters: LargeLoopGroundTEMTransmitters | None = None
-    _default_name = "Ground TEM Rx"
 
     @property
     def complement(self):
@@ -188,10 +188,10 @@ class LargeLoopGroundTEMTransmitters(LargeLoopGroundTEMSurvey):
     """
 
     _TYPE_UID = uuid.UUID("{17dbbfbb-3ee4-461c-9f1d-1755144aac90}")
+    _default_name = "Ground TEM Tx (large-loop)"
     __TYPE = "Transmitters"
 
     _receivers: LargeLoopGroundTEMReceivers | None = None
-    _default_name = "Ground TEM Tx"
 
     @property
     def complement(self):

@@ -651,6 +651,7 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
     __INPUT_TYPE = ["Rx"]
     _TYPE_UID: uuid.UUID | None = None
+    _default_name = None
 
     @property
     def base_receiver_type(self):
@@ -684,6 +685,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
     __INPUT_TYPE = ["Tx and Rx"]
     _TYPE_UID: uuid.UUID | None = None
+    _default_name = None
 
     @property
     def base_receiver_type(self):
@@ -759,6 +761,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
         "yaw": "Yaw",
     }
     _TYPE_UID: uuid.UUID | None = None
+    _default_name: str | None = None
 
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:

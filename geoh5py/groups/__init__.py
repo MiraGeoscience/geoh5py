@@ -56,34 +56,3 @@ from .root import RootGroup
 from .simpeg import SimPEGGroup
 from .survey import AirborneGeophysics
 from .uijson import UIJsonGroup
-
-GA_STRING_TO_GROUP: dict[str, type[Group]] = {
-    "Container": ContainerGroup,
-    "Drillholes": DrillholeGroup,
-    "Drillholes & Wells Data Set": IntegratorDrillholeGroup,
-    "GIFtools Project": GiftoolsGroup,
-    "Airborne Theme": AirborneTheme,
-    "Blasting Data Set": BlastingDataSet,
-    "Blasting Theme": BlastingTheme,
-    "Earth Models Theme": EarthModelsTheme,
-    "Geochemistry & Mineralogy Data Set": GeochemistryMineralogyDataSet,
-    "Geochemistry & Mineralogy Theme": GeochemistryMineralogyTheme,
-    "Geophysics Theme": GeophysicsTheme,
-    "Ground Theme": GroundTheme,
-    "Incident Data Set": IncidentDataSet,
-    "Incidents Theme": IncidentsTheme,
-    "Geoscience INTEGRATOR": IntegratorGroup,
-    "Neighbourhoods": IntegratorNeighbourhoods,
-    "Geoscience INTEGRATOR Map File Group": IntegratorMaps,
-    "Geoscience INTEGRATOR Map File": IntegratorMapFile,
-    "Geoscience INTEGRATOR Project": IntegratorProject,
-    "Mine Production Theme": MineProductionTheme,
-    "Observation Points Theme": ObservationPointsTheme,
-    "Rock Properties Theme": RockPropertiesTheme,
-    "Samples Theme": SamplesTheme,
-    "Interpretation": InterpretationSection,
-    "NoType": NoTypeGroup,
-    "SimPEG": SimPEGGroup,
-    "airborne": AirborneGeophysics,
-    "Python plugin": UIJsonGroup,
-}

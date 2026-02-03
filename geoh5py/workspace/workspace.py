@@ -92,7 +92,8 @@ NETWORK_DRIVES = [
 ]
 
 
-def get_type_uid_classes():
+def get_type_uid_classes() -> list[type[ObjectBase] | type[Group]]:
+    """Returns list of all classes that contain a default_type_uid attribute."""
     members = []
     for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
         if inspect.isclass(member) and hasattr(member, "default_type_uid"):

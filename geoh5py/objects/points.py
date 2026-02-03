@@ -36,8 +36,8 @@ class Points(ObjectBase):
     :param vertices: Array of vertices coordinates, shape(n_vertices, 3).
     """
 
-    _default_name = "Points"
     _TYPE_UID: uuid.UUID | None = uuid.UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
+    _default_name: str | None = "Points"
     __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
     _minimum_vertices = 1
 

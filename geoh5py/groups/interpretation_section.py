@@ -86,7 +86,7 @@ class InterpretationSection(Group):
     )
 
     _TYPE_UID = UUID(fields=(0x27EE59E1, 0xB1CE, 0x41EC, 0x8A, 0x86, 0x8BD3D229E198))
-    _default_name = "Interpretation Section"
+    _default_name = "Interpretation"
 
     def __init__(self, can_add_group: bool = False, **kwargs):
         self._can_add_group: bool = self._validate_can_add_group(can_add_group)

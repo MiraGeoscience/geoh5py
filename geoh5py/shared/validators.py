@@ -30,8 +30,9 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.groups import GA_STRING_TO_GROUP, Group, PropertyGroup
-from geoh5py.objects import GA_STRING_TO_OBJECT, ObjectBase
+from geoh5py import groups, objects
+from geoh5py.groups import Group, PropertyGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
@@ -45,7 +46,18 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
     iterable,
 )
+from geoh5py.shared.utils import ClassIdentifierEnum, equalize_string, map_to_class
 from geoh5py.workspace import TYPE_UID_TO_CLASS, Workspace
+
+
+GA_STRING_TO_OBJECT: dict[str, type[ObjectBase]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
+}
+GA_STRING_TO_GROUP: dict[str, type[Group]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [groups]).items()
+}
 
 
 def to_path(value: list[str]) -> list[Path]:
@@ -83,12 +95,6 @@ def to_type_uid_or_class(
     :return: List of UUID or geoh5py objects/groups.
     """
 
-    def equalize_string(x):
-        return x.replace(" ", "").lower()
-
-    object_mapper = {equalize_string(k): v for k, v in GA_STRING_TO_OBJECT.items()}
-    group_mapper = {equalize_string(k): v for k, v in GA_STRING_TO_GROUP.items()}
-
     out: list[UUID | type[ObjectBase] | type[Group]] = []
     for val in values:
         if isinstance(val, str):
@@ -96,9 +102,9 @@ def to_type_uid_or_class(
                 out += [UUID(val)]
             except ValueError:
                 val = equalize_string(val)
-                obj: type[ObjectBase] | type[Group] | None = object_mapper.get(
+                obj: type[ObjectBase] | type[Group] | None = GA_STRING_TO_OBJECT.get(
                     val, None
-                ) or group_mapper.get(val, None)
+                ) or GA_STRING_TO_GROUP.get(val, None)
                 if obj is None:
                     raise ValueError(
                         f"Provided string {val!s} is not a recognized "
