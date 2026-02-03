@@ -160,7 +160,7 @@ class VisualParameters(TextData):
         :return: The xml element.
         """
         element = self.xml.find(tag)
-        return element  # type: ignore
+        return element
 
     def set_tags(self, **values: str):
         """
