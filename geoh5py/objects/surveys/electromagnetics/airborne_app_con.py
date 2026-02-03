@@ -128,25 +128,25 @@ class AirborneAppConSurvey(FEMSurvey):
         return self.__INPUT_TYPE
 
     @property
-    def default_receiver_type(self):
+    def default_receiver_type(self) -> type:
         """
         :return: Transmitter class
         """
         return AirborneAppConReceivers
 
     @property
-    def default_transmitter_type(self):
+    def default_transmitter_type(self) -> type:
         """
         :return: Transmitter class
         """
         return type(None)
 
     @property
-    def base_receiver_type(self):
+    def base_receiver_type(self) -> type:
         return Curve
 
     @property
-    def base_transmitter_type(self):
+    def base_transmitter_type(self) -> type:
         return Points
 
     @property
