@@ -31,7 +31,7 @@ from geoh5py.objects.points import Points
 from .base import FEMSurvey
 
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors, duplicate-code
 
 
 class AirborneAppConSurvey(FEMSurvey):
