@@ -345,14 +345,14 @@ class ObjectBase(EntityContainer):
             f"got {type(property_group)} instead."
         )
 
-    def add_default_visual_parameters(self):
+    def add_default_visual_parameters(self) -> VisualParameters:
         """
         Create a default visual parameters to the object.
         """
         if self.visual_parameters is not None:
             raise UserWarning("Visual parameters already exist.")
 
-        self._visual_parameters = self.workspace.create_entity(
+        visual_parameters = self.workspace.create_entity(
             Data,  # type: ignore
             save_on_creation=True,
             entity={
@@ -363,7 +363,12 @@ class ObjectBase(EntityContainer):
             entity_type={"name": "XmlData", "primitive_type": "TEXT"},
         )
 
-        return self._visual_parameters
+        if visual_parameters is None:
+            raise ValueError("Failed to create visual parameters.")
+
+        self._visual_parameters = visual_parameters
+
+        return visual_parameters
 
     @property
     def converter(self) -> Any:
