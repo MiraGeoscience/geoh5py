@@ -41,6 +41,7 @@ class Label(ObjectBase):
     _TYPE_UID = uuid.UUID(
         fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
     )
+    _default_name = "Label"
 
     def __init__(self, **kwargs):
         # TODO

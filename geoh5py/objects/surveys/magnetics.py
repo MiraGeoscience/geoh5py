@@ -36,3 +36,4 @@ class AirborneMagnetics(Curve):
     _TYPE_UID = uuid.UUID(
         fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
     )
+    _default_name = "Survey Airborne Magnetics"

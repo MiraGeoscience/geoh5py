@@ -64,7 +64,7 @@ class GeochemistryMineralogyDataSet(Group):
     """The type for a INTEGRATOR Geochemistry & Mineralogy DataSet."""
 
     _TYPE_UID = uuid.UUID("{72f29283-a4f6-4fc0-a1a8-1417ce5fcbec}")
-    _default_name = "Geochemistry & Mineralogy DataSet"
+    _default_name = "Geochemistry & Mineralogy Data Set"
 
 
 class GeophysicsTheme(Group):

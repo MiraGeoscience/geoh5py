@@ -75,13 +75,3 @@ from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.magnetics import AirborneMagnetics
 from .text import TextObject
 from .vp_model import VPModel
-
-GA_STRING_TO_OBJECT: dict[str, type[ObjectBase]] = {
-    "blockmodel": BlockModel,
-    "curve": Curve,
-    "drapedmodel": DrapeModel,
-    "2dgrid": Grid2D,
-    "octreegrid": Octree,
-    "points": Points,
-    "surface": Surface,
-}

@@ -76,10 +76,11 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
     :param vertices: Array of vertices defining the four corners of the image.
     """
 
-    __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
     _TYPE_UID = uuid.UUID(
         fields=(0x77AC043C, 0xFE8D, 0x4D14, 0x81, 0x67, 0x75E300FB835A)
     )
+    _default_name = "GeoImage"
+    __VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
     _converter: type[GeoImageConversion] = GeoImageConversion
 
     def __init__(

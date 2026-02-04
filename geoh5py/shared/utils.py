@@ -19,10 +19,13 @@
 
 from __future__ import annotations
 
+import inspect
 import re
+import types as types_module
 from abc import ABC
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
+from enum import Enum
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
@@ -1402,3 +1405,37 @@ def are_affine(points: np.ndarray, tol: float = 1e-6) -> bool:
     max_error = np.max(np.linalg.norm(residuals, axis=1))
 
     return max_error <= tol
+
+
+def equalize_string(x: str) -> str:
+    """Replaces spaces and lowercases for flexible string comparison."""
+    return x.replace(" ", "").lower()
+
+
+class ClassIdentifierEnum(Enum):
+    DEFAULT_TYPE_UID = "_TYPE_UID"
+    DEFAULT_NAME = "_default_name"
+
+
+def map_to_class(
+    class_identifier: ClassIdentifierEnum, search_modules: list[types_module.ModuleType]
+) -> dict:
+    """
+    Create map from an identifier class attribute to class in provided modules.
+
+    :param class_identifier: Class attribute that identifies a class.
+    :param search_modules: Modules to search for classes.
+    """
+
+    class_map = {}
+    members = []
+    for module in search_modules:
+        members += inspect.getmembers(module)
+
+    for _, member in members:
+        # identifier = vars(member)[class_identifier.value]
+        identifier = getattr(member, class_identifier.value, None)
+        if inspect.isclass(member) and identifier is not None:
+            class_map[identifier] = member
+
+    return class_map

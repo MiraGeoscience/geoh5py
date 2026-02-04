@@ -420,7 +420,7 @@ def test_object_promotion(tmp_path: Path):
 
 def test_group_promotion(tmp_path):
     workspace = get_workspace(tmp_path)
-    group = workspace.get_entity("Container Group")[0]
+    group = workspace.get_entity("Container")[0]
     dh_group = workspace.get_entity("drh_group")[0]
     ui_json = deepcopy(default_ui_json)
     ui_json["object"] = templates.group_parameter()

@@ -48,6 +48,7 @@ class BlockModel(GridObject):
     _TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
+    _default_name = "Block Model"
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 

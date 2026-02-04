@@ -46,6 +46,7 @@ class Octree(GridObject):
     _TYPE_UID = uuid.UUID(
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
+    _default_name = "Octree Grid"
     __OCTREE_DTYPE = np.dtype(
         [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
     )

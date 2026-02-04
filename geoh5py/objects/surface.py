@@ -35,6 +35,7 @@ class Surface(CellObject):
     _TYPE_UID = uuid.UUID(
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
+    _default_name = "Surface"
     _minimum_vertices = 3
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:

@@ -38,3 +38,4 @@ class NoTypeObject(ObjectBase):
     _TYPE_UID = uuid.UUID(
         fields=(0x849D2F3E, 0xA46E, 0x11E3, 0xB4, 0x01, 0x2776BDF4F982)
     )
+    _default_name = None

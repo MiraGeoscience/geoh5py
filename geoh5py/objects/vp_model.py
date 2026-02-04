@@ -51,11 +51,12 @@ class VPModel(GridObject, DrapeModel):
     :param weight_property_id: UUID or name of the weight property.
     """
 
+    _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
+    _default_name = "VP Model"
     _VALUE_MAP = {
         0: "Unknown",
         100000: "VP_basement",
     }
-    _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
     _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("J", "<i4"), ("Bottom elevation", "<f8")])
     _PRISM_DTYPE = np.dtype(
         [
