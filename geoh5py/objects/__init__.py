@@ -39,6 +39,10 @@ from .points import Points
 from .slicer import Slicer
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.electromagnetics.airborne_app_con import (
+    AirborneAppConReceivers,
+    AirborneAppConBaseStations,
+)
 from .surveys.electromagnetics.airborne_fem import (
     AirborneFEMReceivers,
     AirborneFEMTransmitters,
