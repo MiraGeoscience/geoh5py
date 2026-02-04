@@ -1419,7 +1419,7 @@ class ClassIdentifierEnum(Enum):
 
 def map_to_class(
     class_identifier: ClassIdentifierEnum, search_modules: list[types_module.ModuleType]
-):
+) -> dict:
     """
     Create map from an identifier class attribute to class in provided modules.
 
