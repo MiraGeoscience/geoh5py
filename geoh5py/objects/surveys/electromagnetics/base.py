@@ -685,7 +685,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
     __INPUT_TYPE = ["Tx and Rx"]
     _TYPE_UID: uuid.UUID | None = None
-    _default_name = None
+    _default_name: str | None = None
 
     @property
     def base_receiver_type(self):
