@@ -50,7 +50,7 @@ from geoh5py.shared.utils import ClassIdentifierEnum, equalize_string, map_to_cl
 from geoh5py.workspace import TYPE_UID_TO_CLASS, Workspace
 
 
-GA_STRING_TO_OBJECT: dict[str, type[ObjectBase]] = {
+GA_NAME_TO_OBJECT: dict[str, type[ObjectBase]] = {
     equalize_string(k): v
     for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
 }
