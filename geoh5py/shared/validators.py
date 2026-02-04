@@ -102,9 +102,9 @@ def to_type_uid_or_class(
                 out += [UUID(val)]
             except ValueError:
                 val = equalize_string(val)
-                obj: type[ObjectBase] | type[Group] | None = GA_STRING_TO_OBJECT.get(
+                obj: type[ObjectBase] | type[Group] | None = GA_NAME_TO_OBJECT.get(
                     val, None
-                ) or GA_STRING_TO_GROUP.get(val, None)
+                ) or GA_NAME_TO_GROUP.get(val, None)
                 if obj is None:
                     raise ValueError(
                         f"Provided string {val!s} is not a recognized "
