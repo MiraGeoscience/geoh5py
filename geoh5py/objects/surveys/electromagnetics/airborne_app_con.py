@@ -31,10 +31,10 @@ from geoh5py.objects.points import Points
 from .base import FEMSurvey
 
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors, duplicate-code
 
 
-class TipperSurvey(FEMSurvey):
+class AirborneAppConSurvey(FEMSurvey):
     """
     Base tipper survey class.
     """
@@ -43,7 +43,7 @@ class TipperSurvey(FEMSurvey):
 
     def __init__(
         self,
-        base_stations: TipperBaseStations | None = None,
+        base_stations: AirborneAppConBaseStations | None = None,
         **kwargs,
     ):
         self._base_stations = base_stations
@@ -53,9 +53,9 @@ class TipperSurvey(FEMSurvey):
         )
 
     @property
-    def base_stations(self) -> TipperBaseStations | None:
+    def base_stations(self) -> AirborneAppConBaseStations | None:
         """The base station entity"""
-        if isinstance(self, TipperBaseStations):
+        if isinstance(self, AirborneAppConBaseStations):
             return self
 
         if getattr(self, "_base_stations", None) is None:
@@ -66,21 +66,21 @@ class TipperSurvey(FEMSurvey):
                 base_station = self.metadata["EM Dataset"]["Base stations"]
                 base_station_entity = self.workspace.get_entity(base_station)[0]
 
-                if isinstance(base_station_entity, TipperBaseStations):
+                if isinstance(base_station_entity, AirborneAppConBaseStations):
                     self._base_stations = base_station_entity
 
         return self._base_stations
 
     @base_stations.setter
-    def base_stations(self, base: TipperBaseStations):
-        if not isinstance(base, (TipperBaseStations, type(None))):
+    def base_stations(self, base: AirborneAppConBaseStations):
+        if not isinstance(base, (AirborneAppConBaseStations, type(None))):
             raise TypeError(
-                f"Input `base_stations` must be of type '{TipperBaseStations}' or None"
+                f"Input `base_stations` must be of type '{AirborneAppConBaseStations}' or None"
             )
 
-        if isinstance(self, TipperBaseStations):
+        if isinstance(self, AirborneAppConBaseStations):
             raise AttributeError(
-                f"The 'base_station' attribute cannot be set on class {TipperBaseStations}."
+                f"The 'base_station' attribute cannot be set on class {AirborneAppConBaseStations}."
             )
 
         if base.tx_id_property is not None:
@@ -103,7 +103,7 @@ class TipperSurvey(FEMSurvey):
         clear_cache: bool = False,
         inverse: bool = False,
         **kwargs,
-    ) -> TipperReceivers | TipperBaseStations | None:
+    ) -> AirborneAppConReceivers | AirborneAppConBaseStations | None:
         """
         Sub-class extension of :func:`~geoh5py.shared.entity.Entity.copy_from_extent`.
         """
@@ -128,25 +128,25 @@ class TipperSurvey(FEMSurvey):
         return self.__INPUT_TYPE
 
     @property
-    def default_receiver_type(self):
+    def default_receiver_type(self) -> type:
         """
         :return: Transmitter class
         """
-        return TipperReceivers
+        return AirborneAppConReceivers
 
     @property
-    def default_transmitter_type(self):
+    def default_transmitter_type(self) -> type:
         """
         :return: Transmitter class
         """
         return type(None)
 
     @property
-    def base_receiver_type(self):
+    def base_receiver_type(self) -> type:
         return Curve
 
     @property
-    def base_transmitter_type(self):
+    def base_transmitter_type(self) -> type:
         return Points
 
     @property
@@ -161,7 +161,7 @@ class TipperSurvey(FEMSurvey):
                 "Input type": "Rx and base stations",
                 "Property groups": [],
                 "Receivers": None,
-                "Survey type": "ZTEM",
+                "Survey type": "Airborne Apparent Conductivity",
                 "Unit": "Hertz (Hz)",
             }
         }
@@ -196,14 +196,14 @@ class TipperSurvey(FEMSurvey):
             )
 
 
-class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestors
+class AirborneAppConReceivers(AirborneAppConSurvey, Curve):  # pylint: disable=too-many-ancestors
     """
-    A z-tipper EM survey object.
+    An airborne apparent conductivity survey object.
     """
 
-    _TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
+    _TYPE_UID = uuid.UUID("{9f4772d3-92e7-4601-a3c7-23042c2a76ca}")
     __TYPE = "Receivers"
-    _default_name = "Tipper rx"
+    _default_name = "Airborne Apparent Conductivity rx"
 
     @property
     def complement(self):
@@ -215,14 +215,14 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
         return self.__TYPE
 
 
-class TipperBaseStations(TipperSurvey, Points):
+class AirborneAppConBaseStations(AirborneAppConSurvey, Points):
     """
-    A z-tipper EM survey object.
+    An airborne apparent conductivity survey object.
     """
 
-    _TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
+    _TYPE_UID = uuid.UUID("{b389d178-97eb-4ba1-b378-b8b1e8ab35ff}")
     __TYPE = "Base stations"
-    _default_name = "Tipper base"
+    _default_name = "Airborne Apparent Conductivity base"
     _minimum_vertices = 1
 
     @property
