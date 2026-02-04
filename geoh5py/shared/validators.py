@@ -54,7 +54,7 @@ GA_NAME_TO_OBJECT: dict[str, type[ObjectBase]] = {
     equalize_string(k): v
     for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
 }
-GA_STRING_TO_GROUP: dict[str, type[Group]] = {
+GA_NAME_TO_GROUP: dict[str, type[Group]] = {
     equalize_string(k): v
     for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [groups]).items()
 }
