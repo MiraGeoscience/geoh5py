@@ -101,9 +101,9 @@ repos:
     -   id: debug-statements
     -   id: detect-private-key
     -   id: end-of-file-fixer
-        exclude: (^\.idea/.*\.xml|\.mdj)$
+        exclude: (^\.idea/.*\.?ml|\.mdj)$
     -   id: mixed-line-ending
-        exclude: ^\.idea/.*\.xml$
+        exclude: ^\.idea/.*\.?ml$
     -   id: name-tests-test
     -   id: pretty-format-json
         args:
