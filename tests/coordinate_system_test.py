@@ -51,7 +51,9 @@ def test_coordinate_system(tmp_path):
     workspace = Workspace.create(tmp_path / r"geo_image_test.geoh5")
 
     # create and save a tiff
-    image = Image.fromarray(np.random.randint(0, 255, (128, 128)), "RGB")
+    image = Image.fromarray(
+        np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
+    )
 
     for id_ in tag.items():
         image.getexif()[id_[0]] = id_[1]
