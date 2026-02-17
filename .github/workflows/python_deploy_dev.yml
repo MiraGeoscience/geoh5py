@@ -19,7 +19,7 @@ jobs:
       contents: write
     with:
       package-name: 'geoh5py'
-      python-version: '3.10'
+      python-version: '3.12'
       source-repo-names: '["public-noremote-conda-dev"]'
       conda-channels: '["conda-forge"]'
       publish-repo-names: '["public-noremote-conda-dev"]'
@@ -35,7 +35,7 @@ jobs:
       package-manager: 'poetry'
       package-name: 'geoh5py'
       version-tag: ${{ github.ref_name }}
-      python-version: '3.10'
+      python-version: '3.12'
       virtual-repo-names: '["public-pypi-dev", "test-pypi"]'
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}

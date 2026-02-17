@@ -375,9 +375,7 @@ def test_georeference_image(tmp_path):
         assert isinstance(geoimage.image_georeferenced, Image.Image)
 
         # test grid2d errors
-        with pytest.raises(
-            ValueError, match="conversion from RGB to bidon not supported"
-        ):
+        with pytest.raises(ValueError, match="image has wrong mode"):
             geoimage.to_grid2d(new_name="RGB", mode="bidon")
 
         # test save_as

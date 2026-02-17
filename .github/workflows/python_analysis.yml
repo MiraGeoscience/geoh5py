@@ -33,7 +33,7 @@ jobs:
     with:
       package-manager: 'poetry'
       app-name: 'geoh5py'
-      python-version: '3.10'
+      python-version: '3.12'
   call-workflow-pytest:
     name: Pytest
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@v2
@@ -42,10 +42,10 @@ jobs:
       pull-requests: read
     with:
       package-manager: 'poetry'
-      python-versions: '["3.10", "3.11", "3.12"]'
+      python-versions: '["3.12", "3.13", "3.14"]'
       os: '["ubuntu-latest", "windows-latest"]'
       cache-number: 1
-      codecov-reference-python-version: '3.10'
+      codecov-reference-python-version: '3.12'
       codecov-reference-os: '["windows-latest"]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

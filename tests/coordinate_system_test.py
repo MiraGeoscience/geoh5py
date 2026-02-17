@@ -52,7 +52,7 @@ def test_coordinate_system(tmp_path):
 
     # create and save a tiff
     image = Image.fromarray(
-        np.random.randint(0, 255, (128, 128, 3)).astype("uint16"), "RGB"
+        np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
     )
 
     for id_ in tag.items():
