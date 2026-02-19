@@ -24,7 +24,7 @@ import weakref
 from weakref import ReferenceType
 
 
-def remove_none_referents[K](some_dict: dict[K, ReferenceType]):
+def remove_none_referents[K](some_dict: dict[K, ReferenceType]) -> None:
     """
     Removes any key from the given ``some_dict`` where the value is a reference to a deleted value
     (that is where referent of the ``weakref`` value is None).
@@ -56,7 +56,7 @@ def get_clean_ref[K, T](some_dict: dict[K, ReferenceType[T]], key: K) -> T | Non
     return ref()
 
 
-def insert_once[K](some_dict: dict[K, ReferenceType], key: K, value):
+def insert_once[K, T](some_dict: dict[K, ReferenceType[T]], key: K, value: T) -> None:
     """
     Check if the reference to an Entity with uuid is already in use.
 
