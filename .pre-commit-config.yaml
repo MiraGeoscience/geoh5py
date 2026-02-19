@@ -35,7 +35,7 @@ repos:
     hooks:
     -   id: mypy
         additional_dependencies: [
-#            numpy==1.26.*,  # TODO: fix mypy errors related to numpy
+#            numpy==2.4.*,  # TODO: fix mypy errors related to numpy
             pydantic==2.12.*,
             tomli, # to read config from pyproject.toml
             types-toml,
