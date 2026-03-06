@@ -574,12 +574,12 @@ class MultiDataGroupForm(BaseForm):
     group_value: OptionalUUID
 
     data_type: DataType | list[DataType]
-    value: list[str]
+    value: str | list[str]
     multi_select: bool = True
 
     @field_validator("value", mode="before")
     @classmethod
-    def to_list(cls, value: str | list[str]) -> list[str]:
+    def to_list(cls, value: str | list[str]) -> str | list[str]:
         """
         Validate that value is a list, converting it if it's a string.
 
@@ -587,6 +587,8 @@ class MultiDataGroupForm(BaseForm):
 
         :return: A list of strings representing the value.
         """
+        if not value or value == [""]:
+            return ""
         if not isinstance(value, list):
             value = [value]
         return value
