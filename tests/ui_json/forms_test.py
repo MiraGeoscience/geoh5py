@@ -45,6 +45,7 @@ from geoh5py.ui_json.forms import (
     GroupForm,
     IntegerForm,
     MultiChoiceForm,
+    MultiDataGroupForm,
     MultiFileForm,
     MultiSelectDataForm,
     ObjectForm,
@@ -477,6 +478,36 @@ def test_data_group_form():
     assert form.parent == "Da-da"
     assert form.association == [Association.VERTEX, Association.CELL]
     assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+
+
+def test_multi_data_group_form():
+    group_uid = str(uuid.uuid4())
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+    form = MultiDataGroupForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        group_type=PropertyGroup,
+        data_type=["Float", "Integer"],
+        group_value=group_uid,
+        multi_select=True,
+        tooltip=["some ", "tooltip ", "text"],
+    )
+    assert form.label == "name"
+    assert form.value == [data_uid_1, data_uid_2]
+    assert form.group_value == uuid.UUID(group_uid)
+    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.multi_select
+    assert form.tooltip == "some tooltip text"
+
+    form = MultiDataGroupForm(
+        label="name",
+        value=data_uid_1,
+        group_type=PropertyGroup,
+        data_type="Float",
+        group_value=group_uid,
+    )
+    assert form.value == [data_uid_1]
 
 
 def test_data_or_value_form():
