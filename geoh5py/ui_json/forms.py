@@ -166,7 +166,7 @@ class BaseForm(BaseModel):
     def join_tooltip(cls, value: str | list[str]) -> str:
         """
         As tooltip is often written as a list of strings for readability,
-        this validator merge them.
+        this validator merges  them.
 
         :param value: The tooltip string or list of strings to merge.
 
@@ -566,7 +566,7 @@ class MultiDataGroupForm(BaseForm):
         Geoscience ANALYST ui.json dropdown.
     :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
         in the Geoscience ANALYST ui.json dropdown.
-    :param value: The list of data UUIDs to select from the group.
+    :param value: The list of data names or the name of the data.
     :param multi_select: If True, the ui.json dropdown will allow for multi-selection.
     """
 
@@ -760,7 +760,6 @@ def filter_candidates_by_indicator_polling(
 
         :return: An array of candidate subclasses with the most matching indicators.
     """
-    _ = indicator_attributes(BaseForm, FORM_TYPES)
     counts = count_indicators(INDICATORS, data)
     candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
 
