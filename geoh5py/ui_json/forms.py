@@ -699,16 +699,51 @@ def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
     return collection
 
 
-def model_fields_difference(parent: type[BaseForm], child: type[BaseForm]) -> set[str]:
-    """Isolate fields added in the child class."""
-    return set(child.model_fields) - set(parent.model_fields)
+def get_mandatory_attributes(to_inspect: type[BaseForm]) -> set[str]:
+    """
+    Isolate mandatory attributes for a class.
+
+    :param to_inspect: The pydantic class to check.
+
+    :return: The attributes with no default values.
+    """
+    return {
+        key
+        for key, value in to_inspect.model_fields.items()
+        if value.default is None and not value.is_required()
+    }
 
 
 def indicator_attributes(
     parent: type[BaseForm], children: list[type[BaseForm]]
-) -> list[set[str]]:
-    """List all the attributes defined in a subclass."""
-    return [model_fields_difference(parent, c) for c in children]
+) -> list[list[set[str]]]:
+    """
+    List all the mandatory attributes defined in a subclass.
+
+    The function return a list of 2 lists:
+    - the first contains the sets of attributes
+        that are different between the parent and each child class.
+    - the second contains the sets of mandatory attributes
+        that are different between the parent and each child class.
+
+    :param parent: The parent class to compare against.
+    :param children: The list of child classes to compare.
+
+    :return: A list of mandatory attributes defined in a subclass.
+    """
+    parent_mandatory_attributes = get_mandatory_attributes(parent)
+    parent_attributes = set(parent.model_fields)
+
+    mandatory_differences = [
+        get_mandatory_attributes(child) - parent_mandatory_attributes
+        for child in children
+    ]
+
+    full_differences = [
+        set(child.model_fields) - parent_attributes for child in children
+    ]
+
+    return [full_differences, mandatory_differences]
 
 
 def filter_candidates_by_indicator_polling(
@@ -722,6 +757,9 @@ def filter_candidates_by_indicator_polling(
     any ambiguity between non-unique indicators such as 'choice_list'
     and 'multi_select'.
 
+    :param data: The form data to check for matching indicators.
+
+        :return: An array of candidate subclasses with the most matching indicators.
     """
     counts = count_indicators(INDICATORS, data)
     candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
@@ -736,9 +774,28 @@ def filter_candidates_by_indicator_polling(
     return candidates
 
 
-def count_indicators(indicators: list[set[str]], data: dict[str, Any]) -> np.ndarray:
-    """Return the number of matching indicators for each child class."""
-    return np.array([len(i.intersection(data)) for i in indicators])
+def count_indicators(
+    indicators: list[list[set[str]]], data: dict[str, Any]
+) -> np.ndarray:
+    """
+    Count the number of matching indicators for each child class.
+
+    1. count the number of mandatory indicators present in the form data for each subclass.
+        It allows to select the valid classes.
+    2. count the number of indicators not present in the form data for each
+        It allows to rank the incompatibility per classes.
+        (Note: technically, we could just keep the one equal to 0 but risky)
+    3. return the difference between the two counts for each subclass.
+
+    :param indicators: A list of sets of indicator attributes for each subclass.
+    :param data: The form data to check for matching indicators.
+
+    :return: An array of counts of matching indicators for each subclass.
+    """
+    count_interection = np.array([len(i.intersection(data)) for i in indicators[0]])
+    count_difference = np.array([len(i.difference(data)) for i in indicators[1]])
+
+    return count_interection - count_difference
 
 
 def filter_candidates_by_type_checking(

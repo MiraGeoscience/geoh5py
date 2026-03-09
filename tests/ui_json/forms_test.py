@@ -45,14 +45,13 @@ from geoh5py.ui_json.forms import (
     GroupForm,
     IntegerForm,
     MultiChoiceForm,
-    MultiDataGroupForm,
     MultiFileForm,
     MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
     all_subclasses,
-    model_fields_difference,
+    indicator_attributes,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
 
@@ -480,36 +479,6 @@ def test_data_group_form():
     assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
 
 
-def test_multi_data_group_form():
-    group_uid = str(uuid.uuid4())
-    data_uid_1 = str(uuid.uuid4())
-    data_uid_2 = str(uuid.uuid4())
-    form = MultiDataGroupForm(
-        label="name",
-        value=[data_uid_1, data_uid_2],
-        group_type=PropertyGroup,
-        data_type=["Float", "Integer"],
-        group_value=group_uid,
-        multi_select=True,
-        tooltip=["some ", "tooltip ", "text"],
-    )
-    assert form.label == "name"
-    assert form.value == [data_uid_1, data_uid_2]
-    assert form.group_value == uuid.UUID(group_uid)
-    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
-    assert form.multi_select
-    assert form.tooltip == "some tooltip text"
-
-    form = MultiDataGroupForm(
-        label="name",
-        value=data_uid_1,
-        group_type=PropertyGroup,
-        data_type="Float",
-        group_value=group_uid,
-    )
-    assert form.value == [data_uid_1]
-
-
 def test_data_or_value_form():
     data_uid = str(uuid.uuid4())
     form = DataOrValueForm(
@@ -780,6 +749,26 @@ def test_base_form_infer(tmp_path):
     assert form == DataRangeForm
 
 
+def test_indicator_attributes():
+    # IntegerForm adds 'min' and 'max' compared to BaseForm, both with defaults
+    full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [IntegerForm])
+    assert full_diffs[0] == {"min", "max"}
+    assert mandatory_diffs[0] == set()
+
+    # DataForm adds 'parent', 'association', 'data_type' via DataFormMixin
+    full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [DataForm])
+    assert full_diffs[0] == {"parent", "association", "data_type"}
+    assert mandatory_diffs[0] == set()
+
+    # Multiple children: result lists have one entry per child
+    full_diffs, mandatory_diffs = indicator_attributes(
+        BaseForm, [IntegerForm, DataForm]
+    )
+    assert full_diffs[0] == {"min", "max"}
+    assert full_diffs[1] == {"parent", "association", "data_type"}
+    assert len(mandatory_diffs) == 2
+
+
 def test_all_subclasses():
     class TestOne:
         pass
@@ -799,21 +788,3 @@ def test_all_subclasses():
     assert all_subclasses(TestTwo)[0] == TestThree
     assert all_subclasses(TestThree) == []
     assert all_subclasses(TestFour) == []
-
-
-def test_model_fields_difference():
-    class MyParent(BaseModel):
-        a: str
-
-    class MyChild(MyParent):
-        b: int
-        c: float
-
-    class MyOtherChild(MyChild):
-        d: float
-        e: float = 1.0
-
-    diff = model_fields_difference(MyParent, MyChild)
-    assert diff == {"b", "c"}
-    diff = model_fields_difference(MyParent, MyOtherChild)
-    assert diff == {"b", "c", "d", "e"}
