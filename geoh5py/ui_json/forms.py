@@ -708,9 +708,7 @@ def get_mandatory_attributes(to_inspect: type[BaseForm]) -> set[str]:
     :return: The attributes with no default values.
     """
     return {
-        key
-        for key, value in to_inspect.model_fields.items()
-        if value.default is None and not value.is_required()
+        key for key, value in to_inspect.model_fields.items() if value.is_required()
     }
 
 
@@ -734,13 +732,14 @@ def indicator_attributes(
     parent_mandatory_attributes = get_mandatory_attributes(parent)
     parent_attributes = set(parent.model_fields)
 
+    # base on the data, which one are pertinent?
+    full_differences = [
+        set(child.model_fields) - parent_attributes for child in children
+    ]
+
     mandatory_differences = [
         get_mandatory_attributes(child) - parent_mandatory_attributes
         for child in children
-    ]
-
-    full_differences = [
-        set(child.model_fields) - parent_attributes for child in children
     ]
 
     return [full_differences, mandatory_differences]
@@ -761,8 +760,10 @@ def filter_candidates_by_indicator_polling(
 
         :return: An array of candidate subclasses with the most matching indicators.
     """
+    _ = indicator_attributes(BaseForm, FORM_TYPES)
     counts = count_indicators(INDICATORS, data)
     candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
+
     if len(candidates) == len(FORM_TYPES):
         candidates = np.array([StringForm, BoolForm, IntegerForm, FloatForm])
     if len(candidates) > 1:
@@ -792,10 +793,9 @@ def count_indicators(
 
     :return: An array of counts of matching indicators for each subclass.
     """
-    count_interection = np.array([len(i.intersection(data)) for i in indicators[0]])
+    count_intersection = np.array([len(i.intersection(data)) for i in indicators[0]])
     count_difference = np.array([len(i.difference(data)) for i in indicators[1]])
-
-    return count_interection - count_difference
+    return count_intersection - count_difference
 
 
 def filter_candidates_by_type_checking(
