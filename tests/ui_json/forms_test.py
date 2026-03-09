@@ -757,8 +757,7 @@ def test_indicator_attributes():
 
     # DataForm adds 'parent', 'association', 'data_type' via DataFormMixin
     full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [DataForm])
-    assert full_diffs[0] == {"parent", "association", "data_type"}
-    assert mandatory_diffs[0] == set()
+    assert full_diffs[0] == mandatory_diffs[0] == {"parent", "association", "data_type"}
 
     # Multiple children: result lists have one entry per child
     full_diffs, mandatory_diffs = indicator_attributes(
