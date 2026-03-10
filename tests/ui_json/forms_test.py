@@ -43,6 +43,7 @@ from geoh5py.ui_json.forms import (
     FileForm,
     FloatForm,
     GroupForm,
+    GroupMultiDataForm,
     IntegerForm,
     MultiChoiceForm,
     MultiFileForm,
@@ -748,6 +749,18 @@ def test_base_form_infer(tmp_path):
     )
     assert form == DataRangeForm
 
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "multiselect": True,
+            "groupType": PropertyGroup,
+            "groupValue": str(uuid.uuid4()),
+            "dataType": "Float",
+            "value": ["bidon"],
+        }
+    )
+    assert form == GroupMultiDataForm
+
 
 def test_indicator_attributes():
     # IntegerForm adds 'min' and 'max' compared to BaseForm, both with defaults
@@ -787,3 +800,33 @@ def test_all_subclasses():
     assert all_subclasses(TestTwo)[0] == TestThree
     assert all_subclasses(TestThree) == []
     assert all_subclasses(TestFour) == []
+
+
+def test_multi_data_group_form():
+    group_uid = str(uuid.uuid4())
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+    form = GroupMultiDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        group_type=PropertyGroup,
+        data_type=["Float", "Integer"],
+        group_value=group_uid,
+        multi_select=True,
+        tooltip=["some ", "tooltip ", "text"],
+    )
+    assert form.label == "name"
+    assert form.value == [data_uid_1, data_uid_2]
+    assert form.group_value == uuid.UUID(group_uid)
+    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.multi_select
+    assert form.tooltip == ["some ", "tooltip ", "text"]
+
+    with pytest.raises(TypeError, match="'value' must be a list"):
+        _ = GroupMultiDataForm(
+            label="name",
+            value=data_uid_1,
+            group_type=PropertyGroup,
+            data_type="Float",
+            group_value=group_uid,
+        )

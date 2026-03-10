@@ -108,7 +108,7 @@ class BaseForm(BaseModel):
     optional: bool = False
     enabled: bool = True
     main: bool = True
-    tooltip: str = ""
+    tooltip: str | list[str] = ""
     group: str = ""
     group_optional: bool = False
     dependency: str = ""
@@ -160,21 +160,6 @@ class BaseForm(BaseModel):
 
     def validate_data(self, params: dict[str, Any]):
         """Validate the form data."""
-
-    @field_validator("tooltip", mode="before")
-    @classmethod
-    def join_tooltip(cls, value: str | list[str]) -> str:
-        """
-        As tooltip is often written as a list of strings for readability,
-        this validator merges  them.
-
-        :param value: The tooltip string or list of strings to merge.
-
-        :return: The tooltip string.
-        """
-        if isinstance(value, list):
-            return "".join(value)
-        return value
 
 
 class StringForm(BaseForm):
@@ -555,13 +540,13 @@ class DataGroupForm(DataForm):
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
 
 
-class MultiDataGroupForm(BaseForm):
+class GroupMultiDataForm(BaseForm):
     """
     Geoh5py uijson form for data associated with a group.
 
-    Shares documented attributes with the BaseForm and GroupForm.
+    Shares documented attributes with the BaseForm.
 
-    :param group_value: The group UUID containing the data.
+    :param group_value: The group containing the data.
     :param group_type: List of group types that restricts the options in the
         Geoscience ANALYST ui.json dropdown.
     :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
@@ -590,7 +575,7 @@ class MultiDataGroupForm(BaseForm):
         if not value or value == [""]:
             return ""
         if not isinstance(value, list):
-            value = [value]
+            raise TypeError(f"'value' must be a list of strings; got '{type(value)}'")
         return value
 
 
@@ -714,7 +699,7 @@ def get_mandatory_attributes(to_inspect: type[BaseForm]) -> set[str]:
 
 def indicator_attributes(
     parent: type[BaseForm], children: list[type[BaseForm]]
-) -> list[list[set[str]]]:
+) -> tuple[list[set[str]], list[set[str]]]:
     """
     List all the mandatory attributes defined in a subclass.
 
@@ -732,7 +717,6 @@ def indicator_attributes(
     parent_mandatory_attributes = get_mandatory_attributes(parent)
     parent_attributes = set(parent.model_fields)
 
-    # base on the data, which one are pertinent?
     full_differences = [
         set(child.model_fields) - parent_attributes for child in children
     ]
@@ -742,7 +726,7 @@ def indicator_attributes(
         for child in children
     ]
 
-    return [full_differences, mandatory_differences]
+    return full_differences, mandatory_differences
 
 
 def filter_candidates_by_indicator_polling(
@@ -758,7 +742,7 @@ def filter_candidates_by_indicator_polling(
 
     :param data: The form data to check for matching indicators.
 
-        :return: An array of candidate subclasses with the most matching indicators.
+    :return: An array of candidate subclasses with the most matching indicators.
     """
     counts = count_indicators(INDICATORS, data)
     candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
@@ -775,7 +759,7 @@ def filter_candidates_by_indicator_polling(
 
 
 def count_indicators(
-    indicators: list[list[set[str]]], data: dict[str, Any]
+    indicators: tuple[list[set[str]], list[set[str]]], data: dict[str, Any]
 ) -> np.ndarray:
     """
     Count the number of matching indicators for each child class.
