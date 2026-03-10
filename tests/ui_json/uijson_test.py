@@ -25,6 +25,7 @@ import logging
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from geoh5py import Workspace
 from geoh5py.objects import Curve, Points
@@ -572,3 +573,19 @@ def test_str_and_repr(tmp_path):
     repr_uijson = repr(uijson)
     assert "UIJson('test.ui.json')" in repr_uijson
     assert '"version": "0.1.0"' in str_uijson
+
+
+def test_to_params_nonexistent_geoh5(tmp_path):
+    h5file = tmp_path / "test"
+    h5file.touch()
+
+    with pytest.raises(ValidationError, match="must have a '.geoh5' file extension."):
+        _ = BaseUIJson(
+            version="0.1.0",
+            title="my application",
+            geoh5=h5file,
+            run_command="python -m my_module",
+            monitoring_directory=None,
+            conda_environment="test",
+            workspace_geoh5=None,
+        )
