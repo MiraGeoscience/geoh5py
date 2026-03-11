@@ -542,16 +542,21 @@ class DataGroupForm(DataForm):
 
 class GroupMultiDataForm(BaseForm):
     """
-    Geoh5py uijson form for data associated with a group.
+    Geoh5py uijson form for selecting (multi) data within a group.
 
     Shares documented attributes with the BaseForm.
 
-    :param group_value: The group containing the data.
+    Note: For now, it seems to work only with DrillholesGroup,
+    but it could be extended to other groups types in the future
+    (just Geoscience ANALYST ui.json restriction).
+
+    :param group_value: The group containing the objects containing the data.
     :param group_type: List of group types that restricts the options in the
         Geoscience ANALYST ui.json dropdown.
     :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
         in the Geoscience ANALYST ui.json dropdown.
-    :param value: The list of data names or the name of the data.
+    :param value: The list of data names or the name of the data
+        stored across the objects.
     :param multi_select: If True, the ui.json dropdown will allow for multi-selection.
     """
 
@@ -566,11 +571,15 @@ class GroupMultiDataForm(BaseForm):
     @classmethod
     def to_list(cls, value: str | list[str]) -> str | list[str]:
         """
-        Validate that value is a list, converting it if it's a string.
+        Validate that value is a list.
+
+        If the value is empty, return an empty string.
+
+        :raises TypeError: If value is not a list of strings.
 
         :param value: The value to validate, which can be a string or a list of strings.
 
-        :return: A list of strings representing the value.
+        :return: A list of strings representing the value or an empty string.
         """
         if not value or value == [""]:
             return ""
@@ -704,9 +713,9 @@ def indicator_attributes(
     List all the mandatory attributes defined in a subclass.
 
     The function return a list of 2 lists:
-    - the first contains the sets of attributes
+    - The first contains the sets of attributes
         that are different between the parent and each child class.
-    - the second contains the sets of mandatory attributes
+    - The second contains the sets of mandatory attributes
         that are different between the parent and each child class.
 
     :param parent: The parent class to compare against.
@@ -736,7 +745,7 @@ def filter_candidates_by_indicator_polling(
     Return candidate subclass(es) with most matching indicators.
 
     Polling will return a single correct candidate subclass if the
-    form data includes any unique indicators.  It will also resolve
+    form data includes any unique indicators. It will also resolve
     any ambiguity between non-unique indicators such as 'choice_list'
     and 'multi_select'.
 
@@ -764,12 +773,11 @@ def count_indicators(
     """
     Count the number of matching indicators for each child class.
 
-    1. count the number of mandatory indicators present in the form data for each subclass.
-        It allows to select the valid classes.
-    2. count the number of indicators not present in the form data for each
-        It allows to rank the incompatibility per classes.
-        (Note: technically, we could just keep the one equal to 0 but risky)
-    3. return the difference between the two counts for each subclass.
+    1. Count the number of indicators present in the form data for each subclass.
+        It allows to select the valid classes (higher is better).
+    2. Count the number of mandatory indicators absent
+        in the form data for each subclass (lower is better).
+    3. Return the difference between the two counts for each subclass.
 
     :param indicators: A list of sets of indicator attributes for each subclass.
     :param data: The form data to check for matching indicators.
