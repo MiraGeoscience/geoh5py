@@ -748,7 +748,7 @@ def test_base_form_infer(tmp_path):
     form = BaseForm.infer(
         {
             "label": "test",
-            "value": str(uuid.uuid4()),
+            "value": "bidon",
             "parent": "my_param",
             "association": "Vertex",
             "dataType": "Float",
