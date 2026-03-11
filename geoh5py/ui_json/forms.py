@@ -576,6 +576,46 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         return self.value
 
 
+class MultiDataGroupForm(BaseForm):
+    """
+    Geoh5py uijson form for data associated with a group.
+
+    Shares documented attributes with the BaseForm and GroupForm.
+
+    :param group_value: The group UUID containing the data.
+    :param group_type: List of group types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
+    :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
+        in the Geoscience ANALYST ui.json dropdown.
+    :param value: The list of data UUIDs to select from the group.
+    :param multi_select: If True, the ui.json dropdown will allow for multi-selection.
+    """
+
+    group_type: GroupTypes
+    group_value: OptionalUUID
+
+    data_type: DataType | list[DataType]
+    value: str | list[str]
+    multi_select: bool = True
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value: str | list[str]) -> list[str] | str:
+        """
+        Validate that value is a list, converting it if it's a string.
+
+        :param value: The value to validate, which can be a string or a list of strings.
+
+        :return: A list of strings representing the value.
+        """
+        if not value or value == [""]:
+            return ""
+
+        if not isinstance(value, list):
+            value = [value]
+        return value
+
+
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
     Geoh5py uijson data form with multi-selection.
