@@ -45,6 +45,7 @@ from geoh5py.ui_json.forms import (
     GroupForm,
     IntegerForm,
     MultiChoiceForm,
+    MultiDataGroupForm,
     MultiFileForm,
     MultiSelectDataForm,
     ObjectForm,
@@ -666,6 +667,27 @@ def test_base_form_infer(tmp_path):
         },
     )
     assert form == DataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "data_group_type": "Strike & dip",
+        }
+    )
+    assert form == DataGroupForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": "test",
+            "group_type": [PropertyGroup],
+            "data_type": "Float",
+            "multi_select": False,
+        }
+    )
+    assert form == MultiDataGroupForm
     form = BaseForm.infer(
         {
             "label": "test",
