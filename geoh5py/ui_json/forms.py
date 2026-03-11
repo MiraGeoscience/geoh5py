@@ -641,7 +641,7 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
         """
         Validate that value is a list, converting it if it's a string.
 
-        :param value: The value to validate, which can be a string or a list of strings.
+        :param value: The value to validate.
 
         :return: A list of strings representing the value.
         """

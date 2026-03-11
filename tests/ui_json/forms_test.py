@@ -761,6 +761,21 @@ def test_base_form_infer(tmp_path):
     )
     assert form == GroupMultiDataForm
 
+    # this is an example for previous failure
+    form = BaseForm.infer(
+        {
+            "group": "Output preferences",
+            "label": "UIJson group",
+            "value": "",  # value is null as enabled is false
+            "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+            "visible": True,
+            "optional": True,
+            "enabled": False,
+        }
+    )
+
+    assert form == GroupForm
+
 
 def test_indicator_attributes():
     # IntegerForm adds 'min' and 'max' compared to BaseForm, both with defaults
