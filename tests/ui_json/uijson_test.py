@@ -575,7 +575,7 @@ def test_str_and_repr(tmp_path):
     assert '"version": "0.1.0"' in str_uijson
 
 
-def test_to_params_nonexistent_geoh5(tmp_path):
+def test_geoh5_validate_extension(tmp_path):
     h5file = tmp_path / "test"
     h5file.touch()
 
