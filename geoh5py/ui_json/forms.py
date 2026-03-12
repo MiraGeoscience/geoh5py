@@ -76,7 +76,7 @@ class BaseForm(BaseModel):
         be written to file as None.
     :param main: Controls whether ui element will render in the general
         parameters tab (True) or optional parameters (False).
-    :param tooltip: String rendered on hover over ui element.
+    :param tooltip: text box rendered on hover over ui element.
     :param group: Grouped ui elements will be rendered within a box labelled
         with the group name.
     :param group_optional: If True, ui group is rendered with a checkbox that
@@ -108,7 +108,7 @@ class BaseForm(BaseModel):
     optional: bool = False
     enabled: bool = True
     main: bool = True
-    tooltip: str = ""
+    tooltip: str | list[str] = ""
     group: str = ""
     group_optional: bool = False
     dependency: str = ""
@@ -540,6 +540,53 @@ class DataGroupForm(DataForm):
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
 
 
+class GroupMultiDataForm(BaseForm):
+    """
+    Geoh5py uijson form for selecting (multi) data within a group.
+
+    Shares documented attributes with the BaseForm.
+
+    Note: For now, it seems to work only with DrillholesGroup,
+    but it could be extended to other groups types in the future
+    (just Geoscience ANALYST ui.json restriction).
+
+    :param group_value: The group containing the objects containing the data.
+    :param group_type: List of group types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
+    :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
+        in the Geoscience ANALYST ui.json dropdown.
+    :param value: The list of data names stored across the objects.
+    :param multi_select: If True, the ui.json dropdown will allow for multi-selection.
+    """
+
+    group_type: GroupTypes
+    group_value: OptionalUUID
+
+    data_type: DataType | list[DataType]
+    value: str | list[str]
+    multi_select: bool = True
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value: str | list[str]) -> str | list[str]:
+        """
+        Validate that value is a list.
+
+        If the value is empty, return an empty string.
+
+        :raises TypeError: If value is not a list of strings.
+
+        :param value: The value to validate, which can be a string or a list of strings.
+
+        :return: A list of strings representing the value or an empty string.
+        """
+        if not value or value == [""]:
+            return ""
+        if not isinstance(value, list):
+            raise TypeError(f"'value' must be a list of strings; got '{type(value)}'")
+        return value
+
+
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
     Geoh5py uijson data form that also accepts a single value.
@@ -598,7 +645,14 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
 
     @field_validator("value", mode="before")
     @classmethod
-    def to_list(cls, value):
+    def to_list(cls, value: str | list[str]) -> list[str]:
+        """
+        Validate that value is a list, converting it if it's a string.
+
+        :param value: The value to validate.
+
+        :return: A list of strings representing the value.
+        """
         if not isinstance(value, list):
             value = [value]
         return value
@@ -638,16 +692,49 @@ def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
     return collection
 
 
-def model_fields_difference(parent: type[BaseForm], child: type[BaseForm]) -> set[str]:
-    """Isolate fields added in the child class."""
-    return set(child.model_fields) - set(parent.model_fields)
+def get_mandatory_attributes(to_inspect: type[BaseForm]) -> set[str]:
+    """
+    Isolate mandatory attributes for a class.
+
+    :param to_inspect: The pydantic class to check.
+
+    :return: The attributes with no default values.
+    """
+    return {
+        key for key, value in to_inspect.model_fields.items() if value.is_required()
+    }
 
 
 def indicator_attributes(
     parent: type[BaseForm], children: list[type[BaseForm]]
-) -> list[set[str]]:
-    """List all the attributes defined in a subclass."""
-    return [model_fields_difference(parent, c) for c in children]
+) -> tuple[list[set[str]], list[set[str]]]:
+    """
+    List all the mandatory attributes defined in a subclass.
+
+    The function return a list of 2 lists:
+    - The first contains the sets of attributes
+        that are different between the parent and each child class.
+    - The second contains the sets of mandatory attributes
+        that are different between the parent and each child class.
+
+    :param parent: The parent class to compare against.
+    :param children: The list of child classes to compare.
+
+    :return: A list of mandatory attributes defined in a subclass.
+    """
+    parent_mandatory_attributes = get_mandatory_attributes(parent)
+    parent_attributes = set(parent.model_fields)
+
+    full_differences = [
+        set(child.model_fields) - parent_attributes for child in children
+    ]
+
+    mandatory_differences = [
+        get_mandatory_attributes(child) - parent_mandatory_attributes
+        for child in children
+    ]
+
+    return full_differences, mandatory_differences
 
 
 def filter_candidates_by_indicator_polling(
@@ -657,13 +744,17 @@ def filter_candidates_by_indicator_polling(
     Return candidate subclass(es) with most matching indicators.
 
     Polling will return a single correct candidate subclass if the
-    form data includes any unique indicators.  It will also resolve
+    form data includes any unique indicators. It will also resolve
     any ambiguity between non-unique indicators such as 'choice_list'
     and 'multi_select'.
 
+    :param data: The form data to check for matching indicators.
+
+    :return: An array of candidate subclasses with the most matching indicators.
     """
     counts = count_indicators(INDICATORS, data)
     candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
+
     if len(candidates) == len(FORM_TYPES):
         candidates = np.array([StringForm, BoolForm, IntegerForm, FloatForm])
     if len(candidates) > 1:
@@ -675,9 +766,26 @@ def filter_candidates_by_indicator_polling(
     return candidates
 
 
-def count_indicators(indicators: list[set[str]], data: dict[str, Any]) -> np.ndarray:
-    """Return the number of matching indicators for each child class."""
-    return np.array([len(i.intersection(data)) for i in indicators])
+def count_indicators(
+    indicators: tuple[list[set[str]], list[set[str]]], data: dict[str, Any]
+) -> np.ndarray:
+    """
+    Count the number of matching indicators for each child class.
+
+    1. Count the number of indicators present in the form data for each subclass.
+        It allows to select the valid classes (higher is better).
+    2. Count the number of mandatory indicators absent
+        in the form data for each subclass (lower is better).
+    3. Return the difference between the two counts for each subclass.
+
+    :param indicators: A list of sets of indicator attributes for each subclass.
+    :param data: The form data to check for matching indicators.
+
+    :return: An array of counts of matching indicators for each subclass.
+    """
+    count_intersection = np.array([len(i.intersection(data)) for i in indicators[0]])
+    count_difference = np.array([len(i.difference(data)) for i in indicators[1]])
+    return count_intersection - count_difference
 
 
 def filter_candidates_by_type_checking(
