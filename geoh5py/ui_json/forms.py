@@ -76,7 +76,7 @@ class BaseForm(BaseModel):
         be written to file as None.
     :param main: Controls whether ui element will render in the general
         parameters tab (True) or optional parameters (False).
-    :param tooltip: String rendered on hover over ui element.
+    :param tooltip: text box rendered on hover over ui element.
     :param group: Grouped ui elements will be rendered within a box labelled
         with the group name.
     :param group_optional: If True, ui group is rendered with a checkbox that
@@ -555,8 +555,7 @@ class GroupMultiDataForm(BaseForm):
         Geoscience ANALYST ui.json dropdown.
     :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
         in the Geoscience ANALYST ui.json dropdown.
-    :param value: The list of data names or the name of the data
-        stored across the objects.
+    :param value: The list of data names stored across the objects.
     :param multi_select: If True, the ui.json dropdown will allow for multi-selection.
     """
 
