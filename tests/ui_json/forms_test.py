@@ -43,6 +43,7 @@ from geoh5py.ui_json.forms import (
     FileForm,
     FloatForm,
     GroupForm,
+    GroupMultiDataForm,
     IntegerForm,
     MultiChoiceForm,
     MultiFileForm,
@@ -51,7 +52,7 @@ from geoh5py.ui_json.forms import (
     RadioLabelForm,
     StringForm,
     all_subclasses,
-    model_fields_difference,
+    indicator_attributes,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
 
@@ -642,57 +643,34 @@ def test_flatten(sample_form):
 def test_base_form_infer(tmp_path):
     form = BaseForm.infer({"label": "test", "value": "test"})
     assert form == StringForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": "test",
+            "original_label": "test",
+            "alternate_label": "test",
+        }
+    )
+    assert form == RadioLabelForm
+    form = BaseForm.infer({"label": "test", "value": True})
+    assert form == BoolForm
     form = BaseForm.infer({"label": "test", "value": 1})
     assert form == IntegerForm
     form = BaseForm.infer({"label": "test", "value": 1.0})
     assert form == FloatForm
-    form = BaseForm.infer({"label": "test", "value": True})
-    assert form == BoolForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]},
+        {"label": "test", "value": "test", "choiceList": ["test", "other"]},
     )
-    assert form == ObjectForm
-    form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points},
-    )
-    assert form == ObjectForm
+    assert form == ChoiceForm
     form = BaseForm.infer(
         {
             "label": "test",
-            "value": str(uuid.uuid4()),
-            "parent": "my_param",
-            "association": "Vertex",
-            "dataType": "Float",
-        },
-    )
-    assert form == DataForm
-    form = BaseForm.infer(
-        {
-            "label": "test",
-            "value": [str(uuid.uuid4()), str(uuid.uuid4())],
-            "parent": "my_param",
-            "association": "Vertex",
-            "dataType": "Float",
             "multiSelect": True,
+            "value": ["test", "other"],
+            "choice_list": ["test", "other", "another"],
         },
     )
-    assert form == MultiSelectDataForm
-    form = BaseForm.infer(
-        {
-            "label": "test",
-            "value": str(uuid.uuid4()),
-            "parent": "my_param",
-            "association": "Vertex",
-            "dataType": "Float",
-            "isValue": True,
-            "property": str(uuid.uuid4()),
-        },
-    )
-    assert form == DataOrValueForm
-    form = BaseForm.infer(
-        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())},
-    )
-    assert form == GroupForm
+    assert form == MultiChoiceForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -723,18 +701,97 @@ def test_base_form_infer(tmp_path):
     )
     assert form == DirectoryForm
     form = BaseForm.infer(
-        {"label": "test", "value": "test", "choiceList": ["test", "other"]},
+        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]},
     )
-    assert form == ChoiceForm
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points},
+    )
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())},
+    )
+    assert form == GroupForm
+    form = BaseForm.infer(
+        {
+            "group": "Output preferences",
+            "label": "UIJson group",
+            "value": "",  # value is null as enabled is false
+            "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+            "visible": True,
+            "optional": True,
+            "enabled": False,
+        }
+    )
+    assert form == GroupForm
     form = BaseForm.infer(
         {
             "label": "test",
-            "multiSelect": True,
-            "value": ["test", "other"],
-            "choice_list": ["test", "other", "another"],
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
         },
     )
-    assert form == MultiChoiceForm
+    assert form == DataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "dataGroupType": "Strike & dip",
+        }
+    )
+    assert form == DataGroupForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": "bidon",
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "groupType": [PropertyGroup],
+            "groupValue": str(uuid.uuid4()),
+            "multiSelect": False,
+        }
+    )
+    assert form == GroupMultiDataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "multiselect": True,
+            "groupType": PropertyGroup,
+            "groupValue": str(uuid.uuid4()),
+            "dataType": "Float",
+            "value": ["bidon"],
+        }
+    )
+    assert form == GroupMultiDataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "isValue": True,
+            "property": str(uuid.uuid4()),
+        },
+    )
+    assert form == DataOrValueForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": [str(uuid.uuid4()), str(uuid.uuid4())],
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "multiSelect": True,
+        },
+    )
+    assert form == MultiSelectDataForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -747,6 +804,25 @@ def test_base_form_infer(tmp_path):
         },
     )
     assert form == DataRangeForm
+
+
+def test_indicator_attributes():
+    # IntegerForm adds 'min' and 'max' compared to BaseForm, both with defaults
+    full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [IntegerForm])
+    assert full_diffs[0] == {"min", "max"}
+    assert mandatory_diffs[0] == set()
+
+    # DataForm adds 'parent', 'association', 'data_type' via DataFormMixin
+    full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [DataForm])
+    assert full_diffs[0] == mandatory_diffs[0] == {"parent", "association", "data_type"}
+
+    # Multiple children: result lists have one entry per child
+    full_diffs, mandatory_diffs = indicator_attributes(
+        BaseForm, [IntegerForm, DataForm]
+    )
+    assert full_diffs[0] == {"min", "max"}
+    assert full_diffs[1] == {"parent", "association", "data_type"}
+    assert len(mandatory_diffs) == 2
 
 
 def test_all_subclasses():
@@ -770,19 +846,31 @@ def test_all_subclasses():
     assert all_subclasses(TestFour) == []
 
 
-def test_model_fields_difference():
-    class MyParent(BaseModel):
-        a: str
+def test_multi_data_group_form():
+    group_uid = str(uuid.uuid4())
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+    form = GroupMultiDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        group_type=PropertyGroup,
+        data_type=["Float", "Integer"],
+        group_value=group_uid,
+        multi_select=True,
+        tooltip=["some ", "tooltip ", "text"],
+    )
+    assert form.label == "name"
+    assert form.value == [data_uid_1, data_uid_2]
+    assert form.group_value == uuid.UUID(group_uid)
+    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.multi_select
+    assert form.tooltip == ["some ", "tooltip ", "text"]
 
-    class MyChild(MyParent):
-        b: int
-        c: float
-
-    class MyOtherChild(MyChild):
-        d: float
-        e: float = 1.0
-
-    diff = model_fields_difference(MyParent, MyChild)
-    assert diff == {"b", "c"}
-    diff = model_fields_difference(MyParent, MyOtherChild)
-    assert diff == {"b", "c", "d", "e"}
+    with pytest.raises(TypeError, match="'value' must be a list"):
+        _ = GroupMultiDataForm(
+            label="name",
+            value=data_uid_1,
+            group_type=PropertyGroup,
+            data_type="Float",
+            group_value=group_uid,
+        )
