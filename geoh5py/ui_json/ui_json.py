@@ -100,14 +100,14 @@ class BaseUIJson(BaseModel):
 
         return f"{self!r} -> {json_string}"
 
-    @field_validator("geoh5", mode="before")
+    @field_validator("geoh5", mode="after")
     @classmethod
     def workspace_path_exists(cls, path: Path):
         if not path.exists():
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
-    @field_validator("geoh5", mode="before")
+    @field_validator("geoh5", mode="after")
     @classmethod
     def valid_geoh5_extension(cls, path: Path):
         if path.suffix != ".geoh5":
