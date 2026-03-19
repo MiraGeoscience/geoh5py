@@ -583,7 +583,7 @@ def test_geoh5_validate_extension(tmp_path):
         _ = BaseUIJson(
             version="0.1.0",
             title="my application",
-            geoh5=h5file,
+            geoh5=str(h5file),
             run_command="python -m my_module",
             monitoring_directory=None,
             conda_environment="test",
