@@ -107,6 +107,15 @@ class BaseUIJson(BaseModel):
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
+    @field_validator("geoh5", mode="after")
+    @classmethod
+    def valid_geoh5_extension(cls, path: Path):
+        if path.suffix != ".geoh5":
+            raise ValueError(
+                f"Workspace path: {path} must have a '.geoh5' file extension."
+            )
+        return path
+
     @classmethod
     def read(cls, path: str | Path) -> BaseUIJson:
         """
