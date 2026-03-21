@@ -36,12 +36,10 @@ from pydantic import (
 )
 
 from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
-from geoh5py.shared import Entity
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
+from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations, object_or_catch
 from geoh5py.ui_json.validations.form import empty_string_to_none
 
 
@@ -274,24 +272,24 @@ class UIJson(BaseModel):
                     continue
 
                 if isinstance(value, UUID):
-                    value = self._object_or_catch(geoh5, value)
+                    value = object_or_catch(geoh5, value)
                 if isinstance(value, list) and value and isinstance(value[0], UUID):
-                    value = [self._object_or_catch(geoh5, uid) for uid in value]
+                    value = [object_or_catch(geoh5, uid) for uid in value]
 
                 if isinstance(value, UIJsonError):
                     errors[field].append(value)
 
                 data[field] = value
 
-            self.validate_data(data, errors)
+            self._cross_validations(data, errors)
 
         return data
 
-    def validate_data(
-        self, params: dict[str, Any] | None = None, errors: dict[str, Any] | None = None
+    def _cross_validations(
+        self, params: dict[str, Any], errors: dict[str, Any] | None = None
     ) -> None:
         """
-        Validate the UIJson data.
+        Extra validation related to inter-form dependencies and entity types.
 
         :param params: Promoted and flattened parameters/values dictionary.  The params
             dictionary will be generated from the model values if not provided.
@@ -300,19 +298,14 @@ class UIJson(BaseModel):
 
         :raises UIJsonError: If any validations fail.
         """
-
-        if params is None:
-            self.to_params()
-            return
-
         if errors is None:
             errors = {k: [] for k in params}
 
         ui_json = self.model_dump(exclude_unset=True)
-        for field in self.model_fields_set:
+        for field, form in ui_json.items():
             if self.is_disabled(field):
                 continue
-            form = ui_json[field]
+
             validations = get_validations(list(form) if isinstance(form, dict) else [])
             for validation in validations:
                 try:
@@ -321,25 +314,3 @@ class UIJson(BaseModel):
                     errors[field].append(e)
 
         ErrorPool(errors).throw()
-
-    def _object_or_catch(
-        self,
-        workspace: Workspace,
-        uuid: UUID,
-    ) -> Entity | PropertyGroup | UIJsonError:
-        """
-        Returns an object if it exists in the workspace or an error if not.
-
-        :param workspace: Workspace to fetch entities from.
-        :param uuid: UUID of the object to fetch.
-
-        :returns: The object if it exists in the workspace or a placeholder error
-            to be collected and raised later with any other UIJson level validation
-            errors.
-        """
-
-        obj = workspace.get_entity(uuid)
-        if obj[0] is not None:
-            return obj[0]
-
-        return UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")

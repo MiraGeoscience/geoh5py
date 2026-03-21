@@ -19,9 +19,13 @@
 
 from typing import Any
 
+from uuid import UUID
+
+from geoh5py import Workspace
 from geoh5py.data import Data
 from geoh5py.objects import ObjectBase
-
+from geoh5py.groups import PropertyGroup
+from geoh5py.shared import Entity
 
 class UIJsonError(Exception):
     """Exception raised for errors in the UIJson object."""
@@ -88,3 +92,25 @@ def parent_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
         isinstance(child, Data) and parent.get_entity(child.uid)[0] is None
     ):
         raise UIJsonError(f"{name} data is not a child of {form['parent']}.")
+
+
+def object_or_catch(
+    workspace: Workspace,
+    uuid: UUID,
+) -> Entity | PropertyGroup | UIJsonError:
+    """
+    Returns an object if it exists in the workspace or an error if not.
+
+    :param workspace: Workspace to fetch entities from.
+    :param uuid: UUID of the object to fetch.
+
+    :returns: The object if it exists in the workspace or a placeholder error
+        to be collected and raised later with any other UIJson level validation
+        errors.
+    """
+
+    obj = workspace.get_entity(uuid)
+    if obj[0] is not None:
+        return obj[0]
+
+    return UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")

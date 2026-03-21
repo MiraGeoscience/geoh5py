@@ -25,6 +25,7 @@ from .uijson import (
     dependency_type_validation,
     mesh_type_validation,
     parent_validation,
+    object_or_catch
 )
 
 
