@@ -24,8 +24,8 @@ from .uijson import (
     UIJsonError,
     dependency_type_validation,
     mesh_type_validation,
+    object_or_catch,
     parent_validation,
-    object_or_catch
 )
 
 

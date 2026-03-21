@@ -18,14 +18,14 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 from typing import Any
-
 from uuid import UUID
 
 from geoh5py import Workspace
 from geoh5py.data import Data
-from geoh5py.objects import ObjectBase
 from geoh5py.groups import PropertyGroup
+from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
+
 
 class UIJsonError(Exception):
     """Exception raised for errors in the UIJson object."""
