@@ -54,7 +54,7 @@ OptionalPath = Annotated[
 ]
 
 
-class BaseUIJson(BaseModel):
+class UIJson(BaseModel):
     """
     Base class for storing ui.json data on disk.
 
@@ -117,7 +117,7 @@ class BaseUIJson(BaseModel):
         return path
 
     @classmethod
-    def read(cls, path: str | Path) -> BaseUIJson:
+    def read(cls, path: str | Path) -> UIJson:
         """
         Create a UIJson object from ui.json file.
 
@@ -144,10 +144,10 @@ class BaseUIJson(BaseModel):
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
 
-        if cls == BaseUIJson:
+        if cls == UIJson:
             fields = {}
             for name, value in kwargs.items():
-                if name in BaseUIJson.model_fields:
+                if name in UIJson.model_fields:
                     continue
                 if isinstance(value, dict):
                     form_type = BaseForm.infer(value)
@@ -160,7 +160,7 @@ class BaseUIJson(BaseModel):
 
             model = create_model(  # type: ignore
                 "UnknownUIJson",
-                __base__=BaseUIJson,
+                __base__=UIJson,
                 **fields,
             )
             uijson = model(**kwargs)

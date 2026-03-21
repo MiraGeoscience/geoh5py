@@ -41,7 +41,7 @@ from geoh5py.ui_json.forms import (
     RadioLabelForm,
     StringForm,
 )
-from geoh5py.ui_json.ui_json import BaseUIJson
+from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.ui_json.validations import UIJsonError
 
 
@@ -129,7 +129,7 @@ def sample_uijson(tmp_path):
 
 
 def test_uijson(sample_uijson):
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
         my_integer_parameter: IntegerForm
         my_object_parameter: ObjectForm
@@ -165,7 +165,7 @@ def generate_test_uijson(workspace: Workspace, uijson, data: dict):
 def test_allow_extra(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
 
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     kwargs = {
@@ -190,7 +190,7 @@ def test_multiple_validations(tmp_path):
     other_pts = pts.copy(name="other test")
     data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
 
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
@@ -237,7 +237,7 @@ def test_validate_dependency_type_validation(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
 
     # BoolForm dependency is valid
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: BoolForm
         my_dependent_parameter: StringForm
 
@@ -257,7 +257,7 @@ def test_validate_dependency_type_validation(tmp_path):
     assert params["my_dependent_parameter"] == "test"
 
     # Optional non-bool dependency is valid
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: StringForm
         my_dependent_parameter: StringForm
 
@@ -281,7 +281,7 @@ def test_parent_child_validation(tmp_path):
     data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
     other_pts = pts.copy(name="other test")
 
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
         my_data_parameter: DataForm
 
@@ -318,7 +318,7 @@ def test_mesh_type_validation(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
 
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
 
     kwargs = {
@@ -344,7 +344,7 @@ def test_mesh_type_validation(tmp_path):
 def test_deprecated_annotation(tmp_path, caplog):
     geoh5 = Workspace(tmp_path / "test.geoh5")
 
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: Deprecated
 
     with caplog.at_level(logging.WARNING):
@@ -362,7 +362,7 @@ def test_deprecated_annotation(tmp_path, caplog):
 
 
 def test_grouped_forms(tmp_path):
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: IntegerForm
         my_grouped_param: FloatForm
         my_other_grouped_param: FloatForm
@@ -394,7 +394,7 @@ def test_grouped_forms(tmp_path):
 
 
 def test_disabled_forms(tmp_path):
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: IntegerForm
         my_other_param: IntegerForm
         my_grouped_param: FloatForm
@@ -527,7 +527,7 @@ def test_unknown_uijson(tmp_path):
     }
     with open(tmp_path / "test.ui.json", mode="w", encoding="utf8") as file:
         file.write(json.dumps(kwargs))
-    uijson = BaseUIJson.read(tmp_path / "test.ui.json")
+    uijson = UIJson.read(tmp_path / "test.ui.json")
     uijson.write(tmp_path / "test_copy.ui.json")
 
     assert isinstance(uijson.my_string_parameter, StringForm)
@@ -550,7 +550,7 @@ def test_unknown_uijson(tmp_path):
 def test_str_and_repr(tmp_path):
     Workspace.create(tmp_path / "test.geoh5")
 
-    class MyUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         param: StringForm
 
     uijson = MyUIJson(
@@ -580,7 +580,7 @@ def test_geoh5_validate_extension(tmp_path):
     h5file.touch()
 
     with pytest.raises(ValidationError, match="must have a '.geoh5' file extension."):
-        _ = BaseUIJson(
+        _ = UIJson(
             version="0.1.0",
             title="my application",
             geoh5=str(h5file),
