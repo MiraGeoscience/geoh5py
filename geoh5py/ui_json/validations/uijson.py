@@ -17,7 +17,7 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-from typing import Any
+from typing import Any, Iterable
 
 from uuid import UUID
 
@@ -94,23 +94,28 @@ def parent_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
         raise UIJsonError(f"{name} data is not a child of {form['parent']}.")
 
 
-def object_or_catch(
+def promote_or_catch(
     workspace: Workspace,
-    uuid: UUID,
-) -> Entity | PropertyGroup | UIJsonError:
+    value: Any,
+) -> Entity | PropertyGroup | UIJsonError | list[Entity | PropertyGroup | UIJsonError]:
     """
     Returns an object if it exists in the workspace or an error if not.
 
     :param workspace: Workspace to fetch entities from.
-    :param uuid: UUID of the object to fetch.
+    :param value: UUID of the object to fetch.
 
     :returns: The object if it exists in the workspace or a placeholder error
         to be collected and raised later with any other UIJson level validation
         errors.
     """
+    if isinstance(value, Iterable):
+        return [promote_or_catch(workspace, val) for val in value]
 
-    obj = workspace.get_entity(uuid)
+    if not isinstance(value, UUID):
+        return value
+
+    obj = workspace.get_entity(value)
     if obj[0] is not None:
         return obj[0]
 
-    return UIJsonError(f"Workspace does not contain an entity with uid: {uuid}.")
+    raise UIJsonError(f"Workspace does not contain an entity with uid: {value}.")

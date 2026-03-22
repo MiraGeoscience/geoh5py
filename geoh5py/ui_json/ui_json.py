@@ -39,7 +39,7 @@ from geoh5py import Workspace
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations, object_or_catch
+from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations, promote_or_catch
 from geoh5py.ui_json.validations.form import empty_string_to_none
 
 
@@ -114,20 +114,15 @@ class UIJson(BaseModel):
             )
         return path
 
-    @classmethod
-    def read(cls, path: str | Path) -> UIJson:
+    @staticmethod
+    def load(path: str | Path) -> dict:
         """
-        Create a UIJson object from ui.json file.
-
-        Raises errors if the file doesn't exist or is not a .ui.json file.
-        Also validates at the Form and UIJson level whether the file is
-        properly formatted.  If called from the BaseUIJson class, forms
-        will be inferred dynamically.
+        Load ui json from file.
 
         :param path: Path to the .ui.json file.
-        :returns: UIJson object.
-        """
 
+        :return: Dictionary representing the ui json object.
+        """
         if isinstance(path, str):
             path = Path(path)
 
@@ -142,28 +137,40 @@ class UIJson(BaseModel):
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
 
-        if cls == UIJson:
-            fields = {}
-            for name, value in kwargs.items():
-                if name in UIJson.model_fields:
-                    continue
-                if isinstance(value, dict):
-                    form_type = BaseForm.infer(value)
-                    logger.info(
-                        "Parameter: %s interpreted as a %s.", name, form_type.__name__
-                    )
-                    fields[name] = (form_type, ...)
-                else:
-                    fields[name] = (type(value), ...)
+        return kwargs
 
-            model = create_model(  # type: ignore
-                "UnknownUIJson",
-                __base__=UIJson,
-                **fields,
-            )
-            uijson = model(**kwargs)
-        else:
-            uijson = cls(**kwargs)
+    @classmethod
+    def read(cls, path: str | Path) -> UIJson:
+        """
+        Create a UIJson object from ui.json file.
+
+        Raises errors if the file doesn't exist or is not a .ui.json file.
+        Also validates at the Form and UIJson level whether the file is
+        properly formatted.  If called from the BaseUIJson class, forms
+        will be inferred dynamically.
+
+        :param path: Path to the .ui.json file.
+        :returns: UIJson object.
+        """
+
+        kwargs = cls.load(path)
+
+        fields = {}
+        for name, value in kwargs.items():
+            if name in UIJson.model_fields:
+                continue
+            if isinstance(value, dict):
+                form_type = BaseForm.infer(value)
+                fields[name] = (form_type, ...)
+            else:
+                fields[name] = (type(value), ...)
+
+        model = create_model(  # type: ignore
+            kwargs.get("title", "UnknownUIJson"),
+            __base__=UIJson,
+            **fields,
+        )
+        uijson = model(**kwargs)
 
         uijson._path = path  # pylint: disable=protected-access
         return uijson
@@ -271,12 +278,9 @@ class UIJson(BaseModel):
                     data[field] = geoh5
                     continue
 
-                if isinstance(value, UUID):
-                    value = object_or_catch(geoh5, value)
-                if isinstance(value, list) and value and isinstance(value[0], UUID):
-                    value = [object_or_catch(geoh5, uid) for uid in value]
-
-                if isinstance(value, UIJsonError):
+                try:
+                    value = promote_or_catch(geoh5, value)
+                except UIJsonError:
                     errors[field].append(value)
 
                 data[field] = value
@@ -314,3 +318,4 @@ class UIJson(BaseModel):
                     errors[field].append(e)
 
         ErrorPool(errors).throw()
+
