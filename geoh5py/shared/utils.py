@@ -887,31 +887,6 @@ def to_tuple(value: Any) -> tuple:
     return (value,)
 
 
-class SetDict(dict):
-    def __init__(self, **kwargs):
-        kwargs = {k: self.make_set(v) for k, v in kwargs.items()}
-        super().__init__(kwargs)
-
-    def make_set(self, value):
-        if isinstance(value, (set, tuple, list)):
-            value = set(value)
-        else:
-            value = {value}
-        return value
-
-    def __setitem__(self, key, value):
-        value = self.make_set(value)
-        super().__setitem__(key, value)
-
-    def update(self, value: dict, **kwargs) -> None:  # type: ignore
-        for key, val in value.items():
-            val = self.make_set(val)
-            if key in self:
-                val = self[key].union(val)
-            value[key] = val
-        super().update(value, **kwargs)
-
-
 def inf2str(value):  # map np.inf to "inf"
     if not isinstance(value, (int, float)):
         return value
