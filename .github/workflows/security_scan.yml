@@ -40,4 +40,4 @@ jobs:
       checks: write
       contents: read
       actions: read
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-annotate.yml@v2
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-annotate.yml@v3
