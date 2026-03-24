@@ -36,9 +36,9 @@ from pydantic import (
 )
 
 from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups import PropertyGroup, UIJsonGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.utils import fetch_active_workspace
+from geoh5py.shared.utils import fetch_active_workspace, str2uuid, stringify
 from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
@@ -67,7 +67,9 @@ class BaseUIJson(BaseModel):
     :params workspace_geoh5: Path to the workspace geoh5 file.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True, extra="allow", validate_assignment=True
+    )
 
     version: str
     title: str
@@ -103,14 +105,14 @@ class BaseUIJson(BaseModel):
     @field_validator("geoh5", mode="after")
     @classmethod
     def workspace_path_exists(cls, path: Path):
-        if not path.exists():
+        if path is not None and not path.exists():
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
     @field_validator("geoh5", mode="after")
     @classmethod
     def valid_geoh5_extension(cls, path: Path):
-        if path.suffix != ".geoh5":
+        if path is not None and path.suffix != ".geoh5":
             raise ValueError(
                 f"Workspace path: {path} must have a '.geoh5' file extension."
             )
@@ -143,6 +145,9 @@ class BaseUIJson(BaseModel):
 
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
+            kwargs = {
+                key: (item if item != "" else None) for key, item in kwargs.items()
+            }
 
         if cls == BaseUIJson:
             fields = {}
@@ -250,6 +255,43 @@ class BaseUIJson(BaseModel):
 
         return data
 
+    def fill(self, copy: bool = False, **kwargs) -> BaseUIJson:
+        """
+        Fill the UIJson with new values.
+
+        :param copy: If True, returns a new UIJson object with the updated values.
+            If False, updates the current UIJson object with the new values and returns itself.
+        :param kwargs: Key/value pairs to update the UIJson with.
+
+        :return: A new UIJson object with the updated values.
+        """
+        temp_properties = {}
+        for key, form in dict(self).items():
+            updates: dict[str, Any] = {}
+
+            # if a value is optional and has no default value, set enable to False
+            form_values = getattr(form, "value", False)
+            form_values = bool(form_values) if form_values != [""] else False
+            if hasattr(form, "optional") and not form_values:
+                updates["enabled"] = False
+
+            if key in kwargs:
+                updates["value"] = str2uuid(stringify(kwargs[key]))
+                if hasattr(form, "enabled"):
+                    updates["enabled"] = True
+
+            if updates:
+                temp_properties[key] = form.model_copy(update=updates)
+
+        updated_model = self.model_copy(update=temp_properties)
+
+        if not copy:
+            for key, value in updated_model.__dict__.items():
+                setattr(self, key, value)
+            return self
+
+        return updated_model
+
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
         Promote, flatten and validate parameter/values dictionary.
@@ -286,6 +328,34 @@ class BaseUIJson(BaseModel):
             self.validate_data(data, errors)
 
         return data
+
+    def to_ui_json_group(
+        self, workspace: Workspace | None = None, **kwargs
+    ) -> UIJsonGroup:
+        """
+        Convert the UIJson to a UIJsonGroup.
+
+        :param workspace: Workspace to fetch entities from.  Used for passing active
+            workspaces to avoid closing and flushing data.
+        :param kwargs: Additional keyword arguments to update the UIJson data before
+
+        :return: A UIJsonGroup representing the application.
+        """
+        with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
+            if geoh5 is None:
+                raise ValueError("Workspace cannot be None.")
+
+            ui_json_group = UIJsonGroup.create(
+                workspace=geoh5,
+                options=self.model_dump(mode="json", exclude_unset=True),
+                name=kwargs.pop("name", self.title),
+                **kwargs,
+            )
+
+            ui_json_group.options["out_group"]["value"] = ui_json_group.uid
+            ui_json_group.options["out_group"]["enabled"] = True
+
+            return ui_json_group
 
     def validate_data(
         self, params: dict[str, Any] | None = None, errors: dict[str, Any] | None = None
