@@ -104,14 +104,14 @@ class BaseUIJson(BaseModel):
 
     @field_validator("geoh5", mode="after")
     @classmethod
-    def workspace_path_exists(cls, path: Path):
+    def workspace_path_exists(cls, path: Path | None) -> Path | None:
         if path is not None and not path.exists():
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
     @field_validator("geoh5", mode="after")
     @classmethod
-    def valid_geoh5_extension(cls, path: Path):
+    def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
         if path is not None and path.suffix != ".geoh5":
             raise ValueError(
                 f"Workspace path: {path} must have a '.geoh5' file extension."
@@ -267,18 +267,24 @@ class BaseUIJson(BaseModel):
         """
         temp_properties = {}
         for key, form in dict(self).items():
+            if not isinstance(form, BaseForm):
+                if key in kwargs:
+                    if not isinstance(kwargs[key], str):
+                        raise TypeError(
+                            "Only string values can be updated for non-form fields. "
+                        )
+                    temp_properties[key] = kwargs[key]
+                continue
+
             updates: dict[str, Any] = {}
 
-            # if a value is optional and has no default value, set enable to False
-            form_values = getattr(form, "value", False)
-            form_values = bool(form_values) if form_values != [""] else False
-            if hasattr(form, "optional") and not form_values:
+            # if a value has no default value, set enabled to false
+            if not bool(form.value) if form.value != [""] else False:
                 updates["enabled"] = False
 
             if key in kwargs:
                 updates["value"] = str2uuid(stringify(kwargs[key]))
-                if hasattr(form, "enabled"):
-                    updates["enabled"] = True
+                updates["enabled"] = True
 
             if updates:
                 temp_properties[key] = form.model_copy(update=updates)
@@ -286,8 +292,8 @@ class BaseUIJson(BaseModel):
         updated_model = self.model_copy(update=temp_properties)
 
         if not copy:
-            for key, value in updated_model.__dict__.items():
-                setattr(self, key, value)
+            for field_name in type(self).model_fields:
+                setattr(self, field_name, getattr(updated_model, field_name))
             return self
 
         return updated_model
@@ -347,13 +353,14 @@ class BaseUIJson(BaseModel):
 
             ui_json_group = UIJsonGroup.create(
                 workspace=geoh5,
-                options=self.model_dump(mode="json", exclude_unset=True),
+                options=self.model_dump(mode="json", exclude_unset=True, by_alias=True),
                 name=kwargs.pop("name", self.title),
                 **kwargs,
             )
-
-            ui_json_group.options["out_group"]["value"] = ui_json_group.uid
-            ui_json_group.options["out_group"]["enabled"] = True
+            options = ui_json_group.options
+            options["out_group"]["value"] = ui_json_group.uid
+            options["out_group"]["enabled"] = True
+            ui_json_group.options = options
 
             return ui_json_group
 

@@ -630,11 +630,15 @@ def test_fill_copy(tmp_path):
         uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "original"}},
     )
-    copy = uijson.fill(copy=True, my_string_parameter="updated")
+    copy = uijson.fill(copy=True, my_string_parameter="updated", title="ok")
 
     assert copy is not uijson
     assert copy.my_string_parameter.value == "updated"
     assert uijson.my_string_parameter.value == "original"
+    assert copy.title == "ok"
+
+    with pytest.raises(TypeError, match="Only string"):
+        _ = uijson.fill(copy=True, my_string_parameter="updated", title=666)
 
 
 def test_fill_disables_forms_with_falsy_value(tmp_path):
