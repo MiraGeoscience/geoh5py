@@ -784,7 +784,7 @@ def test_to_ui_json_group_out_group_properties(tmp_path):
     )
     group = uijson.to_ui_json_group(workspace=ws)
 
-    assert group.options["out_group"]["value"] == group.uid
+    assert group.options["out_group"]["value"] == str(group.uid)
     assert group.options["out_group"]["enabled"] is True
 
 
