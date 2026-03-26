@@ -121,13 +121,15 @@ class BlockModel(GridObject):
     @property
     def span(self) -> np.ndarray:
         """
-        Lengths of the grid along u, v and w directions.
+        Upper and lower limits along u, v and w directions.
         """
-        return np.r_[
-            self.u_cell_delimiters.max() - self.u_cell_delimiters.min(),
-            self.v_cell_delimiters.max() - self.v_cell_delimiters.min(),
-            self.z_cell_delimiters.max() - self.z_cell_delimiters.min(),
-        ]
+        return np.vstack(
+            [
+                [self.u_cell_delimiters.min(), self.u_cell_delimiters.max()],
+                [self.v_cell_delimiters.min(), self.v_cell_delimiters.max()],
+                [self.z_cell_delimiters.min(), self.z_cell_delimiters.max()],
+            ]
+        )
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:

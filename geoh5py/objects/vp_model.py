@@ -382,13 +382,15 @@ class VPModel(GridObject, DrapeModel):
     @property
     def span(self) -> np.ndarray:
         """
-        Lengths of the grid along u, v and w directions.
+        Upper and lower limits along u, v and w directions.
         """
-        return np.r_[
-            self.u_cell_size * self.u_count,
-            self.v_cell_size * self.v_count,
-            self.prisms[:, 0].max() - self.layers[:, 2].min(),
-        ]
+        return np.vstack(
+            [
+                np.sort([0, self.u_cell_size * self.u_count]),
+                np.sort([0, self.v_cell_size * self.v_count]),
+                [self.layers[:, 2].min(), self.prisms[:, 0].max()],
+            ]
+        )
 
     @property
     def u_cell_size(self) -> float:

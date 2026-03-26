@@ -67,9 +67,7 @@ class GridObject(ObjectBase, ABC):
         """
         Compute outer extent of mesh span in world coordinates.
         """
-        u, v, w = np.meshgrid(
-            np.r_[0, self.span[0]], np.r_[0, self.span[1]], np.r_[0, self.span[2]]
-        )
+        u, v, w = np.meshgrid(self.span[0, :], self.span[1, :], self.span[2, :])
         xyz = self.uvw_to_xyz(np.c_[u.ravel(), v.ravel(), w.ravel()])
         return np.c_[xyz.min(axis=0), xyz.max(axis=0)].T
 
@@ -148,7 +146,7 @@ class GridObject(ObjectBase, ABC):
     @abstractmethod
     def span(self) -> np.ndarray:
         """
-        Lengths of the grid along u, v and w directions.
+        Upper and lower limits along u, v and w directions.
         """
 
     def uvw_to_xyz(self, coordinates: np.ndarray) -> np.ndarray:
