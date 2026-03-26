@@ -20,10 +20,13 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import ABC, abstractmethod
 from numbers import Real
 
 import numpy as np
+
+from geoh5py.data import Data
 
 from .object_base import ObjectBase
 
@@ -160,3 +163,30 @@ class GridObject(ObjectBase, ABC):
             )
 
         return mask
+
+    def _get_unique_data(self, data: str | uuid.UUID | Data) -> Data:
+        """
+        Get the values of a data entity as a 2D array with the same shape as the grid.
+
+        :param data: The data to get the values from.
+
+        :return: The shaped values of the data entity.
+        """
+        if not isinstance(data, Data):
+            data_list = self.get_data(data)
+
+            if len(data_list) == 0:
+                raise ValueError(f"No data '{data_list}' found.")
+            if len(data_list) > 1:
+                raise ValueError(
+                    f"Multiple data '{data_list}' found. Please specify a unique data name or uid."
+                )
+
+            data = data_list[0]
+
+        if data.association != "CELL":
+            raise ValueError(
+                f"Data '{data.name}' has association '{data.association}'"
+                ", expected 'CELL'."
+            )
+        return data

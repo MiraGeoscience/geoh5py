@@ -24,6 +24,7 @@ import uuid
 
 import numpy as np
 
+from ..data import Data
 from ..shared.utils import xy_rotation_matrix
 from .grid_object import GridObject
 
@@ -123,6 +124,18 @@ class BlockModel(GridObject):
         Number of cells along the u, v and z-axis
         """
         return self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]
+
+    def shaped_data_values(self, data: str | uuid.UUID | Data) -> np.ndarray:
+        """
+        Get the values of a data entity as a 2D array with the same shape as the grid.
+
+        :param data: The data to get the values from.
+
+        :return: The shaped values of the data entity.
+        """
+        return self._get_unique_data(data).values.reshape(
+            (self.shape[2], self.shape[0], self.shape[1]), order="F"
+        )
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:
