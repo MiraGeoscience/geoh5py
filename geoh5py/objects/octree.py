@@ -160,24 +160,6 @@ class Octree(GridObject):
         return self._centroids
 
     @property
-    def extent(self) -> np.ndarray | None:
-        """
-        Geography bounding box of the object.
-
-        :return: Bounding box defined by the bottom South-West and
-            top North-East coordinates,  shape(2, 3).
-        """
-        origin = np.array(list(self.origin.tolist()))
-        span = np.array(
-            [
-                getattr(self, f"{axis}_cell_size") * getattr(self, f"{axis}_count")
-                for axis in "uvw"
-            ]
-        )
-
-        return np.stack([origin, origin + span])
-
-    @property
     def n_cells(self) -> int:
         """
         Total number of cells in the mesh
@@ -226,6 +208,17 @@ class Octree(GridObject):
         Number of cells along the u, v and w-axis.
         """
         return self.u_count, self.v_count, self.w_count
+
+    @property
+    def span(self) -> np.ndarray:
+        """
+        Lengths of the grid along u, v and w directions.
+        """
+        return np.r_[
+            self.u_cell_size * self.u_count,
+            self.v_cell_size * self.v_count,
+            self.w_cell_size * self.w_count,
+        ]
 
     @property
     def u_cell_size(self) -> float:
