@@ -185,3 +185,35 @@ def test_modify_vp_model(tmp_path: Path):
             vp_copy = vp.copy(parent=new_ws)
 
             np.testing.assert_almost_equal(vp_copy.u_cell_size, 50)
+
+
+def test_vpmesh_extents(tmp_path):
+    origin = np.random.randn(3)
+    rotation = np.random.randint(0, 90, 1)
+    with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:
+        layers, prisms, units = create_mesh_parameters()
+        mesh = VPModel.create(
+            workspace,
+            u_count=64,
+            u_cell_size=1,
+            v_count=32,
+            v_cell_size=1,
+            layers=layers,
+            prisms=prisms,
+            origin=origin,
+            rotation=rotation,
+        )
+
+    angle = np.deg2rad(rotation)
+    assert np.allclose(
+        mesh.extent,
+        np.c_[
+            origin + np.r_[0, -np.sin(angle) * 64, mesh.layers[:, 2].min() - origin[2]],
+            origin
+            + np.r_[
+                np.cos(angle) * 64 + np.sin(angle) * 32,
+                np.cos(angle) * 32,
+                mesh.prisms[:, 0].max() - origin[2],
+            ],
+        ].T,
+    )

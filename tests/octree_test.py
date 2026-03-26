@@ -185,3 +185,30 @@ def test_change_octree_cells(tmp_path: Path):
             ValueError, match="New octree_cells array must have the same shape"
         ):
             base_mesh.octree_cells = octree_cells
+
+
+def test_octree_extents(tmp_path):
+    origin = np.random.randn(3)
+    rotation = np.random.randint(0, 90, 1)
+    with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:
+        mesh = Octree.create(
+            workspace,
+            origin=origin,
+            u_count=32,
+            v_count=16,
+            w_count=8,
+            u_cell_size=1.0,
+            v_cell_size=2.0,
+            w_cell_size=4.0,
+            rotation=rotation,
+        )
+
+    angle = np.deg2rad(rotation)
+    assert np.allclose(
+        mesh.extent,
+        np.c_[
+            origin + np.r_[-np.sin(angle) * 32, 0, 0],
+            origin
+            + np.r_[np.cos(angle) * 32, (np.sin(angle) + np.cos(angle)) * 32, 32],
+        ].T,
+    )
