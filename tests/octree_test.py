@@ -190,7 +190,7 @@ def test_change_octree_cells(tmp_path: Path):
 def test_octree_extents(tmp_path):
     origin = np.random.randn(3)
     rotation = np.random.randint(0, 90, 1)
-    with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         mesh = Octree.create(
             workspace,
             origin=origin,

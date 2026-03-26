@@ -190,7 +190,7 @@ def test_grid2d_extents(tmp_path):
     origin = np.random.randn(3)
     rotation = np.random.randint(0, 90, 1)
 
-    with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         mesh = Grid2D.create(
             workspace,
             origin=origin,

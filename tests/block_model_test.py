@@ -157,22 +157,23 @@ def test_block_extents(tmp_path):
     origin = np.random.randn(3)
     rotation = np.random.randint(0, 90, 1)
 
-    with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         mesh = BlockModel.create(
             workspace,
             name="test",
-            u_cell_delimiters=np.array([0, 0.5, 1]),
-            v_cell_delimiters=np.array([0, 0.5, 1]),
-            z_cell_delimiters=np.array([0, 0.5, 1]),
+            u_cell_delimiters=np.array([-0.5, 0.0, 0.5]),
+            v_cell_delimiters=np.array([-0.5, 0.0, 0.5]),
+            z_cell_delimiters=np.array([-0.5, 0.0, 0.5]),
             origin=origin,
             rotation=rotation,
         )
 
     angle = np.deg2rad(rotation)
+    delta = np.sin(angle) + np.cos(angle)
     assert np.allclose(
         mesh.extent,
         np.c_[
-            origin + np.r_[-np.sin(angle), 0, 0],
-            origin + np.r_[np.cos(angle), (np.sin(angle) + np.cos(angle)), 1],
+            origin - np.r_[delta, delta, 1] * 0.5,
+            origin + np.r_[delta, delta, 1] * 0.5,
         ].T,
     )
