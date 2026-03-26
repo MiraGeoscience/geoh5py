@@ -26,7 +26,7 @@ from numbers import Real
 
 import numpy as np
 
-from geoh5py.data import Data
+from geoh5py.data import Data, DataAssociationEnum
 
 from .object_base import ObjectBase
 
@@ -166,25 +166,25 @@ class GridObject(ObjectBase, ABC):
 
     def _get_unique_data(self, data: str | uuid.UUID | Data) -> Data:
         """
-        Get the values of a data entity as a 2D array with the same shape as the grid.
+        Get a unique data entity with association 'CELL' from the data name, uid or object.
 
         :param data: The data to get the values from.
 
-        :return: The shaped values of the data entity.
+        :return: The unique data.
         """
         if not isinstance(data, Data):
             data_list = self.get_data(data)
 
             if len(data_list) == 0:
-                raise ValueError(f"No data '{data_list}' found.")
+                raise ValueError(f"No data '{data}' found.")
             if len(data_list) > 1:
                 raise ValueError(
-                    f"Multiple data '{data_list}' found. Please specify a unique data name or uid."
+                    f"Multiple data '{data}' found. Please specify a unique data name or uid."
                 )
 
             data = data_list[0]
 
-        if data.association != "CELL":
+        if data.association != DataAssociationEnum.CELL:
             raise ValueError(
                 f"Data '{data.name}' has association '{data.association}'"
                 ", expected 'CELL'."

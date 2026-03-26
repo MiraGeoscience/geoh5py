@@ -127,7 +127,7 @@ class BlockModel(GridObject):
 
     def shaped_data_values(self, data: str | uuid.UUID | Data) -> np.ndarray:
         """
-        Get the values of a data entity as a 2D array with the same shape as the grid.
+        Get the values of a data entity as a 3D array with the same shape as the grid.
 
         :param data: The data to get the values from.
 
