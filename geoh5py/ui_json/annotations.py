@@ -35,8 +35,8 @@ from geoh5py.shared.validators import (
 )
 from geoh5py.ui_json.validations.form import (
     empty_string_to_none,
+    entity_to_uuid,
     uuid_to_string,
-    uuid_to_string_or_numeric,
 )
 
 
@@ -74,12 +74,14 @@ MeshTypes = Annotated[
 OptionalUUID = Annotated[
     UUID | None,
     BeforeValidator(empty_string_to_none),
+    BeforeValidator(entity_to_uuid),
     PlainSerializer(uuid_to_string),
 ]
 
 OptionalUUIDList = Annotated[
     list[UUID] | None,
     BeforeValidator(empty_string_to_none),
+    BeforeValidator(entity_to_uuid),
     PlainSerializer(uuid_to_string),
 ]
 
@@ -93,10 +95,4 @@ PathList = Annotated[
     list[Path],
     BeforeValidator(to_path),
     BeforeValidator(to_list),
-]
-
-UUIDOrNumber = Annotated[
-    UUID | float | int | None,
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string_or_numeric),
 ]

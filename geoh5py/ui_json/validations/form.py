@@ -17,11 +17,28 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+from typing import Any
 from uuid import UUID
 
+from geoh5py.shared import Entity
 
-UidOrNumeric = UUID | float | int | None
-StringOrNumeric = str | float | int
+
+def empty_string_to_none(value):
+    """Promote empty string to uid, and pass all other values."""
+    if value == "":
+        return None
+    return value
+
+
+def entity_to_uuid(value: Any | list[Entity] | Entity) -> Any | list[UUID] | UUID:
+    """Demote an Entity to its UUID, and pass all other values."""
+    if isinstance(value, list | tuple):
+        return [entity_to_uuid(val) for val in value]
+
+    if isinstance(value, Entity):
+        return value.uid
+
+    return value
 
 
 def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
@@ -32,28 +49,6 @@ def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
             return ""
         if isinstance(value, UUID):
             return f"{{{value!s}}}"
-        return value
-
-    if isinstance(value, list):
-        return [convert(v) for v in value]
-    return convert(value)
-
-
-def empty_string_to_none(value):
-    """Promote empty string to uid, and pass all other values."""
-    if value == "":
-        return None
-    return value
-
-
-def uuid_to_string_or_numeric(
-    value: UidOrNumeric | list[UidOrNumeric],
-) -> StringOrNumeric | list[StringOrNumeric]:
-    def convert(value: UidOrNumeric) -> StringOrNumeric:
-        if value is None:
-            return ""
-        if isinstance(value, UUID):
-            return f"{{{value}}}"
         return value
 
     if isinstance(value, list):
