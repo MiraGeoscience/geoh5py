@@ -571,16 +571,23 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
+
         return self
 
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-        ):
+        if "is_value" in self.model_fields_set and not self.is_value:
             return self.property
         return self.value
+
+    def set_value(self, value: Any):
+        """Set the form value."""
+        try:
+            self.value = value
+            self.is_value = True
+        except ValidationError:
+            self.is_value = value is None
+            self.property = value
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
