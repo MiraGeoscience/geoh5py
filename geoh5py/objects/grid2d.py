@@ -248,7 +248,9 @@ class Grid2D(GridObject):
         """
         return self.u_count, self.v_count
 
-    def shaped_data_values(self, data: str | uuid.UUID | Data) -> np.ndarray:
+    def shaped_data_values(
+        self, data: str | uuid.UUID | Data | np.ndarray
+    ) -> np.ndarray:
         """
         Get the values of a data entity as a 2D array with the same shape as the grid.
 
@@ -256,9 +258,13 @@ class Grid2D(GridObject):
 
         :return: The shaped values of the data entity.
         """
-        return self._get_unique_data(data).values.reshape(self.v_count, self.u_count)[
-            ::-1
-        ]
+        values = (
+            data
+            if isinstance(data, np.ndarray)
+            else self._get_data_to_reshape(data).values
+        )
+
+        return values.reshape(self.v_count, self.u_count)[::-1]
 
     @property
     def u_cell_size(self) -> float:

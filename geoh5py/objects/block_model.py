@@ -125,17 +125,26 @@ class BlockModel(GridObject):
         """
         return self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]
 
-    def shaped_data_values(self, data: str | uuid.UUID | Data) -> np.ndarray:
+    def shaped_data_values(
+        self, data: str | uuid.UUID | Data | np.ndarray
+    ) -> np.ndarray:
         """
         Get the values of a data entity as a 3D array with the same shape as the grid.
+
+        The values are shaped as (n_z, n_u, n_v) to be consistent
+        with the Fortran ordering of the data in the file.
 
         :param data: The data to get the values from.
 
         :return: The shaped values of the data entity.
         """
-        return self._get_unique_data(data).values.reshape(
-            (self.shape[2], self.shape[0], self.shape[1]), order="F"
+        values = (
+            data
+            if isinstance(data, np.ndarray)
+            else self._get_data_to_reshape(data).values
         )
+
+        return values.reshape((self.shape[2], self.shape[0], self.shape[1]), order="F")
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:

@@ -170,3 +170,4 @@ def test_shaped_data_values():
             block_model.shape[1],
         )
         assert np.allclose(shaped.ravel(order="F"), values)
+        assert np.allclose(shaped, block_model.shaped_data_values(values))

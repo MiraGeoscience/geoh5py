@@ -202,6 +202,8 @@ def test_shaped_data_values():
         assert shaped.shape == (n_v, n_u)
         assert np.allclose(shaped[::-1].flatten(), values)
 
+        assert np.allclose(shaped, grid.shaped_data_values(values))
+
 
 def test_get_unique_data_errors():
     with Workspace() as workspace:

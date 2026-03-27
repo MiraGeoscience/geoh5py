@@ -164,9 +164,13 @@ class GridObject(ObjectBase, ABC):
 
         return mask
 
-    def _get_unique_data(self, data: str | uuid.UUID | Data) -> Data:
+    def _get_data_to_reshape(self, data: str | uuid.UUID | Data) -> Data:
         """
         Get a unique data entity with association 'CELL' from the data name, uid or object.
+
+        :raises ValueError: if no data are found.
+        :raises ValueError: if multiple data are found.
+        :raises ValueError: if the data association is not 'CELL'.
 
         :param data: The data to get the values from.
 
