@@ -430,6 +430,10 @@ def test_object_form_mesh_type_as_classes(tmp_path):
 
     assert isinstance(ws.get_entity(form.value)[0], tuple(form.mesh_type))
 
+    form_entity = ObjectForm(label="name", value=points, mesh_type=[Points])
+
+    assert form.value == form_entity.value
+
 
 def test_object_form_empty_string_handling():
     form = ObjectForm(label="name", value="", mesh_type=[Points, Surface])
@@ -540,6 +544,25 @@ def test_multichoice_data_form():
         multi_select=True,
     )
     assert form.value == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
+
+    ws = Workspace()
+    obj = Points.create(ws, vertices=np.random.randn(100, 3))
+    data_list = obj.add_data(
+        {f"data{i}": {"values": np.random.randn(100)} for i in range(5)}
+    )
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_list,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+
+    assert all(
+        data.uid == val for data, val in zip(data_list, form.value, strict=False)
+    )
 
 
 def test_multichoice_data_form_serialization():
