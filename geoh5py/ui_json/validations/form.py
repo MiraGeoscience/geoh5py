@@ -51,6 +51,6 @@ def uuid_to_string(value: UUID | list[UUID] | None) -> str | list[str]:
             return f"{{{value!s}}}"
         return value
 
-    if isinstance(value, list):
+    if isinstance(value, list | tuple):
         return [convert(v) for v in value]
     return convert(value)

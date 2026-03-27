@@ -100,10 +100,10 @@ class BaseForm(BaseModel):
 
     model_config = ConfigDict(
         extra="allow",
-        frozen=True,
         populate_by_name=True,
         loc_by_alias=True,
         alias_generator=to_camel,
+        validate_assignment=True,
     )
 
     label: str
@@ -139,8 +139,6 @@ class BaseForm(BaseModel):
         fields to avoid false positives.
 
         :param data: Form data.
-        :param form_types: Pre-compute all the base classes to check against.
-        :param indicators: Pre-compute the indicator attributes for each subclass.
         """
 
         data = {to_snake(k): v for k, v in data.items()}
@@ -163,6 +161,13 @@ class BaseForm(BaseModel):
 
     def validate_data(self, params: dict[str, Any]):
         """Validate the form data."""
+
+    def set_value(self, value: Any):
+        """Set the form value."""
+        self.value = value
+
+        if "optional" in self.model_fields_set:
+            self.enabled = self.value is not None
 
 
 class StringForm(BaseForm):
