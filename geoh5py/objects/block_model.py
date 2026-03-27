@@ -131,8 +131,9 @@ class BlockModel(GridObject):
         """
         Get the values of a data entity as a 3D array with the same shape as the grid.
 
-        The values are shaped as (n_z, n_u, n_v) to be consistent
-        with the Fortran ordering of the data in the file.
+        Data values are stored under the hood as a flatten array in Fortran order;
+        first, the values are reshaped to the grid shape with Fortran order,
+        then transposed to match the (n_v, n_u, n_z) shape.
 
         :param data: The data to get the values from.
 
@@ -144,7 +145,9 @@ class BlockModel(GridObject):
             else self._get_data_to_reshape(data).values
         )
 
-        return values.reshape((self.shape[2], self.shape[0], self.shape[1]), order="F")
+        return values.reshape(
+            (self.shape[2], self.shape[0], self.shape[1]), order="F"
+        ).transpose(2, 1, 0)
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:

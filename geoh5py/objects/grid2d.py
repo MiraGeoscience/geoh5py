@@ -264,7 +264,7 @@ class Grid2D(GridObject):
             else self._get_data_to_reshape(data).values
         )
 
-        return values.reshape(self.v_count, self.u_count)[::-1]
+        return values.reshape(self.v_count, self.u_count)
 
     @property
     def u_cell_size(self) -> float:

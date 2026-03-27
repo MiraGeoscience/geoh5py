@@ -200,9 +200,15 @@ def test_shaped_data_values():
         grid.add_data({"DataValues": {"association": "CELL", "values": values}})
         shaped = grid.shaped_data_values("DataValues")
         assert shaped.shape == (n_v, n_u)
-        assert np.allclose(shaped[::-1].flatten(), values)
-
+        assert np.allclose(shaped.flatten(), values)
         assert np.allclose(shaped, grid.shaped_data_values(values))
+
+        # check for data restoration
+        grid.add_data({"DataValues2": {"association": "CELL", "values": shaped}})
+
+        data1 = grid.get_data("DataValues")[0].values
+        data2 = grid.get_data("DataValues2")[0].values
+        assert np.allclose(data1, data2)
 
 
 def test_get_unique_data_errors():

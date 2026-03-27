@@ -164,10 +164,12 @@ def test_shaped_data_values():
         values = np.arange(block_model.n_cells, dtype=float)
         block_model.add_data({"DataValues": {"association": "CELL", "values": values}})
         shaped = block_model.shaped_data_values("DataValues")
-        assert shaped.shape == (
-            block_model.shape[2],
-            block_model.shape[0],
-            block_model.shape[1],
-        )
-        assert np.allclose(shaped.ravel(order="F"), values)
+        assert shaped.shape == block_model.shape
+        assert np.allclose(shaped.ravel(), values)
         assert np.allclose(shaped, block_model.shaped_data_values(values))
+
+        block_model.add_data({"DataValues2": {"association": "CELL", "values": shaped}})
+
+        data1 = block_model.get_data("DataValues")[0].values
+        data2 = block_model.get_data("DataValues2")[0].values
+        assert np.allclose(data1, data2)
