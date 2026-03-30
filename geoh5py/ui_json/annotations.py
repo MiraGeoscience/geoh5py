@@ -27,9 +27,8 @@ from pydantic import BeforeValidator, Field, PlainSerializer
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import enum_name_to_str, stringify
+from geoh5py.shared.utils import enum_name_to_str, none2str, str2none, stringify
 from geoh5py.shared.validators import (
-    none_to_empty_string,
     to_class,
     to_list,
     to_path,
@@ -84,7 +83,7 @@ MeshTypes = Annotated[
 OptionalPath = Annotated[
     Path | None,
     BeforeValidator(str2none),
-    PlainSerializer(none_to_empty_string),
+    PlainSerializer(none2str),
 ]
 
 OptionalUUID = Annotated[
