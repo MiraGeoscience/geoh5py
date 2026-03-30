@@ -36,11 +36,15 @@ from pydantic import (
 from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup, UIJsonGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.utils import dict_mapper, fetch_active_workspace
+from geoh5py.shared.utils import (
+    as_str_if_uuid,
+    dict_mapper,
+    entity2uuid,
+    fetch_active_workspace,
+)
 from geoh5py.ui_json.annotations import OptionalPath
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validation import ErrorPool, UIJsonError, get_validations
-from geoh5py.ui_json.validations.form import entity_to_uuid, uuid_to_string
 
 
 logger = logging.getLogger(__name__)
@@ -262,7 +266,7 @@ class BaseUIJson(BaseModel):
         else:
             uijson = self
 
-        demotion = [entity_to_uuid, uuid_to_string]
+        demotion = [entity2uuid, as_str_if_uuid]
         for key, value in kwargs.items():
             form = getattr(uijson, key, None)
             if isinstance(form, BaseForm):
