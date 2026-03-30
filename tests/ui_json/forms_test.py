@@ -27,10 +27,10 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from geoh5py import Workspace
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import GroupTypeEnum, PropertyGroup
 from geoh5py.objects import Curve, DrapeModel, Points, Surface
 from geoh5py.ui_json.forms import (
-    Association,
     BaseForm,
     BoolForm,
     ChoiceForm,
@@ -38,7 +38,6 @@ from geoh5py.ui_json.forms import (
     DataGroupForm,
     DataOrValueForm,
     DataRangeForm,
-    DataType,
     DirectoryForm,
     FileForm,
     FloatForm,
@@ -96,12 +95,6 @@ def test_base_form_config_extra(sample_form):
     form = sample_form(label="name", value="test", extra="stuff")
     assert form.extra == "stuff"
     assert form.model_extra == {"extra": "stuff"}
-
-
-def test_base_form_config_frozen(sample_form):
-    form = sample_form(label="name", value="test")
-    with pytest.raises(ValidationError, match="Instance is frozen"):
-        form.label = "new"
 
 
 def test_base_form_config_alias(sample_form):
@@ -430,6 +423,10 @@ def test_object_form_mesh_type_as_classes(tmp_path):
 
     assert isinstance(ws.get_entity(form.value)[0], tuple(form.mesh_type))
 
+    form_entity = ObjectForm(label="name", value=points, mesh_type=[Points])
+
+    assert form.value == form_entity.value
+
 
 def test_object_form_empty_string_handling():
     form = ObjectForm(label="name", value="", mesh_type=[Points, Surface])
@@ -448,8 +445,8 @@ def test_data_form():
     assert form.label == "name"
     assert form.value == uuid.UUID(data_uid)
     assert form.parent == "my_param"
-    assert form.association == "Vertex"
-    assert form.data_type == "Float"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
 
     form = DataForm(
         label="name",
@@ -458,8 +455,8 @@ def test_data_form():
         association=["Vertex", "Cell"],
         data_type=["Float", "Integer"],
     )
-    assert form.association == [Association.VERTEX, Association.CELL]
-    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
+    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
 
 
 def test_data_group_form():
@@ -476,8 +473,8 @@ def test_data_group_form():
     assert form.value == uuid.UUID(group_uid)
     assert form.data_group_type == GroupTypeEnum.STRIKEDIP
     assert form.parent == "Da-da"
-    assert form.association == [Association.VERTEX, Association.CELL]
-    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
+    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
 
 
 def test_data_or_value_form():
@@ -494,8 +491,8 @@ def test_data_or_value_form():
     assert form.label == "name"
     assert form.value == 0.0
     assert form.parent == "my_param"
-    assert form.association == "Vertex"
-    assert form.data_type == "Float"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
     assert not form.is_value
     assert form.property == uuid.UUID(data_uid)
 
@@ -511,6 +508,21 @@ def test_data_or_value_form():
             is_value=False,
             property="",
         )
+
+    form.set_value(None)
+    assert form.is_value
+
+    _ = DataOrValueForm(
+        label="name",
+        value=1.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        is_value=True,
+        property="",
+    )
+    form.set_value(2)
+    assert form.value == 2
 
 
 def test_multichoice_data_form():
@@ -528,8 +540,8 @@ def test_multichoice_data_form():
     assert form.label == "name"
     assert form.value == [uuid.UUID(data_uid_1)]
     assert form.parent == "my_param"
-    assert form.association == "Vertex"
-    assert form.data_type == "Float"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
 
     form = MultiSelectDataForm(
         label="name",
@@ -540,6 +552,26 @@ def test_multichoice_data_form():
         multi_select=True,
     )
     assert form.value == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
+
+    ws = Workspace()
+    obj = Points.create(ws, vertices=np.random.randn(100, 3))
+    data_list = obj.add_data(
+        {f"data{i}": {"values": np.random.randn(100)} for i in range(5)}
+    )
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_list,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+
+    assert len(data_list) == len(form.value)
+    assert all(
+        data.uid == val for data, val in zip(data_list, form.value, strict=False)
+    )
 
 
 def test_multichoice_data_form_serialization():
@@ -597,8 +629,8 @@ def test_data_range_form():
     assert form.property == uuid.UUID(data_uid)
     assert form.value == [0.0, 1.0]
     assert form.parent == "my_param"
-    assert form.association == "Vertex"
-    assert form.data_type == "Float"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
     assert form.range_label == "value range"
 
 
@@ -862,7 +894,7 @@ def test_multi_data_group_form():
     assert form.label == "name"
     assert form.value == [data_uid_1, data_uid_2]
     assert form.group_value == uuid.UUID(group_uid)
-    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
     assert form.multi_select
     assert form.tooltip == ["some ", "tooltip ", "text"]
 
