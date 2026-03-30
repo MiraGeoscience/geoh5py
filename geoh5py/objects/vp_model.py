@@ -422,7 +422,7 @@ class VPModel(GridObject, DrapeModel):
 
         :param coordinates: Array of coordinates along the axes, transformed to world coordinates.
 
-        :return:
+        :return: Array of coordinates along the axes, transformed to world coordinates.
         """
 
         rotation_matrix = xy_rotation_matrix(-np.deg2rad(getattr(self, "rotation", 0)))
