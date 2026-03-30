@@ -39,7 +39,6 @@ from pydantic import (
 from pydantic.alias_generators import to_camel, to_snake
 from pydantic.functional_validators import BeforeValidator
 
-from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.utils import empty_string_to_none, stringify
@@ -50,7 +49,12 @@ from geoh5py.shared.validators import (
     to_type_uid_or_class,
     types_to_string,
 )
-from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
+from geoh5py.ui_json.annotations import (
+    AssociationOptions,
+    DataTypeOptions,
+    OptionalUUIDList,
+    OptionalValueList,
+)
 
 
 class DependencyType(str, Enum):
@@ -476,16 +480,6 @@ class GroupForm(BaseForm):
     group_type: GroupTypes
 
 
-Association = Enum(  # type: ignore
-    "Association",
-    [(k.name, k.name.capitalize()) for k in DataAssociationEnum],
-    type=str,
-)
-
-DataType = Enum(  # type: ignore
-    "DataType", [(k.name, k.name.capitalize()) for k in DataTypeEnum], type=str
-)
-
 UUIDOrNumber = Annotated[
     UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
@@ -509,8 +503,8 @@ class DataFormMixin(BaseModel):
     """
 
     parent: str
-    association: Association | list[Association]
-    data_type: DataType | list[DataType]
+    association: AssociationOptions | list[AssociationOptions]
+    data_type: DataTypeOptions | list[DataTypeOptions]
 
 
 class DataForm(DataFormMixin, BaseForm):
@@ -558,7 +552,7 @@ class GroupMultiDataForm(BaseForm):
     group_type: GroupTypes
     group_value: OptionalUUID
 
-    data_type: DataType | list[DataType]
+    data_type: DataTypeOptions | list[DataTypeOptions]
     value: str | list[str]
     multi_select: bool = True
 

@@ -145,13 +145,6 @@ def to_class(
     return out
 
 
-def none_to_empty_string(value):
-    """None transforms to empty string for serialization."""
-    if value is None:
-        return ""
-    return value
-
-
 def types_to_string(types: list) -> list[str] | str:
     if len(types) > 1:
         return [f"{{{k.default_type_uid()!s}}}" for k in types]

@@ -1448,3 +1448,14 @@ def empty_string_to_none(value):
     if value == "":
         return None
     return value
+
+
+def enum_name_to_str(value: Enum) -> str:
+    """
+    Convert enum name to capitalized string.
+
+    :param value: Enum value to convert.
+
+    :return: Capitalized string.
+    """
+    return value.name.capitalize()

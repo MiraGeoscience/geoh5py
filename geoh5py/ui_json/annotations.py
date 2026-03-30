@@ -23,13 +23,24 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
-from geoh5py.shared.utils import empty_string_to_none, stringify
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
+from geoh5py.shared.utils import empty_string_to_none, enum_name_to_str, stringify
 
 
 logger = logging.getLogger(__name__)
 
+AssociationOptions = Annotated[
+    DataAssociationEnum,
+    PlainSerializer(enum_name_to_str),
+]
+
+DataTypeOptions = Annotated[
+    DataTypeEnum,
+    PlainSerializer(enum_name_to_str),
+]
+
 OptionalUUIDList = Annotated[
-    list[UUID] | None,  # pylint: disable=unsupported-binary-operation
+    list[UUID] | None,
     BeforeValidator(empty_string_to_none),
     PlainSerializer(stringify),
 ]
