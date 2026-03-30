@@ -43,7 +43,7 @@ from geoh5py.ui_json.forms import (
     StringForm,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
-from geoh5py.ui_json.validations import UIJsonError
+from geoh5py.ui_json.validation import UIJsonError
 
 
 @pytest.fixture

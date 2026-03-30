@@ -39,6 +39,8 @@ import numpy as np
 from .exceptions import Geoh5FileClosedError
 
 
+UidOrNumeric = UUID | float | int | None
+StringOrNumeric = str | float | int
 # pylint: disable=too-many-lines
 
 if TYPE_CHECKING:

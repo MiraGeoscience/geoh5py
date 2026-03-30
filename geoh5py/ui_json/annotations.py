@@ -26,6 +26,7 @@ from pydantic import BeforeValidator, Field, PlainSerializer
 
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import stringify
 from geoh5py.shared.validators import (
     to_class,
     to_list,
@@ -33,11 +34,7 @@ from geoh5py.shared.validators import (
     to_type_uid_or_class,
     types_to_string,
 )
-from geoh5py.ui_json.validations.form import (
-    empty_string_to_none,
-    entity_to_uuid,
-    uuid_to_string,
-)
+from geoh5py.ui_json.utils import optional_uuid_mapper
 
 
 logger = logging.getLogger(__name__)
@@ -73,22 +70,19 @@ MeshTypes = Annotated[
 
 OptionalUUID = Annotated[
     UUID | None,
-    BeforeValidator(empty_string_to_none),
-    BeforeValidator(entity_to_uuid),
-    PlainSerializer(uuid_to_string),
+    BeforeValidator(optional_uuid_mapper),
+    PlainSerializer(stringify),
 ]
 
 OptionalUUIDList = Annotated[
     list[UUID] | None,
-    BeforeValidator(empty_string_to_none),
-    BeforeValidator(entity_to_uuid),
-    PlainSerializer(uuid_to_string),
+    BeforeValidator(optional_uuid_mapper),
+    PlainSerializer(stringify),
 ]
-
 
 OptionalValueList = Annotated[
     float | list[float] | None,
-    BeforeValidator(empty_string_to_none),
+    BeforeValidator(optional_uuid_mapper),
 ]
 
 PathList = Annotated[

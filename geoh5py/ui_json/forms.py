@@ -452,6 +452,17 @@ class GroupForm(BaseForm):
     group_type: GroupTypes
 
 
+Association = Enum(  # type: ignore
+    "Association",
+    [(k.name, k.name.capitalize()) for k in DataAssociationEnum],
+    type=str,
+)
+
+DataType = Enum(  # type: ignore
+    "DataType", [(k.name, k.name.capitalize()) for k in DataTypeEnum], type=str
+)
+
+
 class DataFormMixin(BaseModel):
     """
     Mixin class to add common attributes a series of data classes.
