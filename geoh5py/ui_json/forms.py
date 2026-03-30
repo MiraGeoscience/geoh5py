@@ -37,7 +37,6 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel, to_snake
 
-from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import GroupTypeEnum
 from geoh5py.ui_json.annotations import (
     AssociationOptions,
@@ -56,17 +55,6 @@ class DependencyType(str, Enum):
     DISABLED = "disabled"
     SHOW = "show"
     HIDE = "hide"
-
-
-Association = Enum(  # type: ignore
-    "Association",
-    [(k.name, k.name.capitalize()) for k in DataAssociationEnum],
-    type=str,
-)
-
-DataType = Enum(  # type: ignore
-    "DataType", [(k.name, k.name.capitalize()) for k in DataTypeEnum], type=str
-)
 
 
 class BaseForm(BaseModel):
