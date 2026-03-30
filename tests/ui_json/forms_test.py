@@ -561,7 +561,9 @@ def test_multichoice_data_form():
     )
 
     assert len(data_list) == len(form.value)
-    assert all(data.uid == val for data, val in zip(data_list, form.value))
+    assert all(
+        data.uid == val for data, val in zip(data_list, form.value, strict=False)
+    )
 
 
 def test_multichoice_data_form_serialization():
