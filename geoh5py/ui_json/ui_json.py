@@ -24,7 +24,6 @@ import json
 import logging
 from pathlib import Path
 from typing import Annotated, Any
-from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -39,7 +38,12 @@ from geoh5py import Workspace
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations, promote_or_catch
+from geoh5py.ui_json.validations import (
+    ErrorPool,
+    UIJsonError,
+    get_validations,
+    promote_or_catch,
+)
 from geoh5py.ui_json.validations.form import empty_string_to_none
 
 
@@ -88,7 +92,7 @@ class UIJson(BaseModel):
         """String level shows the full json representation."""
 
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
-        for field in self.model_fields:
+        for field in self.model_fields.keys():
             value = getattr(self, field)
             if isinstance(value, BaseForm):
                 type_string = type(value).__name__
@@ -157,7 +161,7 @@ class UIJson(BaseModel):
 
         fields = {}
         for name, value in kwargs.items():
-            if name in UIJson.model_fields:
+            if name in UIJson.model_fields.keys():
                 continue
             if isinstance(value, dict):
                 form_type = BaseForm.infer(value)
@@ -194,7 +198,7 @@ class UIJson(BaseModel):
             group.
         """
         groups: dict[str, list[str]] = {}
-        for field in self.__class__.model_fields:
+        for field in self.__class__.model_fields.keys():
             form = getattr(self, field)
             if not isinstance(form, BaseForm):
                 continue
@@ -318,4 +322,3 @@ class UIJson(BaseModel):
                     errors[field].append(e)
 
         ErrorPool(errors).throw()
-

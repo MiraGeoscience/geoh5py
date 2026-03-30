@@ -17,15 +17,13 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-from typing import Any, Iterable
-
+from typing import Any
 from uuid import UUID
 
 from geoh5py import Workspace
 from geoh5py.data import Data
 from geoh5py.objects import ObjectBase
-from geoh5py.groups import PropertyGroup
-from geoh5py.shared import Entity
+
 
 class UIJsonError(Exception):
     """Exception raised for errors in the UIJson object."""
@@ -97,7 +95,7 @@ def parent_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
 def promote_or_catch(
     workspace: Workspace,
     value: Any,
-) -> Entity | PropertyGroup | UIJsonError | list[Entity | PropertyGroup | UIJsonError]:
+) -> Any:
     """
     Returns an object if it exists in the workspace or an error if not.
 
@@ -108,7 +106,7 @@ def promote_or_catch(
         to be collected and raised later with any other UIJson level validation
         errors.
     """
-    if isinstance(value, Iterable):
+    if isinstance(value, list | tuple):
         return [promote_or_catch(workspace, val) for val in value]
 
     if not isinstance(value, UUID):
