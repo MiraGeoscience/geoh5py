@@ -20,10 +20,13 @@
 
 from __future__ import annotations
 
+import uuid
 from abc import ABC, abstractmethod
 from numbers import Real
 
 import numpy as np
+
+from geoh5py.data import Data, DataAssociationEnum
 
 from .object_base import ObjectBase
 
@@ -160,3 +163,34 @@ class GridObject(ObjectBase, ABC):
             )
 
         return mask
+
+    def _get_data_to_reshape(self, data: str | uuid.UUID | Data) -> Data:
+        """
+        Get a unique data entity with association 'CELL' from the data name, uid or object.
+
+        :raises ValueError: if no data are found.
+        :raises ValueError: if multiple data are found.
+        :raises ValueError: if the data association is not 'CELL'.
+
+        :param data: The data to get the values from.
+
+        :return: The unique data.
+        """
+        if not isinstance(data, Data):
+            data_list = self.get_data(data)
+
+            if len(data_list) == 0:
+                raise ValueError(f"No data '{data}' found.")
+            if len(data_list) > 1:
+                raise ValueError(
+                    f"Multiple data '{data}' found. Please specify a unique data name or uid."
+                )
+
+            data = data_list[0]
+
+        if data.association != DataAssociationEnum.CELL:
+            raise ValueError(
+                f"Data '{data.name}' has association '{data.association}'"
+                ", expected 'CELL'."
+            )
+        return data
