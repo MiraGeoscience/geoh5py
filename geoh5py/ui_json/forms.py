@@ -42,6 +42,7 @@ from pydantic.functional_validators import BeforeValidator
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group, GroupTypeEnum
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import empty_string_to_none, stringify
 from geoh5py.shared.validators import (
     to_class,
     to_list,
@@ -50,11 +51,6 @@ from geoh5py.shared.validators import (
     types_to_string,
 )
 from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
-from geoh5py.ui_json.validations.form import (
-    empty_string_to_none,
-    uuid_to_string,
-    uuid_to_string_or_numeric,
-)
 
 
 class DependencyType(str, Enum):
@@ -439,7 +435,7 @@ MeshTypes = Annotated[
 OptionalUUID = Annotated[
     UUID | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
+    PlainSerializer(stringify),
 ]
 
 
@@ -493,7 +489,7 @@ DataType = Enum(  # type: ignore
 UUIDOrNumber = Annotated[
     UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string_or_numeric),
+    PlainSerializer(stringify),
 ]
 
 

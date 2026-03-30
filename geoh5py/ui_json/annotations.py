@@ -23,7 +23,7 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
-from geoh5py.ui_json.validations.form import empty_string_to_none, uuid_to_string
+from geoh5py.shared.utils import empty_string_to_none, stringify
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 OptionalUUIDList = Annotated[
     list[UUID] | None,  # pylint: disable=unsupported-binary-operation
     BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
+    PlainSerializer(stringify),
 ]
 
 OptionalValueList = Annotated[

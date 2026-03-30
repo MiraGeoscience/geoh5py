@@ -38,11 +38,15 @@ from pydantic import (
 from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup, UIJsonGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.utils import fetch_active_workspace, str2uuid, stringify
+from geoh5py.shared.utils import (
+    empty_string_to_none,
+    fetch_active_workspace,
+    str2uuid,
+    stringify,
+)
 from geoh5py.shared.validators import none_to_empty_string
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
-from geoh5py.ui_json.validations.form import empty_string_to_none
+from geoh5py.ui_json.validation import ErrorPool, UIJsonError, get_validations
 
 
 logger = logging.getLogger(__name__)
