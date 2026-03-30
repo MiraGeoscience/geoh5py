@@ -24,9 +24,10 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import stringify
+from geoh5py.shared.utils import enum_name_to_str, stringify
 from geoh5py.shared.validators import (
     to_class,
     to_list,
@@ -44,6 +45,17 @@ def deprecate(value, info):
     """Issue deprecation warning."""
     logger.warning("Skipping deprecated field: %s.", info.field_name)
     return value
+
+
+AssociationOptions = Annotated[
+    DataAssociationEnum,
+    PlainSerializer(enum_name_to_str),
+]
+
+DataTypeOptions = Annotated[
+    DataTypeEnum,
+    PlainSerializer(enum_name_to_str),
+]
 
 
 Deprecated = Annotated[

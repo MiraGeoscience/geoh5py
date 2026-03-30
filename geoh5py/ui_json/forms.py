@@ -40,6 +40,8 @@ from pydantic.alias_generators import to_camel, to_snake
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import GroupTypeEnum
 from geoh5py.ui_json.annotations import (
+    AssociationOptions,
+    DataTypeOptions,
     GroupTypes,
     MeshTypes,
     OptionalUUID,
@@ -452,17 +454,6 @@ class GroupForm(BaseForm):
     group_type: GroupTypes
 
 
-Association = Enum(  # type: ignore
-    "Association",
-    [(k.name, k.name.capitalize()) for k in DataAssociationEnum],
-    type=str,
-)
-
-DataType = Enum(  # type: ignore
-    "DataType", [(k.name, k.name.capitalize()) for k in DataTypeEnum], type=str
-)
-
-
 class DataFormMixin(BaseModel):
     """
     Mixin class to add common attributes a series of data classes.
@@ -479,8 +470,8 @@ class DataFormMixin(BaseModel):
     """
 
     parent: str
-    association: Association | list[Association]
-    data_type: DataType | list[DataType]
+    association: AssociationOptions | list[AssociationOptions]
+    data_type: DataTypeOptions | list[DataTypeOptions]
 
 
 class DataForm(DataFormMixin, BaseForm):
@@ -528,7 +519,7 @@ class GroupMultiDataForm(BaseForm):
     group_type: GroupTypes
     group_value: OptionalUUID
 
-    data_type: DataType | list[DataType]
+    data_type: DataTypeOptions | list[DataTypeOptions]
     value: str | list[str]
     multi_select: bool = True
 
