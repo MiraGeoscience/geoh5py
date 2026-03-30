@@ -39,7 +39,7 @@ from geoh5py.shared import Entity
 from geoh5py.shared.utils import dict_mapper, fetch_active_workspace
 from geoh5py.ui_json.annotations import OptionalPath
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
+from geoh5py.ui_json.validation import ErrorPool, UIJsonError, get_validations
 from geoh5py.ui_json.validations.form import entity_to_uuid, uuid_to_string
 
 

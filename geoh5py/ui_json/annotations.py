@@ -24,8 +24,10 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import enum_name_to_str, stringify
 from geoh5py.shared.validators import (
     none_to_empty_string,
     to_class,
@@ -34,11 +36,7 @@ from geoh5py.shared.validators import (
     to_type_uid_or_class,
     types_to_string,
 )
-from geoh5py.ui_json.validations.form import (
-    empty_string_to_none,
-    entity_to_uuid,
-    uuid_to_string,
-)
+from geoh5py.ui_json.utils import optional_uuid_mapper
 
 
 logger = logging.getLogger(__name__)
@@ -48,6 +46,17 @@ def deprecate(value, info):
     """Issue deprecation warning."""
     logger.warning("Skipping deprecated field: %s.", info.field_name)
     return value
+
+
+AssociationOptions = Annotated[
+    DataAssociationEnum,
+    PlainSerializer(enum_name_to_str),
+]
+
+DataTypeOptions = Annotated[
+    DataTypeEnum,
+    PlainSerializer(enum_name_to_str),
+]
 
 
 Deprecated = Annotated[
@@ -74,27 +83,25 @@ MeshTypes = Annotated[
 
 OptionalPath = Annotated[
     Path | None,
-    BeforeValidator(empty_string_to_none),
+    BeforeValidator(str2none),
     PlainSerializer(none_to_empty_string),
 ]
 
 OptionalUUID = Annotated[
     UUID | None,
-    BeforeValidator(empty_string_to_none),
-    BeforeValidator(entity_to_uuid),
-    PlainSerializer(uuid_to_string),
+    BeforeValidator(optional_uuid_mapper),
+    PlainSerializer(stringify),
 ]
 
 OptionalUUIDList = Annotated[
     list[UUID] | None,
-    BeforeValidator(empty_string_to_none),
-    BeforeValidator(entity_to_uuid),
-    PlainSerializer(uuid_to_string),
+    BeforeValidator(optional_uuid_mapper),
+    PlainSerializer(stringify),
 ]
 
 OptionalValueList = Annotated[
     float | list[float] | None,
-    BeforeValidator(empty_string_to_none),
+    BeforeValidator(optional_uuid_mapper),
 ]
 
 PathList = Annotated[

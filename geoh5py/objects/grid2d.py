@@ -25,6 +25,7 @@ from numbers import Real
 
 import numpy as np
 
+from ..data import Data
 from ..objects import GeoImage
 from ..shared.conversion import Grid2DConversion
 from ..shared.utils import mask_by_extent, xy_rotation_matrix, yz_rotation_matrix
@@ -246,6 +247,24 @@ class Grid2D(GridObject):
         Number of cells along the u and v-axis.
         """
         return self.u_count, self.v_count
+
+    def shaped_data_values(
+        self, data: str | uuid.UUID | Data | np.ndarray
+    ) -> np.ndarray:
+        """
+        Get the values of a data entity as a 2D array with the same shape as the grid.
+
+        :param data: The data to get the values from.
+
+        :return: The shaped values of the data entity.
+        """
+        values = (
+            data
+            if isinstance(data, np.ndarray)
+            else self._get_data_to_reshape(data).values
+        )
+
+        return values.reshape(self.v_count, self.u_count)
 
     @property
     def u_cell_size(self) -> float:
