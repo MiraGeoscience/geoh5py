@@ -88,7 +88,7 @@ class BaseUIJson(BaseModel):
         """String level shows the full json representation."""
 
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
-        for field in type(self).model_fields:
+        for field in type(self).model_fields.keys():
             value = getattr(self, field)
             if isinstance(value, BaseForm):
                 type_string = type(value).__name__
