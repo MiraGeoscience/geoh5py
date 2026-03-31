@@ -578,7 +578,10 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         except ValidationError:
             if value is not None:
                 self.property = value
-            self.is_value = value is None
+                self.is_value = False
+            else:
+                self.is_value = True
+                self.property = None
 
         if "optional" in self.model_fields_set:
             self.enabled = value is not None
