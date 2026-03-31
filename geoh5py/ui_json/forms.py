@@ -576,8 +576,15 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             self.value = value
             self.is_value = True
         except ValidationError:
-            self.is_value = value is None
-            self.property = value
+            if value is not None:
+                self.property = value
+                self.is_value = False
+            else:
+                self.is_value = True
+                self.property = None
+
+        if "optional" in self.model_fields_set:
+            self.enabled = value is not None
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
