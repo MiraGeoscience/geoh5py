@@ -23,14 +23,12 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
-    BeforeValidator,
     ConfigDict,
-    PlainSerializer,
     create_model,
     field_validator,
 )
@@ -39,23 +37,17 @@ from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup, UIJsonGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.utils import (
+    as_str_if_uuid,
+    dict_mapper,
+    entity2uuid,
     fetch_active_workspace,
-    none2str,
-    str2none,
-    str2uuid,
-    stringify,
 )
+from geoh5py.ui_json.annotations import OptionalPath
 from geoh5py.ui_json.forms import BaseForm
 from geoh5py.ui_json.validation import ErrorPool, UIJsonError, get_validations
 
 
 logger = logging.getLogger(__name__)
-
-OptionalPath = Annotated[
-    Path | None,
-    BeforeValidator(str2none),
-    PlainSerializer(none2str),
-]
 
 
 class BaseUIJson(BaseModel):
@@ -259,7 +251,7 @@ class BaseUIJson(BaseModel):
 
         return data
 
-    def fill(self, copy: bool = False, **kwargs) -> BaseUIJson:
+    def set_values(self, copy: bool = False, **kwargs) -> BaseUIJson:
         """
         Fill the UIJson with new values.
 
@@ -269,38 +261,20 @@ class BaseUIJson(BaseModel):
 
         :return: A new UIJson object with the updated values.
         """
-        temp_properties = {}
-        for key, form in dict(self).items():
-            if not isinstance(form, BaseForm):
-                if key in kwargs:
-                    if not isinstance(kwargs[key], str):
-                        raise TypeError(
-                            "Only string values can be updated for non-form fields. "
-                        )
-                    temp_properties[key] = kwargs[key]
-                continue
+        if copy:
+            uijson = self.model_copy(deep=True)
+        else:
+            uijson = self
 
-            updates: dict[str, Any] = {}
+        demotion = [entity2uuid, as_str_if_uuid]
+        for key, value in kwargs.items():
+            form = getattr(uijson, key, None)
+            if isinstance(form, BaseForm):
+                form.set_value(value)
+            else:
+                setattr(uijson, key, dict_mapper(value, demotion))
 
-            # if a value has no default value, set enabled to false
-            if not bool(form.value) if form.value != [""] else False:
-                updates["enabled"] = False
-
-            if key in kwargs:
-                updates["value"] = str2uuid(stringify(kwargs[key]))
-                updates["enabled"] = True
-
-            if updates:
-                temp_properties[key] = form.model_copy(update=updates)
-
-        updated_model = self.model_copy(update=temp_properties)
-
-        if not copy:
-            for field_name in type(self).model_fields:
-                setattr(self, field_name, getattr(updated_model, field_name))
-            return self
-
-        return updated_model
+        return uijson
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """

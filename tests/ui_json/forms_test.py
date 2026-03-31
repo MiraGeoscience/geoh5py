@@ -97,12 +97,6 @@ def test_base_form_config_extra(sample_form):
     assert form.model_extra == {"extra": "stuff"}
 
 
-def test_base_form_config_frozen(sample_form):
-    form = sample_form(label="name", value="test")
-    with pytest.raises(ValidationError, match="Instance is frozen"):
-        form.label = "new"
-
-
 def test_base_form_config_alias(sample_form):
     form = sample_form(
         label="name",
@@ -514,6 +508,32 @@ def test_data_or_value_form():
             is_value=False,
             property="",
         )
+
+    form.set_value(None)
+    assert form.is_value
+
+    optional_form = DataOrValueForm(
+        label="name",
+        value=1.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        is_value=True,
+        property="",
+        optional=True,
+    )
+    assert optional_form.enabled
+    optional_form.set_value(None)
+    assert optional_form.is_value
+    assert not optional_form.enabled
+
+    optional_form.set_value(data_uid)
+    assert not optional_form.is_value
+    assert optional_form.property == uuid.UUID(data_uid)
+    assert optional_form.enabled
+
+    form.set_value(2)
+    assert form.value == 2
 
 
 def test_multichoice_data_form():

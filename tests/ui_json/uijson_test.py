@@ -617,7 +617,7 @@ def test_fill_in_place(tmp_path):
             "my_int_parameter": {"label": "b", "value": 1},
         },
     )
-    result = uijson.fill(my_string_parameter="updated")
+    result = uijson.set_values(my_string_parameter="updated")
 
     assert result is uijson
     assert uijson.my_string_parameter.value == "updated"
@@ -635,31 +635,15 @@ def test_fill_copy(tmp_path):
         uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "original"}},
     )
-    copy = uijson.fill(copy=True, my_string_parameter="updated", title="ok")
+    copy = uijson.set_values(copy=True, my_string_parameter="updated", title="ok")
 
     assert copy is not uijson
     assert copy.my_string_parameter.value == "updated"
     assert uijson.my_string_parameter.value == "original"
     assert copy.title == "ok"
 
-    with pytest.raises(TypeError, match="Only string"):
-        _ = uijson.fill(copy=True, my_string_parameter="updated", title=666)
-
-
-def test_fill_disables_forms_with_falsy_value(tmp_path):
-    ws = Workspace(tmp_path / "test.geoh5")
-
-    class MyUIJson(BaseUIJson):
-        my_zero_param: FloatForm
-
-    uijson = generate_test_uijson(
-        ws,
-        uijson=MyUIJson,
-        data={"my_zero_param": {"label": "a", "value": 0.0}},
-    )
-    uijson.fill()
-
-    assert uijson.my_zero_param.enabled is False
+    with pytest.raises(ValidationError):
+        _ = uijson.set_values(copy=True, my_string_parameter="updated", title=666)
 
 
 def test_fill_truthy_value_leaves_updates_empty(tmp_path):
@@ -675,7 +659,7 @@ def test_fill_truthy_value_leaves_updates_empty(tmp_path):
         data={"my_param": {"label": "a", "value": 3.14}},
     )
     original_enabled = uijson.my_param.enabled
-    uijson.fill()
+    uijson.set_values()
 
     assert uijson.my_param.enabled == original_enabled
     assert uijson.my_param.value == 3.14
@@ -690,9 +674,11 @@ def test_fill_kwargs_re_enables_form(tmp_path):
     uijson = generate_test_uijson(
         ws,
         uijson=MyUIJson,
-        data={"my_param": {"label": "a", "value": 0.0, "enabled": False}},
+        data={
+            "my_param": {"label": "a", "value": 0.0, "enabled": False, "optional": True}
+        },
     )
-    uijson.fill(my_param=5.0)
+    uijson.set_values(my_param=5.0)
 
     assert uijson.my_param.enabled is True
     assert uijson.my_param.value == 5.0
@@ -717,7 +703,7 @@ def test_fill_with_uuid_value(tmp_path):
             }
         },
     )
-    uijson.fill(my_object_parameter=pts2.uid)
+    uijson.set_values(my_object_parameter=pts2.uid)
 
     assert uijson.my_object_parameter.value == pts2.uid
 

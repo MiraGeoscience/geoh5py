@@ -90,10 +90,10 @@ class BaseForm(BaseModel):
 
     model_config = ConfigDict(
         extra="allow",
-        frozen=True,
         populate_by_name=True,
         loc_by_alias=True,
         alias_generator=to_camel,
+        validate_assignment=True,
     )
 
     label: str
@@ -129,8 +129,6 @@ class BaseForm(BaseModel):
         fields to avoid false positives.
 
         :param data: Form data.
-        :param form_types: Pre-compute all the base classes to check against.
-        :param indicators: Pre-compute the indicator attributes for each subclass.
         """
 
         data = {to_snake(k): v for k, v in data.items()}
@@ -153,6 +151,13 @@ class BaseForm(BaseModel):
 
     def validate_data(self, params: dict[str, Any]):
         """Validate the form data."""
+
+    def set_value(self, value: Any):
+        """Set the form value."""
+        self.value = value
+
+        if "optional" in self.model_fields_set:
+            self.enabled = self.value is not None
 
 
 class StringForm(BaseForm):
@@ -556,16 +561,30 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
+
         return self
 
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-        ):
+        if "is_value" in self.model_fields_set and not self.is_value:
             return self.property
         return self.value
+
+    def set_value(self, value: Any):
+        """Set the form value."""
+        try:
+            self.value = value
+            self.is_value = True
+        except ValidationError:
+            if value is not None:
+                self.property = value
+                self.is_value = False
+            else:
+                self.is_value = True
+                self.property = None
+
+        if "optional" in self.model_fields_set:
+            self.enabled = value is not None
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
