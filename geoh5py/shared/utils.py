@@ -920,7 +920,7 @@ def nan2str(value):
 
 
 def str2none(value):
-    if value == "":
+    if value in ("", "{00000000-0000-0000-0000-000000000000}"):
         return None
     return value
 

@@ -77,15 +77,15 @@ class UIJson(BaseModel):
     monitoring_directory: OptionalPath
     conda_environment: str
     workspace_geoh5: OptionalPath | None = None
-    _path: Path | None = None
+
     _groups: dict[str, list[str]]
 
     def model_post_init(self, context: Any, /) -> None:
         self._groups = self.get_groups()
 
     def __repr__(self) -> str:
-        """Repr level shows a path if it exists or the title otherwise."""
-        return f"UIJson('{self.title if self._path is None else str(self._path.name)}')"
+        """Repr level shows the title."""
+        return f"UIJson('{self.title}')"
 
     def __str__(self) -> str:
         """String level shows the full json representation."""
@@ -146,7 +146,7 @@ class UIJson(BaseModel):
         return kwargs
 
     @classmethod
-    def read(cls, path: str | Path) -> UIJson:
+    def read(cls, path: str | Path, validate=True) -> UIJson:
         """
         Create a UIJson object from ui.json file.
 
@@ -176,9 +176,12 @@ class UIJson(BaseModel):
             __base__=UIJson,
             **fields,
         )
-        uijson = model(**kwargs)
 
-        uijson._path = path  # pylint: disable=protected-access
+        if validate:
+            uijson = model(**kwargs)
+        else:
+            uijson = model.model_construct(**kwargs)
+
         return uijson
 
     def write(self, path: Path):
@@ -187,7 +190,6 @@ class UIJson(BaseModel):
 
         :param path: Path to write the .ui.json file.
         """
-        self._path = path
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
@@ -286,7 +288,9 @@ class UIJson(BaseModel):
 
         return uijson
 
-    def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
+    def to_params(
+        self, workspace: Workspace | None = None, validate=True
+    ) -> dict[str, Any]:
         """
         Promote, flatten and validate parameter/values dictionary.
 
@@ -316,7 +320,8 @@ class UIJson(BaseModel):
 
                 data[field] = value
 
-            self._cross_validations(data, errors)
+            if validate:
+                self._cross_validations(data, errors)
 
         return data
 
