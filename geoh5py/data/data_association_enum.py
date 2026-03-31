@@ -37,3 +37,18 @@ class DataAssociationEnum(Enum):
     FACE = 4
     GROUP = 5
     DEPTH = 6
+
+    @classmethod
+    def _missing_(cls, value) -> DataAssociationEnum:
+        """
+        Allows for case-insensitive matching of enum members.
+
+        For example, "Cell" will match "CELL".
+
+        :param value: The value to match against the enum members.
+        """
+        if isinstance(value, str):
+            normalized = value.upper()
+            if normalized in cls.__members__:
+                return cls[normalized]
+        return super()._missing_(value)

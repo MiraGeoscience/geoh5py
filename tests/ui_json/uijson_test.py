@@ -43,7 +43,7 @@ from geoh5py.ui_json.forms import (
     StringForm,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
-from geoh5py.ui_json.validations import UIJsonError
+from geoh5py.ui_json.validation import UIJsonError
 
 
 @pytest.fixture
@@ -546,6 +546,11 @@ def test_unknown_uijson(tmp_path):
     assert "my_optional_parameter" not in params
     assert "my_group_optional_parameter" not in params
     assert "my_grouped_parameter" not in params
+
+    re_loaded = BaseUIJson.read(tmp_path / "test_copy.ui.json")
+
+    for name in uijson.model_fields_set:
+        assert getattr(re_loaded, name) == getattr(uijson, name)
 
 
 def test_str_and_repr(tmp_path):
