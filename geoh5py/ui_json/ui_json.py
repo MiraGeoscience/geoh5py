@@ -88,7 +88,7 @@ class BaseUIJson(BaseModel):
         """String level shows the full json representation."""
 
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
-        for field in type(self).model_fields.keys():
+        for field in type(self).model_fields:
             value = getattr(self, field)
             if isinstance(value, BaseForm):
                 type_string = type(value).__name__
@@ -148,7 +148,7 @@ class BaseUIJson(BaseModel):
         if cls == BaseUIJson:
             fields = {}
             for name, value in kwargs.items():
-                if name in BaseUIJson.model_fields.keys():
+                if name in BaseUIJson.model_fields:
                     continue
                 if isinstance(value, dict):
                     form_type = BaseForm.infer(value)
@@ -190,7 +190,7 @@ class BaseUIJson(BaseModel):
             group.
         """
         groups: dict[str, list[str]] = {}
-        for field in self.__class__.model_fields.keys():
+        for field in self.__class__.model_fields:
             form = getattr(self, field)
             if not isinstance(form, BaseForm):
                 continue
