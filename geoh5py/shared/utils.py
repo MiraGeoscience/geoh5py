@@ -1443,13 +1443,6 @@ def map_to_class(
     return class_map
 
 
-def empty_string_to_none(value):
-    """Promote empty string to uid, and pass all other values."""
-    if value == "":
-        return None
-    return value
-
-
 def enum_name_to_str(value: Enum) -> str:
     """
     Convert enum name to capitalized string.

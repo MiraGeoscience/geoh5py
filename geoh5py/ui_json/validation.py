@@ -329,7 +329,12 @@ class UIJsonError(Exception):
 
 
 class ErrorPool:  # pylint: disable=too-few-public-methods
-    """Stores validation errors for all UIJson members."""
+    """
+    Stores validation errors for all UIJson members.
+
+    :param errors: Dictionary mapping parameter names to lists of
+        exceptions encountered during validation.
+    """
 
     def __init__(self, errors: dict[str, list[Exception]]):
         self.pool = errors
@@ -355,11 +360,20 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
-    """Dependency is optional or bool type."""
+def dependency_type_validation(
+    name: str, data: dict[str, Any], json_dict: dict[str, Any]
+):
+    """
+    Validate that the dependency for is optional or bool type.
 
-    dependency = params[name]["dependency"]
-    dependency_form = params[dependency]
+    :param name: Name of the form
+    :param data: Input data with known validations.
+    :param json_dict: A dict representation of the UIJson object.
+    """
+
+    dependency = json_dict[name]["dependency"]
+    dependency_form = json_dict[dependency]
+
     if "optional" not in dependency_form and not isinstance(data[dependency], bool):
         raise UIJsonError(
             f"Dependency {dependency} must be either optional or of boolean type."
@@ -367,23 +381,43 @@ def dependency_type_validation(name: str, data: dict[str, Any], params: dict[str
 
 
 def get_validations(form_keys: list[str]) -> list[Callable]:
-    """Returns a list of callable validations based on identifying form keys."""
+    """
+    Get callable validations based on identifying form keys.
+
+    :param form_keys: List of form keys.
+
+    :return: List of callable validations.
+    """
     return [VALIDATIONS_MAP[k] for k in form_keys if k in VALIDATIONS_MAP]
 
 
-def mesh_type_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
-    """Promoted value is one of the provided mesh types."""
+def mesh_type_validation(name: str, data: dict[str, Any], json_dict: dict[str, Any]):
+    """
+    Validate that value is one of the provided mesh types.
 
-    mesh_types = params[name]["mesh_type"]
+    :param name: Name of the form
+    :param data: Input data with known validations.
+    :param json_dict: A dict representation of the UIJson object.
+    """
+
+    mesh_types = json_dict[name]["mesh_type"]
+
     obj = data[name]
     if not isinstance(obj, tuple(mesh_types)):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
 
 
-def parent_validation(name: str, data: dict[str, Any], params: dict[str, Any]):
-    """Data is a child of the parent object."""
+def parent_validation(name: str, data: dict[str, Any], json_dict: dict[str, Any]):
+    """
+    Validate that the data is a child of the parent object.
 
-    form = params[name]
+    :param name: Name of the form
+    :param data: Input data with known validations.
+    :param json_dict: A dict representation of the UIJson object.
+    """
+
+    form = json_dict[name]
+
     child = data[name]
     parent = data[form["parent"]]
 

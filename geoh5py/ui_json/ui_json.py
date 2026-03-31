@@ -39,9 +39,9 @@ from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup, UIJsonGroup
 from geoh5py.shared import Entity
 from geoh5py.shared.utils import (
-    empty_string_to_none,
     fetch_active_workspace,
     none2str,
+    str2none,
     str2uuid,
     stringify,
 )
@@ -52,8 +52,8 @@ from geoh5py.ui_json.validation import ErrorPool, UIJsonError, get_validations
 logger = logging.getLogger(__name__)
 
 OptionalPath = Annotated[
-    Path | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
+    Path | None,
+    BeforeValidator(str2none),
     PlainSerializer(none2str),
 ]
 

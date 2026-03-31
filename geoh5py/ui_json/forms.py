@@ -22,14 +22,13 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
 import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
-    PlainSerializer,
     TypeAdapter,
     ValidationError,
     field_serializer,
@@ -37,23 +36,17 @@ from pydantic import (
     model_validator,
 )
 from pydantic.alias_generators import to_camel, to_snake
-from pydantic.functional_validators import BeforeValidator
 
-from geoh5py.groups import Group, GroupTypeEnum
-from geoh5py.objects import ObjectBase
-from geoh5py.shared.utils import empty_string_to_none, stringify
-from geoh5py.shared.validators import (
-    to_class,
-    to_list,
-    to_path,
-    to_type_uid_or_class,
-    types_to_string,
-)
+from geoh5py.groups import GroupTypeEnum
 from geoh5py.ui_json.annotations import (
     AssociationOptions,
     DataTypeOptions,
+    GroupTypes,
+    MeshTypes,
+    OptionalUUID,
     OptionalUUIDList,
     OptionalValueList,
+    PathList,
 )
 
 
@@ -304,13 +297,6 @@ class MultiChoiceForm(BaseForm):
         return self
 
 
-PathList = Annotated[
-    list[Path],
-    BeforeValidator(to_path),
-    BeforeValidator(to_list),
-]
-
-
 class FileForm(BaseForm):
     """
     File path uijson form.
@@ -428,21 +414,6 @@ class DirectoryForm(BaseForm):
         return ["Directory"]
 
 
-MeshTypes = Annotated[
-    list[type[ObjectBase]],
-    BeforeValidator(to_class),
-    BeforeValidator(to_type_uid_or_class),
-    BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
-]
-
-OptionalUUID = Annotated[
-    UUID | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(stringify),
-]
-
-
 class ObjectForm(BaseForm):
     """
     Geoh5py object uijson form.
@@ -457,15 +428,6 @@ class ObjectForm(BaseForm):
     mesh_type: MeshTypes
 
 
-GroupTypes = Annotated[
-    list[type[Group]],
-    BeforeValidator(to_class),
-    BeforeValidator(to_type_uid_or_class),
-    BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
-]
-
-
 class GroupForm(BaseForm):
     """
     Geoh5py group uijson form.
@@ -478,13 +440,6 @@ class GroupForm(BaseForm):
 
     value: OptionalUUID
     group_type: GroupTypes
-
-
-UUIDOrNumber = Annotated[
-    UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(stringify),
-]
 
 
 class DataFormMixin(BaseModel):
