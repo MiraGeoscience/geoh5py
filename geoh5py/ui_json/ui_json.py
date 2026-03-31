@@ -70,13 +70,13 @@ class UIJson(BaseModel):
         arbitrary_types_allowed=True, extra="allow", validate_assignment=True
     )
 
-    version: str
+    version: str | None = "0.0.0"
     title: str
-    geoh5: Path | None
-    run_command: str
-    monitoring_directory: OptionalPath
-    conda_environment: str
-    workspace_geoh5: OptionalPath | None = None
+    geoh5: OptionalPath
+    run_command: str | None
+    monitoring_directory: OptionalPath = None
+    conda_environment: str | None
+    workspace_geoh5: OptionalPath = None
 
     _groups: dict[str, list[str]]
 
@@ -156,6 +156,8 @@ class UIJson(BaseModel):
         will be inferred dynamically.
 
         :param path: Path to the .ui.json file.
+        :param validate: Whether to validate the ui json file.
+
         :returns: UIJson object.
         """
 
