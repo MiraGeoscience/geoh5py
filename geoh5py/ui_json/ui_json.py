@@ -395,12 +395,12 @@ class UIJson(BaseModel):
         if errors is None:
             errors = {k: [] for k in params}
 
-        for field, form in self.model_fields.items():
+        for field in self.model_fields_set:
             if self.is_disabled(field):
                 continue
-
+            form = getattr(self, field)
             validations = get_validations(
-                form.model_fields.keys() if isinstance(form, BaseForm) else []
+                list(form.model_fields_set) if isinstance(form, BaseForm) else []
             )
             for validation in validations:
                 try:
