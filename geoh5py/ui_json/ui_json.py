@@ -35,13 +35,13 @@ from pydantic import (
 from geoh5py import Workspace
 from geoh5py.groups import UIJsonGroup
 from geoh5py.shared.utils import (
-    as_str_if_uuid,
+    copy_dict_relatives,
     dict_mapper,
     entity2uuid,
     fetch_active_workspace,
 )
-from geoh5py.ui_json.annotations import OptionalPath
-from geoh5py.ui_json.forms import BaseForm
+from geoh5py.ui_json.annotations import OptionalPath, OptionalString
+from geoh5py.ui_json.forms import BaseForm, GroupForm
 from geoh5py.ui_json.validation import (
     ErrorPool,
     UIJsonError,
@@ -77,6 +77,8 @@ class UIJson(BaseModel):
     monitoring_directory: OptionalPath = None
     conda_environment: str | None
     workspace_geoh5: OptionalPath = None
+
+    out_group: GroupForm | OptionalString = None
 
     _groups: dict[str, list[str]]
 
@@ -117,14 +119,52 @@ class UIJson(BaseModel):
             )
         return path
 
-    @staticmethod
-    def load(path: str | Path) -> dict:
+    def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
-        Load ui json from file.
+        Copy the entities referenced in the input file to a new workspace.
+
+        :param parent: The parent to copy the entities to.
+        :param clear_cache: Indicate whether to clear the cache.
+        """
+        with fetch_active_workspace(Workspace(self.geoh5)) as geoh5:
+            params = self.to_params(workspace=geoh5)
+            params.pop("geoh5", None)
+            copy_dict_relatives(
+                params,
+                parent,
+                clear_cache=clear_cache,
+            )
+
+    @staticmethod
+    def infer(title="UnknownUIJson", **kwargs) -> type[UIJson]:
+        """
+        Create a UIJson class based on inferred forms.
+        """
+        fields = {}
+        for name, value in kwargs.items():
+            if name in UIJson.model_fields.keys():
+                continue
+            if isinstance(value, dict):
+                form_type = BaseForm.infer(value)
+                fields[name] = (form_type, ...)
+            else:
+                fields[name] = (type(value), ...)
+
+        model = create_model(  # type: ignore
+            kwargs.get("title", title),
+            __base__=UIJson,
+            **fields,
+        )
+        return model
+
+    @staticmethod
+    def load(path: str | Path) -> tuple[type[UIJson], dict]:
+        """
+        Load data and generate a UIJson class from file.
 
         :param path: Path to the .ui.json file.
 
-        :return: Dictionary representing the ui json object.
+        :return: UIJson class and dictionary representing the ui json object.
         """
         if isinstance(path, str):
             path = Path(path)
@@ -143,50 +183,31 @@ class UIJson(BaseModel):
                 key: (item if item != "" else None) for key, item in kwargs.items()
             }
 
-        return kwargs
+        ui_json_class = UIJson.infer(**kwargs)
+        return ui_json_class, kwargs
 
     @classmethod
-    def read(cls, path: str | Path, validate=True) -> UIJson:
+    def read(cls, path: str | Path) -> UIJson | type[UIJson]:
         """
-        Create a UIJson object from ui.json file.
+        Create a UIJson instance from ui.json file.
 
         Raises errors if the file doesn't exist or is not a .ui.json file.
         Also validates at the Form and UIJson level whether the file is
-        properly formatted.  If called from the BaseUIJson class, forms
-        will be inferred dynamically.
+        properly formatted.
+
+        Consider using the `load` method to get the UIJson class and data separately
+        if you want to handle validation errors yourself.
 
         :param path: Path to the .ui.json file.
         :param validate: Whether to validate the ui json file.
 
         :returns: UIJson object.
         """
+        uijson_class, kwargs = cls.load(path)
 
-        kwargs = cls.load(path)
+        return uijson_class(**kwargs)
 
-        fields = {}
-        for name, value in kwargs.items():
-            if name in UIJson.model_fields.keys():
-                continue
-            if isinstance(value, dict):
-                form_type = BaseForm.infer(value)
-                fields[name] = (form_type, ...)
-            else:
-                fields[name] = (type(value), ...)
-
-        model = create_model(  # type: ignore
-            kwargs.get("title", "UnknownUIJson"),
-            __base__=UIJson,
-            **fields,
-        )
-
-        if validate:
-            uijson = model(**kwargs)
-        else:
-            uijson = model.model_construct(**kwargs)
-
-        return uijson
-
-    def write(self, path: Path):
+    def write(self, path: Path) -> Path:
         """
         Write the UIJson object to file.
 
@@ -195,6 +216,8 @@ class UIJson(BaseModel):
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
             file.write(data)
+
+        return path
 
     def get_groups(self) -> dict[str, list[str]]:
         """
@@ -280,13 +303,12 @@ class UIJson(BaseModel):
         else:
             uijson = self
 
-        demotion = [entity2uuid, as_str_if_uuid]
         for key, value in kwargs.items():
             form = getattr(uijson, key, None)
             if isinstance(form, BaseForm):
                 form.set_value(value)
             else:
-                setattr(uijson, key, dict_mapper(value, demotion))
+                setattr(uijson, key, dict_mapper(value, [entity2uuid]))
 
         return uijson
 
@@ -298,10 +320,11 @@ class UIJson(BaseModel):
 
         :param workspace: Workspace to fetch entities from.  Used for passing active
             workspaces to avoid closing and flushing data.
+        :param validate: Whether to run cross validations on the data after
 
-        :returns: If the data passes validation, to_params returns a promoted and
-            flattened parameters/values dictionary that may be dumped into an application
-            specific params (options) class.
+        :returns: A flattened parameters/values dictionary that may be dumped into an application
+            specific params (options) class. If validate=True, the content is validated and errors
+            are raised if any validations fail.
         """
 
         data = self.flatten(skip_disabled=True, active_only=True)
@@ -372,15 +395,16 @@ class UIJson(BaseModel):
         if errors is None:
             errors = {k: [] for k in params}
 
-        ui_json = self.model_dump(exclude_unset=True)
-        for field, form in ui_json.items():
+        for field, form in self.model_fields.items():
             if self.is_disabled(field):
                 continue
 
-            validations = get_validations(list(form) if isinstance(form, dict) else [])
+            validations = get_validations(
+                form.model_fields.keys() if isinstance(form, BaseForm) else []
+            )
             for validation in validations:
                 try:
-                    validation(field, params, ui_json)
+                    validation(field, params, self)
                 except UIJsonError as e:
                     errors[field].append(e)
 

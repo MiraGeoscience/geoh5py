@@ -381,15 +381,15 @@ def dependency_type_validation(
         )
 
 
-def get_validations(form_keys: list[str]) -> list[Callable]:
+def get_validations(form: list[str]) -> list[Callable]:
     """
     Get callable validations based on identifying form keys.
 
-    :param form_keys: List of form keys.
+    :param form: Form to validate sub-keys with
 
     :return: List of callable validations.
     """
-    return [VALIDATIONS_MAP[k] for k in form_keys if k in VALIDATIONS_MAP]
+    return [VALIDATIONS_MAP[k] for k in form if k in VALIDATIONS_MAP]
 
 
 def mesh_type_validation(name: str, data: dict[str, Any], json_dict: dict[str, Any]):

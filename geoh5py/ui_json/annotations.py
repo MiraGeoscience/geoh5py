@@ -39,7 +39,6 @@ from geoh5py.shared.validators import (
     to_list,
     to_path,
     to_type_uid_or_class,
-    types_to_string,
 )
 from geoh5py.ui_json.utils import optional_uuid_mapper
 
@@ -75,7 +74,7 @@ GroupTypes = Annotated[
     BeforeValidator(to_class),
     BeforeValidator(to_type_uid_or_class),
     BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
+    PlainSerializer(stringify),
 ]
 
 MeshTypes = Annotated[
@@ -83,13 +82,19 @@ MeshTypes = Annotated[
     BeforeValidator(to_class),
     BeforeValidator(to_type_uid_or_class),
     BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
+    PlainSerializer(stringify),
 ]
 
 OptionalPath = Annotated[
     Path | None,
     BeforeValidator(str2none),
     BeforeValidator(workspace2path),
+    PlainSerializer(none2str),
+]
+
+OptionalString = Annotated[
+    str | None,
+    BeforeValidator(str2none),
     PlainSerializer(none2str),
 ]
 

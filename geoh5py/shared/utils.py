@@ -846,6 +846,7 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     :return: Dictionary of string values.
     """
     mappers = [
+        type2uuid,
         entity2uuid,
         nan2str,
         inf2str,
@@ -1427,3 +1428,14 @@ def enum_name_to_str(value: Enum) -> str:
     :return: Capitalized string.
     """
     return value.name.capitalize()
+
+
+def type2uuid(value: Any) -> Any | UUID:
+    """
+    Convert an Entity type to its default uuid.
+
+    :param value: An entity type or any.
+    """
+    if isinstance(value, type) and hasattr(value, "default_type_uid"):
+        return value.default_type_uid()
+    return value

@@ -145,12 +145,6 @@ def to_class(
     return out
 
 
-def types_to_string(types: list) -> list[str] | str:
-    if len(types) > 1:
-        return [f"{{{k.default_type_uid()!s}}}" for k in types]
-    return f"{{{types[0].default_type_uid()!s}}}"
-
-
 class BaseValidator(ABC):
     """Concrete base class for validators."""
 
