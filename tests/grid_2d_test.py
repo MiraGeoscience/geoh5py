@@ -186,6 +186,36 @@ def test_grid2d_to_geoimage(tmp_path):
             converter.key_to_data(grid, [0, 1])
 
 
+def test_grid2d_extents(tmp_path):
+    origin = np.random.randn(3)
+    rotation = np.random.randint(0, 90, 1)
+
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        mesh = Grid2D.create(
+            workspace,
+            origin=origin,
+            u_cell_size=np.r_[1.0],
+            v_cell_size=np.r_[1.0],
+            u_count=1,
+            v_count=1,
+            rotation=rotation,
+            dip=np.random.randint(0, 90, 1)[0],
+        )
+
+    azm = np.deg2rad(rotation)
+    dip = np.deg2rad(mesh.dip)
+    assert np.allclose(
+        mesh.extent,
+        np.c_[
+            origin + np.r_[-np.sin(azm) * np.cos(dip), 0, 0],
+            origin
+            + np.r_[
+                np.cos(azm), (np.sin(azm) + np.cos(azm) * np.cos(dip)), np.sin(dip)
+            ],
+        ].T,
+    )
+
+
 def test_shaped_data_values():
     n_u, n_v = 5, 4
     with Workspace() as workspace:

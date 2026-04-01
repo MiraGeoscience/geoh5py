@@ -210,6 +210,19 @@ class Octree(GridObject):
         return self.u_count, self.v_count, self.w_count
 
     @property
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+        return np.vstack(
+            [
+                np.sort([0, self.u_cell_size * self.u_count]),
+                np.sort([0, self.v_cell_size * self.v_count]),
+                np.sort([0, self.w_cell_size * self.w_count]),
+            ]
+        )
+
+    @property
     def u_cell_size(self) -> float:
         """
         Base cell size along the u-axis.

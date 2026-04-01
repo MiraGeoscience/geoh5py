@@ -126,17 +126,10 @@ class Grid2D(GridObject):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
-            dip_matrix = yz_rotation_matrix(np.deg2rad(self.dip))
-
             u_grid, v_grid = np.meshgrid(self.cell_center_u, self.cell_center_v)
-            xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
+            uvw = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.zeros(self.n_cells)]
 
-            xyz_dipped = dip_matrix @ xyz.T
-            centroids = (rotation_matrix @ xyz_dipped).T
-            centroids += np.asarray(self._origin.tolist())[None, :]
-
-            self._centroids = centroids
+            self._centroids = self.uvw_to_xyz(uvw)
 
         return self._centroids
 
@@ -265,6 +258,19 @@ class Grid2D(GridObject):
         )
 
         return values.reshape(self.v_count, self.u_count)
+
+    @property
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+        return np.vstack(
+            [
+                np.sort([0, self.u_cell_size * self.u_count]),
+                np.sort([0, self.v_cell_size * self.v_count]),
+                [0, 0],
+            ]
+        )
 
     @property
     def u_cell_size(self) -> float:
