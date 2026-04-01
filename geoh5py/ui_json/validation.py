@@ -374,6 +374,7 @@ def dependency_type_validation(
 
     dependency = json_dict[name]["dependency"]
     dependency_form = json_dict[dependency]
+
     if "optional" not in dependency_form and not isinstance(data[dependency], bool):
         raise UIJsonError(
             f"Dependency {dependency} must be either optional or of boolean type."
@@ -401,6 +402,7 @@ def mesh_type_validation(name: str, data: dict[str, Any], json_dict: dict[str, A
     """
 
     mesh_types = json_dict[name]["mesh_type"]
+
     obj = data[name]
     if not isinstance(obj, tuple(mesh_types)):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
@@ -416,6 +418,7 @@ def parent_validation(name: str, data: dict[str, Any], json_dict: dict[str, Any]
     """
 
     form = json_dict[name]
+
     child = data[name]
     parent = data[form["parent"]]
 

@@ -28,6 +28,7 @@ import numpy as np
 
 from geoh5py.data import Data, DataAssociationEnum
 
+from ..shared.utils import xy_rotation_matrix, yz_rotation_matrix
 from .object_base import ObjectBase
 
 
@@ -63,6 +64,15 @@ class GridObject(ObjectBase, ABC):
         """
         Cell center locations in world coordinates of shape (n_cells, 3).
         """
+
+    @property
+    def extent(self) -> np.ndarray:
+        """
+        Compute outer extent of mesh span in world coordinates.
+        """
+        u, v, w = np.meshgrid(self.span[0, :], self.span[1, :], self.span[2, :])
+        xyz = self.uvw_to_xyz(np.c_[u.ravel(), v.ravel(), w.ravel()])
+        return np.c_[xyz.min(axis=0), xyz.max(axis=0)].T
 
     @property
     def n_cells(self) -> int:
@@ -134,6 +144,31 @@ class GridObject(ObjectBase, ABC):
         """
         Cell center locations in world coordinates.
         """
+
+    @property
+    @abstractmethod
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+
+    def uvw_to_xyz(self, coordinates: np.ndarray) -> np.ndarray:
+        """
+        Apply rotation to the input coordinates.
+
+        :param coordinates: Array of coordinates along the axes, transformed to world coordinates.
+
+        :return:
+        """
+
+        rotation_matrix = xy_rotation_matrix(np.deg2rad(getattr(self, "rotation", 0)))
+        dip_matrix = yz_rotation_matrix(np.deg2rad(getattr(self, "dip", 0)))
+
+        xyz_dipped = dip_matrix @ coordinates.T
+        xyz = (rotation_matrix @ xyz_dipped).T
+        xyz += np.asarray(self._origin.tolist())[None, :]
+
+        return xyz
 
     def validate_cell_mask(self, cell_mask: np.ndarray | None):
         """

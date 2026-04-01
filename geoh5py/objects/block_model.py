@@ -25,7 +25,6 @@ import uuid
 import numpy as np
 
 from ..data import Data
-from ..shared.utils import xy_rotation_matrix
 from .grid_object import GridObject
 
 
@@ -92,18 +91,13 @@ class BlockModel(GridObject):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            cell_center_u = self.local_axis_centers("u")
-            cell_center_v = self.local_axis_centers("v")
-            cell_center_z = self.local_axis_centers("z")
-            angle = np.deg2rad(self.rotation)
-            rot = xy_rotation_matrix(angle)
             u_grid, v_grid, z_grid = np.meshgrid(
-                cell_center_u, cell_center_v, cell_center_z
+                self.local_axis_centers("u"),
+                self.local_axis_centers("v"),
+                self.local_axis_centers("z"),
             )
-            xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
-            self._centroids = np.dot(rot, xyz.T).T
-
-            self._centroids += np.asarray(self._origin.tolist())[None, :]
+            uvw = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
+            self._centroids = self.uvw_to_xyz(uvw)
 
         return self._centroids
 
@@ -148,6 +142,19 @@ class BlockModel(GridObject):
         return values.reshape(
             (self.shape[2], self.shape[0], self.shape[1]), order="F"
         ).transpose(2, 1, 0)
+
+    @property
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+        return np.vstack(
+            [
+                [self.u_cell_delimiters.min(), self.u_cell_delimiters.max()],
+                [self.v_cell_delimiters.min(), self.v_cell_delimiters.max()],
+                [self.z_cell_delimiters.min(), self.z_cell_delimiters.max()],
+            ]
+        )
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:
