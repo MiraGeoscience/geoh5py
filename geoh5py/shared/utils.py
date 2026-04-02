@@ -837,7 +837,9 @@ def map_attributes(object_, **kwargs):
     set_attributes(object_, **values)
 
 
-def stringify(values: dict[str, Any]) -> dict[str, Any]:
+def stringify(
+    values: Any | dict[str, Any],
+) -> dict[str, str] | dict[str, list[str]] | str | list[str]:
     """
     Convert all values in a dictionary to string.
 
