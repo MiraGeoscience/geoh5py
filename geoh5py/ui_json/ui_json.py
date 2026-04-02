@@ -126,7 +126,10 @@ class UIJson(BaseModel):
         :param parent: The parent to copy the entities to.
         :param clear_cache: Indicate whether to clear the cache.
         """
-        with fetch_active_workspace(Workspace(self.geoh5)) as geoh5:
+        if self.geoh5 is None:
+            return
+
+        with Workspace(self.geoh5, mode="r") as geoh5:
             params = self.to_params(workspace=geoh5)
             params.pop("geoh5", None)
             copy_dict_relatives(
@@ -158,7 +161,7 @@ class UIJson(BaseModel):
         return model
 
     @staticmethod
-    def load(path: str | Path) -> tuple[type[UIJson], dict]:
+    def _load(path: str | Path) -> dict:
         """
         Load data and generate a UIJson class from file.
 
@@ -179,15 +182,26 @@ class UIJson(BaseModel):
 
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
-            kwargs = {
-                key: (item if item != "" else None) for key, item in kwargs.items()
-            }
 
-        ui_json_class = UIJson.infer(**kwargs)
-        return ui_json_class, kwargs
+        return kwargs
 
     @classmethod
-    def read(cls, path: str | Path) -> UIJson | type[UIJson]:
+    def from_dict(cls, data: dict) -> UIJson:
+        """
+        Create a UIJson instance from a dictionary.
+
+        :param data: Dictionary representing the ui json object.
+
+        :returns: UIJson object.
+        """
+        kwargs = {key: (item if item != "" else None) for key, item in data.items()}
+
+        ui_json_class = UIJson.infer(**kwargs)
+
+        return ui_json_class(**kwargs)
+
+    @classmethod
+    def read(cls, path: str | Path) -> UIJson:
         """
         Create a UIJson instance from ui.json file.
 
@@ -203,9 +217,9 @@ class UIJson(BaseModel):
 
         :returns: UIJson object.
         """
-        uijson_class, kwargs = cls.load(path)
+        kwargs = cls._load(path)
 
-        return uijson_class(**kwargs)
+        return cls.from_dict(kwargs)
 
     def write(self, path: Path) -> Path:
         """
@@ -328,7 +342,12 @@ class UIJson(BaseModel):
         """
 
         data = self.flatten(skip_disabled=True, active_only=True)
-        with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
+
+        with (
+            fetch_active_workspace(workspace)
+            if workspace
+            else Workspace(self.geoh5, mode="r") as geoh5
+        ):
             if geoh5 is None:
                 raise ValueError("Workspace cannot be None.")
 

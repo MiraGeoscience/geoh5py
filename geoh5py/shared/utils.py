@@ -854,6 +854,7 @@ def stringify(
         inf2str,
         as_str_if_uuid,
         none2str,
+        enum_name_to_str,
         workspace2path,
         path2str,
     ]
@@ -1421,7 +1422,7 @@ def map_to_class(
     return class_map
 
 
-def enum_name_to_str(value: Enum) -> str:
+def enum_name_to_str(value: Any | Enum) -> Any | str:
     """
     Convert enum name to capitalized string.
 
@@ -1429,7 +1430,10 @@ def enum_name_to_str(value: Enum) -> str:
 
     :return: Capitalized string.
     """
-    return value.name.capitalize()
+    if isinstance(value, Enum):
+        return value.name.capitalize()
+
+    return value
 
 
 def type2uuid(value: Any) -> Any | UUID:

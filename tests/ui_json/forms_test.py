@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 
 import numpy as np
@@ -596,7 +597,7 @@ def test_multichoice_data_form_serialization():
         data_type="Float",
         multi_select=True,
     )
-    data = form.model_dump()
+    data = json.loads(form.model_dump_json())
     assert data["value"] == [data_uid_1, data_uid_2]
 
     form = MultiSelectDataForm(
@@ -608,21 +609,18 @@ def test_multichoice_data_form_serialization():
         multi_select=True,
     )
     data = form.model_dump()
-    assert data["value"] == [data_uid_1]
+    assert data["value"] == [uuid.UUID(data_uid_1)]
 
     form = MultiSelectDataForm(
         label="name",
-        value=[],
+        value=[data_uid_1, data_uid_2],
         parent="my_param",
         association="Vertex",
         data_type="Float",
-        is_value=False,
-        property=[data_uid_1, data_uid_2],
         multi_select=True,
     )
     data = form.model_dump()
-    assert data["property"] == [data_uid_1, data_uid_2]
-    assert data["value"] == []
+    assert data["value"] == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
 
 
 def test_data_range_form():
