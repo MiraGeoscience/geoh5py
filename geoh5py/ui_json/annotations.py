@@ -98,7 +98,7 @@ OptionalString = Annotated[
 ]
 
 OptionalUUID = Annotated[
-    UUID | None,
+    list[UUID] | UUID | None,
     BeforeValidator(optional_uuid_mapper),
     PlainSerializer(stringify, when_used="json"),
 ]
