@@ -156,7 +156,10 @@ class BaseForm(BaseModel):
         """Set the form value."""
         self.value = value
 
-        if "optional" in self.model_fields_set:
+        if (
+            "optional" in self.model_fields_set
+            or "group_optional" in self.model_fields_set
+        ):
             self.enabled = self.value is not None
 
 
@@ -567,7 +570,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
         if "is_value" in self.model_fields_set and not self.is_value:
-            return self.property
+            return self.property  # type: ignore
         return self.value
 
     def set_value(self, value: Any):
@@ -583,7 +586,10 @@ class DataOrValueForm(DataFormMixin, BaseForm):
                 self.is_value = True
                 self.property = None
 
-        if "optional" in self.model_fields_set:
+        if (
+            "optional" in self.model_fields_set
+            or "group_optional" in self.model_fields_set
+        ):
             self.enabled = value is not None
 
 
