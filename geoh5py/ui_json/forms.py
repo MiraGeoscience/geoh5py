@@ -651,6 +651,14 @@ class DataRangeForm(DataFormMixin, BaseForm):
     allow_complement: bool = False
     is_complement: bool = False
 
+    def flatten(self) -> dict:
+        """Returns the property, data and is_complement values for the form."""
+        return {
+            "is_complement": self.is_complement,
+            "property": self.property,
+            "value": self.value,
+        }
+
 
 def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
     """Recursively find all subclasses of input type object."""
