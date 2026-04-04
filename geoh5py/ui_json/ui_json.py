@@ -41,7 +41,7 @@ from geoh5py.shared.utils import (
     fetch_active_workspace,
 )
 from geoh5py.ui_json.annotations import OptionalPath, OptionalString
-from geoh5py.ui_json.forms import BaseForm, GroupForm
+from geoh5py.ui_json.forms import BaseForm, DependencyType, GroupForm
 from geoh5py.ui_json.validation import (
     ErrorPool,
     UIJsonError,
@@ -80,10 +80,10 @@ class UIJson(BaseModel):
 
     out_group: GroupForm | OptionalString = None
 
-    _groups: dict[str, list[str]]
+    _dependencies: dict[str, list[BaseForm]]
 
     def model_post_init(self, context: Any, /) -> None:
-        self._groups = self.get_groups()
+        self._dependencies = self.get_dependencies()
 
     def __repr__(self) -> str:
         """Repr level shows the title."""
@@ -233,47 +233,82 @@ class UIJson(BaseModel):
 
         return path
 
-    def get_groups(self) -> dict[str, list[str]]:
+    def get_dependencies(self) -> dict[str, list[BaseForm]]:
         """
-        Returns grouped forms.
+        Returns dependency links between forms.
 
-        :returns: Group names and the parameters belonging to each
-            group.
+        For each form, there could be a direct dependency on another form (dependency) and/or
+        an optional group dependency (group/group_optional).
+
+        :returns: Dictionary of forms and there respective dependency links.
         """
-        groups: dict[str, list[str]] = {}
-        for field in self.__class__.model_fields.keys():
-            form = getattr(self, field)
+        dependencies: dict[str, list[BaseForm]] = {}
+        group_optionals: dict[str, BaseForm] = {}
+        for name in self.__class__.model_fields.keys():
+            deps = []
+            form = getattr(self, name)
+
             if not isinstance(form, BaseForm):
                 continue
-            name = getattr(form, "group", "")
-            if name:
-                groups[name] = [field] if name not in groups else groups[name] + [field]
 
-        return groups
+            # Check for direct dependency on other form
+            dependents_on = getattr(form, "dependency", None)
+            if dependents_on:
+                deps.append(getattr(self, dependents_on))
+
+            # Check for groupOptional dependency
+            group_name: str = getattr(form, "group", "")
+
+            # Add the leading form to the known list once
+            group_optional = getattr(form, "group_optional", False)
+            if group_optional:
+                group_optionals[group_name] = form
+
+            if (
+                group_name in group_optionals
+                and form is not group_optionals[group_name]
+            ):
+                deps.append(group_optionals[group_name])
+
+            dependencies[name] = deps
+
+        return dependencies
 
     def is_disabled(self, field: str) -> bool:
         """
-        Checks if a field is disabled based on form status.
+        Checks if a field is disabled based on form status and dependency.
 
-        :param field: Field name to check.
+        :param field: Field name or form to check.
         :returns: True if the field is disabled by its own enabled status or
-            the groups enabled status, False otherwise.
+            the dependencies enabled status, False otherwise.
         """
+        form = getattr(self, field)
 
-        value = getattr(self, field)
-        if not isinstance(value, BaseForm):
+        # Only a key:value pair, cannot be disabled
+        if not isinstance(form, BaseForm):
             return False
-        if value.enabled is False:
+
+        if form.enabled is False:
             return True
 
+        # Can still be disabled based on dependency
         disabled = False
-        if value.group:
-            group = next(v for k, v in self._groups.items() if field in v)
-            for member in group:
-                form = getattr(self, member)
-                if form.group_optional:
-                    disabled = not form.enabled
-                    break
+        # Check if disabled based on group status or direct dependency
+        for depends_on in self._dependencies.get(field, []):
+            if getattr(depends_on, "group_optional", False) or getattr(
+                form, "dependency_type", None
+            ) in [DependencyType.ENABLED, DependencyType.HIDE]:
+                disabled = not depends_on.enabled
+
+            if getattr(form, "dependency_type", None) in [
+                DependencyType.DISABLED,
+                DependencyType.SHOW,
+            ]:
+                disabled = depends_on.enabled
+
+            # Disabled as soon as one is encountered
+            if disabled:
+                return True
 
         return disabled
 
