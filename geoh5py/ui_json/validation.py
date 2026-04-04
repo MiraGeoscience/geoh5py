@@ -424,6 +424,11 @@ def parent_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     form = getattr(ui_json, name)
     parent_name = form.parent
     child = data[name]
+
+    # Special case for DataRangeForm
+    if isinstance(child, dict):
+        child = data[name]["property"]
+
     parent = data[parent_name]
 
     if not isinstance(parent, ObjectBase) or (child not in parent.children):
@@ -446,6 +451,9 @@ def promote_or_catch(
     """
     if isinstance(value, list | tuple):
         return [promote_or_catch(workspace, val) for val in value]
+
+    if isinstance(value, dict):
+        return {key: promote_or_catch(workspace, val) for key, val in value.items()}
 
     if not isinstance(value, UUID):
         return value
