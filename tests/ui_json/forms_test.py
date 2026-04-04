@@ -642,6 +642,11 @@ def test_data_range_form():
     assert form.data_type.name == "FLOAT"
     assert form.range_label == "value range"
 
+    assert isinstance(form.flatten(), dict)
+    assert (
+        set(form.flatten()).difference({"is_complement", "property", "value"}) == set()
+    )
+
 
 def test_flatten(sample_form):
     param = sample_form(label="my_param", value=2)
