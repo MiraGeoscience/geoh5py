@@ -149,11 +149,12 @@ class BaseForm(BaseModel):
         """Returns the data for the form."""
         return self.value
 
-    def validate_data(self, params: dict[str, Any]):
-        """Validate the form data."""
-
     def set_value(self, value: Any):
-        """Set the form value."""
+        """
+        Set the form value.
+
+        If the value is None, the form enabled state is changed to False.
+        """
         self.value = value
 
         if "optional" in self.model_fields_set:
@@ -571,20 +572,22 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         return self.value
 
     def set_value(self, value: Any):
-        """Set the form value."""
+        """
+        Set the form value.
+
+        Either a Numeric value or a UUID, in which case it will be assigned
+        to the `property` field and the `is_value` field will be set to False.
+        """
         try:
             self.value = value
             self.is_value = True
         except ValidationError:
-            if value is not None:
+            if value is None:
+                self.is_value = True
+                self.property = value
+            else:
                 self.property = value
                 self.is_value = False
-            else:
-                self.is_value = True
-                self.property = None
-
-        if "optional" in self.model_fields_set:
-            self.enabled = value is not None
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):

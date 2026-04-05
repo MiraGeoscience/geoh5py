@@ -526,12 +526,10 @@ def test_data_or_value_form():
     assert optional_form.enabled
     optional_form.set_value(None)
     assert optional_form.is_value
-    assert not optional_form.enabled
 
     optional_form.set_value(data_uid)
     assert not optional_form.is_value
     assert optional_form.property == uuid.UUID(data_uid)
-    assert optional_form.enabled
 
     form.set_value(2)
     assert form.value == 2
