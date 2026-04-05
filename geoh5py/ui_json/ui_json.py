@@ -80,10 +80,10 @@ class UIJson(BaseModel):
 
     out_group: GroupForm | OptionalString = None
 
-    _dependencies: dict[str, dict[str, BaseForm]]
+    _enabled_links: dict[str, dict[str, BaseForm]]
 
     def model_post_init(self, context: Any, /) -> None:
-        self._dependencies = self.get_dependencies()
+        self._enabled_links = self.get_enabled_links()
 
     def __repr__(self) -> str:
         """Repr level shows the title."""
@@ -233,7 +233,7 @@ class UIJson(BaseModel):
 
         return path
 
-    def get_dependencies(self) -> dict[str, dict[str, BaseForm]]:
+    def get_enabled_links(self) -> dict[str, dict[str, BaseForm]]:
         """
         Returns dependency links between forms.
 
@@ -273,6 +273,42 @@ class UIJson(BaseModel):
 
         return dependencies
 
+    @staticmethod
+    def _mirror_parent_state(name, form_a, form_b):
+        """
+        Check the type of mirroring between the form and
+        its parent.
+
+        If group optional, the form enabled state mirrors the parent.
+        If direct dependency, the form enabled state can mirror or be opposite
+        of the parent depending on the dependency type.
+
+        :param name: Name of the parental field.
+        :param parent: The parental form.
+        :param form: The dependent form
+
+        :return: Logic whether the dependent (form) mirrors the parent
+        """
+        # Direct dependency injects disabled state
+        if getattr(form_b, "dependency", "") == name and getattr(
+            form_b, "dependency_type", None
+        ) in [
+            DependencyType.DISABLED,
+            DependencyType.HIDE,
+        ]:
+            return False
+
+        # Other way direct dependency
+        if getattr(form_a, "dependency", "") == name and getattr(
+            form_a, "dependency_type", None
+        ) in [
+            DependencyType.DISABLED,
+            DependencyType.HIDE,
+        ]:
+            return False
+
+        return True
+
     def is_enabled(self, field: str) -> bool:
         """
         Checks if a field is enabled based on form status and dependencies.
@@ -293,27 +329,15 @@ class UIJson(BaseModel):
 
         # Can still be disabled based on dependencies
         # Check if disabled based on group status or direct dependency
-        for name, parent in self._dependencies.get(field, {}).items():
-            # Whole group is disabled
-            if getattr(parent, "group_optional", False):
-                enabled = parent.enabled
+        for name, parent in self._enabled_links.get(field, {}).items():
+            mirror = self._mirror_parent_state(name, parent, form)
 
-            # Direct dependency injects enabled state
-            if getattr(form, "dependency", "") == name and getattr(
-                form, "dependency_type", None
-            ) in [DependencyType.ENABLED, DependencyType.SHOW]:
+            if mirror:
                 enabled = parent.enabled
-
-            # Direct dependency injects disabled state
-            if getattr(form, "dependency", "") == name and getattr(
-                form, "dependency_type", None
-            ) in [
-                DependencyType.DISABLED,
-                DependencyType.HIDE,
-            ]:
+            else:
                 enabled = not parent.enabled
 
-            # Disabled as soon as one disabled is encountered
+            # Disabled as soon as one is encountered
             if not enabled:
                 return False
 
@@ -352,7 +376,7 @@ class UIJson(BaseModel):
             If False, updates the current UIJson object with the new values and returns itself.
         :param kwargs: Key/value pairs to update the UIJson with.
 
-        :return: A new UIJson object with the updated values.
+        :return: A UIJson object with the updated values.
         """
         if copy:
             uijson = self.model_copy(deep=True)
@@ -365,6 +389,43 @@ class UIJson(BaseModel):
                 form.set_value(value)
             else:
                 setattr(uijson, key, dict_mapper(value, [entity2uuid]))
+
+        return uijson
+
+    def set_enabled(self, states: dict[str, bool], copy: bool = False) -> UIJson:
+        """
+        Set the enabled state of fields, and handle the state of dependencies.
+
+        :param states: Dictionary of field names and their enabled state to update.
+        :param copy: If True, returns a new UIJson object with the updated values.
+            If False, updates the current UIJson object with the new values and returns itself.
+
+        :return: A UIJson object with the updated values.
+        """
+        if copy:
+            uijson = self.model_copy(deep=True)
+        else:
+            uijson = self
+
+        for key, value in states.items():
+            form = getattr(uijson, key, None)
+            if not isinstance(form, BaseForm):
+                continue
+
+            dependencies = self._enabled_links.get(key, {})
+            if not dependencies and not getattr(form, "optional", False):
+                raise ValueError(f"Field {key} enabled state cannot be False.")
+
+            for name, parent in dependencies.items():
+                # Set the parent dependency state
+                mirror = self._mirror_parent_state(name, parent, form)
+
+                if mirror:
+                    parent.enabled = value
+                else:
+                    parent.enabled = not value
+
+            form.enabled = value
 
         return uijson
 
