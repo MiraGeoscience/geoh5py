@@ -160,31 +160,6 @@ class UIJson(BaseModel):
         )
         return model
 
-    @staticmethod
-    def _load(path: str | Path) -> dict:
-        """
-        Load data and generate a UIJson class from file.
-
-        :param path: Path to the .ui.json file.
-
-        :return: UIJson class and dictionary representing the ui json object.
-        """
-        if isinstance(path, str):
-            path = Path(path)
-
-        path = path.resolve()
-
-        if not path.exists():
-            raise FileNotFoundError(f"File {path} does not exist.")
-
-        if "".join(path.suffixes[-2:]) != ".ui.json":
-            raise ValueError(f"File {path} is not a .ui.json file.")
-
-        with open(path, encoding="utf-8") as file:
-            kwargs = json.load(file)
-
-        return kwargs
-
     @classmethod
     def from_dict(cls, data: dict) -> UIJson:
         """
@@ -280,46 +255,13 @@ class UIJson(BaseModel):
 
         return dependencies
 
-    @staticmethod
-    def _mirror_link_state(name, link, form):
-        """
-        Check the type of mirroring between the form and
-        its linked form.
-
-        If group optional, the form enabled state mirrors the parent.
-        If direct dependency, the form enabled state can mirror or be opposite
-        of the parent depending on the dependency type.
-
-        :param name: Name of the linked field.
-        :param parent: Form of the linked field..
-        :param form: Form currently looked at
-
-        :return: Logic whether the form mirrors the state of link
-        """
-        # Don't change leader state for group optional dependencies
-        if getattr(form, "group_optional", False):
-            return False
-
-        # Either way linkage injects disabled state
-        if getattr(
-            form, "dependency", getattr(link, "dependency", "")
-        ) == name and getattr(
-            form, "dependency_type", getattr(link, "dependency_type", None)
-        ) in [
-            DependencyType.DISABLED,
-            DependencyType.HIDE,
-        ]:
-            return False
-
-        return True
-
     def is_enabled(self, field: str) -> bool:
         """
-        Checks if a field is enabled based on form status and dependencies.
+        Checks if a field is enabled based on form status and linkages.
 
         :param field: Field name or form to check.
         :returns: False if the field is disabled by its own enabled status or
-            the dependencies enabled status, True otherwise.
+            the linkages enabled status, True otherwise.
         """
         enabled = True
         form = getattr(self, field)
@@ -331,7 +273,7 @@ class UIJson(BaseModel):
         if not form.enabled:
             return False
 
-        # Can still be disabled based on dependencies
+        # Can still be disabled based on linkages
         # Check if disabled based on group status or direct dependency
         for name, parent in self._enabled_links.get(field, {}).items():
             mirror = self._mirror_link_state(name, parent, form)
@@ -535,3 +477,61 @@ class UIJson(BaseModel):
                     errors[field].append(e)
 
         ErrorPool(errors).throw()
+
+    @staticmethod
+    def _load(path: str | Path) -> dict:
+        """
+        Load data and generate a UIJson class from file.
+
+        :param path: Path to the .ui.json file.
+
+        :return: UIJson class and dictionary representing the ui json object.
+        """
+        if isinstance(path, str):
+            path = Path(path)
+
+        path = path.resolve()
+
+        if not path.exists():
+            raise FileNotFoundError(f"File {path} does not exist.")
+
+        if "".join(path.suffixes[-2:]) != ".ui.json":
+            raise ValueError(f"File {path} is not a .ui.json file.")
+
+        with open(path, encoding="utf-8") as file:
+            kwargs = json.load(file)
+
+        return kwargs
+
+    @staticmethod
+    def _mirror_link_state(name, link, form):
+        """
+        Check the type of mirroring between the form and
+        its linked form.
+
+        If group optional, the form enabled state mirrors the parent.
+        If direct dependency, the form enabled state can mirror or be opposite
+        of the parent depending on the dependency type.
+
+        :param name: Name of the linked field.
+        :param parent: Form of the linked field..
+        :param form: Form currently looked at
+
+        :return: Logic whether the form mirrors the state of link
+        """
+        # Don't change leader state for group optional dependencies
+        if getattr(form, "group_optional", False):
+            return False
+
+        # Either way linkage injects disabled state
+        if getattr(
+            form, "dependency", getattr(link, "dependency", "")
+        ) == name and getattr(
+            form, "dependency_type", getattr(link, "dependency_type", None)
+        ) in [
+            DependencyType.DISABLED,
+            DependencyType.HIDE,
+        ]:
+            return False
+
+        return True
