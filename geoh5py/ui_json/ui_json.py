@@ -41,7 +41,7 @@ from geoh5py.shared.utils import (
     fetch_active_workspace,
 )
 from geoh5py.ui_json.annotations import OptionalPath, OptionalString
-from geoh5py.ui_json.forms import BaseForm, GroupForm
+from geoh5py.ui_json.forms import BaseForm, DependencyType, GroupForm
 from geoh5py.ui_json.validation import (
     ErrorPool,
     UIJsonError,
@@ -80,10 +80,10 @@ class UIJson(BaseModel):
 
     out_group: GroupForm | OptionalString = None
 
-    _groups: dict[str, list[str]]
+    _enabled_links: dict[str, dict[str, BaseForm]]
 
     def model_post_init(self, context: Any, /) -> None:
-        self._groups = self.get_groups()
+        self._enabled_links = self.get_enabled_links()
 
     def __repr__(self) -> str:
         """Repr level shows the title."""
@@ -160,31 +160,6 @@ class UIJson(BaseModel):
         )
         return model
 
-    @staticmethod
-    def _load(path: str | Path) -> dict:
-        """
-        Load data and generate a UIJson class from file.
-
-        :param path: Path to the .ui.json file.
-
-        :return: UIJson class and dictionary representing the ui json object.
-        """
-        if isinstance(path, str):
-            path = Path(path)
-
-        path = path.resolve()
-
-        if not path.exists():
-            raise FileNotFoundError(f"File {path} does not exist.")
-
-        if "".join(path.suffixes[-2:]) != ".ui.json":
-            raise ValueError(f"File {path} is not a .ui.json file.")
-
-        with open(path, encoding="utf-8") as file:
-            kwargs = json.load(file)
-
-        return kwargs
-
     @classmethod
     def from_dict(cls, data: dict) -> UIJson:
         """
@@ -233,49 +208,86 @@ class UIJson(BaseModel):
 
         return path
 
-    def get_groups(self) -> dict[str, list[str]]:
+    def get_enabled_links(self) -> dict[str, dict[str, BaseForm]]:
         """
-        Returns grouped forms.
+        Returns dependency links between forms.
 
-        :returns: Group names and the parameters belonging to each
-            group.
+        For each form, there could be a direct dependency on another form (dependency) and/or
+        an optional group dependency (group/group_optional).
+
+        :returns: Dictionary of forms and their respective dependency links.
         """
-        groups: dict[str, list[str]] = {}
-        for field in self.__class__.model_fields.keys():
-            form = getattr(self, field)
+        dependencies: dict[str, dict[str, BaseForm]] = {}
+        group_optionals: dict[str, tuple[str, BaseForm]] = {}
+        for name in self.__class__.model_fields.keys():
+            deps = {}
+            form = getattr(self, name)
+
             if not isinstance(form, BaseForm):
                 continue
-            name = getattr(form, "group", "")
-            if name:
-                groups[name] = [field] if name not in groups else groups[name] + [field]
 
-        return groups
+            # Check for direct dependency on other form
+            dependents_on = getattr(form, "dependency", None)
+            if dependents_on:
+                deps[dependents_on] = getattr(self, dependents_on)
 
-    def is_disabled(self, field: str) -> bool:
+                # Add reverse linkage
+                dependencies[dependents_on].update({name: form})
+
+            # Check for groupOptional dependency
+            # Only the leading form should have the groupOptional field
+            group_name: str = getattr(form, "group", "")
+            group_optional = getattr(form, "group_optional", False)
+            if group_optional:
+                group_optionals[group_name] = (name, form)
+
+            if (
+                group_name in group_optionals
+                and name not in group_optionals[group_name]  # Avoid self reference
+            ):
+                lead_name, lead_form = group_optionals[group_name]
+                deps[group_name] = lead_form
+
+                # Add reverse linkage
+                dependencies[lead_name].update({name: form})
+
+            dependencies[name] = deps
+
+        return dependencies
+
+    def is_enabled(self, field: str) -> bool:
         """
-        Checks if a field is disabled based on form status.
+        Checks if a field is enabled based on form status and linkages.
 
-        :param field: Field name to check.
-        :returns: True if the field is disabled by its own enabled status or
-            the groups enabled status, False otherwise.
+        :param field: Field name or form to check.
+        :returns: False if the field is disabled by its own enabled status or
+            the linkages enabled status, True otherwise.
         """
+        enabled = True
+        form = getattr(self, field)
 
-        value = getattr(self, field)
-        if not isinstance(value, BaseForm):
-            return False
-        if value.enabled is False:
+        # Only a key:value pair, cannot be disabled
+        if not isinstance(form, BaseForm):
             return True
 
-        disabled = False
-        if value.group:
-            group = next(v for k, v in self._groups.items() if field in v)
-            for member in group:
-                form = getattr(self, member)
-                if form.group_optional:
-                    disabled = not form.enabled
-                    break
+        if not form.enabled:
+            return False
 
-        return disabled
+        # Can still be disabled based on linkages
+        # Check if disabled based on group status or direct dependency
+        for name, parent in self._enabled_links.get(field, {}).items():
+            mirror = self._mirror_link_state(name, parent, form)
+
+            if mirror:
+                enabled = parent.enabled
+            else:
+                enabled = not parent.enabled
+
+            # Disabled as soon as one is encountered
+            if not enabled:
+                return False
+
+        return enabled
 
     def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
         """
@@ -292,7 +304,7 @@ class UIJson(BaseModel):
         data = {}
         fields = self.model_fields_set if active_only else self.model_fields
         for field in fields:
-            if skip_disabled and self.is_disabled(field):
+            if skip_disabled and not self.is_enabled(field):
                 continue
 
             value = getattr(self, field)
@@ -310,7 +322,7 @@ class UIJson(BaseModel):
             If False, updates the current UIJson object with the new values and returns itself.
         :param kwargs: Key/value pairs to update the UIJson with.
 
-        :return: A new UIJson object with the updated values.
+        :return: A UIJson object with the updated values.
         """
         if copy:
             uijson = self.model_copy(deep=True)
@@ -323,6 +335,43 @@ class UIJson(BaseModel):
                 form.set_value(value)
             else:
                 setattr(uijson, key, dict_mapper(value, [entity2uuid]))
+
+        return uijson
+
+    def set_enabled(self, states: dict[str, bool], copy: bool = False) -> UIJson:
+        """
+        Set the enabled state of fields, and handle the state of dependencies.
+
+        :param states: Dictionary of field names and their enabled state to update.
+        :param copy: If True, returns a new UIJson object with the updated values.
+            If False, updates the current UIJson object with the new values and returns itself.
+
+        :return: A UIJson object with the updated values.
+        """
+        if copy:
+            uijson = self.model_copy(deep=True)
+        else:
+            uijson = self
+
+        for key, value in states.items():
+            form = getattr(uijson, key, None)
+            if not isinstance(form, BaseForm):
+                continue
+
+            dependencies = self._enabled_links.get(key, {})
+            if not dependencies and not getattr(form, "optional", False):
+                raise ValueError(f"Field {key} enabled state cannot be False.")
+
+            for name, parent in dependencies.items():
+                # Set the parent dependency state
+                mirror = self._mirror_link_state(name, parent, form)
+
+                if mirror:
+                    parent.enabled = value
+                else:
+                    parent.enabled = not value
+
+            form.enabled = value
 
         return uijson
 
@@ -415,7 +464,7 @@ class UIJson(BaseModel):
             errors = {k: [] for k in params}
 
         for field in self.model_fields_set:
-            if self.is_disabled(field):
+            if not self.is_enabled(field):
                 continue
             form = getattr(self, field)
             validations = get_validations(
@@ -428,3 +477,61 @@ class UIJson(BaseModel):
                     errors[field].append(e)
 
         ErrorPool(errors).throw()
+
+    @staticmethod
+    def _load(path: str | Path) -> dict:
+        """
+        Load data and generate a UIJson class from file.
+
+        :param path: Path to the .ui.json file.
+
+        :return: UIJson class and dictionary representing the ui json object.
+        """
+        if isinstance(path, str):
+            path = Path(path)
+
+        path = path.resolve()
+
+        if not path.exists():
+            raise FileNotFoundError(f"File {path} does not exist.")
+
+        if "".join(path.suffixes[-2:]) != ".ui.json":
+            raise ValueError(f"File {path} is not a .ui.json file.")
+
+        with open(path, encoding="utf-8") as file:
+            kwargs = json.load(file)
+
+        return kwargs
+
+    @staticmethod
+    def _mirror_link_state(name, link, form):
+        """
+        Check the type of mirroring between the form and
+        its linked form.
+
+        If group optional, the form enabled state mirrors the parent.
+        If direct dependency, the form enabled state can mirror or be opposite
+        of the parent depending on the dependency type.
+
+        :param name: Name of the linked field.
+        :param parent: Form of the linked field..
+        :param form: Form currently looked at
+
+        :return: Logic whether the form mirrors the state of link
+        """
+        # Don't change leader state for group optional dependencies
+        if getattr(form, "group_optional", False):
+            return False
+
+        # Either way linkage injects disabled state
+        if getattr(
+            form, "dependency", getattr(link, "dependency", "")
+        ) == name and getattr(
+            form, "dependency_type", getattr(link, "dependency_type", None)
+        ) in [
+            DependencyType.DISABLED,
+            DependencyType.HIDE,
+        ]:
+            return False
+
+        return True

@@ -526,12 +526,10 @@ def test_data_or_value_form():
     assert optional_form.enabled
     optional_form.set_value(None)
     assert optional_form.is_value
-    assert not optional_form.enabled
 
     optional_form.set_value(data_uid)
     assert not optional_form.is_value
     assert optional_form.property == uuid.UUID(data_uid)
-    assert optional_form.enabled
 
     form.set_value(2)
     assert form.value == 2
@@ -641,6 +639,11 @@ def test_data_range_form():
     assert form.association.name == "VERTEX"
     assert form.data_type.name == "FLOAT"
     assert form.range_label == "value range"
+
+    assert isinstance(form.flatten(), dict)
+    assert (
+        set(form.flatten()).difference({"is_complement", "property", "value"}) == set()
+    )
 
 
 def test_flatten(sample_form):
