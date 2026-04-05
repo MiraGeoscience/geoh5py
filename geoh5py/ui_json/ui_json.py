@@ -243,7 +243,7 @@ class UIJson(BaseModel):
         :returns: Dictionary of forms and their respective dependency links.
         """
         dependencies: dict[str, dict[str, BaseForm]] = {}
-        group_optionals: dict[str, BaseForm] = {}
+        group_optionals: dict[str, tuple[str, BaseForm]] = {}
         for name in self.__class__.model_fields.keys():
             deps = {}
             form = getattr(self, name)
@@ -256,51 +256,55 @@ class UIJson(BaseModel):
             if dependents_on:
                 deps[dependents_on] = getattr(self, dependents_on)
 
+                # Add reverse linkage
+                dependencies[dependents_on].update({name: form})
+
             # Check for groupOptional dependency
             # Only the leading form should have the groupOptional field
             group_name: str = getattr(form, "group", "")
             group_optional = getattr(form, "group_optional", False)
             if group_optional:
-                group_optionals[group_name] = form
+                group_optionals[group_name] = (name, form)
 
             if (
                 group_name in group_optionals
-                and form is not group_optionals[group_name]
+                and name not in group_optionals[group_name]  # Avoid self reference
             ):
-                deps[group_name] = group_optionals[group_name]
+                lead_name, lead_form = group_optionals[group_name]
+                deps[group_name] = lead_form
+
+                # Add reverse linkage
+                dependencies[lead_name].update({name: form})
 
             dependencies[name] = deps
 
         return dependencies
 
     @staticmethod
-    def _mirror_parent_state(name, form_a, form_b):
+    def _mirror_link_state(name, link, form):
         """
         Check the type of mirroring between the form and
-        its parent.
+        its linked form.
 
         If group optional, the form enabled state mirrors the parent.
         If direct dependency, the form enabled state can mirror or be opposite
         of the parent depending on the dependency type.
 
-        :param name: Name of the parental field.
-        :param parent: The parental form.
-        :param form: The dependent form
+        :param name: Name of the linked field.
+        :param parent: Form of the linked field..
+        :param form: Form currently looked at
 
-        :return: Logic whether the dependent (form) mirrors the parent
+        :return: Logic whether the form mirrors the state of link
         """
-        # Direct dependency injects disabled state
-        if getattr(form_b, "dependency", "") == name and getattr(
-            form_b, "dependency_type", None
-        ) in [
-            DependencyType.DISABLED,
-            DependencyType.HIDE,
-        ]:
+        # Don't change leader state for group optional dependencies
+        if getattr(form, "group_optional", False):
             return False
 
-        # Other way direct dependency
-        if getattr(form_a, "dependency", "") == name and getattr(
-            form_a, "dependency_type", None
+        # Either way linkage injects disabled state
+        if getattr(
+            form, "dependency", getattr(link, "dependency", "")
+        ) == name and getattr(
+            form, "dependency_type", getattr(link, "dependency_type", None)
         ) in [
             DependencyType.DISABLED,
             DependencyType.HIDE,
@@ -330,7 +334,7 @@ class UIJson(BaseModel):
         # Can still be disabled based on dependencies
         # Check if disabled based on group status or direct dependency
         for name, parent in self._enabled_links.get(field, {}).items():
-            mirror = self._mirror_parent_state(name, parent, form)
+            mirror = self._mirror_link_state(name, parent, form)
 
             if mirror:
                 enabled = parent.enabled
@@ -418,7 +422,7 @@ class UIJson(BaseModel):
 
             for name, parent in dependencies.items():
                 # Set the parent dependency state
-                mirror = self._mirror_parent_state(name, parent, form)
+                mirror = self._mirror_link_state(name, parent, form)
 
                 if mirror:
                     parent.enabled = value
