@@ -431,8 +431,8 @@ def test_disabled_forms(tmp_path):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    assert not uijson.is_disabled("my_param")
-    assert uijson.is_disabled("my_other_param")
+    assert uijson.is_enabled("my_param")
+    assert not uijson.is_enabled("my_other_param")
 
     params = uijson.to_params()
     assert "my_param" in params
@@ -463,8 +463,8 @@ def test_disabled_group_optional_forms(tmp_path):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    assert uijson.is_disabled("group_leader")
-    assert uijson.is_disabled("dependent")
+    assert not uijson.is_enabled("group_leader")
+    assert not uijson.is_enabled("dependent")
 
     params = uijson.to_params()
     assert "group_leader" not in params
@@ -510,7 +510,7 @@ def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    assert uijson.is_disabled("dependent") == outcome
+    assert not uijson.is_enabled("dependent") == outcome
 
 
 @pytest.mark.parametrize(
@@ -556,7 +556,7 @@ def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    assert uijson.is_disabled("sub_dependent") == outcome
+    assert not uijson.is_enabled("sub_dependent") == outcome
 
 
 def test_unknown_uijson(tmp_path, sample_uijson):

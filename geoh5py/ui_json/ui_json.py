@@ -273,7 +273,7 @@ class UIJson(BaseModel):
 
         return dependencies
 
-    def is_disabled(self, field: str) -> bool:
+    def is_enabled(self, field: str) -> bool:
         """
         Checks if a field is disabled based on form status and dependencies.
 
@@ -281,29 +281,28 @@ class UIJson(BaseModel):
         :returns: True if the field is disabled by its own enabled status or
             the dependencies enabled status, False otherwise.
         """
+        enabled = True
         form = getattr(self, field)
 
         # Only a key:value pair, cannot be disabled
         if not isinstance(form, BaseForm):
-            return False
-
-        if form.enabled is False:
             return True
+
+        if not form.enabled:
+            return False
 
         # Can still be disabled based on dependencies
         # Check if disabled based on group status or direct dependency
-        disabled = False
-
         for name, parent in self._dependencies.get(field, {}).items():
             # Whole group is disabled
             if getattr(parent, "group_optional", False):
-                disabled = not parent.enabled
+                enabled = parent.enabled
 
             # Direct dependency injects enabled state
             if getattr(form, "dependency", "") == name and getattr(
                 form, "dependency_type", None
             ) in [DependencyType.ENABLED, DependencyType.SHOW]:
-                disabled = not parent.enabled
+                enabled = parent.enabled
 
             # Direct dependency injects disabled state
             if getattr(form, "dependency", "") == name and getattr(
@@ -312,13 +311,13 @@ class UIJson(BaseModel):
                 DependencyType.DISABLED,
                 DependencyType.HIDE,
             ]:
-                disabled = parent.enabled
+                enabled = not parent.enabled
 
-            # Disabled as soon as one is encountered
-            if disabled:
-                return True
+            # Disabled as soon as one disabled is encountered
+            if not enabled:
+                return False
 
-        return disabled
+        return enabled
 
     def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
         """
@@ -335,7 +334,7 @@ class UIJson(BaseModel):
         data = {}
         fields = self.model_fields_set if active_only else self.model_fields
         for field in fields:
-            if skip_disabled and self.is_disabled(field):
+            if skip_disabled and not self.is_enabled(field):
                 continue
 
             value = getattr(self, field)
@@ -458,7 +457,7 @@ class UIJson(BaseModel):
             errors = {k: [] for k in params}
 
         for field in self.model_fields_set:
-            if self.is_disabled(field):
+            if not self.is_enabled(field):
                 continue
             form = getattr(self, field)
             validations = get_validations(
