@@ -388,6 +388,8 @@ def test_grouped_forms(tmp_path):
         "my_param": {
             "label": "a",
             "value": 1,
+            "group": "my_group",
+            "groupOptional": True,
         },
         "my_grouped_param": {
             "label": "b",
@@ -404,20 +406,15 @@ def test_grouped_forms(tmp_path):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    groups = uijson._groups
-    assert "my_group" in groups
-    assert "my_grouped_param" in groups["my_group"]
-    assert "my_other_grouped_param" in groups["my_group"]
+    dependencies = uijson._dependencies
+    assert dependencies.get("my_grouped_param") == [uijson.my_param]
+    assert dependencies.get("my_other_grouped_param") == [uijson.my_param]
 
 
 def test_disabled_forms(tmp_path):
     class MyUIJson(UIJson):
         my_param: IntegerForm
         my_other_param: IntegerForm
-        my_grouped_param: FloatForm
-        my_other_grouped_param: FloatForm
-        my_group_disabled_param: FloatForm
-        my_other_group_disabled_param: FloatForm
 
     kwargs = {
         "my_param": {
@@ -429,28 +426,6 @@ def test_disabled_forms(tmp_path):
             "value": 2,
             "enabled": False,
         },
-        "my_grouped_param": {
-            "label": "c",
-            "group": "my_group",
-            "value": 1.0,
-        },
-        "my_other_grouped_param": {
-            "label": "d",
-            "group": "my_group",
-            "value": 2.0,
-        },
-        "my_group_disabled_param": {
-            "label": "e",
-            "group": "my_other_group",
-            "group_optional": True,
-            "enabled": False,
-            "value": 3.0,
-        },
-        "my_other_group_disabled_param": {
-            "label": "f",
-            "group": "my_other_group",
-            "value": 4.0,
-        },
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
@@ -458,14 +433,84 @@ def test_disabled_forms(tmp_path):
 
     assert not uijson.is_disabled("my_param")
     assert uijson.is_disabled("my_other_param")
-    assert not uijson.is_disabled("my_grouped_param")
-    assert not uijson.is_disabled("my_other_grouped_param")
-    assert uijson.is_disabled("my_group_disabled_param")
-    assert uijson.is_disabled("my_other_group_disabled_param")
 
     params = uijson.to_params()
     assert "my_param" in params
     assert "my_other_param" not in params
+
+
+def test_disabled_group_optional_forms(tmp_path):
+    class MyUIJson(UIJson):
+        group_leader: FloatForm
+        dependent: FloatForm
+
+    kwargs = {
+        "group_leader": {
+            "label": "a",
+            "group": "some_group",
+            "group_optional": True,
+            "enabled": False,
+            "value": 3.0,
+        },
+        "dependent": {
+            "label": "b",
+            "group": "some_group",
+            "value": 4.0,
+            "enabled": True,
+        },
+    }
+
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    assert uijson.is_disabled("group_leader")
+    assert uijson.is_disabled("dependent")
+
+    params = uijson.to_params()
+    assert "group_leader" not in params
+    assert "dependent" not in params
+
+
+@pytest.mark.parametrize(
+    ("dtype", "state", "outcome"),
+    [
+        ("enabled", True, True),
+        ("enabled", False, False),
+        ("disabled", True, False),
+        ("disabled", False, True),
+        ("show", True, True),
+        ("show", False, False),
+        ("hide", True, False),
+        ("hide", False, True),
+    ],
+)
+def test_disabled_dependency_forms(tmp_path, dtype, state, outcome):
+    class MyUIJson(UIJson):
+        group_leader: FloatForm
+        dependent: FloatForm
+
+    kwargs = {
+        "group_leader": {
+            "label": "a",
+            "group": "some_group",
+            "enabled": state,
+            "optional": True,
+            "value": 3.0,
+        },
+        "dependent": {
+            "label": "b",
+            "group": "some_group",
+            "dependency": "group_leader",
+            "dependencyType": dtype,
+            "value": 4.0,
+            "enabled": True,
+        },
+    }
+
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    assert (not uijson.is_disabled("dependent")) == outcome
 
 
 def test_unknown_uijson(tmp_path, sample_uijson):

@@ -257,9 +257,8 @@ class UIJson(BaseModel):
                 deps.append(getattr(self, dependents_on))
 
             # Check for groupOptional dependency
+            # Only the leading form should have the groupOptional field
             group_name: str = getattr(form, "group", "")
-
-            # Add the leading form to the known list once
             group_optional = getattr(form, "group_optional", False)
             if group_optional:
                 group_optionals[group_name] = form
@@ -276,7 +275,7 @@ class UIJson(BaseModel):
 
     def is_disabled(self, field: str) -> bool:
         """
-        Checks if a field is disabled based on form status and dependency.
+        Checks if a field is disabled based on form status and dependencies.
 
         :param field: Field name or form to check.
         :returns: True if the field is disabled by its own enabled status or
@@ -291,20 +290,21 @@ class UIJson(BaseModel):
         if form.enabled is False:
             return True
 
-        # Can still be disabled based on dependency
-        disabled = False
+        # Can still be disabled based on dependencies
         # Check if disabled based on group status or direct dependency
-        for depends_on in self._dependencies.get(field, []):
-            if getattr(depends_on, "group_optional", False) or getattr(
+        disabled = False
+
+        for parent in self._dependencies.get(field, []):
+            if getattr(parent, "group_optional", False) or getattr(
                 form, "dependency_type", None
-            ) in [DependencyType.ENABLED, DependencyType.HIDE]:
-                disabled = not depends_on.enabled
+            ) in [DependencyType.ENABLED, DependencyType.SHOW]:
+                disabled = not parent.enabled
 
             if getattr(form, "dependency_type", None) in [
                 DependencyType.DISABLED,
-                DependencyType.SHOW,
+                DependencyType.HIDE,
             ]:
-                disabled = depends_on.enabled
+                disabled = parent.enabled
 
             # Disabled as soon as one is encountered
             if disabled:
