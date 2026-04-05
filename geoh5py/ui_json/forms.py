@@ -592,6 +592,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
                 self.property = value
                 self.is_value = False
 
+
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
     Geoh5py uijson data form with multi-selection.
