@@ -275,11 +275,11 @@ class UIJson(BaseModel):
 
     def is_enabled(self, field: str) -> bool:
         """
-        Checks if a field is disabled based on form status and dependencies.
+        Checks if a field is enabled based on form status and dependencies.
 
         :param field: Field name or form to check.
-        :returns: True if the field is disabled by its own enabled status or
-            the dependencies enabled status, False otherwise.
+        :returns: False if the field is disabled by its own enabled status or
+            the dependencies enabled status, True otherwise.
         """
         enabled = True
         form = getattr(self, field)
