@@ -407,8 +407,8 @@ def test_grouped_forms(tmp_path):
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     dependencies = uijson._dependencies
-    assert dependencies.get("my_grouped_param") == [uijson.my_param]
-    assert dependencies.get("my_other_grouped_param") == [uijson.my_param]
+    assert dependencies.get("my_grouped_param") == {"my_group": uijson.my_param}
+    assert dependencies.get("my_other_grouped_param") == {"my_group": uijson.my_param}
 
 
 def test_disabled_forms(tmp_path):
@@ -472,19 +472,19 @@ def test_disabled_group_optional_forms(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("dtype", "state", "outcome"),
+    ("dtype", "lead_state", "outcome"),
     [
-        ("enabled", True, True),
-        ("enabled", False, False),
-        ("disabled", True, False),
-        ("disabled", False, True),
-        ("show", True, True),
-        ("show", False, False),
-        ("hide", True, False),
-        ("hide", False, True),
+        ("enabled", True, False),
+        ("enabled", False, True),
+        ("disabled", True, True),
+        ("disabled", False, False),
+        ("show", True, False),
+        ("show", False, True),
+        ("hide", True, True),
+        ("hide", False, False),
     ],
 )
-def test_disabled_dependency_forms(tmp_path, dtype, state, outcome):
+def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
     class MyUIJson(UIJson):
         group_leader: FloatForm
         dependent: FloatForm
@@ -493,7 +493,7 @@ def test_disabled_dependency_forms(tmp_path, dtype, state, outcome):
         "group_leader": {
             "label": "a",
             "group": "some_group",
-            "enabled": state,
+            "enabled": lead_state,
             "optional": True,
             "value": 3.0,
         },
@@ -510,7 +510,53 @@ def test_disabled_dependency_forms(tmp_path, dtype, state, outcome):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    assert (not uijson.is_disabled("dependent")) == outcome
+    assert uijson.is_disabled("dependent") == outcome
+
+
+@pytest.mark.parametrize(
+    ("lead_state", "dep_state", "outcome"),
+    [
+        (True, True, True),
+        (True, False, False),
+        (False, False, True),
+    ],
+)
+def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
+    class MyUIJson(UIJson):
+        group_leader: FloatForm
+        dependent: FloatForm
+        sub_dependent: FloatForm
+
+    kwargs = {
+        "group_leader": {
+            "label": "a",
+            "group": "some_group",
+            "enabled": lead_state,
+            "optional": True,
+            "group_optional": True,
+            "value": 3.0,
+        },
+        "dependent": {
+            "label": "b",
+            "group": "some_group",
+            "value": 4.0,
+            "enabled": dep_state,
+            "optional": True,
+        },
+        "sub_dependent": {
+            "label": "c",
+            "group": "some_group",
+            "dependency": "dependent",
+            "dependencyType": "disabled",
+            "value": 4.0,
+            "enabled": True,
+        },
+    }
+
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    assert uijson.is_disabled("sub_dependent") == outcome
 
 
 def test_unknown_uijson(tmp_path, sample_uijson):

@@ -80,7 +80,7 @@ class UIJson(BaseModel):
 
     out_group: GroupForm | OptionalString = None
 
-    _dependencies: dict[str, list[BaseForm]]
+    _dependencies: dict[str, dict[str, BaseForm]]
 
     def model_post_init(self, context: Any, /) -> None:
         self._dependencies = self.get_dependencies()
@@ -233,19 +233,19 @@ class UIJson(BaseModel):
 
         return path
 
-    def get_dependencies(self) -> dict[str, list[BaseForm]]:
+    def get_dependencies(self) -> dict[str, dict[str, BaseForm]]:
         """
         Returns dependency links between forms.
 
         For each form, there could be a direct dependency on another form (dependency) and/or
         an optional group dependency (group/group_optional).
 
-        :returns: Dictionary of forms and there respective dependency links.
+        :returns: Dictionary of forms and their respective dependency links.
         """
-        dependencies: dict[str, list[BaseForm]] = {}
+        dependencies: dict[str, dict[str, BaseForm]] = {}
         group_optionals: dict[str, BaseForm] = {}
         for name in self.__class__.model_fields.keys():
-            deps = []
+            deps = {}
             form = getattr(self, name)
 
             if not isinstance(form, BaseForm):
@@ -254,7 +254,7 @@ class UIJson(BaseModel):
             # Check for direct dependency on other form
             dependents_on = getattr(form, "dependency", None)
             if dependents_on:
-                deps.append(getattr(self, dependents_on))
+                deps[dependents_on] = getattr(self, dependents_on)
 
             # Check for groupOptional dependency
             # Only the leading form should have the groupOptional field
@@ -267,7 +267,7 @@ class UIJson(BaseModel):
                 group_name in group_optionals
                 and form is not group_optionals[group_name]
             ):
-                deps.append(group_optionals[group_name])
+                deps[group_name] = group_optionals[group_name]
 
             dependencies[name] = deps
 
@@ -294,13 +294,21 @@ class UIJson(BaseModel):
         # Check if disabled based on group status or direct dependency
         disabled = False
 
-        for parent in self._dependencies.get(field, []):
-            if getattr(parent, "group_optional", False) or getattr(
+        for name, parent in self._dependencies.get(field, {}).items():
+            # Whole group is disabled
+            if getattr(parent, "group_optional", False):
+                disabled = not parent.enabled
+
+            # Direct dependency injects enabled state
+            if getattr(form, "dependency", "") == name and getattr(
                 form, "dependency_type", None
             ) in [DependencyType.ENABLED, DependencyType.SHOW]:
                 disabled = not parent.enabled
 
-            if getattr(form, "dependency_type", None) in [
+            # Direct dependency injects disabled state
+            if getattr(form, "dependency", "") == name and getattr(
+                form, "dependency_type", None
+            ) in [
                 DependencyType.DISABLED,
                 DependencyType.HIDE,
             ]:
