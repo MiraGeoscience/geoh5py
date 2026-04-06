@@ -520,39 +520,3 @@ class UIJson(BaseModel):
             kwargs = json.load(file)
 
         return kwargs
-
-    @staticmethod
-    def _mirror_linked_state(name, form, linked_name, linked_form):
-        """
-        Check the type of mirroring between the form and
-        its dependent.
-
-        The form enabled state can mirror or be opposite
-        of the parent depending on the dependency type.
-
-        :param name: Name of the form.
-        :param form: Form of the form.
-        :param linked_name: Name of the linked field.
-        :param linked_form: Form of the linked field.
-
-        :return: Logic whether the form mirrors the state of link
-        """
-        # Two-way linkage injectinging disabled state
-        if (
-            form.dependency == linked_name
-            and getattr(form, "dependency_type", None)
-            in [
-                DependencyType.DISABLED,
-                DependencyType.HIDE,
-            ]
-        ) or (
-            linked_form.dependency == name
-            and getattr(linked_form, "dependency_type", None)
-            in [
-                DependencyType.DISABLED,
-                DependencyType.HIDE,
-            ]
-        ):
-            return False
-
-        return True
