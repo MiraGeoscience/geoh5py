@@ -647,6 +647,20 @@ class DataRangeForm(DataFormMixin, BaseForm):
             "value": self.value,
         }
 
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+        """
+        if isinstance(value, dict):
+            for key, val in value.items():
+                setattr(self, key, val)
+
+        if isinstance(value, list):
+            self.value = value
+
+        if isinstance(value, UUID | None):
+            self.property = value
+
 
 def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
     """Recursively find all subclasses of input type object."""

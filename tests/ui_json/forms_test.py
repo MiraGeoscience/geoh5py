@@ -655,6 +655,24 @@ def test_data_range_form():
         set(form.flatten()).difference({"is_complement", "property", "value"}) == set()
     )
 
+    # Set only the range
+    form.set_value([0.5, 1.5])
+    assert form.value == [0.5, 1.5]
+
+    # Set only the property
+    form.set_value(None)
+    assert form.property is None
+
+    # Set value as coming from form.flatten()
+    values = {
+        "is_complement": False,
+        "property": uuid.uuid4(),
+        "value": [0.0, 1.0],
+    }
+    form.set_value(values)
+
+    assert all(val == getattr(form, key) for key, val in values.items())
+
 
 def test_flatten(sample_form):
     param = sample_form(label="my_param", value=2)
