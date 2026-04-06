@@ -147,7 +147,7 @@ class UIJson(BaseModel):
         """
         kwargs = {key: (item if item != "" else None) for key, item in data.items()}
 
-        ui_json_class = UIJson.infer(**kwargs)
+        ui_json_class = cls.infer(**kwargs)
 
         return ui_json_class(**kwargs)
 
