@@ -92,43 +92,6 @@ class UIJson(BaseModel):
     _form_dependencies: dict[str, dict[str, bool]]
     _group_dependencies: dict[str, BaseForm]
 
-    def model_post_init(self, context: Any, /) -> None:
-        self._group_dependencies, self._form_dependencies = self.get_dependency_links()
-
-    def __repr__(self) -> str:
-        """Repr level shows the title."""
-        return f"UIJson('{self.title}')"
-
-    def __str__(self) -> str:
-        """String level shows the full json representation."""
-
-        json_string = self.model_dump_json(indent=4, exclude_unset=True)
-        for field in type(self).model_fields.keys():
-            value = getattr(self, field)
-            if isinstance(value, BaseForm):
-                type_string = type(value).__name__
-                json_string = json_string.replace(
-                    f'"{field}": {{', f'"{field}": {type_string} {{'
-                )
-
-        return f"{self!r} -> {json_string}"
-
-    @field_validator("geoh5", mode="after")
-    @classmethod
-    def workspace_path_exists(cls, path: Path | None) -> Path | None:
-        if path is not None and not path.exists():
-            raise FileNotFoundError(f"geoh5 path {path} does not exist.")
-        return path
-
-    @field_validator("geoh5", mode="after")
-    @classmethod
-    def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
-        if path is not None and path.suffix != ".geoh5":
-            raise ValueError(
-                f"Workspace path: {path} must have a '.geoh5' file extension."
-            )
-        return path
-
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
         Copy the entities referenced in the input file to a new workspace.
@@ -147,6 +110,46 @@ class UIJson(BaseModel):
                 parent,
                 clear_cache=clear_cache,
             )
+
+    def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
+        """
+        Flatten the UIJson data to dictionary of key/value pairs.
+
+        Chooses between value/property in data forms depending on the is_value
+        field.
+
+        :param skip_disabled: If True, skips fields with 'enabled' set to False.
+        :param active_only: If True, skips fields that have not been explicitly set.
+
+        :return: Flattened dictionary of key/value pairs.
+        """
+        data = {}
+        fields = self.model_fields_set if active_only else self.model_fields
+        for field in fields:
+            if skip_disabled and not self.is_enabled(field):
+                continue
+
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                value = value.flatten()
+            data[field] = value
+
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> UIJson:
+        """
+        Create a UIJson instance from a dictionary.
+
+        :param data: Dictionary representing the ui json object.
+
+        :returns: UIJson object.
+        """
+        kwargs = {key: (item if item != "" else None) for key, item in data.items()}
+
+        ui_json_class = UIJson.infer(**kwargs)
+
+        return ui_json_class(**kwargs)
 
     @staticmethod
     def infer(title="UnknownUIJson", **kwargs) -> type[UIJson]:
@@ -179,99 +182,6 @@ class UIJson(BaseModel):
             **fields,
         )
         return model
-
-    @classmethod
-    def from_dict(cls, data: dict) -> UIJson:
-        """
-        Create a UIJson instance from a dictionary.
-
-        :param data: Dictionary representing the ui json object.
-
-        :returns: UIJson object.
-        """
-        kwargs = {key: (item if item != "" else None) for key, item in data.items()}
-
-        ui_json_class = UIJson.infer(**kwargs)
-
-        return ui_json_class(**kwargs)
-
-    @classmethod
-    def read(cls, path: str | Path) -> UIJson:
-        """
-        Create a UIJson instance from ui.json file.
-
-        Raises errors if the file doesn't exist or is not a .ui.json file.
-        Also validates at the Form and UIJson level whether the file is
-        properly formatted.
-
-        Consider using the `load` method to get the UIJson class and data separately
-        if you want to handle validation errors yourself.
-
-        :param path: Path to the .ui.json file.
-        :param validate: Whether to validate the ui json file.
-
-        :returns: UIJson object.
-        """
-        kwargs = cls._load(path)
-
-        return cls.from_dict(kwargs)
-
-    def write(self, path: Path) -> Path:
-        """
-        Write the UIJson object to file.
-
-        :param path: Path to write the .ui.json file.
-        """
-        with open(path, "w", encoding="utf-8") as file:
-            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
-            file.write(data)
-
-        return path
-
-    def get_dependency_links(
-        self,
-    ) -> tuple[dict[str, BaseForm], dict[str, dict[str, bool]]]:
-        """
-        Returns dependency links between forms.
-
-        For each form, there can be a group dependency ('group') to a leading
-        form ('group_optional') and/or a direct dependency between forms ('dependency').
-
-        A direct dependency controls the enabled state tow ways, while the group dependency
-        controls the enabled state only from the lead form to its dependents.
-
-        :returns: Tuple of group dependencies and direct form dependencies.
-        """
-        form_dependencies: dict[str, dict[str, bool]] = {}
-        group_dependencies: dict[str, BaseForm] = {}
-        for name in self.__class__.model_fields.keys():
-            form_dependencies[name] = {}
-            form = getattr(self, name)
-
-            if not isinstance(form, BaseForm):
-                continue
-
-            # Check for groupOptional dependency
-            # Only the leading form should have the groupOptional field
-            group_name: str = getattr(form, "group", "")
-            group_optional = getattr(form, "group_optional", False)
-            if group_optional:
-                group_dependencies[group_name] = form
-
-            # Check for direct dependency on other form
-            dependents_on = form.dependency
-
-            # If optional, enabled state only influences the form
-            if dependents_on and not getattr(form, "optional", False):
-                mirrors = getattr(form, "dependency_type", None) in [
-                    DependencyType.ENABLED,
-                    DependencyType.SHOW,
-                ]
-                # Add reverse linkage
-                form_dependencies[dependents_on].update({name: mirrors})
-                form_dependencies[name][dependents_on] = mirrors
-
-        return group_dependencies, form_dependencies
 
     def is_enabled(self, field: str) -> bool:
         """
@@ -312,55 +222,29 @@ class UIJson(BaseModel):
 
         return enabled
 
-    def flatten(self, skip_disabled=False, active_only=False) -> dict[str, Any]:
+    def model_post_init(self, context: Any, /) -> None:
+        self._group_dependencies, self._form_dependencies = self._get_dependency_links()
+
+    @classmethod
+    def read(cls, path: str | Path) -> UIJson:
         """
-        Flatten the UIJson data to dictionary of key/value pairs.
+        Create a UIJson instance from ui.json file.
 
-        Chooses between value/property in data forms depending on the is_value
-        field.
+        Raises errors if the file doesn't exist or is not a .ui.json file.
+        Also validates at the Form and UIJson level whether the file is
+        properly formatted.
 
-        :param skip_disabled: If True, skips fields with 'enabled' set to False.
-        :param active_only: If True, skips fields that have not been explicitly set.
+        Consider using the `load` method to get the UIJson class and data separately
+        if you want to handle validation errors yourself.
 
-        :return: Flattened dictionary of key/value pairs.
+        :param path: Path to the .ui.json file.
+        :param validate: Whether to validate the ui json file.
+
+        :returns: UIJson object.
         """
-        data = {}
-        fields = self.model_fields_set if active_only else self.model_fields
-        for field in fields:
-            if skip_disabled and not self.is_enabled(field):
-                continue
+        kwargs = cls._load(path)
 
-            value = getattr(self, field)
-            if isinstance(value, BaseForm):
-                value = value.flatten()
-            data[field] = value
-
-        return data
-
-    def set_values(self, copy: bool = False, **kwargs) -> UIJson:
-        """
-        Fill the UIJson with new values.
-
-        :param copy: If True, returns a new UIJson object with the updated values.
-            If False, updates the current UIJson object with the new values and returns itself.
-        :param kwargs: Key/value pairs to update the UIJson with.
-
-        :return: A UIJson object with the updated values.
-        """
-        if copy:
-            uijson = self.model_copy(deep=True)
-        else:
-            uijson = self
-
-        for field, value in kwargs.items():
-            form = getattr(uijson, field, None)
-            if isinstance(form, BaseForm):
-                form.set_value(value)
-                self.set_enabled(copy=False, **{field: value is not None})
-            else:
-                setattr(uijson, field, dict_mapper(value, [entity2uuid]))
-
-        return uijson
+        return cls.from_dict(kwargs)
 
     def set_enabled(self, copy: bool = False, **states) -> UIJson:
         """
@@ -400,6 +284,31 @@ class UIJson(BaseModel):
                     codependent.enabled = value
                 else:
                     codependent.enabled = not value
+
+        return uijson
+
+    def set_values(self, copy: bool = False, **kwargs) -> UIJson:
+        """
+        Fill the UIJson with new values.
+
+        :param copy: If True, returns a new UIJson object with the updated values.
+            If False, updates the current UIJson object with the new values and returns itself.
+        :param kwargs: Key/value pairs to update the UIJson with.
+
+        :return: A UIJson object with the updated values.
+        """
+        if copy:
+            uijson = self.model_copy(deep=True)
+        else:
+            uijson = self
+
+        for field, value in kwargs.items():
+            form = getattr(uijson, field, None)
+            if isinstance(form, BaseForm):
+                form.set_value(value)
+                self.set_enabled(copy=False, **{field: value is not None})
+            else:
+                setattr(uijson, field, dict_mapper(value, [entity2uuid]))
 
         return uijson
 
@@ -475,6 +384,34 @@ class UIJson(BaseModel):
 
             return ui_json_group
 
+    @field_validator("geoh5", mode="after")
+    @classmethod
+    def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
+        if path is not None and path.suffix != ".geoh5":
+            raise ValueError(
+                f"Workspace path: {path} must have a '.geoh5' file extension."
+            )
+        return path
+
+    @field_validator("geoh5", mode="after")
+    @classmethod
+    def workspace_path_exists(cls, path: Path | None) -> Path | None:
+        if path is not None and not path.exists():
+            raise FileNotFoundError(f"geoh5 path {path} does not exist.")
+        return path
+
+    def write(self, path: Path) -> Path:
+        """
+        Write the UIJson object to file.
+
+        :param path: Path to write the .ui.json file.
+        """
+        with open(path, "w", encoding="utf-8") as file:
+            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
+            file.write(data)
+
+        return path
+
     def _cross_validations(
         self, params: dict[str, Any], errors: dict[str, Any] | None = None
     ) -> None:
@@ -506,6 +443,51 @@ class UIJson(BaseModel):
 
         ErrorPool(errors).throw()
 
+    def _get_dependency_links(
+        self,
+    ) -> tuple[dict[str, BaseForm], dict[str, dict[str, bool]]]:
+        """
+        Returns dependency links between forms.
+
+        For each form, there can be a group dependency ('group') to a leading
+        form ('group_optional') and/or a direct dependency between forms ('dependency').
+
+        A direct dependency controls the enabled state tow ways, while the group dependency
+        controls the enabled state only from the lead form to its dependents.
+
+        :returns: Tuple of group dependencies and direct form dependencies.
+        """
+        form_dependencies: dict[str, dict[str, bool]] = {}
+        group_dependencies: dict[str, BaseForm] = {}
+        for name in self.__class__.model_fields.keys():
+            form_dependencies[name] = {}
+            form = getattr(self, name)
+
+            if not isinstance(form, BaseForm):
+                continue
+
+            # Check for groupOptional dependency
+            # Only the leading form should have the groupOptional field
+            group_name: str = getattr(form, "group", "")
+            group_optional = getattr(form, "group_optional", False)
+            if group_optional:
+                group_dependencies[group_name] = form
+
+            # Check for direct dependency on other form
+            dependents_on = form.dependency
+
+            # If optional, enabled state only influences the form
+            if dependents_on and not getattr(form, "optional", False):
+                mirrors = getattr(form, "dependency_type", None) in [
+                    DependencyType.ENABLED,
+                    DependencyType.SHOW,
+                ]
+                # Add reverse linkage
+                form_dependencies[dependents_on].update({name: mirrors})
+                form_dependencies[name][dependents_on] = mirrors
+
+        return group_dependencies, form_dependencies
+
     @staticmethod
     def _load(path: str | Path) -> dict:
         """
@@ -530,3 +512,21 @@ class UIJson(BaseModel):
             kwargs = json.load(file)
 
         return kwargs
+
+    def __repr__(self) -> str:
+        """Repr level shows the title."""
+        return f"UIJson('{self.title}')"
+
+    def __str__(self) -> str:
+        """String level shows the full json representation."""
+
+        json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        for field in type(self).model_fields.keys():
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                type_string = type(value).__name__
+                json_string = json_string.replace(
+                    f'"{field}": {{', f'"{field}": {type_string} {{'
+                )
+
+        return f"{self!r} -> {json_string}"
