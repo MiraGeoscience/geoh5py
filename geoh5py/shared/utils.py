@@ -921,7 +921,14 @@ def nan2str(value):
     return value
 
 
-def str2none(value):
+def str2none(value: Any) -> Any:
+    """
+    Convert an empty string or zero UUID string to None.
+
+    :param value: Value to convert.
+
+    :return: None if value is an empty string or zero UUID, original value otherwise.
+    """
     if value in ("", "{00000000-0000-0000-0000-000000000000}"):
         return None
     return value
