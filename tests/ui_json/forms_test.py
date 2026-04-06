@@ -469,6 +469,7 @@ def test_data_form():
     )
     assert form.value == [uuid.UUID(data_uid), uuid.UUID(data_uid_2)]
 
+
 def test_data_group_form():
     group_uid = str(uuid.uuid4())
     form = DataGroupForm(
