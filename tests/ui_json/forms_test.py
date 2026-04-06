@@ -548,7 +548,7 @@ def test_multichoice_data_form():
         multi_select=True,
     )
     assert form.label == "name"
-    assert form.value == [uuid.UUID(data_uid_1)]
+    assert form.value == uuid.UUID(data_uid_1)
     assert form.parent == "my_param"
     assert form.association.name == "VERTEX"
     assert form.data_type.name == "FLOAT"
@@ -607,7 +607,7 @@ def test_multichoice_data_form_serialization():
         multi_select=True,
     )
     data = form.model_dump()
-    assert data["value"] == [uuid.UUID(data_uid_1)]
+    assert data["value"] == uuid.UUID(data_uid_1)
 
     form = MultiSelectDataForm(
         label="name",

@@ -38,6 +38,7 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     FloatForm,
     IntegerForm,
+    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -151,7 +152,7 @@ def test_uijson(sample_uijson):
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
         my_data_or_value_parameter: DataOrValueForm
-        my_multi_select_data_parameter: DataOrValueForm
+        my_multi_select_data_parameter: MultiSelectDataForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
         my_radio_button_parameter: RadioLabelForm
@@ -591,7 +592,7 @@ def test_unknown_uijson(tmp_path, sample_uijson):
     assert isinstance(uijson.my_object_parameter, ObjectForm)
     assert isinstance(uijson.my_data_parameter, DataForm)
     assert isinstance(uijson.my_data_or_value_parameter, DataOrValueForm)
-    assert isinstance(uijson.my_multi_select_data_parameter, DataOrValueForm)
+    assert isinstance(uijson.my_multi_select_data_parameter, MultiSelectDataForm)
 
     params = uijson.to_params(validate=False)
 
