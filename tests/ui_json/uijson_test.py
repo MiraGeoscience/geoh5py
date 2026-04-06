@@ -38,7 +38,6 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     FloatForm,
     IntegerForm,
-    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
@@ -152,7 +151,7 @@ def test_uijson(sample_uijson):
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
         my_data_or_value_parameter: DataOrValueForm
-        my_multi_select_data_parameter: MultiSelectDataForm
+        my_multi_select_data_parameter: DataOrValueForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
         my_radio_button_parameter: RadioLabelForm
@@ -406,9 +405,13 @@ def test_grouped_forms(tmp_path):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    dependencies = uijson._enabled_links
-    assert dependencies.get("my_grouped_param") == {"my_group": uijson.my_param}
-    assert dependencies.get("my_other_grouped_param") == {"my_group": uijson.my_param}
+    dependencies = uijson._group_dependencies
+    assert dependencies.get("my_group") == uijson.my_param
+
+    uijson.set_enabled(my_param=False)
+
+    assert uijson.is_enabled("my_grouped_param") is False
+    assert uijson.is_enabled("my_other_grouped_param") is False
 
 
 def test_disabled_forms(tmp_path):
@@ -486,11 +489,11 @@ def test_disabled_group_optional_forms(tmp_path):
 )
 def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
     class MyUIJson(UIJson):
-        group_leader: FloatForm
+        leader: FloatForm
         dependent: FloatForm
 
     kwargs = {
-        "group_leader": {
+        "leader": {
             "label": "a",
             "group": "some_group",
             "enabled": lead_state,
@@ -500,7 +503,7 @@ def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
         "dependent": {
             "label": "b",
             "group": "some_group",
-            "dependency": "group_leader",
+            "dependency": "leader",
             "dependencyType": dtype,
             "value": 4.0,
             "enabled": True,
@@ -513,17 +516,20 @@ def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
     assert uijson.is_enabled("dependent") == outcome
 
     # Change the state and check the dependent
-    uijson.set_enabled({"dependent": not outcome})
+    uijson.set_enabled(dependent=not outcome)
+    assert uijson.leader.enabled is not lead_state
 
-    assert uijson.group_leader.enabled is not lead_state
+    # Do reverse change
+    uijson.set_enabled(leader=lead_state)
+    assert uijson.dependent.enabled is outcome
 
 
 @pytest.mark.parametrize(
     ("lead_state", "dep_state", "outcome"),
     [
-        (True, True, True),
-        (True, False, False),
-        (False, False, True),
+        (True, True, False),
+        (True, False, True),
+        (False, False, False),
     ],
 )
 def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
@@ -561,7 +567,18 @@ def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
-    assert not uijson.is_enabled("sub_dependent") == outcome
+    assert uijson.is_enabled("sub_dependent") == outcome
+
+    # Setting at lower level doesn't change the lead group_optional
+    uijson.set_enabled(dependent=not dep_state)
+    assert uijson.group_leader.enabled is lead_state
+    # But changes the codependent
+    assert uijson.sub_dependent.enabled is dep_state
+
+    # Set state at the lead level doesn't change the state of low level
+    uijson.set_enabled(group_leader=not lead_state)
+    assert uijson.sub_dependent.enabled is not uijson.dependent.enabled
+    assert uijson.sub_dependent.enabled is dep_state
 
 
 def test_unknown_uijson(tmp_path, sample_uijson):
@@ -574,7 +591,7 @@ def test_unknown_uijson(tmp_path, sample_uijson):
     assert isinstance(uijson.my_object_parameter, ObjectForm)
     assert isinstance(uijson.my_data_parameter, DataForm)
     assert isinstance(uijson.my_data_or_value_parameter, DataOrValueForm)
-    assert isinstance(uijson.my_multi_select_data_parameter, MultiSelectDataForm)
+    assert isinstance(uijson.my_multi_select_data_parameter, DataOrValueForm)
 
     params = uijson.to_params(validate=False)
 

@@ -98,13 +98,13 @@ OptionalString = Annotated[
 ]
 
 OptionalUUID = Annotated[
-    list[UUID] | UUID | None,
+    UUID | None,
     BeforeValidator(optional_uuid_mapper),
     PlainSerializer(stringify, when_used="json"),
 ]
 
 OptionalUUIDList = Annotated[
-    list[UUID] | None,
+    list[UUID] | UUID | None,
     BeforeValidator(optional_uuid_mapper),
     PlainSerializer(stringify, when_used="json"),
 ]

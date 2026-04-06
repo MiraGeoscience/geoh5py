@@ -152,16 +152,15 @@ class BaseForm(BaseModel):
     def set_value(self, value: Any):
         """
         Set the form value.
-
-        If the value is None, the form enabled state is changed to False.
         """
         self.value = value
 
-        if (
-            "optional" in self.model_fields_set
-            or "group_optional" in self.model_fields_set
-        ):
-            self.enabled = self.value is not None
+    @property
+    def is_optional(self) -> bool:
+        """
+        Whether the field is optional or not.
+        """
+        return self.optional or self.group_optional
 
 
 class StringForm(BaseForm):
@@ -571,7 +570,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
         if "is_value" in self.model_fields_set and not self.is_value:
-            return self.property  # type: ignore
+            return self.property
         return self.value
 
     def set_value(self, value: Any):
@@ -611,20 +610,6 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
         """Validate that multi_select is True."""
         if not value:
             raise ValueError("MultiSelectForm must have multi_select: True.")
-        return value
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def to_list(cls, value: str | list[str]) -> list[str]:
-        """
-        Validate that value is a list, converting it if it's a string.
-
-        :param value: The value to validate.
-
-        :return: A list of strings representing the value.
-        """
-        if not isinstance(value, list):
-            value = [value]
         return value
 
 
