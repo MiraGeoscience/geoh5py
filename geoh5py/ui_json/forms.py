@@ -475,9 +475,12 @@ class DataForm(DataFormMixin, BaseForm):
     Geoh5py uijson form for data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
+
+    When ``multiselect`` is ``True`` the value may be a list of UUIDs; otherwise
+    a single UUID or ``None`` is expected.
     """
 
-    value: OptionalUUID
+    value: OptionalUUIDList
 
 
 class DataGroupForm(DataForm):

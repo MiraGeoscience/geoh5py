@@ -151,7 +151,17 @@ class UIJson(BaseModel):
     @staticmethod
     def infer(title="UnknownUIJson", **kwargs) -> type[UIJson]:
         """
-        Create a UIJson class based on inferred forms.
+        Create a UIJson subclass dynamically based on inferred form types.
+
+        For each keyword argument that is not already a field on :class:`UIJson`,
+        the function tries to infer the appropriate :class:`~geoh5py.ui_json.forms.BaseForm`
+        subclass from the value if it is a dict, or uses the value's type directly
+        otherwise.
+
+        :param title: Name for the generated model class.  Defaults to ``"UnknownUIJson"``.
+        :param kwargs: Named form data to include in the generated class.
+
+        :return: A new :class:`UIJson` subclass whose extra fields match the inferred types.
         """
         fields = {}
         for name, value in kwargs.items():

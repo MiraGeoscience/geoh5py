@@ -2,7 +2,7 @@ schema_version: 1
 
 context:
   name: "geoh5py"
-  version: "0.12.1rc2.dev313+a646f9be"  # This will be replaced by the actual version in the build process
+  version: "0.12.1rc2.dev332+a711a105"  # This will be replaced by the actual version in the build process
   python_min: "3.12"
   module_name: ${{ name|lower|replace("-", "_") }}
 

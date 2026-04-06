@@ -459,6 +459,15 @@ def test_data_form():
     assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
     assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
 
+    data_uid_2 = str(uuid.uuid4())
+    form = DataForm(
+        label="name",
+        value=[data_uid, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    assert form.value == [uuid.UUID(data_uid), uuid.UUID(data_uid_2)]
 
 def test_data_group_form():
     group_uid = str(uuid.uuid4())
