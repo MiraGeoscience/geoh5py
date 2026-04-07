@@ -160,7 +160,7 @@ class BaseForm(BaseModel):
         """
         Whether the field is optional or not.
         """
-        return self.optional or self.group_optional
+        return self.optional or self.group_optional or len(self.dependency) > 0
 
 
 class StringForm(BaseForm):

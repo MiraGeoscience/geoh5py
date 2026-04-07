@@ -266,11 +266,7 @@ class UIJson(BaseModel):
             if not isinstance(form, BaseForm):
                 continue
 
-            if (
-                not value
-                and not self._form_dependencies.get(field, {})
-                and not form.is_optional
-            ):
+            if not value and not form.is_optional:
                 raise ValueError(f"Field {field} enabled state cannot be False.")
 
             form.enabled = value
@@ -305,7 +301,9 @@ class UIJson(BaseModel):
         for field, value in kwargs.items():
             form = getattr(uijson, field, None)
             if isinstance(form, BaseForm):
-                form.set_value(value)
+                if not (form.is_optional and value is None):
+                    form.set_value(value)
+
                 self.set_enabled(copy=False, **{field: value is not None})
             else:
                 setattr(uijson, field, dict_mapper(value, [entity2uuid]))
