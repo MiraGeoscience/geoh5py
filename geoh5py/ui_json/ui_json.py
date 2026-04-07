@@ -125,7 +125,8 @@ class UIJson(BaseModel):
         """
         data = {}
         fields = self.model_fields_set if active_only else self.model_fields
-        for field in fields:
+        # todo: strange ype issue: I did not changed this part
+        for field in fields:  # pylint: disable=not-an-iterable
             if skip_disabled and not self.is_enabled(field):
                 continue
 
@@ -324,8 +325,7 @@ class UIJson(BaseModel):
             specific params (options) class. If validate=True, the content is validated and errors
             are raised if any validations fail.
         """
-
-        data = self.flatten(skip_disabled=True, active_only=True)
+        data = self.flatten(skip_disabled=True, active_only=False)
 
         with (
             fetch_active_workspace(workspace)
@@ -457,6 +457,8 @@ class UIJson(BaseModel):
         """
         form_dependencies: dict[str, dict[str, bool]] = {}
         group_dependencies: dict[str, BaseForm] = {}
+        to_update: dict[str, dict[str, bool]] = {}
+
         for name in self.__class__.model_fields.keys():
             form_dependencies[name] = {}
             form = getattr(self, name)
@@ -480,8 +482,18 @@ class UIJson(BaseModel):
                     DependencyType.ENABLED,
                     DependencyType.SHOW,
                 ]
+
                 # Add reverse linkage
-                form_dependencies[dependents_on].update({name: mirrors})
+                if dependents_on in form_dependencies:
+                    form_dependencies[dependents_on].update({name: mirrors})
+                else:
+                    to_update[dependents_on] = {name: mirrors}
+
+                # add saved reverse linkages if they exist
+                if name in to_update:
+                    form_dependencies[name].update(to_update[name])
+                    del to_update[name]
+
                 form_dependencies[name][dependents_on] = mirrors
 
         return group_dependencies, form_dependencies
