@@ -310,7 +310,10 @@ class DrillholesGroupTable(ABC):
         return self._depth_table_by_key(self.association + self.properties, True)
 
     def depth_table_by_name(
-        self, names: tuple[str] | str, spatial_index: bool = False, mapped: bool = False
+        self,
+        names: tuple[str, ...] | str,
+        spatial_index: bool = False,
+        mapped: bool = False,
     ) -> np.ndarray:
         """
         Get a table with specific data associated with depth for every drillhole object.

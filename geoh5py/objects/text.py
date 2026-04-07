@@ -117,10 +117,10 @@ class TextObject(Points):
     :param text_mesh_data: Text mesh data as a JSON string or dictionary.
     """
 
+    _TYPE_UID: uuid.UUID = uuid.UUID("{c00905d1-bc3b-4d12-9f93-07fcf1450270}")
+    _default_name = "Text Object"
     _attribute_map: dict = Points._attribute_map.copy()
     _attribute_map.update({"TextMesh Data": "text_mesh_data"})
-    _default_name = "Text Object"
-    _TYPE_UID: uuid.UUID = uuid.UUID("{c00905d1-bc3b-4d12-9f93-07fcf1450270}")
 
     def __init__(
         self,

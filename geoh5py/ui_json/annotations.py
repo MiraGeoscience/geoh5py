@@ -18,21 +18,27 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 import logging
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
-from geoh5py.ui_json.validations.form import empty_string_to_none, uuid_to_string
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
+from geoh5py.groups import Group
+from geoh5py.objects import ObjectBase
+from geoh5py.shared.utils import enum_name_to_str, none2str, str2none, stringify
+from geoh5py.shared.validators import (
+    to_class,
+    to_list,
+    to_path,
+    to_type_uid_or_class,
+    types_to_string,
+)
+from geoh5py.ui_json.utils import optional_uuid_mapper
 
 
 logger = logging.getLogger(__name__)
-
-OptionalUUIDList = Annotated[
-    list[UUID] | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
-]
 
 
 def deprecate(value, info):
@@ -41,8 +47,64 @@ def deprecate(value, info):
     return value
 
 
+AssociationOptions = Annotated[
+    DataAssociationEnum,
+    PlainSerializer(enum_name_to_str),
+]
+
+DataTypeOptions = Annotated[
+    DataTypeEnum,
+    PlainSerializer(enum_name_to_str),
+]
+
+
 Deprecated = Annotated[
     Any,
     Field(exclude=True),
     BeforeValidator(deprecate),
+]
+
+GroupTypes = Annotated[
+    list[type[Group]],
+    BeforeValidator(to_class),
+    BeforeValidator(to_type_uid_or_class),
+    BeforeValidator(to_list),
+    PlainSerializer(types_to_string, when_used="json"),
+]
+
+MeshTypes = Annotated[
+    list[type[ObjectBase]],
+    BeforeValidator(to_class),
+    BeforeValidator(to_type_uid_or_class),
+    BeforeValidator(to_list),
+    PlainSerializer(types_to_string, when_used="json"),
+]
+
+OptionalPath = Annotated[
+    Path | None,
+    BeforeValidator(str2none),
+    PlainSerializer(none2str),
+]
+
+OptionalUUID = Annotated[
+    UUID | None,
+    BeforeValidator(optional_uuid_mapper),
+    PlainSerializer(stringify),
+]
+
+OptionalUUIDList = Annotated[
+    list[UUID] | None,
+    BeforeValidator(optional_uuid_mapper),
+    PlainSerializer(stringify),
+]
+
+OptionalValueList = Annotated[
+    float | list[float] | None,
+    BeforeValidator(optional_uuid_mapper),
+]
+
+PathList = Annotated[
+    list[Path],
+    BeforeValidator(to_path),
+    BeforeValidator(to_list),
 ]

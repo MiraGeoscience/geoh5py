@@ -35,8 +35,8 @@ repos:
     hooks:
     -   id: mypy
         additional_dependencies: [
-#            numpy==1.26.*,  # TODO: fix mypy errors related to numpy
-            pydantic==2.5.*,
+#            numpy==2.4.*,  # TODO: fix mypy errors related to numpy
+            pydantic==2.12.*,
             tomli, # to read config from pyproject.toml
             types-toml,
             types-PyYAML,
@@ -101,9 +101,9 @@ repos:
     -   id: debug-statements
     -   id: detect-private-key
     -   id: end-of-file-fixer
-        exclude: (^\.idea/.*\.xml|\.mdj)$
+        exclude: (^\.idea/.*\.?ml|\.mdj)$
     -   id: mixed-line-ending
-        exclude: ^\.idea/.*\.xml$
+        exclude: ^\.idea/.*\.?ml$
     -   id: name-tests-test
     -   id: pretty-format-json
         args:

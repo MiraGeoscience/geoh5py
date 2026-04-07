@@ -84,8 +84,8 @@ class AirborneFEMReceivers(AirborneFEMSurvey):  # pylint: disable=too-many-ances
     """
 
     _TYPE_UID = uuid.UUID("{b3a47539-0301-4b27-922e-1dde9d882c60}")
+    _default_name = "Survey Airborne FEM Rx"
     __TYPE = "Receivers"
-    _default_name = "Airborne FEM Rx"
 
     @property
     def complement(self):
@@ -103,8 +103,8 @@ class AirborneFEMTransmitters(AirborneFEMSurvey):  # pylint: disable=too-many-an
     """
 
     _TYPE_UID = uuid.UUID("{a006cf3e-e24a-4c02-b904-2e57b9b5916d}")
+    _default_name = "Survey Airborne FEM Tx"
     __TYPE = "Transmitters"
-    _default_name = "Airborne FEM Tx"
 
     @property
     def complement(self):

@@ -125,6 +125,7 @@ venv.bak/
 
 #pycharm
 /.idea/*
+!/.idea/*.iml
 !/.idea/scopes/
 !/.idea/copyright/
 

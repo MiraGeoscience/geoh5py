@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-workflow-zizmor-annotate:
+  call-workflow-zizmor-advanced-security:
     name: Zizmor analysis (advanced security)
     if: ${{ github.event_name != 'pull_request' }}
     permissions:
@@ -33,7 +33,7 @@ jobs:
       actions: read
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-advanced-security.yml@v2
 
-  call-workflow-zizmor-advanced-security:
+  call-workflow-zizmor-annotate:
     name: Zizmor analysis (annotate)
     if: ${{ github.event_name == 'pull_request' }}
     permissions:

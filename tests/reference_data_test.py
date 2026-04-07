@@ -39,9 +39,8 @@ def generate_value_map(workspace, n_data=12, n_class=8):
     refs = np.unique(values)
     value_map = {}
     for ref in refs:
-        random_len = random.randint(1, n_class)
         value_map[ref] = "".join(
-            random.choice(string.ascii_lowercase) for i in range(random_len)
+            random.choice(string.ascii_lowercase) for _ in range(ref)
         )
 
     points = Points.create(

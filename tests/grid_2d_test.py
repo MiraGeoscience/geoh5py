@@ -184,3 +184,72 @@ def test_grid2d_to_geoimage(tmp_path):
 
         with pytest.raises(TypeError, match="The dtype of the keys must be"):
             converter.key_to_data(grid, [0, 1])
+
+
+def test_grid2d_extents(tmp_path):
+    origin = np.random.randn(3)
+    rotation = np.random.randint(0, 90, 1)
+
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        mesh = Grid2D.create(
+            workspace,
+            origin=origin,
+            u_cell_size=np.r_[1.0],
+            v_cell_size=np.r_[1.0],
+            u_count=1,
+            v_count=1,
+            rotation=rotation,
+            dip=np.random.randint(0, 90, 1)[0],
+        )
+
+    azm = np.deg2rad(rotation)
+    dip = np.deg2rad(mesh.dip)
+    assert np.allclose(
+        mesh.extent,
+        np.c_[
+            origin + np.r_[-np.sin(azm) * np.cos(dip), 0, 0],
+            origin
+            + np.r_[
+                np.cos(azm), (np.sin(azm) + np.cos(azm) * np.cos(dip)), np.sin(dip)
+            ],
+        ].T,
+    )
+
+
+def test_shaped_data_values():
+    n_u, n_v = 5, 4
+    with Workspace() as workspace:
+        grid = Grid2D.create(
+            workspace,
+            u_cell_size=1.0,
+            v_cell_size=1.0,
+            u_count=n_u,
+            v_count=n_v,
+        )
+        values = np.arange(grid.n_cells, dtype=float)
+        grid.add_data({"DataValues": {"association": "CELL", "values": values}})
+        shaped = grid.shaped_data_values("DataValues")
+        assert shaped.shape == (n_v, n_u)
+        assert np.allclose(shaped.flatten(), values)
+        assert np.allclose(shaped, grid.shaped_data_values(values))
+
+        # check for data restoration
+        grid.add_data({"DataValues2": {"association": "CELL", "values": shaped}})
+
+        data1 = grid.get_data("DataValues")[0].values
+        data2 = grid.get_data("DataValues2")[0].values
+        assert np.allclose(data1, data2)
+
+
+def test_get_unique_data_errors():
+    with Workspace() as workspace:
+        grid = Grid2D.create(workspace, u_count=2, v_count=2)
+
+        with pytest.raises(ValueError, match="No data"):
+            grid.shaped_data_values("NonExistent")
+
+        grid.add_data(
+            {"ObjectData": {"association": "OBJECT", "values": np.array([1.0])}}
+        )
+        with pytest.raises(ValueError, match="expected 'CELL'"):
+            grid.shaped_data_values("ObjectData")

@@ -212,3 +212,10 @@ class ReferencedData(IntegerData):
         """
         data = self.parent.add_data_map(self, name, values, public)
         return data
+
+    @property
+    def nan_value(self):
+        """
+        Nan-Data-Value
+        """
+        return 0

@@ -36,9 +36,9 @@ class MTReceivers(FEMSurvey, Points):  # pylint: disable=too-many-ancestors
     """
 
     _TYPE_UID = uuid.UUID("{b99bd6e5-4fe1-45a5-bd2f-75fc31f91b38}")
+    _default_name = "Survey Airborne MT Rx"
     __TYPE = "Receivers"
     __INPUT_TYPE = ["Rx only"]
-    _default_name = "Magnetotellurics rx"
 
     @property
     def default_input_types(self) -> list[str]:

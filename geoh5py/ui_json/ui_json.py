@@ -21,51 +21,51 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
-    BeforeValidator,
     ConfigDict,
-    PlainSerializer,
     create_model,
     field_validator,
 )
 
 from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
+from geoh5py.groups import PropertyGroup, UIJsonGroup
 from geoh5py.shared import Entity
-from geoh5py.shared.utils import fetch_active_workspace
-from geoh5py.shared.validators import none_to_empty_string
+from geoh5py.shared.utils import (
+    as_str_if_uuid,
+    dict_mapper,
+    entity2uuid,
+    fetch_active_workspace,
+)
+from geoh5py.ui_json.annotations import OptionalPath
 from geoh5py.ui_json.forms import BaseForm
-from geoh5py.ui_json.validations import ErrorPool, UIJsonError, get_validations
-from geoh5py.ui_json.validations.form import empty_string_to_none
+from geoh5py.ui_json.validation import ErrorPool, UIJsonError, get_validations
 
 
-OptionalPath = Annotated[
-    Path | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(none_to_empty_string),
-]
+logger = logging.getLogger(__name__)
 
 
 class BaseUIJson(BaseModel):
     """
     Base class for storing ui.json data on disk.
 
+    :param version: Version of the application.
     :params title: Title of the application.
     :params geoh5: Path to the geoh5 file.
     :params run_command: Command to run the application.
-    :params run_command_boolean: Boolean to run the command.
     :params monitoring_directory: Directory to monitor for changes.
     :params conda_environment: Conda environment to run the application.
-    :params conda_environment_boolean: Boolean to run the conda environment.
     :params workspace_geoh5: Path to the workspace geoh5 file.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True, extra="allow", validate_assignment=True
+    )
 
     version: str
     title: str
@@ -86,14 +86,32 @@ class BaseUIJson(BaseModel):
 
     def __str__(self) -> str:
         """String level shows the full json representation."""
+
         json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        for field in type(self).model_fields:
+            value = getattr(self, field)
+            if isinstance(value, BaseForm):
+                type_string = type(value).__name__
+                json_string = json_string.replace(
+                    f'"{field}": {{', f'"{field}": {type_string} {{'
+                )
+
         return f"{self!r} -> {json_string}"
 
     @field_validator("geoh5", mode="after")
     @classmethod
-    def workspace_path_exists(cls, path: Path):
-        if not path.exists():
+    def workspace_path_exists(cls, path: Path | None) -> Path | None:
+        if path is not None and not path.exists():
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
+        return path
+
+    @field_validator("geoh5", mode="after")
+    @classmethod
+    def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
+        if path is not None and path.suffix != ".geoh5":
+            raise ValueError(
+                f"Workspace path: {path} must have a '.geoh5' file extension."
+            )
         return path
 
     @classmethod
@@ -123,6 +141,9 @@ class BaseUIJson(BaseModel):
 
         with open(path, encoding="utf-8") as file:
             kwargs = json.load(file)
+            kwargs = {
+                key: (item if item != "" else None) for key, item in kwargs.items()
+            }
 
         if cls == BaseUIJson:
             fields = {}
@@ -130,7 +151,11 @@ class BaseUIJson(BaseModel):
                 if name in BaseUIJson.model_fields:
                     continue
                 if isinstance(value, dict):
-                    fields[name] = (BaseForm.infer(value), ...)
+                    form_type = BaseForm.infer(value)
+                    logger.info(
+                        "Parameter: %s interpreted as a %s.", name, form_type.__name__
+                    )
+                    fields[name] = (form_type, ...)
                 else:
                     fields[name] = (type(value), ...)
 
@@ -161,7 +186,7 @@ class BaseUIJson(BaseModel):
         """
         Returns grouped forms.
 
-        :returns: Dictionary of group names and the parameters belonging to each
+        :returns: Group names and the parameters belonging to each
             group.
         """
         groups: dict[str, list[str]] = {}
@@ -180,7 +205,7 @@ class BaseUIJson(BaseModel):
         Checks if a field is disabled based on form status.
 
         :param field: Field name to check.
-        :returns: True if the field is disabled by it's own enabled status or
+        :returns: True if the field is disabled by its own enabled status or
             the groups enabled status, False otherwise.
         """
 
@@ -208,6 +233,9 @@ class BaseUIJson(BaseModel):
         Chooses between value/property in data forms depending on the is_value
         field.
 
+        :param skip_disabled: If True, skips fields with 'enabled' set to False.
+        :param active_only: If True, skips fields that have not been explicitly set.
+
         :return: Flattened dictionary of key/value pairs.
         """
         data = {}
@@ -222,6 +250,31 @@ class BaseUIJson(BaseModel):
             data[field] = value
 
         return data
+
+    def set_values(self, copy: bool = False, **kwargs) -> BaseUIJson:
+        """
+        Fill the UIJson with new values.
+
+        :param copy: If True, returns a new UIJson object with the updated values.
+            If False, updates the current UIJson object with the new values and returns itself.
+        :param kwargs: Key/value pairs to update the UIJson with.
+
+        :return: A new UIJson object with the updated values.
+        """
+        if copy:
+            uijson = self.model_copy(deep=True)
+        else:
+            uijson = self
+
+        demotion = [entity2uuid, as_str_if_uuid]
+        for key, value in kwargs.items():
+            form = getattr(uijson, key, None)
+            if isinstance(form, BaseForm):
+                form.set_value(value)
+            else:
+                setattr(uijson, key, dict_mapper(value, demotion))
+
+        return uijson
 
     def to_params(self, workspace: Workspace | None = None) -> dict[str, Any]:
         """
@@ -259,6 +312,35 @@ class BaseUIJson(BaseModel):
             self.validate_data(data, errors)
 
         return data
+
+    def to_ui_json_group(
+        self, workspace: Workspace | None = None, **kwargs
+    ) -> UIJsonGroup:
+        """
+        Convert the UIJson to a UIJsonGroup.
+
+        :param workspace: Workspace to fetch entities from.  Used for passing active
+            workspaces to avoid closing and flushing data.
+        :param kwargs: Additional keyword arguments to update the UIJson data before
+
+        :return: A UIJsonGroup representing the application.
+        """
+        with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
+            if geoh5 is None:
+                raise ValueError("Workspace cannot be None.")
+
+            ui_json_group = UIJsonGroup.create(
+                workspace=geoh5,
+                options=self.model_dump(mode="json", exclude_unset=True, by_alias=True),
+                name=kwargs.pop("name", self.title),
+                **kwargs,
+            )
+            options = ui_json_group.options
+            options["out_group"]["value"] = ui_json_group.uid
+            options["out_group"]["enabled"] = True
+            ui_json_group.options = options
+
+            return ui_json_group
 
     def validate_data(
         self, params: dict[str, Any] | None = None, errors: dict[str, Any] | None = None

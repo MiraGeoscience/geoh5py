@@ -91,6 +91,15 @@ class Plane(BaseModel):
         )
 
     @property
+    def dip_rotation_only(self) -> bool:
+        """
+        Check if the plane orientation can be explained by rotation and dip only.
+
+        :return: True if u_vector lies in the XY plane (has no Z component).
+        """
+        return abs(self.u_vector[2]) < 1e-6
+
+    @property
     def normal(self) -> np.ndarray:
         """
         Get the normal vector of the plane.

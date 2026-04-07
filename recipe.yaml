@@ -2,8 +2,8 @@ schema_version: 1
 
 context:
   name: "geoh5py"
-  version: "0.0.0.dev0"  # This will be replaced by the actual version in the build process
-  python_min: "3.10"
+  version: "0.12.1rc2.dev279+3df1d110"  # This will be replaced by the actual version in the build process
+  python_min: "3.12"
   module_name: ${{ name|lower|replace("-", "_") }}
 
 package:
@@ -20,17 +20,17 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - poetry-core >=1.8.0
     - poetry-dynamic-versioning >=1.9, 1.*
     - setuptools
     - pip
   run:
     - python >=${{ python_min }}
-    - h5py >=3.2.1, 3.*
-    - numpy >=1.26.0, 1.26.*
-    - pillow >=10.3.0, 10.3.*
-    - pydantic >=2.12.0, 2.*
+    - h5py >=3.15.0, 3.*
+    - numpy 2.4.*
+    - pillow 12.1.*
+    - pydantic 2.12.*
 
 tests:
   - python:
@@ -42,7 +42,7 @@ tests:
     requirements:
       run:
         - pytest
-        - scipy >= 1.14.0, <1.15.dev
+        - scipy 1.17.*
     files:
       source:
         - tests/
@@ -70,4 +70,5 @@ about:
 extra:
   recipe-maintainers:
     - andrewg-mira
+    - domfournier
     - sebhmg

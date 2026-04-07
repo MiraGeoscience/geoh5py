@@ -19,10 +19,13 @@
 
 from __future__ import annotations
 
+import inspect
 import re
+import types as types_module
 from abc import ABC
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
+from enum import Enum
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
@@ -36,8 +39,9 @@ import numpy as np
 from .exceptions import Geoh5FileClosedError
 
 
+UidOrNumeric = UUID | float | int | None
+StringOrNumeric = str | float | int
 # pylint: disable=too-many-lines
-
 
 if TYPE_CHECKING:
     from ..workspace import Workspace
@@ -1330,3 +1334,121 @@ def validate_normalized_vector(value: np.ndarray) -> np.ndarray:
     if not np.isclose(np.linalg.norm(value), 1.0, atol=1e-6):
         raise ValueError("Vector is not normalized.")
     return value
+
+
+def are_coplanar(points: np.ndarray, tol: float = 1e-6) -> bool:
+    """
+    Check if a set of points are coplanar.
+
+    :param points: Array of shape (N, 3) containing the points to check.
+    :param tol: Tolerance for coplanarity check.
+
+    :return: True if points are coplanar, False otherwise.
+    """
+    if points.shape[0] < 4:
+        return True
+
+    p0, p1, p2 = points[:3]
+    normal = np.cross(p1 - p0, p2 - p0)
+    if np.linalg.norm(normal) < tol:
+        raise ValueError("Degenerate plane (collinear points)")
+
+    normal = normal / np.linalg.norm(normal)
+    distances = np.abs((points - p0) @ normal)
+
+    return np.all(distances <= tol)
+
+
+def are_orthogonal(
+    point1: np.ndarray, point2: np.ndarray, point3: np.ndarray, tol: float = 1e-6
+) -> bool:
+    """
+    Check if the vectors formed by three points are orthogonal.
+
+    :param point1: First point as a numpy array.
+    :param point2: Second point as a numpy array.
+    :param point3: Third point as a numpy array.
+    :param tol: Tolerance for orthogonality check.
+
+    :return: True if the vectors are orthogonal within the given tolerance.
+    """
+    vec1 = point2 - point1
+    vec2 = point3 - point1
+    dot_product = np.dot(vec1, vec2)
+    return abs(dot_product) <= tol
+
+
+def are_affine(points: np.ndarray, tol: float = 1e-6) -> bool:
+    """
+    Check if world points can be explained by an affine transformation from pixel coordinates.
+
+    Requires coplanarity check first. Returns True for fewer than 3 points.
+
+    :param points: List of (pixel_coords, world_coords) tuples.
+    :param tol: Maximum allowed residual distance.
+
+    :return: True if affine transformation fits within tolerance.
+    """
+    if points.shape[0] < 3:
+        return True
+
+    pix = np.array([p[0][:2] for p in points], dtype=float)
+    wrd = np.array([p[1] for p in points], dtype=float)
+
+    # Build affine design matrix: [i, j, 1] for each point
+    design_matrix = np.column_stack([pix, np.ones(len(pix))])
+
+    # Solve for affine transformation matrix
+    affine_transform, *_ = np.linalg.lstsq(design_matrix, wrd, rcond=None)
+
+    # Check how well the affine model fits
+    predicted_world = design_matrix @ affine_transform
+    residuals = wrd - predicted_world
+    max_error = np.max(np.linalg.norm(residuals, axis=1))
+
+    return max_error <= tol
+
+
+def equalize_string(x: str) -> str:
+    """Replaces spaces and lowercases for flexible string comparison."""
+    return x.replace(" ", "").lower()
+
+
+class ClassIdentifierEnum(Enum):
+    DEFAULT_TYPE_UID = "_TYPE_UID"
+    DEFAULT_NAME = "_default_name"
+
+
+def map_to_class(
+    class_identifier: ClassIdentifierEnum, search_modules: list[types_module.ModuleType]
+) -> dict:
+    """
+    Create map from an identifier class attribute to class in provided modules.
+
+    :param class_identifier: Class attribute that identifies a class.
+    :param search_modules: Modules to search for classes.
+    """
+
+    class_map = {}
+    members = []
+    for module in search_modules:
+        members += inspect.getmembers(module)
+
+    for _, member in members:
+        # identifier = vars(member)[class_identifier.value]
+        identifier = getattr(member, class_identifier.value, None)
+        if inspect.isclass(member) and identifier is not None:
+            class_map[identifier] = member
+
+    return class_map
+
+
+def enum_name_to_str(value: Enum) -> str:
+    """
+    Convert enum name to capitalized string.
+
+    :param value: Enum value to convert.
+
+    :return: Capitalized string.
+    """
+    return value.name.capitalize()

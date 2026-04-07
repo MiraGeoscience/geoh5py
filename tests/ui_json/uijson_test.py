@@ -25,8 +25,10 @@ import logging
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from geoh5py import Workspace
+from geoh5py.groups import UIJsonGroup
 from geoh5py.objects import Curve, Points
 from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
@@ -41,7 +43,7 @@ from geoh5py.ui_json.forms import (
     StringForm,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
-from geoh5py.ui_json.validations import UIJsonError
+from geoh5py.ui_json.validation import UIJsonError
 
 
 @pytest.fixture
@@ -545,10 +547,19 @@ def test_unknown_uijson(tmp_path):
     assert "my_group_optional_parameter" not in params
     assert "my_grouped_parameter" not in params
 
+    re_loaded = BaseUIJson.read(tmp_path / "test_copy.ui.json")
+
+    for name in uijson.model_fields_set:
+        assert getattr(re_loaded, name) == getattr(uijson, name)
+
 
 def test_str_and_repr(tmp_path):
     Workspace.create(tmp_path / "test.geoh5")
-    uijson = BaseUIJson(
+
+    class MyUIJson(BaseUIJson):
+        param: StringForm
+
+    uijson = MyUIJson(
         version="0.1.0",
         title="my application",
         geoh5=str(tmp_path / "test.geoh5"),
@@ -556,7 +567,9 @@ def test_str_and_repr(tmp_path):
         monitoring_directory=None,
         conda_environment="test",
         workspace_geoh5=None,
+        param={"label": "a", "value": "test"},
     )
+
     str_uijson = str(uijson)
     repr_uijson = repr(uijson)
     assert "UIJson('my application')" in repr_uijson
@@ -566,3 +579,223 @@ def test_str_and_repr(tmp_path):
     repr_uijson = repr(uijson)
     assert "UIJson('test.ui.json')" in repr_uijson
     assert '"version": "0.1.0"' in str_uijson
+
+
+def test_geoh5_validate_extension(tmp_path):
+    h5file = tmp_path / "test"
+    h5file.touch()
+
+    with pytest.raises(ValidationError, match="must have a '.geoh5' file extension."):
+        _ = BaseUIJson(
+            version="0.1.0",
+            title="my application",
+            geoh5=str(h5file),
+            run_command="python -m my_module",
+            monitoring_directory=None,
+            conda_environment="test",
+            workspace_geoh5=None,
+        )
+
+
+# ---------------------------------------------------------------------------
+# fill tests
+# ---------------------------------------------------------------------------
+
+
+def test_fill_in_place(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+        my_int_parameter: IntegerForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={
+            "my_string_parameter": {"label": "a", "value": "original"},
+            "my_int_parameter": {"label": "b", "value": 1},
+        },
+    )
+    result = uijson.set_values(my_string_parameter="updated")
+
+    assert result is uijson
+    assert uijson.my_string_parameter.value == "updated"
+    assert uijson.my_int_parameter.value == 1
+
+
+def test_fill_copy(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={"my_string_parameter": {"label": "a", "value": "original"}},
+    )
+    copy = uijson.set_values(copy=True, my_string_parameter="updated", title="ok")
+
+    assert copy is not uijson
+    assert copy.my_string_parameter.value == "updated"
+    assert uijson.my_string_parameter.value == "original"
+    assert copy.title == "ok"
+
+    with pytest.raises(ValidationError):
+        _ = uijson.set_values(copy=True, my_string_parameter="updated", title=666)
+
+
+def test_fill_truthy_value_leaves_updates_empty(tmp_path):
+    """A form with a truthy value not in kwargs produces no updates."""
+    ws = Workspace(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_param: FloatForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={"my_param": {"label": "a", "value": 3.14}},
+    )
+    original_enabled = uijson.my_param.enabled
+    uijson.set_values()
+
+    assert uijson.my_param.enabled == original_enabled
+    assert uijson.my_param.value == 3.14
+
+
+def test_fill_kwargs_re_enables_form(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_param: FloatForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={
+            "my_param": {"label": "a", "value": 0.0, "enabled": False, "optional": True}
+        },
+    )
+    uijson.set_values(my_param=5.0)
+
+    assert uijson.my_param.enabled is True
+    assert uijson.my_param.value == 5.0
+
+
+def test_fill_with_uuid_value(tmp_path):
+    ws = Workspace(tmp_path / "test.geoh5")
+    pts = Points.create(ws, name="pts", vertices=np.random.random((10, 3)))
+    pts2 = Points.create(ws, name="pts2", vertices=np.random.random((10, 3)))
+
+    class MyUIJson(BaseUIJson):
+        my_object_parameter: ObjectForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={
+            "my_object_parameter": {
+                "label": "obj",
+                "mesh_type": [Points],
+                "value": pts.uid,
+            }
+        },
+    )
+    uijson.set_values(my_object_parameter=pts2.uid)
+
+    assert uijson.my_object_parameter.value == pts2.uid
+
+
+# ---------------------------------------------------------------------------
+# to_ui_json_group tests
+# ---------------------------------------------------------------------------
+
+
+def test_to_ui_json_group_creates_group(tmp_path):
+    ws = Workspace.create(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={"my_string_parameter": {"label": "a", "value": "test"}},
+    )
+    group = uijson.to_ui_json_group(workspace=ws)
+
+    assert isinstance(group, UIJsonGroup)
+    assert ws.get_entity(group.uid)[0] is not None
+
+
+def test_to_ui_json_group_default_name(tmp_path):
+    ws = Workspace.create(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={"my_string_parameter": {"label": "a", "value": "test"}},
+    )
+    group = uijson.to_ui_json_group(workspace=ws)
+
+    assert group.name == "my application"
+
+
+def test_to_ui_json_group_custom_name(tmp_path):
+    ws = Workspace.create(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={"my_string_parameter": {"label": "a", "value": "test"}},
+    )
+    group = uijson.to_ui_json_group(workspace=ws, name="custom name")
+
+    assert group.name == "custom name"
+
+
+def test_to_ui_json_group_out_group_properties(tmp_path):
+    ws = Workspace.create(tmp_path / "test.geoh5")
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyUIJson,
+        data={"my_string_parameter": {"label": "a", "value": "test"}},
+    )
+    group = uijson.to_ui_json_group(workspace=ws)
+
+    assert group.options["out_group"]["value"] == str(group.uid)
+    assert group.options["out_group"]["enabled"] is True
+
+
+def test_to_ui_json_group_without_workspace(tmp_path):
+    geoh5_path = tmp_path / "test.geoh5"
+    Workspace.create(geoh5_path)
+
+    class MyUIJson(BaseUIJson):
+        my_string_parameter: StringForm
+
+    uijson = MyUIJson(
+        version="0.1.0",
+        title="my application",
+        geoh5=str(geoh5_path),
+        run_command="python -m my_module",
+        monitoring_directory=None,
+        conda_environment="test",
+        workspace_geoh5=None,
+        my_string_parameter={"label": "a", "value": "test"},
+    )
+    group = uijson.to_ui_json_group()
+
+    assert isinstance(group, UIJsonGroup)
