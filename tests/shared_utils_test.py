@@ -69,16 +69,14 @@ def test_iterable_message():
 def test_mask_by_extent():
     corners = [[-1, -2], [4, 5], [2, 3]]
     points = [-100, 100, 0]
-    with pytest.raises(
-        ValueError, match=re.escape("Input 'extent' must be a 2D array-like.")
-    ):
-        mask_by_extent(points, 1.0)
+    with pytest.raises(ValueError, match="Input 'extent' must be a 2D array-like."):
+        mask_by_extent(np.vstack([points]), 1.0)
 
     with pytest.raises(
         ValueError,
         match=re.escape("Input 'locations' must be an array-like of"),
     ):
-        mask_by_extent("abc", corners[0])
+        mask_by_extent("abc", corners)
 
     assert not mask_by_extent(np.vstack([points]), corners[:2]), (
         "Point should have been outside."
