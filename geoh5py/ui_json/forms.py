@@ -542,6 +542,27 @@ class GroupMultiDataForm(BaseForm):
             raise TypeError(f"'value' must be a list of strings; got '{type(value)}'")
         return value
 
+    def flatten(self) -> dict:
+        """Returns the property, data and is_complement values for the form."""
+        return {
+            "group_value": self.group_value,
+            "value": self.value,
+        }
+
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+        """
+        if isinstance(value, dict):
+            for key, val in value.items():
+                setattr(self, key, val)
+
+        if isinstance(value, list | str):
+            self.value = value
+
+        if isinstance(value, UUID | None):
+            self.group_value = value
+
 
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
