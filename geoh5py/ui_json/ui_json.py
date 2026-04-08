@@ -325,7 +325,7 @@ class UIJson(BaseModel):
             specific params (options) class. If validate=True, the content is validated and errors
             are raised if any validations fail.
         """
-        data = self.flatten(skip_disabled=True, active_only=False)
+        data = self.flatten(skip_disabled=True, active_only=True)
 
         with (
             fetch_active_workspace(workspace)
