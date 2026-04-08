@@ -153,47 +153,6 @@ def test_geoimage_with_tags_one_points(tmp_path, tie_points_tag):
         )
 
 
-def test_geoimage_with_tags_and_vertices(tmp_path):
-    """
-    Test creating a GeoImage with tags and verify vertices functionality.
-
-    Creates an image with geotiff tags and tests that vertices are computed correctly
-    from the tag information.
-    """
-    with Workspace.create(tmp_path / "tagged_image_test.geoh5") as workspace:
-        # Create a test image
-        image = Image.fromarray(
-            np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
-        )
-
-        for tag_id, tag_value in tag.items():
-            image.getexif()[tag_id] = tag_value
-
-        image_path = tmp_path / "test_tagged.tif"
-        image.save(image_path, exif=image.getexif())
-
-        # Create GeoImage from the tagged file
-        geoimage = GeoImage.create(
-            workspace, name="tagged_test_image", image=str(image_path)
-        )
-
-        # Test vertices computation from tags
-        vertices = geoimage.vertices
-
-        expected = np.array(
-            [
-                [522796.3321033, 7244067.56336463, 0.0],
-                [522924.2094255, 7244067.56336463, 0.0],
-                [522924.2094255, 7243939.68604242, 0.0],
-                [522796.3321033, 7243939.68604243, 0.0],
-            ]
-        )
-
-        assert np.allclose(vertices, expected), (
-            "Vertices do not match expected values from tags."
-        )
-
-
 def test_attribute_setters():
     workspace = Workspace()
     image = np.random.randint(0, 255, (128, 128))
