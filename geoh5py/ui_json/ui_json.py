@@ -126,7 +126,7 @@ class UIJson(BaseModel):
         data = {}
         fields = self.model_fields_set if active_only else self.model_fields
         # todo: strange ype issue: I did not changed this part
-        for field in fields:  # pylint: disable=not-an-iterable
+        for field in fields:
             if skip_disabled and not self.is_enabled(field):
                 continue
 
