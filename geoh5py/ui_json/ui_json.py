@@ -457,7 +457,6 @@ class UIJson(BaseModel):
         """
         form_dependencies: dict[str, dict[str, bool]] = {}
         group_dependencies: dict[str, BaseForm] = {}
-        to_update: dict[str, dict[str, bool]] = {}
 
         for name in self.__class__.model_fields.keys():
             form_dependencies[name] = {}
@@ -484,16 +483,10 @@ class UIJson(BaseModel):
                 ]
 
                 # Add reverse linkage
-                if dependents_on in form_dependencies:
-                    form_dependencies[dependents_on].update({name: mirrors})
-                else:
-                    to_update[dependents_on] = {name: mirrors}
+                if dependents_on not in form_dependencies:
+                    form_dependencies[dependents_on] = {}
 
-                # add saved reverse linkages if they exist
-                if name in to_update:
-                    form_dependencies[name].update(to_update[name])
-                    del to_update[name]
-
+                form_dependencies[dependents_on].update({name: mirrors})
                 form_dependencies[name][dependents_on] = mirrors
 
         return group_dependencies, form_dependencies
