@@ -270,6 +270,7 @@ def test_validate_dependency_type_validation(tmp_path):
         },
     }
     uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
     params = uijson.to_params()
     assert params["my_dependent_parameter"] == "test"
 

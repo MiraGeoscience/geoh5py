@@ -43,6 +43,7 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
+from geoh5py.ui_json.forms import BoolForm
 from geoh5py.ui_json.utils import requires_value
 
 
@@ -376,7 +377,9 @@ def dependency_type_validation(name: str, _, ui_json: UIJson):
     dependency = form.dependency
     dependency_form = getattr(ui_json, dependency)
 
-    if "optional" not in dependency_form.model_fields_set:
+    if "optional" not in dependency_form.model_fields_set and not isinstance(
+        dependency_form, BoolForm
+    ):
         raise UIJsonError(
             f"Dependency {dependency} must be either optional or of boolean type."
         )
