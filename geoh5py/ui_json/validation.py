@@ -376,8 +376,11 @@ def dependency_type_validation(name: str, data: dict[str, Any], ui_json: UIJson)
     dependency = form.dependency
     dependency_form = getattr(ui_json, dependency)
 
+    # note: if the data is unset, it does not appear in the data dictionary
+    # so it only works with dependency disabled
+    # should we do another check => if dependency enabled and False raises error?
     if "optional" not in dependency_form.model_fields_set and not isinstance(
-        data[dependency], bool
+        data.get(dependency, False), bool
     ):
         raise UIJsonError(
             f"Dependency {dependency} must be either optional or of boolean type."
