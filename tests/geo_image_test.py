@@ -655,7 +655,6 @@ def test_image_rotation(tmp_path):
         np.testing.assert_array_almost_equal(geoimage2.rotation, 66)
 
         geoimage3 = GeoImage.create(workspace, name="test_area", image=image, dip=44)
-        print(geoimage3.dip, geoimage3.rotation)
         np.testing.assert_array_almost_equal(geoimage3.dip, 44)
 
         geoimage4 = GeoImage.create(
