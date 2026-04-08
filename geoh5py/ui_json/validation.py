@@ -363,12 +363,12 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
+def dependency_type_validation(name: str, _, ui_json: UIJson):
     """
     Validate that the dependency for is optional or bool type.
 
     :param name: Name of the form
-    :param data: Input data with known validations.
+    :param _: Input data with known validations.
     :param ui_json: A UIJson object.
     """
 
@@ -376,12 +376,7 @@ def dependency_type_validation(name: str, data: dict[str, Any], ui_json: UIJson)
     dependency = form.dependency
     dependency_form = getattr(ui_json, dependency)
 
-    # note: if the data is unset, it does not appear in the data dictionary
-    # so it only works with dependency disabled
-    # should we do another check => if dependency enabled and False raises error?
-    if "optional" not in dependency_form.model_fields_set and not isinstance(
-        data.get(dependency, False), bool
-    ):
+    if "optional" not in dependency_form.model_fields_set:
         raise UIJsonError(
             f"Dependency {dependency} must be either optional or of boolean type."
         )

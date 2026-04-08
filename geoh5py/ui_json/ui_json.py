@@ -385,6 +385,12 @@ class UIJson(BaseModel):
     @field_validator("geoh5", mode="after")
     @classmethod
     def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
+        """
+        Check if the input has a valid geoh5 extension.
+
+        :param path: Path to the file to check.
+        :return: Return Path if provided
+        """
         if path is not None and path.suffix != ".geoh5":
             raise ValueError(
                 f"Workspace path: {path} must have a '.geoh5' file extension."
@@ -394,6 +400,12 @@ class UIJson(BaseModel):
     @field_validator("geoh5", mode="after")
     @classmethod
     def workspace_path_exists(cls, path: Path | None) -> Path | None:
+        """
+        Check if the workspace path exists.
+
+        :param path: Path to the file to check.
+        :return: Return Path if provided
+        """
         if path is not None and not path.exists():
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
@@ -403,6 +415,8 @@ class UIJson(BaseModel):
         Write the UIJson object to file.
 
         :param path: Path to write the .ui.json file.
+
+        :return: Return path to the ui_json file.
         """
         with open(path, "w", encoding="utf-8") as file:
             data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
@@ -459,7 +473,9 @@ class UIJson(BaseModel):
         group_dependencies: dict[str, BaseForm] = {}
 
         for name in self.__class__.model_fields.keys():
-            form_dependencies[name] = {}
+            if name not in form_dependencies:
+                form_dependencies[name] = {}
+
             form = getattr(self, name)
 
             if not isinstance(form, BaseForm):
