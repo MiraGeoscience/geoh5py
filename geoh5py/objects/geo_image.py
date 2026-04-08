@@ -168,7 +168,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Inverse mask is not implemented yet with images."
             )
 
-        # todo: image can contains several images attached as children
         if copy_children is False:
             warnings.warn(
                 "The 'copy_children' argument is not applicable to GeoImage objects."
