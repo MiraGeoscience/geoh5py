@@ -22,14 +22,13 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
 import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
-    PlainSerializer,
     TypeAdapter,
     ValidationError,
     field_serializer,
@@ -37,23 +36,17 @@ from pydantic import (
     model_validator,
 )
 from pydantic.alias_generators import to_camel, to_snake
-from pydantic.functional_validators import BeforeValidator
 
-from geoh5py.data import DataAssociationEnum, DataTypeEnum
-from geoh5py.groups import Group, GroupTypeEnum
-from geoh5py.objects import ObjectBase
-from geoh5py.shared.validators import (
-    to_class,
-    to_list,
-    to_path,
-    to_type_uid_or_class,
-    types_to_string,
-)
-from geoh5py.ui_json.annotations import OptionalUUIDList, OptionalValueList
-from geoh5py.ui_json.validations.form import (
-    empty_string_to_none,
-    uuid_to_string,
-    uuid_to_string_or_numeric,
+from geoh5py.groups import GroupTypeEnum
+from geoh5py.ui_json.annotations import (
+    AssociationOptions,
+    DataTypeOptions,
+    GroupTypes,
+    MeshTypes,
+    OptionalUUID,
+    OptionalUUIDList,
+    OptionalValueList,
+    PathList,
 )
 
 
@@ -97,10 +90,10 @@ class BaseForm(BaseModel):
 
     model_config = ConfigDict(
         extra="allow",
-        frozen=True,
         populate_by_name=True,
         loc_by_alias=True,
         alias_generator=to_camel,
+        validate_assignment=True,
     )
 
     label: str
@@ -136,8 +129,6 @@ class BaseForm(BaseModel):
         fields to avoid false positives.
 
         :param data: Form data.
-        :param form_types: Pre-compute all the base classes to check against.
-        :param indicators: Pre-compute the indicator attributes for each subclass.
         """
 
         data = {to_snake(k): v for k, v in data.items()}
@@ -160,6 +151,13 @@ class BaseForm(BaseModel):
 
     def validate_data(self, params: dict[str, Any]):
         """Validate the form data."""
+
+    def set_value(self, value: Any):
+        """Set the form value."""
+        self.value = value
+
+        if "optional" in self.model_fields_set:
+            self.enabled = self.value is not None
 
 
 class StringForm(BaseForm):
@@ -304,13 +302,6 @@ class MultiChoiceForm(BaseForm):
         return self
 
 
-PathList = Annotated[
-    list[Path],
-    BeforeValidator(to_path),
-    BeforeValidator(to_list),
-]
-
-
 class FileForm(BaseForm):
     """
     File path uijson form.
@@ -428,21 +419,6 @@ class DirectoryForm(BaseForm):
         return ["Directory"]
 
 
-MeshTypes = Annotated[
-    list[type[ObjectBase]],
-    BeforeValidator(to_class),
-    BeforeValidator(to_type_uid_or_class),
-    BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
-]
-
-OptionalUUID = Annotated[
-    UUID | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
-]
-
-
 class ObjectForm(BaseForm):
     """
     Geoh5py object uijson form.
@@ -457,15 +433,6 @@ class ObjectForm(BaseForm):
     mesh_type: MeshTypes
 
 
-GroupTypes = Annotated[
-    list[type[Group]],
-    BeforeValidator(to_class),
-    BeforeValidator(to_type_uid_or_class),
-    BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
-]
-
-
 class GroupForm(BaseForm):
     """
     Geoh5py group uijson form.
@@ -478,23 +445,6 @@ class GroupForm(BaseForm):
 
     value: OptionalUUID
     group_type: GroupTypes
-
-
-Association = Enum(  # type: ignore
-    "Association",
-    [(k.name, k.name.capitalize()) for k in DataAssociationEnum],
-    type=str,
-)
-
-DataType = Enum(  # type: ignore
-    "DataType", [(k.name, k.name.capitalize()) for k in DataTypeEnum], type=str
-)
-
-UUIDOrNumber = Annotated[
-    UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string_or_numeric),
-]
 
 
 class DataFormMixin(BaseModel):
@@ -513,8 +463,8 @@ class DataFormMixin(BaseModel):
     """
 
     parent: str
-    association: Association | list[Association]
-    data_type: DataType | list[DataType]
+    association: AssociationOptions | list[AssociationOptions]
+    data_type: DataTypeOptions | list[DataTypeOptions]
 
 
 class DataForm(DataFormMixin, BaseForm):
@@ -562,7 +512,7 @@ class GroupMultiDataForm(BaseForm):
     group_type: GroupTypes
     group_value: OptionalUUID
 
-    data_type: DataType | list[DataType]
+    data_type: DataTypeOptions | list[DataTypeOptions]
     value: str | list[str]
     multi_select: bool = True
 
@@ -611,16 +561,30 @@ class DataOrValueForm(DataFormMixin, BaseForm):
             and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
+
         return self
 
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-        ):
+        if "is_value" in self.model_fields_set and not self.is_value:
             return self.property
         return self.value
+
+    def set_value(self, value: Any):
+        """Set the form value."""
+        try:
+            self.value = value
+            self.is_value = True
+        except ValidationError:
+            if value is not None:
+                self.property = value
+                self.is_value = False
+            else:
+                self.is_value = True
+                self.property = None
+
+        if "optional" in self.model_fields_set:
+            self.enabled = value is not None
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):

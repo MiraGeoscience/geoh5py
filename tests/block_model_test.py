@@ -151,3 +151,51 @@ def test_create_block_model_data(tmp_path):
             grid_copy.mask_by_extent(np.vstack([[-100, -100], [1, 100]]), inverse=True)
             == ~mask
         )
+
+
+def test_block_extents(tmp_path):
+    origin = np.random.randn(3)
+    rotation = np.random.randint(0, 90, 1)
+
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        mesh = BlockModel.create(
+            workspace,
+            name="test",
+            u_cell_delimiters=np.array([-0.5, 0.0, 0.5]),
+            v_cell_delimiters=np.array([-0.5, 0.0, 0.5]),
+            z_cell_delimiters=np.array([-0.5, 0.0, 0.5]),
+            origin=origin,
+            rotation=rotation,
+        )
+
+    angle = np.deg2rad(rotation)
+    delta = np.sin(angle) + np.cos(angle)
+    assert np.allclose(
+        mesh.extent,
+        np.c_[
+            origin - np.r_[delta, delta, 1] * 0.5,
+            origin + np.r_[delta, delta, 1] * 0.5,
+        ].T,
+    )
+
+
+def test_shaped_data_values():
+    with Workspace() as workspace:
+        block_model = BlockModel.create(
+            workspace,
+            u_cell_delimiters=np.array([0.0, 1.0, 2.0]),
+            v_cell_delimiters=np.array([0.0, 1.0, 2.0]),
+            z_cell_delimiters=np.array([0.0, -1.0, -2.0]),
+        )
+        values = np.arange(block_model.n_cells, dtype=float)
+        block_model.add_data({"DataValues": {"association": "CELL", "values": values}})
+        shaped = block_model.shaped_data_values("DataValues")
+        assert shaped.shape == block_model.shape
+        assert np.allclose(shaped.ravel(), values)
+        assert np.allclose(shaped, block_model.shaped_data_values(values))
+
+        block_model.add_data({"DataValues2": {"association": "CELL", "values": shaped}})
+
+        data1 = block_model.get_data("DataValues")[0].values
+        data2 = block_model.get_data("DataValues2")[0].values
+        assert np.allclose(data1, data2)

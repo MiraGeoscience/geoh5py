@@ -39,6 +39,8 @@ import numpy as np
 from .exceptions import Geoh5FileClosedError
 
 
+UidOrNumeric = UUID | float | int | None
+StringOrNumeric = str | float | int
 # pylint: disable=too-many-lines
 
 if TYPE_CHECKING:
@@ -1439,3 +1441,14 @@ def map_to_class(
             class_map[identifier] = member
 
     return class_map
+
+
+def enum_name_to_str(value: Enum) -> str:
+    """
+    Convert enum name to capitalized string.
+
+    :param value: Enum value to convert.
+
+    :return: Capitalized string.
+    """
+    return value.name.capitalize()
