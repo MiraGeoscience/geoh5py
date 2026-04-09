@@ -168,12 +168,12 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Inverse mask is not implemented yet with images."
             )
 
+        # TODO: Need to add logic to ignore other children than the image itself
         if copy_children is False:
             warnings.warn(
                 "The 'copy_children' argument is not applicable to GeoImage objects."
             )
 
-        # todo: image can contains several images attached as children
         # 1. find the point where the image and extent intersect
         plane = Plane.from_points(self.vertices[3], self.vertices[2], self.vertices[0])
 
