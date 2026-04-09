@@ -364,24 +364,20 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(name: str, _, ui_json: UIJson):
+def dependency_type_validation(name: str, ui_json: UIJson):
     """
-    Validate that the dependency for is optional or bool type.
+    Validate that the for depending on is optional or bool type.
 
     :param name: Name of the form
-    :param _: Input data with known validations.
     :param ui_json: A UIJson object.
     """
-
-    form = getattr(ui_json, name)
-    dependency = form.dependency
-    dependency_form = getattr(ui_json, dependency)
+    dependency_form = getattr(ui_json, name)
 
     if "optional" not in dependency_form.model_fields_set and not isinstance(
         dependency_form, BoolForm
     ):
         raise UIJsonError(
-            f"Dependency {dependency} must be either optional or of boolean type."
+            f"Dependency form '{name}' must be either optional or of boolean type."
         )
 
 
@@ -469,7 +465,6 @@ def promote_or_catch(
 
 
 VALIDATIONS_MAP = {
-    "dependency": dependency_type_validation,
     "mesh_type": mesh_type_validation,
     "parent": parent_validation,
 }

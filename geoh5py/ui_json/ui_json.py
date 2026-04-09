@@ -45,6 +45,7 @@ from geoh5py.ui_json.forms import BaseForm, DependencyType, GroupForm
 from geoh5py.ui_json.validation import (
     ErrorPool,
     UIJsonError,
+    dependency_type_validation,
     get_validations,
     promote_or_catch,
 )
@@ -493,6 +494,7 @@ class UIJson(BaseModel):
 
             # If optional, enabled state only influences the form
             if dependents_on and not getattr(form, "optional", False):
+                dependency_type_validation(dependents_on, self)
                 mirrors = getattr(form, "dependency_type", None) in [
                     DependencyType.ENABLED,
                     DependencyType.SHOW,

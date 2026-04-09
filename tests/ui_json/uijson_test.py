@@ -222,6 +222,7 @@ def test_multiple_validations(tmp_path):
             "label": "other test",
             "mesh_type": [Points],
             "value": other_pts.uid,
+            "optional": True,
         },
         "my_data_parameter": {
             "label": "data",
@@ -244,9 +245,6 @@ def test_multiple_validations(tmp_path):
     assert (
         "Object's mesh type must be one of [<class 'geoh5py.objects.curve.Curve'>]"
         in str(err.value)
-    )
-    assert "Dependency my_other_object_parameter must be either optional or" in str(
-        err.value
     )
 
 
@@ -287,7 +285,7 @@ def test_validate_dependency_type_validation(tmp_path):
 
     # Non-optional non-bool dependency is invalid
     kwargs["my_parameter"].pop("optional")
-    msg = "Dependency my_parameter must be either optional or of boolean type"
+    msg = "Dependency form 'my_parameter' must be either optional or of boolean type"
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
