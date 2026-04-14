@@ -71,7 +71,7 @@ class PlatePosition(BaseModel):
         if isinstance(value, dict):
             return value
 
-        coords = re.findall(r"[-+]?\d+\.\d+", value)
+        coords = re.findall(r"[-+]?\d+[\.]?\d+", value)
         args = dict(zip(["increment", "x", "y", "z"], coords, strict=False))
         return args
 
