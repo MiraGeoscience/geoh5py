@@ -71,7 +71,12 @@ class PlatePosition(BaseModel):
         if isinstance(value, dict):
             return value
 
-        coords = re.findall(r"[-+]?\d+[\.]?\d+", value)
+        coords = re.findall(r"[-+]?\d+(?:\.\d+)?", value)
+        if len(coords) != 4:
+            raise ValueError(
+                "Position string must contain exactly four numeric values "
+                "formatted as 'increment;{x,y,z}'."
+            )
         args = dict(zip(["increment", "x", "y", "z"], coords, strict=False))
         return args
 
