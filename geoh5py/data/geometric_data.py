@@ -88,10 +88,10 @@ class GeometricDataConstants(Data):
 
     @name.setter
     def name(self, new_name: str):
-        if self.on_file and hasattr(self._entity_type, "set_parent_reference"):
-            self._entity_type.set_parent_reference(self, new_name)
-
         self._name = self.fix_up_name(new_name)
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
+
+            if hasattr(self._entity_type, "set_parent_reference"):
+                self._entity_type.set_parent_reference(self, new_name)

@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import TYPE_CHECKING, Literal, get_args
 from uuid import UUID
 
@@ -685,9 +686,12 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         """
         Change the metadata keys on the referenced data.
         """
-        data_maps = self.referenced_data.data_maps
-        data_maps.pop(data.name, None)
-        data_maps[new_name] = data
+        data_maps = copy(self.referenced_data.data_maps)
+        for key, value in self.referenced_data.data_maps.items():
+            if value == data:
+                data_maps.pop(key, None)
+                data_maps[new_name] = data
+
         self.referenced_data.data_maps = data_maps
 
     def get_parent_reference(self, parent: ObjectBase):

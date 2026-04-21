@@ -161,7 +161,7 @@ class ReferencedData(IntegerData):
                         "'GeometricDataValueMapType' entity type and a 'value_map' assigned."
                     )
 
-            self.metadata = {key: child.uid for key, child in data_map.items()}
+            self.metadata = {child.name: child.uid for child in data_map.values()}
 
         self._data_maps = data_map
 
