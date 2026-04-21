@@ -222,10 +222,18 @@ def test_copy_data_map(tmp_path):
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
         ]
-        data.add_data_map("test2", data_map)
+        mapped_data = data.add_data_map("test2", data_map)
+        mapped_data.name = "something else"
 
-        data.parent.copy()
-        geom_data = workspace.get_entity("test2")
+    with Workspace(h5file_path) as workspace:
+        parent = workspace.get_entity(data.parent.uid)[0]
+        recovered_data = workspace.get_entity(data.uid)[0]
+        # Check that copying to new workspace works
+        with Workspace.create(tmp_path / (__name__ + "_new.geoh5")) as new_workspace:
+            assert parent.copy(parent=new_workspace)
+
+        parent.copy()
+        geom_data = workspace.get_entity("something else")
         assert len(geom_data) == 2
 
         assert geom_data[0].parent != geom_data[1].parent
@@ -236,12 +244,12 @@ def test_copy_data_map(tmp_path):
         )
 
         # test with copying data on the same parent
-        data_copy = data.copy()
+        data_copy = recovered_data.copy()
 
         assert (
             list(data.data_maps.keys())[0]
             != list(data_copy.data_maps.keys())[0]
-            == "test2(1)"
+            == "something else(1)"
         )
 
 

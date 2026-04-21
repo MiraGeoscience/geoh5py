@@ -681,6 +681,15 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         )
         self._parent = parent
 
+    def set_parent_reference(self, data: Data, new_name: str):
+        """
+        Change the metadata keys on the referenced data.
+        """
+        data_maps = self.referenced_data.data_maps
+        data_maps.pop(data.name, None)
+        data_maps[new_name] = data
+        self.referenced_data.data_maps = data_maps
+
     def get_parent_reference(self, parent: ObjectBase):
         """
         Recover the parent ReferencedData by name.
@@ -764,8 +773,8 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
                 raise ValueError("Referenced data has no data maps.")
 
             value_map = None
-            for count, name in enumerate(self.referenced_data.metadata):
-                if name == self.name.rsplit(": ")[1]:
+            for count, data in enumerate(self.referenced_data.data_maps.values()):
+                if data.entity_type.uid == self.uid:
                     value_map = self.workspace.fetch_array_attribute(
                         self.referenced_data.entity_type, f"Value map {count + 1}"
                     )
