@@ -685,6 +685,9 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     def set_parent_reference(self, data: Data, new_name: str):
         """
         Change the metadata keys on the referenced data.
+
+        :param data: Geometric data entity referenced in the data map
+        :param new_name: Name to be replaced in the data map
         """
         data_maps = copy(self.referenced_data.data_maps)
         for key, value in self.referenced_data.data_maps.items():
