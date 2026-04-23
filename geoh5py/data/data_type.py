@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import TYPE_CHECKING, Literal, get_args
 from uuid import UUID
 
@@ -681,6 +682,21 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         )
         self._parent = parent
 
+    def set_parent_reference(self, data: Data, new_name: str):
+        """
+        Change the metadata keys on the referenced data.
+
+        :param data: Geometric data entity referenced in the data map
+        :param new_name: Name to be replaced in the data map
+        """
+        data_maps = copy(self.referenced_data.data_maps)
+        for key, value in self.referenced_data.data_maps.items():
+            if value == data:
+                data_maps.pop(key, None)
+                data_maps[new_name] = data
+
+        self.referenced_data.data_maps = data_maps
+
     def get_parent_reference(self, parent: ObjectBase):
         """
         Recover the parent ReferencedData by name.
@@ -764,8 +780,8 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
                 raise ValueError("Referenced data has no data maps.")
 
             value_map = None
-            for count, name in enumerate(self.referenced_data.metadata):
-                if name == self.name.rsplit(": ")[1]:
+            for count, data in enumerate(self.referenced_data.data_maps.values()):
+                if data.entity_type.uid == self.uid:
                     value_map = self.workspace.fetch_array_attribute(
                         self.referenced_data.entity_type, f"Value map {count + 1}"
                     )
