@@ -43,7 +43,7 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
-from geoh5py.ui_json.forms import BoolForm
+from geoh5py.ui_json.forms import BoolForm, DataOrValueForm
 from geoh5py.ui_json.utils import requires_value
 
 
@@ -419,6 +419,9 @@ def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     """
 
     form = getattr(ui_json, name)
+    if isinstance(form, DataOrValueForm) and form.is_value:
+        return
+
     parent_name = form.parent
     child = data[name]
 
