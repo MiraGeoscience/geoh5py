@@ -48,7 +48,7 @@ from geoh5py.ui_json.utils import requires_value
 
 
 if TYPE_CHECKING:
-    from geoh5py.ui_json.ui_json import UIJson
+    from geoh5py.ui_json.ui_json import BaseUIJson
 
 Validation = dict[str, Any]
 
@@ -364,7 +364,7 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(name: str, ui_json: UIJson):
+def dependency_type_validation(name: str, ui_json: BaseUIJson):
     """
     Validate that the for depending on is optional or bool type.
 
@@ -392,7 +392,7 @@ def get_validations(form: list[str]) -> list[Callable]:
     return [VALIDATIONS_MAP[k] for k in form if k in VALIDATIONS_MAP]
 
 
-def mesh_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
+def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     """
     Validate that value is one of the provided mesh types.
 
@@ -409,7 +409,7 @@ def mesh_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
 
 
-def parent_validation(name: str, data: dict[str, Any], ui_json: UIJson):
+def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     """
     Validate that the data is a child of the parent object.
 

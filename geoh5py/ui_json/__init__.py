@@ -27,4 +27,4 @@ from .input_file import InputFile
 from .utils import monitored_directory_copy
 from .validation import InputValidation
 from .forms import BaseForm
-from .ui_json import UIJson
+from .ui_json import BaseUIJson
