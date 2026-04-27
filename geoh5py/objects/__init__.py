@@ -73,6 +73,6 @@ from .surveys.electromagnetics.ground_tem import (
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
 from .surveys.gravity import AirborneGravity, GroundGravity
-from .surveys.magnetics import AirborneMagnetics
+from .surveys.magnetics import AirborneMagnetics, GroundMagnetics
 from .text import TextObject
 from .vp_model import VPModel
