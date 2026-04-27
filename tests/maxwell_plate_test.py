@@ -45,7 +45,7 @@ TEST_PARAMETERS = {
 
 
 def test_plate_position_validation():
-    input_str = "100.0;{200.00,300.00,-400.00}"
+    input_str = "100;{200,300.00,-400.00}"
     # Test valid parameters
     position = PlatePosition.model_validate(input_str)
     assert isinstance(position, PlatePosition)
@@ -62,7 +62,7 @@ def test_plate_position_validation():
     str_rep = position.model_dump()
     assert isinstance(str_rep, str)
 
-    assert str_rep == input_str
+    assert str_rep == "100.0;{200.00,300.00,-400.00}"
 
 
 def test_plate_geometry_validation():
