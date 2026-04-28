@@ -180,7 +180,7 @@ def generate_test_uijson(workspace: Workspace, uijson, data: dict):
 
 
 def test_allow_extra(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     class MyBaseUIJson(BaseUIJson):
         my_string_parameter: StringForm
@@ -202,7 +202,7 @@ def test_allow_extra(tmp_path):
 
 
 def test_multiple_validations(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
     other_pts = pts.copy(name="other test")
     data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
@@ -249,7 +249,7 @@ def test_multiple_validations(tmp_path):
 
 
 def test_validate_dependency_type_validation(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     # BoolForm dependency is valid
     class MyBaseUIJson(BaseUIJson):
@@ -292,7 +292,7 @@ def test_validate_dependency_type_validation(tmp_path):
 
 
 def test_parent_child_validation(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
     data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
     other_pts = pts.copy(name="other test")
@@ -331,7 +331,7 @@ def test_parent_child_validation(tmp_path):
 
 
 def test_mesh_type_validation(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
 
     class MyBaseUIJson(BaseUIJson):
@@ -658,7 +658,7 @@ def test_geoh5_validate_extension(tmp_path):
 
 
 def test_fill_in_place(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     class MyBaseUIJson(BaseUIJson):
         my_string_parameter: StringForm
@@ -680,7 +680,7 @@ def test_fill_in_place(tmp_path):
 
 
 def test_fill_copy(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     class MyBaseUIJson(BaseUIJson):
         my_string_parameter: StringForm
@@ -701,9 +701,43 @@ def test_fill_copy(tmp_path):
         _ = uijson.set_values(copy=True, my_string_parameter="updated", title=666)
 
 
+def test_copy_relatives(tmp_path, caplog):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+
+    pts = Points.create(ws, name="pts", vertices=np.random.random((10, 3)))
+
+    class MyBaseUIJson(BaseUIJson):
+        my_object_parameter: ObjectForm
+
+    uijson = generate_test_uijson(
+        ws,
+        uijson=MyBaseUIJson,
+        data={
+            "my_object_parameter": {
+                "label": "obj",
+                "mesh_type": [Points],
+                "value": pts.uid,
+            }
+        },
+    )
+
+    with Workspace.create(tmp_path / f"{__name__}_copy.geoh5") as new_ws:
+        uijson.geoh5 = None
+
+        with caplog.at_level(logging.WARNING):
+            uijson.copy_relatives(new_ws)
+
+        assert "No geoh5 file path set; nothing to copy" in caplog.text
+
+        uijson.geoh5 = str(ws.h5file)
+        uijson.copy_relatives(new_ws)
+
+        assert new_ws.get_entity("pts")[0].uid == pts.uid
+
+
 def test_fill_truthy_value_leaves_updates_empty(tmp_path):
     """A form with a truthy value not in kwargs produces no updates."""
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     class MyBaseUIJson(BaseUIJson):
         my_param: FloatForm
@@ -721,7 +755,7 @@ def test_fill_truthy_value_leaves_updates_empty(tmp_path):
 
 
 def test_fill_kwargs_re_enables_form(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     class MyBaseUIJson(BaseUIJson):
         my_param: FloatForm
@@ -740,7 +774,7 @@ def test_fill_kwargs_re_enables_form(tmp_path):
 
 
 def test_fill_with_uuid_value(tmp_path):
-    ws = Workspace(tmp_path / f"{__name__}.geoh5")
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="pts", vertices=np.random.random((10, 3)))
     pts2 = Points.create(ws, name="pts2", vertices=np.random.random((10, 3)))
 
