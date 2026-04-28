@@ -552,6 +552,11 @@ class GroupMultiDataForm(BaseForm):
     def set_value(self, value: Any):
         """
         Set the form value.
+
+        :param value: The input value(s) for the form. Can be
+            - string or list of strings for the name of data selected, set to 'value'.
+            - UUID or None defining 'group_value' field.
+            - dict of values for the fields of the form.
         """
         if isinstance(value, dict):
             for key, val in value.items():
@@ -601,7 +606,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         """
         Set the form value.
 
-        Either a Numeric value or a UUID, in which case it will be assigned
+        :param value: Either a Numeric value or a UUID, in which case it will be assigned
         to the `property` field and the `is_value` field will be set to False.
         """
         try:
