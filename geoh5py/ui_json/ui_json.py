@@ -25,12 +25,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    create_model,
-    field_validator,
-)
+from pydantic import BaseModel, ConfigDict, PrivateAttr, create_model, field_validator
 
 from geoh5py import Workspace
 from geoh5py.groups import UIJsonGroup
@@ -90,8 +85,8 @@ class BaseUIJson(BaseModel):
 
     out_group: GroupForm | OptionalString = None
 
-    _form_dependencies: dict[str, dict[str, bool]]
-    _group_dependencies: dict[str, BaseForm]
+    _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
+    _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
@@ -152,6 +147,11 @@ class BaseUIJson(BaseModel):
         ui_json_class = cls.infer(**kwargs)
 
         return ui_json_class(**kwargs)
+
+    @property
+    def form_dependencies(self) -> dict[str, dict[str, bool]]:
+        """Stashed inter-form dependencies."""
+        return self._form_dependencies
 
     @staticmethod
     def infer(title="UnknownUIJson", **kwargs) -> type[BaseUIJson]:
@@ -274,9 +274,9 @@ class BaseUIJson(BaseModel):
             form.enabled = value
 
             # Mirror the state to dependencies
-            for name, mirror in self._form_dependencies[field].items():
+            for name, mirror in uijson.form_dependencies[field].items():
                 # Set the link dependency state
-                codependent = getattr(self, name)
+                codependent = getattr(uijson, name)
 
                 if mirror:
                     codependent.enabled = value
@@ -306,7 +306,7 @@ class BaseUIJson(BaseModel):
                 if not (form.is_optional and value is None):
                     form.set_value(value)
 
-                self.set_enabled(copy=False, **{field: value is not None})
+                uijson.set_enabled(copy=False, **{field: value is not None})
             else:
                 setattr(uijson, field, dict_mapper(value, [entity2uuid]))
 
