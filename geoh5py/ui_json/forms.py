@@ -552,6 +552,10 @@ class GroupMultiDataForm(BaseForm):
     def set_value(self, value: Any):
         """
         Set the form value.
+
+        :param value: Can be a dict (to set multiple attributes at once), a list or
+            str (assigned to the ``value`` field), or a UUID/None (assigned to the
+            ``group_value`` field).
         """
         if isinstance(value, dict):
             for key, val in value.items():
@@ -601,8 +605,10 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         """
         Set the form value.
 
-        Either a Numeric value or a UUID, in which case it will be assigned
-        to the `property` field and the `is_value` field will be set to False.
+        :param value: Either a numeric (float/int) value or a UUID. When a UUID is
+            provided, it is assigned to the ``property`` field and ``is_value`` is set
+            to False. When None or a numeric value is provided, ``is_value`` is set
+            to True.
         """
         try:
             self.value = value
@@ -671,6 +677,11 @@ class DataRangeForm(DataFormMixin, BaseForm):
     def set_value(self, value: Any):
         """
         Set the form value.
+
+        :param value: Can be a dict (to set multiple attributes at once, e.g.
+            ``{"value": [...], "is_complement": True}``), a list of floats
+            (assigned to the ``value`` field), or a UUID/None (assigned to the
+            ``property`` field).
         """
         if isinstance(value, dict):
             for key, val in value.items():

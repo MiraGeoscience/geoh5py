@@ -28,6 +28,7 @@ from typing import Any
 from pydantic import (
     BaseModel,
     ConfigDict,
+    PrivateAttr,
     create_model,
     field_validator,
 )
@@ -90,8 +91,8 @@ class BaseUIJson(BaseModel):
 
     out_group: GroupForm | OptionalString = None
 
-    _form_dependencies: dict[str, dict[str, bool]]
-    _group_dependencies: dict[str, BaseForm]
+    _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
+    _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
@@ -101,6 +102,7 @@ class BaseUIJson(BaseModel):
         :param clear_cache: Indicate whether to clear the cache.
         """
         if self.geoh5 is None:
+            logger.warning("No geoh5 file path set; nothing to copy.")
             return
 
         with Workspace(self.geoh5, mode="r") as geoh5:
@@ -240,7 +242,6 @@ class BaseUIJson(BaseModel):
         if you want to handle validation errors yourself.
 
         :param path: Path to the .ui.json file.
-        :param validate: Whether to validate the ui json file.
 
         :returns: UIJson object.
         """
@@ -274,9 +275,9 @@ class BaseUIJson(BaseModel):
             form.enabled = value
 
             # Mirror the state to dependencies
-            for name, mirror in self._form_dependencies[field].items():
+            for name, mirror in uijson._form_dependencies[field].items():
                 # Set the link dependency state
-                codependent = getattr(self, name)
+                codependent = getattr(uijson, name)
 
                 if mirror:
                     codependent.enabled = value
@@ -306,7 +307,7 @@ class BaseUIJson(BaseModel):
                 if not (form.is_optional and value is None):
                     form.set_value(value)
 
-                self.set_enabled(copy=False, **{field: value is not None})
+                uijson.set_enabled(copy=False, **{field: value is not None})
             else:
                 setattr(uijson, field, dict_mapper(value, [entity2uuid]))
 
@@ -344,8 +345,8 @@ class BaseUIJson(BaseModel):
 
                 try:
                     value = promote_or_catch(geoh5, value)
-                except UIJsonError:
-                    errors[field].append(value)
+                except UIJsonError as e:
+                    errors[field].append(e)
 
                 data[field] = value
 
