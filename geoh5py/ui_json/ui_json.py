@@ -241,7 +241,6 @@ class BaseUIJson(BaseModel):
         if you want to handle validation errors yourself.
 
         :param path: Path to the .ui.json file.
-        :param validate: Whether to validate the ui json file.
 
         :returns: UIJson object.
         """
