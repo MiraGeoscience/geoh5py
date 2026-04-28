@@ -671,6 +671,11 @@ class DataRangeForm(DataFormMixin, BaseForm):
     def set_value(self, value: Any):
         """
         Set the form value.
+
+        :param value: The input value(s) for the form. Can be
+            - list of two floats defining the lower and upper bounds of the 'value' field.
+            - UUID or None defining 'property' field.
+            - dict of values for the fields 'is_complement', 'property' and 'value'.
         """
         if isinstance(value, dict):
             for key, val in value.items():
