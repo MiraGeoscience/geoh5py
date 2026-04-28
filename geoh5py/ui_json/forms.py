@@ -551,12 +551,18 @@ class GroupMultiDataForm(BaseForm):
 
     def set_value(self, value: Any):
         """
-        Set the form value.
+                Set the form value.
 
-        :param value: The input value(s) for the form. Can be
-            - string or list of strings for the name of data selected, set to 'value'.
-            - UUID or None defining 'group_value' field.
-            - dict of values for the fields of the form.
+        <<<<<<< HEAD
+                :param value: The input value(s) for the form. Can be
+                    - string or list of strings for the name of data selected, set to 'value'.
+                    - UUID or None defining 'group_value' field.
+                    - dict of values for the fields of the form.
+        =======
+                :param value: Can be a dict (to set multiple attributes at once), a list or
+                    str (assigned to the ``value`` field), or a UUID/None (assigned to the
+                    ``group_value`` field).
+        >>>>>>> 3e8040b8a46dc99b9e866a0d61918036e6f764c8
         """
         if isinstance(value, dict):
             for key, val in value.items():
@@ -604,10 +610,17 @@ class DataOrValueForm(DataFormMixin, BaseForm):
 
     def set_value(self, value: Any):
         """
-        Set the form value.
+                Set the form value.
 
-        :param value: Either a Numeric value or a UUID, in which case it will be assigned
-        to the `property` field and the `is_value` field will be set to False.
+        <<<<<<< HEAD
+                :param value: Either a Numeric value or a UUID, in which case it will be assigned
+                to the `property` field and the `is_value` field will be set to False.
+        =======
+                :param value: Either a numeric (float/int) value or a UUID. When a UUID is
+                    provided, it is assigned to the ``property`` field and ``is_value`` is set
+                    to False. When None or a numeric value is provided, ``is_value`` is set
+                    to True.
+        >>>>>>> 3e8040b8a46dc99b9e866a0d61918036e6f764c8
         """
         try:
             self.value = value

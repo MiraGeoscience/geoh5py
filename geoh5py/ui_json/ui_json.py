@@ -25,7 +25,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr, create_model, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    PrivateAttr,
+    create_model,
+    field_validator,
+)
 
 from geoh5py import Workspace
 from geoh5py.groups import UIJsonGroup
@@ -344,8 +350,8 @@ class BaseUIJson(BaseModel):
 
                 try:
                     value = promote_or_catch(geoh5, value)
-                except UIJsonError:
-                    errors[field].append(value)
+                except UIJsonError as e:
+                    errors[field].append(e)
 
                 data[field] = value
 
