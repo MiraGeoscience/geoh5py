@@ -96,6 +96,7 @@ class BaseUIJson(BaseModel):
         :param clear_cache: Indicate whether to clear the cache.
         """
         if self.geoh5 is None:
+            logger.warning("No geoh5 file path set; nothing to copy.")
             return
 
         with Workspace(self.geoh5, mode="r") as geoh5:
