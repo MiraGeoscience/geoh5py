@@ -432,8 +432,10 @@ def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     parent = data[parent_name]
 
     child = child if isinstance(child, list) else [child]
-    missing_children = len(list(set(child) - set(parent.children))) > 0
-    if not isinstance(parent, ObjectBase) or missing_children:
+    if (
+        not isinstance(parent, ObjectBase)
+        or len(list(set(child) - set(parent.children))) > 0
+    ):
         raise UIJsonError(f"{name} data is not a child of {parent_name}.")
 
 
