@@ -25,27 +25,25 @@ import uuid
 from ..curve import Curve
 
 
-class AirborneMagnetics(Curve):
+class AirborneGravity(Curve):
     """
-    An airborne magnetic survey object.
+    An airborne gravity survey object.
 
     .. warning:: Partially implemented.
 
     """
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
-    )
-    _default_name = "Survey Airborne Magnetics"
+    _TYPE_UID = uuid.UUID("{b54f6be6-0eb5-4a4e-887a-ba9d276f9a83}")
+    _default_name = "Survey airborne gravity"
 
 
-class GroundMagnetics(Curve):
+class GroundGravity(Curve):
     """
-    A ground magnetic survey object.
+    A ground gravity survey object.
 
     .. warning:: Partially implemented.
 
     """
 
-    _TYPE_UID = uuid.UUID("{028e4905-cc97-4dab-b1bf-d76f58b501b5}")
-    _default_name = "Survey Ground Magnetics"
+    _TYPE_UID = uuid.UUID("{5ffa3816-358d-4cdd-9b7d-e1f7f5543e05}")
+    _default_name = "Survey ground gravity"

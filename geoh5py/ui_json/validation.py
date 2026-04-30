@@ -22,11 +22,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from copy import deepcopy
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 from warnings import warn
 
-from geoh5py.data import Data
+from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
@@ -43,8 +43,12 @@ from geoh5py.shared.validators import (
     UUIDValidator,
     ValueValidator,
 )
+from geoh5py.ui_json.forms import BoolForm, DataOrValueForm
 from geoh5py.ui_json.utils import requires_value
 
+
+if TYPE_CHECKING:
+    from geoh5py.ui_json.ui_json import BaseUIJson
 
 Validation = dict[str, Any]
 
@@ -360,75 +364,110 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(
-    name: str, data: dict[str, Any], json_dict: dict[str, Any]
-):
+def dependency_type_validation(name: str, ui_json: BaseUIJson):
     """
-    Validate that the dependency for is optional or bool type.
+    Validate that the form depending on is optional or bool type.
 
     :param name: Name of the form
-    :param data: Input data with known validations.
-    :param json_dict: A dict representation of the UIJson object.
+    :param ui_json: A UIJson object.
     """
+    dependency_form = getattr(ui_json, name)
 
-    dependency = json_dict[name]["dependency"]
-    dependency_form = json_dict[dependency]
-
-    if "optional" not in dependency_form and not isinstance(data[dependency], bool):
+    if not dependency_form.optional and not isinstance(dependency_form, BoolForm):
         raise UIJsonError(
-            f"Dependency {dependency} must be either optional or of boolean type."
+            f"Dependency form '{name}' must be either optional or of boolean type."
         )
 
 
-def get_validations(form_keys: list[str]) -> list[Callable]:
+def get_validations(form: list[str]) -> list[Callable]:
     """
     Get callable validations based on identifying form keys.
 
-    :param form_keys: List of form keys.
+    :param form: Form to validate sub-keys with
 
     :return: List of callable validations.
     """
-    return [VALIDATIONS_MAP[k] for k in form_keys if k in VALIDATIONS_MAP]
+    return [VALIDATIONS_MAP[k] for k in form if k in VALIDATIONS_MAP]
 
 
-def mesh_type_validation(name: str, data: dict[str, Any], json_dict: dict[str, Any]):
+def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     """
     Validate that value is one of the provided mesh types.
 
     :param name: Name of the form
     :param data: Input data with known validations.
-    :param json_dict: A dict representation of the UIJson object.
+    :param ui_json: A UIJson object.
     """
 
-    mesh_types = json_dict[name]["mesh_type"]
+    form = getattr(ui_json, name)
+    mesh_types = form.mesh_type
 
     obj = data[name]
     if not isinstance(obj, tuple(mesh_types)):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
 
 
-def parent_validation(name: str, data: dict[str, Any], json_dict: dict[str, Any]):
+def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     """
     Validate that the data is a child of the parent object.
 
     :param name: Name of the form
     :param data: Input data with known validations.
-    :param json_dict: A dict representation of the UIJson object.
+    :param ui_json: A UIJson object.
     """
 
-    form = json_dict[name]
+    form = getattr(ui_json, name)
+    if isinstance(form, DataOrValueForm) and form.is_value:
+        return
 
+    parent_name = form.parent
     child = data[name]
-    parent = data[form["parent"]]
 
-    if not isinstance(parent, ObjectBase) or (
-        isinstance(child, Data) and parent.get_entity(child.uid)[0] is None
+    # Special case for DataRangeForm
+    if isinstance(child, dict):
+        child = data[name]["property"]
+
+    parent = data[parent_name]
+
+    child = child if isinstance(child, list) else [child]
+    if (
+        not isinstance(parent, ObjectBase)
+        or len(list(set(child) - set(parent.children))) > 0
     ):
-        raise UIJsonError(f"{name} data is not a child of {form['parent']}.")
+        raise UIJsonError(f"{name} data is not a child of {parent_name}.")
+
+
+def promote_or_catch(
+    workspace: Workspace,
+    value: Any,
+) -> Any:
+    """
+    Returns an object if it exists in the workspace or an error if not.
+
+    :param workspace: Workspace to fetch entities from.
+    :param value: UUID of the object to fetch.
+
+    :returns: The object if it exists in the workspace or a placeholder error
+        to be collected and raised later with any other UIJson level validation
+        errors.
+    """
+    if isinstance(value, list | tuple):
+        return [promote_or_catch(workspace, val) for val in value]
+
+    if isinstance(value, dict):
+        return {key: promote_or_catch(workspace, val) for key, val in value.items()}
+
+    if not isinstance(value, UUID):
+        return value
+
+    obj = workspace.get_entity(value)
+    if obj[0] is not None:
+        return obj[0]
+
+    raise UIJsonError(f"Workspace does not contain an entity with uid: {value}.")
 
 
 VALIDATIONS_MAP = {
-    "dependency": dependency_type_validation,
     "mesh_type": mesh_type_validation,
     "parent": parent_validation,
 }

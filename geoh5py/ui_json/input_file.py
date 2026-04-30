@@ -24,7 +24,7 @@ import json
 import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from geoh5py import Workspace
@@ -640,7 +640,8 @@ class InputFile:
         with Workspace.create(geoh5_path) as workspace:
             input_file.copy_relatives(workspace, clear_cache=clear_cache)
 
-        return InputFile(ui_json=stringify(ui_json), validate=validate)
+        demoted = cast(dict, stringify(ui_json))
+        return InputFile(ui_json=demoted, validate=validate)
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
