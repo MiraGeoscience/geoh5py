@@ -1435,6 +1435,9 @@ def enum_name_to_str(value: Any | Enum) -> Any | str:
 
     :return: Capitalized string.
     """
+    if isinstance(value, list):
+        return [enum_name_to_str(v) for v in value]
+
     if isinstance(value, Enum):
         if isinstance(value, str):
             return str(value)

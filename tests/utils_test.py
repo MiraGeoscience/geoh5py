@@ -30,6 +30,7 @@ from geoh5py.objects import Points
 from geoh5py.shared.utils import (
     copy_dict_relatives,
     dip_azimuth_to_vector,
+    enum_name_to_str,
     extract_uids,
     find_unique_name,
     format_numeric_values,
@@ -120,3 +121,26 @@ def test_copy_relatives_errors():
 
     with pytest.raises(ValueError, match="Cannot copy "):
         copy_dict_relatives({"bidon": points}, workspace)
+
+
+def test_enum_name_to_str():
+    from enum import Enum
+
+    class Color(Enum):
+        red = 1
+        blue = 2
+
+    # Single enum value
+    assert enum_name_to_str(Color.red) == "Red"
+
+    # Non-enum value passes through unchanged
+    assert enum_name_to_str(42) == 42
+    assert enum_name_to_str("hello") == "hello"
+
+    # List of mixed values
+    result = enum_name_to_str([Color.red, Color.blue, 99])
+    assert result == ["Red", "Blue", 99]
+
+    # Nested list
+    result = enum_name_to_str([Color.red, [Color.blue]])
+    assert result == ["Red", ["Blue"]]
