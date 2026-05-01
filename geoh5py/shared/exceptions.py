@@ -164,6 +164,7 @@ class MemoryValidationError(BaseValidationError):
             f"exceeds memory limit of {validation / 1e6} MB."
         )
 
+
 def iterable_message(valid: str | list[Any] | None) -> str:
     """
     Append possibly iterable valid: "Must be (one of): {valid}".
