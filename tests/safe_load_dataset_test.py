@@ -33,8 +33,7 @@ def make_mock_dataset(data: np.ndarray) -> MagicMock:
     mock = MagicMock()
     mock.size = data.size
     mock.dtype = data.dtype
-    mock.__getitem__ = MagicMock(return_value=data)
-    mock.__getitem__.side_effect = lambda s: data[s]
+    mock.__getitem__ = MagicMock(side_effect=lambda s: data[s])
     return mock
 
 

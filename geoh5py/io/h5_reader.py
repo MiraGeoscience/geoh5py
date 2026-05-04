@@ -40,9 +40,7 @@ from ..shared.utils import (
 )
 
 
-def safe_load_dataset(
-    value: h5py.Dataset, key: str, buffer: float = 0.8
-) -> np.ndarray | None:
+def safe_load_dataset(value: h5py.Dataset, key: str, buffer: float = 0.8) -> np.ndarray:
     """
     Attempt to load an h5py dataset, checking memory availability first.
 
@@ -50,8 +48,14 @@ def safe_load_dataset(
     :param key: Dataset key name (for error messages).
     :param buffer: Fraction of available memory to use as a threshold (default 0.8).
 
+    :raises MemoryValidationError: If estimated memory usage exceeds threshold
+        or if loading fails due to MemoryError.
+
     :return: Loaded numpy array or None if memory is insufficient.
     """
+    if not 0 < buffer <= 1:
+        raise ValueError("Buffer must be between 0 and 1.")
+
     estimated_bytes = value.size * value.dtype.itemsize
     available_bytes = psutil.virtual_memory().available * buffer
 
