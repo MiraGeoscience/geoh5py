@@ -506,7 +506,8 @@ class H5Reader:
             name = list(h5file)[0]
 
             try:
-                values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]
+                dataset = h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]
+                values = safe_load_dataset(dataset, f"Data {as_str_if_uuid(uid)}")
                 if isinstance(values[0], (str, bytes)):
                     values = np.asarray([as_str_if_utf8_bytes(val) for val in values])
                     if len(values) == 1:
