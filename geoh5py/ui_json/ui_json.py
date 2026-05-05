@@ -337,8 +337,8 @@ class BaseUIJson(BaseModel):
         with (
             fetch_active_workspace(workspace)
             if workspace
-            else Workspace(self.geoh5, mode="r") as geoh5
-        ):
+            else Workspace(self.geoh5, mode="r")
+        ) as geoh5:
             if geoh5 is None:
                 raise ValueError("Workspace cannot be None.")
 
@@ -471,7 +471,7 @@ class BaseUIJson(BaseModel):
         For each form, there can be a group dependency ('group') to a leading
         form ('group_optional') and/or a direct dependency between forms ('dependency').
 
-        A direct dependency controls the enabled state tow ways, while the group dependency
+        A direct dependency controls the enabled state two ways, while the group dependency
         controls the enabled state only from the lead form to its dependents.
 
         :returns: Tuple of group dependencies and direct form dependencies.

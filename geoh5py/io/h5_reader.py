@@ -26,8 +26,10 @@ from typing import Any
 
 import h5py
 import numpy as np
+import psutil
 
 from ..shared import FLOAT_NDV, fetch_h5_handle
+from ..shared.exceptions import MemoryValidationError
 from ..shared.utils import (
     INV_KEY_MAP,
     KEY_MAP,
@@ -36,6 +38,34 @@ from ..shared.utils import (
     str2uuid,
     str_json_to_dict,
 )
+
+
+def safe_load_dataset(value: h5py.Dataset, key: str, buffer: float = 0.8) -> np.ndarray:
+    """
+    Attempt to load an h5py dataset, checking memory availability first.
+
+    :param value: h5py Dataset to load.
+    :param key: Dataset key name (for error messages).
+    :param buffer: Fraction of available memory to use as a threshold (default 0.8).
+
+    :raises MemoryValidationError: If estimated memory usage exceeds threshold
+        or if loading fails due to MemoryError.
+
+    :return: Loaded numpy array or None if memory is insufficient.
+    """
+    if not 0 < buffer <= 1:
+        raise ValueError("Buffer must be between 0 and 1.")
+
+    estimated_bytes = value.size * value.dtype.itemsize
+    available_bytes = psutil.virtual_memory().available * buffer
+
+    if estimated_bytes > available_bytes:
+        raise MemoryValidationError(key, value, available_bytes)
+
+    try:
+        return value[:]
+    except MemoryError as err:
+        raise MemoryValidationError(key, value, available_bytes) from err
 
 
 class H5Reader:
@@ -96,7 +126,11 @@ class H5Reader:
                         and isinstance(value, h5py.Dataset)
                         and value.ndim > 0
                     ):
-                        attributes[INV_KEY_MAP[key]] = value[:]
+                        attributes[INV_KEY_MAP[key]] = safe_load_dataset(
+                            value,
+                            f"{entity_type} {as_str_if_uuid(uid)} attribute '{key}'",
+                            0.8,
+                        )
 
             if "Type" in entity:
                 type_attributes = cls.fetch_type_attributes(entity["Type"])
@@ -472,7 +506,8 @@ class H5Reader:
             name = list(h5file)[0]
 
             try:
-                values = np.r_[h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]]
+                dataset = h5file[name]["Data"][as_str_if_uuid(uid)]["Data"]
+                values = safe_load_dataset(dataset, f"Data {as_str_if_uuid(uid)}")
                 if isinstance(values[0], (str, bytes)):
                     values = np.asarray([as_str_if_utf8_bytes(val) for val in values])
                     if len(values) == 1:
