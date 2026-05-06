@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from h5py import special_dtype
 
@@ -27,7 +29,16 @@ from geoh5py.shared.utils import find_unique_name
 
 
 class ReferenceValueMap:
-    """Maps from reference index to reference value of ReferencedData."""
+    """
+    Maps from reference index to reference value of ReferencedData.
+
+    :param value_map: A mapping of positive integers to strings.
+        The key '0' is reserved for 'Unknown'.
+    :param name: The name of the value map.
+    :param main: Whether this is the main value map for the data.
+        If True, it will be used for mapping values to strings.
+        If False, it will be stored as an auxiliary value map.
+    """
 
     MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
 
@@ -35,8 +46,10 @@ class ReferenceValueMap:
         self,
         value_map: dict[int, str] | np.ndarray | tuple,
         name: str = "Value map",
+        main: bool = False,
     ):
-        self._map: np.ndarray = self.validate_value_map(value_map)
+        self._main = bool(main)
+        self._map: np.ndarray = self.validate_value_map(value_map, self._main)
         self.name = name
 
     def __getitem__(self, item: int) -> str:
@@ -54,12 +67,19 @@ class ReferenceValueMap:
         return dict(map_string)
 
     @classmethod
-    def validate_value_map(cls, value_map: np.ndarray | dict) -> np.ndarray:
+    def validate_value_map(
+        cls, value_map: np.ndarray | dict, main: bool = False
+    ) -> np.ndarray:
         """
         Verify that the key and value are valid.
         It raises errors if there is an issue
 
         :param value_map: Array of key, value pairs.
+        :param main: Whether this is the main value map for the data.
+            If True, it will be used for mapping values to strings.
+            If False, it will be stored as an auxiliary value map.
+
+        :return: A validated value map as a numpy recarray.
         """
         if isinstance(value_map, tuple):
             value_map = dict(value_map)
@@ -67,7 +87,6 @@ class ReferenceValueMap:
         if isinstance(value_map, np.ndarray) and value_map.dtype.names is None:
             if value_map.ndim == 1:
                 value_map = cls._dict_map_from_value_array(value_map)
-
             value_map = dict(value_map)
 
         if isinstance(value_map, dict):
@@ -75,12 +94,13 @@ class ReferenceValueMap:
                 raise KeyError("Key must be an positive integer")
 
             # Make sure no duplicated name as case-insensitive
-            names = list(value_map.values())
-            ids = list(value_map)
-            value_list = []
-            for ind, name in enumerate(names):
-                new = find_unique_name(name, names[:ind], case_sensitive=False)
-                value_list.append((ids[ind], new))
+            unique_names: list[str] = []
+            value_list: list[tuple[int, Any]] = []
+            for key, value in value_map.items():
+                if isinstance(value, str) and main:
+                    value = find_unique_name(value, unique_names, case_sensitive=False)
+                    unique_names.append(value)
+                value_list.append((key, value))
 
             value_map = np.array(
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
@@ -88,13 +108,9 @@ class ReferenceValueMap:
 
             # TODO: Replace with numpy.dtypes.StringDType instead for support of variable
             # length string after moving to numpy >=2.0
-            str_len = [
-                len(val) if isinstance(val, str) else len(str(val))
-                for val in value_map["Value"]
-            ]
-
+            str_len = max((len(str(val)) for val in value_map["Value"]), default=32)
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype(f"U{max(str_len) if str_len else 32}"),
+                value_map["Value"].astype(f"U{str_len}"),
                 "utf-8",
             )
 
