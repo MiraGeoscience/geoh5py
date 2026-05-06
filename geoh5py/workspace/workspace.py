@@ -1079,7 +1079,7 @@ class Workspace(AbstractContextManager):
             isinstance(file, (str, Path)) and not Path(file).is_file()
         ):
             self._h5file = BytesIO()
-            self._geoh5 = h5py.File(self.h5file, "a", libver="v114")
+            self._geoh5 = h5py.File(self.h5file, "a")
 
             with self._geoh5:
                 self._root = self.create_root()
@@ -1259,9 +1259,9 @@ class Workspace(AbstractContextManager):
             )
 
         try:
-            self._geoh5 = h5py.File(self.h5file, mode, libver="v114")
+            self._geoh5 = h5py.File(self.h5file, mode)
         except OSError:
-            self._geoh5 = h5py.File(self.h5file, "r", libver="v114")
+            self._geoh5 = h5py.File(self.h5file, "r")
 
         self._data = {}
         self._objects = {}

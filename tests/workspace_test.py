@@ -58,7 +58,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
                 f"Error changing value for attribute {key}."
             )
 
-    assert workspace.geoh5.libver == ("v114", "v114")
+    assert workspace.geoh5.libver == ("earliest", "v114")
     workspace.close()
 
 
