@@ -70,6 +70,7 @@ from geoh5py.shared.entity import Entity
 from geoh5py.shared.entity_type import EntityType
 from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import (
+    DEFAULT_PAGE_BUF_SIZE,
     ClassIdentifierEnum,
     as_str_if_utf8_bytes,
     clear_array_attributes,
@@ -371,7 +372,7 @@ class Workspace(AbstractContextManager):
     @classmethod
     def create(cls, path: str | Path, **kwargs) -> Workspace:
         """Create a named blank workspace and save to disk."""
-        return cls(**kwargs).save_as(path)
+        return cls(**kwargs, h5file=path)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:
@@ -1062,47 +1063,54 @@ class Workspace(AbstractContextManager):
         return self._h5file
 
     @h5file.setter
-    def h5file(self, file: str | Path | BytesIO | None):
+    def h5file(self, filepath: str | Path | BytesIO | None):
         if self._h5file is not None:
             raise ValueError(
                 "The 'h5file' attribute cannot be changed once it has been set."
             )
 
-        if not isinstance(file, (str, Path, BytesIO, type(None))):
+        if not isinstance(filepath, (str, Path, BytesIO, type(None))):
             raise ValueError(
                 "The 'h5file' attribute must be a str, "
                 "pathlib.Path to the target geoh5 file or BytesIO. "
-                f"Provided {file} of type({type(file)})"
+                f"Provided {filepath} of type({type(filepath)})"
             )
 
-        if isinstance(file, type(None)) or (
-            isinstance(file, (str, Path)) and not Path(file).is_file()
+        if isinstance(filepath, type(None)) or (
+            isinstance(filepath, (str, Path)) and not Path(filepath).is_file()
         ):
             self._h5file = BytesIO()
-            self._geoh5 = h5py.File(self.h5file, "a")
-
-            with self._geoh5:
+            with h5py.File(
+                self._h5file,
+                "x",
+                fs_strategy="page",
+                page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+            ) as file:
+                self._geoh5 = file
                 self._root = self.create_root()
                 H5Writer.init_geoh5(self.geoh5, self)
 
-        elif isinstance(file, BytesIO):
-            self._h5file = file
+            # with open(filepath, "wb") as file:
+            #     file.write(self.h5file.getbuffer())
 
-        if isinstance(file, (str, Path)):
-            if Path(file).suffix != ".geoh5":
+        elif isinstance(filepath, BytesIO):
+            self._h5file = filepath
+
+        if isinstance(filepath, (str, Path)):
+            if Path(filepath).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
-            if not Path(file).is_file():
+            if not Path(filepath).is_file():
                 warnings.warn(
                     "From version 0.8.0, the 'h5file' attribute must be a string "
                     "or path to an existing file, or user must call the 'create' "
                     "method. We will attempt to `save` the file for you, but this "
                     "behaviour will be removed in future releases.",
                 )
-                self.save_as(file)
+                self.save_as(filepath)
                 self.close()
             else:
-                self._h5file = Path(file)
+                self._h5file = Path(filepath)
 
     @property
     def list_data_name(self) -> dict[uuid.UUID, str]:
