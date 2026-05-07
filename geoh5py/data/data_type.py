@@ -521,7 +521,7 @@ class ReferenceDataType(DataType):
             return None
 
         if isinstance(value_map, dict | np.ndarray | tuple):
-            value_map = ReferenceValueMap(value_map)
+            value_map = ReferenceValueMap(value_map, main=True)
 
         if not isinstance(value_map, ReferenceValueMap):
             raise TypeError(
