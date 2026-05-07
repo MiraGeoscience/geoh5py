@@ -34,13 +34,15 @@ from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
-def generate_value_map(workspace, n_data=12, n_class=8):
+def generate_value_map(workspace, n_data=12, n_class=8, unique_name=False):
     values = np.random.randint(1, high=n_class, size=n_data)
     refs = np.unique(values)
     value_map = {}
     for ref in refs:
-        value_map[ref] = "".join(
-            random.choice(string.ascii_lowercase) for _ in range(ref)
+        value_map[ref] = (
+            "bidon"
+            if unique_name
+            else "".join(random.choice(string.ascii_lowercase) for _ in range(ref))
         )
 
     points = Points.create(
@@ -139,7 +141,7 @@ def test_add_data_map(tmp_path):
     h5file_path = tmp_path / (__name__ + ".geoh5")
 
     with Workspace.create(h5file_path) as workspace:
-        _, data, _ = generate_value_map(workspace)
+        _, data, _ = generate_value_map(workspace, unique_name=True)
 
         # create a property group to test GEOPY-2256 bug
         parent = data.parent
@@ -180,6 +182,10 @@ def test_add_data_map(tmp_path):
         data.add_data_map("test2", data_map, public=False)
 
         assert isinstance(data.data_maps["test"], GeometricDataConstants)
+
+        # add strings datamap
+        data_map_str = dict.fromkeys(data.entity_type.value_map.map["Key"], "bidon")
+        data.add_data_map("strings", data_map_str)
 
     with Workspace(h5file_path) as workspace:
         rec_data = workspace.get_entity("DataValues")[0]
