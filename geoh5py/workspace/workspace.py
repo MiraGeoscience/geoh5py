@@ -372,7 +372,11 @@ class Workspace(AbstractContextManager):
 
     @classmethod
     def create(cls, path: str | Path | None, **kwargs) -> Workspace:
-        """Create a named blank workspace and save to disk."""
+        """
+        Create a named blank workspace.
+
+        :param path: Path to the workspace file or None to create in-memory only.
+        """
         if path is None:
             path = BytesIO()
         elif Path(path).exists():
