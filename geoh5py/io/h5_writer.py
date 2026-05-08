@@ -51,7 +51,7 @@ from .utils import str_from_subtype, str_from_type
 
 
 if TYPE_CHECKING:
-    from .. import shared
+    from .. import shared, workspace
 
 DEFAULT_GEOH5_ATTRIBUTES = {
     "Contributors": np.asarray(getuser(), dtype=h5py.special_dtype(vlen=str)),
@@ -71,18 +71,20 @@ class H5Writer:
     @staticmethod
     def init_geoh5(
         file: str | h5py.File,
+        workspace: workspace.Workspace,
     ):
         """
         Add the geoh5 core structure.
 
         :param file: Name or handle to a geoh5 file.
+        :param workspace: :obj:`~geoh5py.workspace.workspace.Workspace` object
+            defining the project structure.
 
         :return h5file: Pointer to a geoh5 file.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            project = h5file.create_group("GEOSCIENCE", track_order=True)
-            for key, value in DEFAULT_GEOH5_ATTRIBUTES.items():
-                H5Writer.create_attribute(project, key, value)
+            project = h5file.create_group(workspace.name, track_order=True)
+            H5Writer.write_attributes(h5file, workspace)
             project.create_group("Data", track_order=True)
             project.create_group("Groups", track_order=True)
             project.create_group("Objects", track_order=True)

@@ -375,16 +375,12 @@ class Workspace(AbstractContextManager):
         """Create a named blank workspace and save to disk."""
         if path is None:
             path = BytesIO()
+        elif Path(path).exists():
+            raise FileExistsError(
+                f"File '{path}' already exists. Please choose a different name or path."
+            )
 
-        with h5py.File(
-            path,
-            "x",
-            fs_strategy="page",
-            page_buf_size=DEFAULT_PAGE_BUF_SIZE,
-        ) as file:
-            H5Writer.init_geoh5(file)
-
-        return cls(h5file=path)
+        return cls(h5file=path, **kwargs)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:
@@ -607,7 +603,7 @@ class Workspace(AbstractContextManager):
         """Get all active Data entities registered in the workspace."""
         return self._all_data()
 
-    def fetch_or_create_root(self):
+    def _fetch_or_create_root(self):
         """
         Fetch the root group or create a new one if it does not exist.
         """
@@ -1065,7 +1061,7 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path | BytesIO | None:
+    def h5file(self) -> str | Path | BytesIO:
         """
         Target *geoh5* file name with path or BytesIO object representation.
 
@@ -1074,16 +1070,13 @@ class Workspace(AbstractContextManager):
         """
         return self._h5file
 
-    def validate_h5file_input(
-        self, h5file: str | Path | BytesIO | None
-    ) -> Path | BytesIO | None:
-        if isinstance(h5file, BytesIO | None):
+    @staticmethod
+    def validate_h5file_input(h5file: str | Path | BytesIO | None) -> Path | BytesIO:
+        if isinstance(h5file, BytesIO):
             return h5file
 
         if isinstance(h5file, type(None)):
-            workspace = self.create(h5file)
-            # workspace.close()
-            return workspace.h5file
+            return BytesIO()
 
         if isinstance(h5file, (str, Path)):
             if Path(h5file).suffix != ".geoh5":
@@ -1096,7 +1089,6 @@ class Workspace(AbstractContextManager):
                     "method. We will attempt to `save` the file for you, but this "
                     "behaviour will be removed in future releases.",
                 )
-                self.create(h5file)
             return Path(h5file)
 
         raise ValueError(
@@ -1259,25 +1251,49 @@ class Workspace(AbstractContextManager):
                 "Consider copying the file to static local drive."
             )
 
-        try:
-            self._geoh5 = h5py.File(self.h5file, mode)
-        except OSError:
-            self._geoh5 = h5py.File(self.h5file, "r")
-
+        # Reset arrays
         self._data = {}
         self._objects = {}
         self._groups = {}
         self._types = {}
         self._property_groups = {}
 
-        proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
-
-        for key, attr in proj_attributes.items():
-            setattr(self, self._attribute_map[key], attr)
-
-        self.fetch_or_create_root()
+        self._open_or_create_h5(mode)
+        self._fetch_or_create_root()
 
         return self
+
+    def _open_or_create_h5(self, mode) -> h5py.File:
+        """
+        Either generate a new geoh5 file with core structure, or load it from a file or BytesIO.
+
+        If the file cannot be opened in read-write mode, it defaults back to read-only mode.
+
+        :param mode: Read mode
+        """
+        if isinstance(self.h5file, BytesIO) and self.h5file.getbuffer().nbytes == 0:
+            self._geoh5 = h5py.File(self.h5file, "a")
+            H5Writer.init_geoh5(self._geoh5, self)
+        elif isinstance(self.h5file, Path) and not self.h5file.exists():
+            self._geoh5 = h5py.File(
+                self.h5file,
+                "x",
+                fs_strategy="page",
+                page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+            )
+            H5Writer.init_geoh5(self._geoh5, self)
+        else:
+            try:
+                self._geoh5 = h5py.File(self.h5file, mode)
+            except OSError:
+                self._geoh5 = h5py.File(self.h5file, "r")
+
+            proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
+
+            for key, attr in proj_attributes.items():
+                setattr(self, self._attribute_map[key], attr)
+
+        return self._geoh5
 
     def promote(self, value: Any) -> Any:
         """
@@ -1364,10 +1380,11 @@ class Workspace(AbstractContextManager):
     def save_as(self, filepath: str | Path) -> Workspace:
         """
         Save the workspace to disk.
-        """
-        if self._geoh5 is not None:
-            self.close()
 
+        :param filepath: The filepath to save the workspace to.
+
+        :return: New workspace instance loaded from disk.
+        """
         filepath = Path(filepath)
 
         if filepath.suffix == "":
@@ -1379,16 +1396,14 @@ class Workspace(AbstractContextManager):
         if filepath.exists():
             raise FileExistsError(f"File {filepath} already exists.")
 
+        self.close()
         if isinstance(self.h5file, BytesIO):
             with open(filepath, "wb") as file:
                 file.write(self.h5file.getbuffer())
-        elif self.h5file is None:
-            raise ValueError("Input 'h5file' file must be specified.")
         else:
             move(self.h5file, filepath, copy)
 
         self._h5file = filepath
-
         self.open()
 
         return self
