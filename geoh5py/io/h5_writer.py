@@ -26,7 +26,6 @@ import json
 import re
 import uuid
 from copy import deepcopy
-from getpass import getuser
 from typing import TYPE_CHECKING, Any
 from warnings import warn
 
@@ -52,13 +51,6 @@ from .utils import str_from_subtype, str_from_type
 
 if TYPE_CHECKING:
     from .. import shared, workspace
-
-DEFAULT_GEOH5_ATTRIBUTES = {
-    "Contributors": np.asarray(getuser(), dtype=h5py.special_dtype(vlen=str)),
-    "Distance unit": "meter",
-    "GA Version": "1",
-    "Version": 2.1,
-}
 
 
 class H5Writer:
