@@ -1258,40 +1258,53 @@ class Workspace(AbstractContextManager):
         self._types = {}
         self._property_groups = {}
 
-        self._open_or_create_h5(mode)
+        if (
+            isinstance(self.h5file, BytesIO) and self.h5file.getbuffer().nbytes == 0
+        ) or (isinstance(self.h5file, Path) and not self.h5file.exists()):
+            self._create_h5()
+        else:
+            self._open_h5(mode)
+
         self._fetch_or_create_root()
 
         return self
 
-    def _open_or_create_h5(self, mode) -> h5py.File:
+    def _open_h5(self, mode) -> h5py.File:
         """
-        Either generate a new geoh5 file with core structure, or load it from a file or BytesIO.
+        Load geoh5 from a file or BytesIO.
 
         If the file cannot be opened in read-write mode, it defaults back to read-only mode.
 
         :param mode: Read mode
         """
-        if isinstance(self.h5file, BytesIO) and self.h5file.getbuffer().nbytes == 0:
+        try:
+            self._geoh5 = h5py.File(self.h5file, mode)
+        except OSError:
+            self._geoh5 = h5py.File(self.h5file, "r")
+
+        proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
+
+        for key, attr in proj_attributes.items():
+            setattr(self, self._attribute_map[key], attr)
+
+        return self._geoh5
+
+    def _create_h5(self) -> h5py.File:
+        """
+        Generate a new geoh5 file with core structure.
+        """
+        if isinstance(self.h5file, BytesIO):
             self._geoh5 = h5py.File(self.h5file, "a")
-            H5Writer.init_geoh5(self._geoh5, self)
-        elif isinstance(self.h5file, Path) and not self.h5file.exists():
+
+        elif isinstance(self.h5file, Path):
             self._geoh5 = h5py.File(
                 self.h5file,
                 "x",
                 fs_strategy="page",
                 page_buf_size=DEFAULT_PAGE_BUF_SIZE,
             )
-            H5Writer.init_geoh5(self._geoh5, self)
-        else:
-            try:
-                self._geoh5 = h5py.File(self.h5file, mode)
-            except OSError:
-                self._geoh5 = h5py.File(self.h5file, "r")
 
-            proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
-
-            for key, attr in proj_attributes.items():
-                setattr(self, self._attribute_map[key], attr)
+        H5Writer.init_geoh5(self._geoh5, self)
 
         return self._geoh5
 
