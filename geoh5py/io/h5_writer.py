@@ -26,7 +26,8 @@ import json
 import re
 import uuid
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from getpass import getuser
+from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 import h5py
@@ -50,7 +51,14 @@ from .utils import str_from_subtype, str_from_type
 
 
 if TYPE_CHECKING:
-    from .. import shared, workspace
+    from .. import shared
+
+DEFAULT_GEOH5_ATTRIBUTES = {
+    "Contributors": np.asarray(getuser(), dtype=h5py.special_dtype(vlen=str)),
+    "Distance unit": "meter",
+    "GA Version": "1",
+    "Version": 2.1,
+}
 
 
 class H5Writer:
@@ -63,20 +71,18 @@ class H5Writer:
     @staticmethod
     def init_geoh5(
         file: str | h5py.File,
-        workspace: workspace.Workspace,
     ):
         """
         Add the geoh5 core structure.
 
         :param file: Name or handle to a geoh5 file.
-        :param workspace: :obj:`~geoh5py.workspace.workspace.Workspace` object
-            defining the project structure.
 
         :return h5file: Pointer to a geoh5 file.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            project = h5file.create_group(workspace.name, track_order=True)
-            H5Writer.write_attributes(h5file, workspace)
+            project = h5file.create_group("GEOSCIENCE", track_order=True)
+            for key, value in DEFAULT_GEOH5_ATTRIBUTES.items():
+                H5Writer.create_attribute(project, key, value)
             project.create_group("Data", track_order=True)
             project.create_group("Groups", track_order=True)
             project.create_group("Objects", track_order=True)
@@ -412,20 +418,30 @@ class H5Writer:
                 if key == "Visible" and "Visible" in entity_handle:
                     del entity_handle["Visible"]
 
-                if isinstance(value, (np.int8, bool)):
-                    entity_handle.attrs.create(key, int(value), dtype="int8")
-                elif isinstance(value, str):
-                    entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
-                elif isinstance(value, BaseModel):
-                    entity_handle.attrs.create(
-                        key,
-                        value.model_dump_json(by_alias=True),
-                        dtype=H5Writer.str_type,
-                    )
-                else:
-                    entity_handle.attrs.create(
-                        key, value, dtype=np.asarray(value).dtype
-                    )
+                H5Writer.create_attribute(entity_handle, key, value)
+
+    @staticmethod
+    def create_attribute(entity_handle: h5py.Group, key: str, value: Any):
+        """
+        Format and add attributes to a hdf5 group.
+
+        :param entity_handle: Pointer to the hdf5 group
+        :param key: Name of the attribute
+        :param value: Value of the attribute to be written.
+            Supported types are: int8, bool, str, BaseModel and array-like.
+        """
+        if isinstance(value, (np.int8, bool)):
+            entity_handle.attrs.create(key, int(value), dtype="int8")
+        elif isinstance(value, str):
+            entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
+        elif isinstance(value, BaseModel):
+            entity_handle.attrs.create(
+                key,
+                value.model_dump_json(by_alias=True),
+                dtype=H5Writer.str_type,
+            )
+        else:
+            entity_handle.attrs.create(key, value, dtype=np.asarray(value).dtype)
 
     @staticmethod
     def write_color_map(
