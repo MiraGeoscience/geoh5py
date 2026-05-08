@@ -61,7 +61,9 @@ def test_write_context():
 
 def test_read_only():
     with pytest.raises(UserWarning, match="geoh5 file in read-only mode"):
-        with Workspace(mode="r") as workspace:
+        workspace = Workspace()
+        workspace.close()
+        with workspace.open(mode="r"):
             Points.create(workspace)
 
 
