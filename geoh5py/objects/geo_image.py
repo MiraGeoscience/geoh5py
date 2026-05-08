@@ -463,10 +463,10 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         The rotation of the image in degrees, counter-clockwise.
 
         :raises: If the vertices do not form a rectangle with 90-degree angles,
-        a ValueError is raised.
+            a ValueError is raised.
 
         :raises: If the image requires more than dip and rotation transformations,
-        a ValueError is raised.
+            a ValueError is raised.
 
         :return: the rotation angle.
         """
