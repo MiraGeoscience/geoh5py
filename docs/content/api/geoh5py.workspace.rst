@@ -9,13 +9,13 @@ geoh5py.workspace.workspace module
 
 .. automodule:: geoh5py.workspace.workspace
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: geoh5py.workspace
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

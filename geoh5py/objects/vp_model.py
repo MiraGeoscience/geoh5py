@@ -301,8 +301,8 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def centroids(self) -> np.ndarray:
-        """
-        Cell center locations of each prism in world coordinates, shape(*, 3).
+        r"""
+        Cell center locations of each prism in world coordinates, shape(\*, 3).
 
         .. code-block:: python
 

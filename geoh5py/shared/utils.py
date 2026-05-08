@@ -1248,7 +1248,7 @@ def uuid_from_values(data: dict | str) -> UUID:
     converted to uid strings.
 
     :param data: Dictionary or a string representation of a dictionary containing
-    parameters/values of an application.
+        parameters/values of an application.
 
     :returns: Unique but recoverable uuid file identifier string.
     """

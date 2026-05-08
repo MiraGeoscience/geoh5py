@@ -18,11 +18,9 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-from __future__ import annotations
-
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 from uuid import UUID
 
 import numpy as np
@@ -114,7 +112,7 @@ class BaseForm(BaseModel):
     def infer(
         cls,
         data: dict[str, Any],
-    ) -> type[BaseForm]:
+    ) -> type[Self]:
         """
         Infer and return the appropriate form.
 
@@ -727,10 +725,10 @@ def indicator_attributes(
     List all the mandatory attributes defined in a subclass.
 
     The function return a list of 2 lists:
-    - The first contains the sets of attributes
-        that are different between the parent and each child class.
-    - The second contains the sets of mandatory attributes
-        that are different between the parent and each child class.
+        - The first contains the sets of attributes
+            that are different between the parent and each child class.
+        - The second contains the sets of mandatory attributes
+            that are different between the parent and each child class.
 
     :param parent: The parent class to compare against.
     :param children: The list of child classes to compare.
