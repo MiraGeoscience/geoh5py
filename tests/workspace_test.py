@@ -135,7 +135,8 @@ def test_read_bytes(tmp_path):
 
 
 def test_reopening_mode(tmp_path):
-    with Workspace.create(tmp_path / r"test.geoh5") as workspace:
+    name = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(name) as workspace:
         pass
 
     with fetch_active_workspace(workspace, mode="r") as re_open:
@@ -148,6 +149,34 @@ def test_reopening_mode(tmp_path):
         with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
             with fetch_active_workspace(workspace, mode="r+"):
                 assert workspace.geoh5.mode == "r+"
+
+
+def test_downgrade_mode(tmp_path, monkeypatch):
+    """
+    Replicates another-application file lock causing OSError on r+ open.
+    Workspace should fall back to read-only mode.
+    """
+    name = tmp_path / f"{__name__}.geoh5"
+    # Create a valid empty geoh5 first so the path exists and open() goes through _open_h5
+    ws = Workspace.create(name)
+    ws.close()
+
+    class FakeFile(File):
+        def __init__(self, file, mode, **kwargs):
+            if mode == "r+":
+                raise OSError(
+                    "The process cannot access the file because it is being used by another process."
+                )
+            super().__init__(file, mode)
+
+    monkeypatch.setattr("h5py.File", FakeFile)
+
+    try:
+        ws._open_h5("r+")
+        assert ws.geoh5.mode == "r"
+
+    finally:
+        ws.close()
 
 
 def test_in_memory_to_disk():

@@ -148,7 +148,6 @@ class Workspace(AbstractContextManager):
         self._groups: dict[uuid.UUID, ReferenceType[Group]] = {}
         self._property_groups: dict[uuid.UUID, ReferenceType[PropertyGroup]] = {}
         self._h5file: str | Path | BytesIO | None = None
-        self._mode: str = mode
         self._name: str = name
         self._objects: dict[uuid.UUID, ReferenceType[ObjectBase]] = {}
         self._repack: bool = repack
@@ -157,7 +156,7 @@ class Workspace(AbstractContextManager):
 
         self._h5file = self.validate_h5file_input(h5file)
 
-        self.open()
+        self.open(mode=mode)
 
     def activate(self):
         """Makes this workspace the active one.
@@ -1231,7 +1230,7 @@ class Workspace(AbstractContextManager):
         """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
-    def open(self, mode: str | None = None) -> Workspace:
+    def open(self, mode: str = "r+") -> Workspace:
         """
         Open a geoh5 file and load the tree structure.
 
@@ -1241,9 +1240,6 @@ class Workspace(AbstractContextManager):
         if isinstance(self._geoh5, h5py.File) and self._geoh5:
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return self
-
-        if mode is None:
-            mode = self._mode
 
         if (
             mode == "r+"
