@@ -373,9 +373,14 @@ def dependency_type_validation(name: str, ui_json: BaseUIJson):
     """
     dependency_form = getattr(ui_json, name)
 
-    if not dependency_form.optional and not isinstance(dependency_form, BoolForm):
+    if (
+        not dependency_form.optional
+        and not dependency_form.group_optional
+        and not isinstance(dependency_form, BoolForm)
+    ):
         raise UIJsonError(
-            f"Dependency form '{name}' must be either optional or of boolean type."
+            f"Dependency form '{name}' must be either "
+            f"'optional', 'group optional' or a form of boolean type."
         )
 
 

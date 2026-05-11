@@ -285,10 +285,17 @@ def test_validate_dependency_type_validation(tmp_path):
 
     # Non-optional non-bool dependency is invalid
     kwargs["my_parameter"].pop("optional")
-    msg = "Dependency form 'my_parameter' must be either optional or of boolean type"
+    msg = "Dependency form 'my_parameter' must be either 'optional', 'group optional' or a form of boolean type"
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
         _ = uijson.to_params()
+
+    # group_optional dependency is valid
+    kwargs["my_parameter"]["group"] = "some_group"
+    kwargs["my_parameter"]["group_optional"] = True
+    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    params = uijson.to_params()
+    assert params["my_dependent_parameter"] == "test"
 
 
 def test_parent_child_validation(tmp_path):
