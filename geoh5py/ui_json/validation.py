@@ -366,7 +366,7 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
 
 def dependency_type_validation(name: str, ui_json: BaseUIJson):
     """
-    Validate that the form depending on is optional or bool type.
+    Validate that the form depending on is optional, group optional or bool type.
 
     :param name: Name of the form
     :param ui_json: A UIJson object.
@@ -380,7 +380,7 @@ def dependency_type_validation(name: str, ui_json: BaseUIJson):
     ):
         raise UIJsonError(
             f"Dependency form '{name}' must be either "
-            f"'optional', 'group optional' or a form of boolean type."
+            "'optional', 'groupOptional' or a form of boolean type."
         )
 
 
