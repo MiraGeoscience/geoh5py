@@ -166,6 +166,15 @@ def test_in_memory_to_disk():
     workspace.close()
 
 
+def test_create_bytesio():
+    with pytest.raises(TypeError, match="The 'h5file' attribute must be a str"):
+        Workspace.create(123)
+
+    workspace = Workspace.create()
+
+    assert isinstance(workspace.h5file, io.BytesIO)
+
+
 def test_network_drive_warning(tmp_path):
     network_drive = tmp_path / "Dropbox"
     network_drive.mkdir()

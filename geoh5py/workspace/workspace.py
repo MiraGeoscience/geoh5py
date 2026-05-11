@@ -371,20 +371,21 @@ class Workspace(AbstractContextManager):
             entity.fetch_property_group(**property_group_kwargs)
 
     @classmethod
-    def create(cls, path: str | Path | None, **kwargs) -> Workspace:
+    def create(cls, h5file: str | Path | BytesIO | None = None, **kwargs) -> Workspace:
         """
         Create a named blank workspace.
 
-        :param path: Path to the workspace file or None to create in-memory only.
+        :param h5file: Path to the workspace file or None to create in-memory only.
         """
-        if path is None:
-            path = BytesIO()
-        elif Path(path).exists():
+        if h5file is None:
+            h5file = BytesIO()
+
+        elif isinstance(h5file, str | Path) and Path(h5file).exists():
             raise FileExistsError(
-                f"File '{path}' already exists. Please choose a different name or path."
+                f"File '{h5file}' already exists. Please choose a different name or path."
             )
 
-        return cls(h5file=path, **kwargs)
+        return cls(h5file=h5file, **kwargs)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:
@@ -1095,7 +1096,7 @@ class Workspace(AbstractContextManager):
                 )
             return Path(h5file)
 
-        raise ValueError(
+        raise TypeError(
             "The 'h5file' attribute must be a str, "
             "pathlib.Path to the target geoh5 file or BytesIO. "
             f"Provided {h5file} of type({type(h5file)})"
