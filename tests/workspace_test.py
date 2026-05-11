@@ -49,6 +49,9 @@ def test_workspace_from_kwargs(tmp_path: Path):
         warning[0]
     )
 
+    with pytest.raises(ValueError, match="must have a 'geoh5' extension"):
+        Workspace(**attr).save_as(tmp_path / r"test.zip")
+
     workspace.close()
 
     workspace = Workspace(h5file_tmp)
@@ -193,6 +196,21 @@ def test_in_memory_to_disk():
         compare_entities(points, new_points, ignore=["_parent"])
 
     workspace.close()
+
+
+def test_disk_save_as(tmp_path):
+    workspace = Workspace.create(tmp_path / f"{__name__}.geoh5")
+    Points.create(workspace, vertices=np.random.randn(12, 3), name="Points_A")
+
+    new_path = tmp_path / f"{__name__}_copy.geoh5"
+    workspace.save_as(new_path)
+
+    assert workspace.h5file == new_path
+    workspace.close()
+
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws_a:
+        with Workspace(new_path) as ws_b:
+            assert ws_a.objects[0].uid == ws_b.objects[0].uid
 
 
 def test_create_bytesio():

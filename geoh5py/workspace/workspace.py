@@ -1415,7 +1415,7 @@ class Workspace(AbstractContextManager):
             with open(filepath, "wb") as file:
                 file.write(self.h5file.getbuffer())
         else:
-            move(self.h5file, filepath, copy)
+            copy(self.h5file, filepath)
 
         self._h5file = filepath
         self.open()
