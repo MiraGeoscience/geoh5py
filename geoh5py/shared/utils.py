@@ -25,7 +25,7 @@ import types as types_module
 from abc import ABC
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
-from enum import Enum
+from enum import Enum, StrEnum
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
@@ -1440,6 +1440,8 @@ def enum_name_to_str(value: Any | Enum) -> Any | str:
         return [enum_name_to_str(v) for v in value]
 
     if isinstance(value, Enum):
+        if isinstance(value, StrEnum):
+            return value.value
         return value.name.capitalize()
 
     return value
