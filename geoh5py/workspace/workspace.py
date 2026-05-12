@@ -1096,13 +1096,6 @@ class Workspace(AbstractContextManager):
             if Path(h5file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
-            if not Path(h5file).is_file():
-                warnings.warn(
-                    "From version 0.8.0, the 'h5file' attribute must be a string "
-                    "or path to an existing file, or user must call the 'create' "
-                    "method. We will attempt to `save` the file for you, but this "
-                    "behaviour will be removed in future releases.",
-                )
             return Path(h5file)
 
         raise TypeError(

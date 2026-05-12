@@ -109,16 +109,8 @@ def test_bad_extension(tmp_path):
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
 
 
-def test_file_not_found(tmp_path):
-    with pytest.warns(UserWarning, match="We will attempt to `save` the file for you"):
-        Workspace(
-            tmp_path / r"test.geoh5",
-        )
-
-
 def test_read_bytes(tmp_path):
-    with pytest.warns(UserWarning, match=""):
-        workspace = Workspace(tmp_path / r"test_warning.geoh5")
+    workspace = Workspace.create(tmp_path / r"test_warning.geoh5")
 
     assert workspace.h5file.is_file()  # type: ignore
 
