@@ -285,7 +285,7 @@ def test_validate_dependency_type_validation(tmp_path):
 
     # Non-optional non-bool dependency is invalid
     kwargs["my_parameter"].pop("optional")
-    msg = "Dependency form 'my_parameter' must be either optional or of boolean type"
+    msg = "Dependency form 'my_parameter' must be either optional, group_optional or of boolean type"
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
         _ = uijson.to_params()
@@ -446,6 +446,7 @@ def test_disabled_group_optional_forms(tmp_path):
     class MyBaseUIJson(BaseUIJson):
         group_leader: FloatForm
         dependent: FloatForm
+        other_dependent: FloatForm
 
     kwargs = {
         "group_leader": {
@@ -461,6 +462,14 @@ def test_disabled_group_optional_forms(tmp_path):
             "value": 4.0,
             "enabled": True,
         },
+        "other_dependent": {
+            "label": "b",
+            "group": "other_group",
+            "value": 4.0,
+            "enabled": True,
+            "dependency": "group_leader",
+            "dependency_type": "disabled",
+        },
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
@@ -472,6 +481,10 @@ def test_disabled_group_optional_forms(tmp_path):
     params = uijson.to_params()
     assert "group_leader" not in params
     assert "dependent" not in params
+
+    uijson.set_values(group_leader=3.0)
+
+    assert not uijson.is_enabled("other_dependent")
 
 
 @pytest.mark.parametrize(
