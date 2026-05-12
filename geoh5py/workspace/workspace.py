@@ -375,6 +375,8 @@ class Workspace(AbstractContextManager):
         Create a named blank workspace.
 
         :param h5file: Path to the workspace file or None to create in-memory only.
+
+        :return: A workspace object.
         """
         if h5file is None:
             h5file = BytesIO()
@@ -1076,6 +1078,14 @@ class Workspace(AbstractContextManager):
 
     @staticmethod
     def validate_h5file_input(h5file: str | Path | BytesIO | None) -> Path | BytesIO:
+        """
+        Validate the reference to a h5 file, either provided as path, an in-memory file
+        or a BytesIO object.
+
+        :param h5file: Input h5 representation
+
+        :return: A valid Path or BytesIO object
+        """
         if isinstance(h5file, BytesIO):
             return h5file
 
