@@ -446,7 +446,7 @@ def test_group_promotion(tmp_path):
 
 
 def test_drillhole_group_promotion(tmp_path):
-    _, workspace = create_drillholes(tmp_path)
+    _, workspace = create_drillholes(tmp_path / f"{__name__}.geoh5")
 
     with workspace.open("r+"):
         dh_group = workspace.get_entity("DH_group")[0]
