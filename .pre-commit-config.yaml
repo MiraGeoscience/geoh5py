@@ -1,6 +1,6 @@
 
 default_language_version:
-    python: python3
+    python: python312
 exclude: ^docs/(conf.py|_ext/)
 default_stages: [pre-commit,pre-push]
 fail_fast: false
