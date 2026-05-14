@@ -252,7 +252,9 @@ class DataType(EntityType):
             raise TypeError(
                 f"Attribute 'filter_max' must be a float, not {type(value)}"
             )
-        if getattr(self, "_filter_min", None) and value and value < self._filter_min:
+
+        filter_min: None | float = getattr(self, "_filter_min", None)
+        if filter_min and value and value < filter_min:
             raise ValueError(
                 "Attribute 'filter_max' must be greater than or equal to 'filter_min'."
             )
@@ -276,7 +278,8 @@ class DataType(EntityType):
                 f"Attribute 'filter_min' must be a float, not {type(value)}"
             )
 
-        if getattr(self, "_filter_max", None) and value and value > self._filter_max:
+        filter_max: None | float = getattr(self, "_filter_max", None)
+        if filter_max and value and value > filter_max:
             raise ValueError(
                 "Attribute 'filter_min' must be less than or equal to 'filter_max'."
             )
