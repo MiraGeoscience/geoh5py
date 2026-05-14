@@ -147,7 +147,6 @@ class Workspace(AbstractContextManager):
         self._geoh5: h5py.File | bool = False
         self._groups: dict[uuid.UUID, ReferenceType[Group]] = {}
         self._property_groups: dict[uuid.UUID, ReferenceType[PropertyGroup]] = {}
-        self._h5file: str | Path | BytesIO | None = None
         self._name: str = name
         self._objects: dict[uuid.UUID, ReferenceType[ObjectBase]] = {}
         self._repack: bool = repack
@@ -1067,7 +1066,7 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path | BytesIO:
+    def h5file(self) -> Path | BytesIO:
         """
         Target *geoh5* file name with path or BytesIO object representation.
 
