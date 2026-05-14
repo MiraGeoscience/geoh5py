@@ -39,6 +39,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
     from ..workspace import Workspace
     from .data import Data
+    from .geometric_data import GeometricDataConstants
     from .referenced_data import ReferencedData
 
 ColorMapping = Literal[
@@ -766,7 +767,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         )
         self._parent = parent
 
-    def set_parent_reference(self, data: Data, new_name: str):
+    def set_parent_reference(self, data: GeometricDataConstants, new_name: str):
         """
         Change the metadata keys on the referenced data.
 
