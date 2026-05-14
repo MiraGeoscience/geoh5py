@@ -36,7 +36,7 @@ jobs:
       python-version: '3.12'
   call-workflow-pytest:
     name: Pytest
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@v3.4.2
     permissions:
       contents: read
       pull-requests: read
