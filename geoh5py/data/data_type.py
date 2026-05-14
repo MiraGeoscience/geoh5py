@@ -773,8 +773,10 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         :param data: Geometric data entity referenced in the data map
         :param new_name: Name to be replaced in the data map
         """
-        if self.referenced_data is None:
-            raise ValueError("Parent 'referenced_data' is not set.")
+        if self.referenced_data is None or self.referenced_data.data_map is None:
+            raise ValueError(
+                "Parent 'referenced_data' with a 'data_map' needs to be set."
+            )
 
         data_maps = copy(self.referenced_data.data_maps)
         for key, value in self.referenced_data.data_maps.items():
