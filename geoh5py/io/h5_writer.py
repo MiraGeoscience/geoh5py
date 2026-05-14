@@ -393,6 +393,9 @@ class H5Writer:
 
                 value = as_str_if_uuid(value)
 
+                if key in entity_handle.attrs and value is None:
+                    del entity_handle.attrs[key]
+
                 if (
                     key
                     in [

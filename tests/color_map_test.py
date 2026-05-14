@@ -143,7 +143,19 @@ def test_color_map_filter(tmp_path):
         with pytest.raises(TypeError, match="Attribute 'filter_min' must be a float"):
             data.entity_type.filter_min = "abc"
 
-        data.entity_type.filter_min = np.percentile(data.values, 30)
+        with pytest.raises(
+            ValueError, match="Attribute 'filter_min' must be less than"
+        ):
+            data.entity_type.filter_min = np.percentile(data.values, 75)
+
+        data.entity_type.filter_min = np.percentile(data.values, 25)
+
+        with pytest.raises(
+            ValueError, match="Attribute 'filter_max' must be greater than"
+        ):
+            data.entity_type.filter_max = np.percentile(data.values, 15)
+
+        data.entity_type.filter_min = None
 
     # Read it back in
     with Workspace(h5file_path) as workspace:
@@ -152,6 +164,4 @@ def test_color_map_filter(tmp_path):
         np.testing.assert_almost_equal(
             rec_data.entity_type.filter_max, np.percentile(data.values, 70)
         )
-        np.testing.assert_almost_equal(
-            rec_data.entity_type.filter_min, np.percentile(data.values, 30)
-        )
+        assert not rec_data.entity_type.filter_min

@@ -248,11 +248,16 @@ class DataType(EntityType):
 
     @filter_max.setter
     def filter_max(self, value: float | None):
-        if not isinstance(value, float) and value is not None:
+        if not isinstance(value, float | int | None):
             raise TypeError(
                 f"Attribute 'filter_max' must be a float, not {type(value)}"
             )
-        self._filter_max = value
+        if getattr(self, "_filter_min", None) and value and value < self._filter_min:
+            raise ValueError(
+                "Attribute 'filter_max' must be greater than or equal to 'filter_min'."
+            )
+
+        self._filter_max = float(value) if value else None
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
@@ -266,11 +271,17 @@ class DataType(EntityType):
 
     @filter_min.setter
     def filter_min(self, value: float | None):
-        if not isinstance(value, float) and value is not None:
+        if not isinstance(value, float | int | None):
             raise TypeError(
                 f"Attribute 'filter_min' must be a float, not {type(value)}"
             )
-        self._filter_min = value
+
+        if getattr(self, "_filter_max", None) and value and value > self._filter_max:
+            raise ValueError(
+                "Attribute 'filter_min' must be less than or equal to 'filter_max'."
+            )
+
+        self._filter_min = float(value) if value else None
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
