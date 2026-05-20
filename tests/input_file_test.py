@@ -28,6 +28,7 @@ from uuid import uuid4
 
 import numpy as np
 import pytest
+from objects.drillhole_v4_0_test import create_drillholes
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
 from geoh5py.objects import Points
@@ -47,8 +48,6 @@ from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import DEFAULT_UI_JSON_NAME, InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
-
-from .drillhole_v4_0_test import create_drillholes
 
 
 def get_workspace(directory: str | Path):
