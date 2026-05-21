@@ -17,6 +17,8 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+from __future__ import annotations
+
 from io import BytesIO
 from typing import Any
 
@@ -65,10 +67,10 @@ class TextureData(Data):
 
     @texture_image.setter
     def texture_image(self, value: np.ndarray | bytes | Image | None):
-        if isinstance(value, np.ndarray) and value.ndim in [2, 3]:
-            if value.ndim == 3 and value.shape[2] != 3:
+        if isinstance(value, np.ndarray):
+            if value.ndim not in (2, 3) or (value.ndim == 3 and value.shape[2] != 3):
                 raise ValueError(
-                    "Shape of the 'value' must be a 2D or "
+                    "Shape of the 'texture_image' must be a 2D or "
                     "a 3D array with shape(*,*, 3) representing 'RGB' values."
                 )
 
@@ -112,7 +114,7 @@ class TextureData(Data):
             )
 
         if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 2:
+            if values.ndim != 2 or values.shape[1] != 2:
                 raise ValueError("'values' requires an ndarray of shape (*, 2).")
 
             values = np.asarray(
@@ -122,7 +124,7 @@ class TextureData(Data):
                 )
             )
         if values.dtype != self.__VALUES_DTYPE:
-            raise ValueError(
+            raise TypeError(
                 f"Array of 'values' must be of dtype = {self.__VALUES_DTYPE}"
             )
 
