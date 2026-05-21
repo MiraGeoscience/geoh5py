@@ -24,7 +24,8 @@ import numpy as np
 import pytest
 from scipy.spatial import Delaunay
 
-from geoh5py.objects import Surface
+from geoh5py.data import TextureData
+from geoh5py.objects import Grid2D, Surface
 from geoh5py.workspace import Workspace
 
 
@@ -79,8 +80,22 @@ def test_create_texture(tmp_path):
                 np.rec.fromarrays(((1, 2), (3, 4)), dtype=[("a", int), ("b", int)])
             )
 
+        with pytest.raises(ValueError, match="The length of 'values'"):
+            texture.values = np.asarray(
+                np.rec.fromarrays(
+                    ((1, 2), (3, 4)), dtype=np.dtype([("v[0]", "<f4"), ("v[1]", "<f4")])
+                )
+            )
+
         texture.values = np.c_[u_pixel, v_pixel]
         texture.texture_image = image
+
+        grid = Grid2D.create(workspace)
+
+        with pytest.raises(
+            TypeError, match="The parent of `texture_data` must have vertices"
+        ):
+            texture.copy(parent=grid)
 
     # Re-open and check the texture
     with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:

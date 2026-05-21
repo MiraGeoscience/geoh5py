@@ -30,7 +30,10 @@ from .data import Data
 
 class TextureData(Data):
     """
-    Data container an image texture.
+    Data container an image texture associated with vertices.
+
+    :param texture_image: The texture image as bytes representation of a :obj:`PIL.Image` object.
+    :param values: Record array mapping the pixel position to the vertices of the parent object.
     """
 
     _attribute_map = Data._attribute_map.copy()
@@ -38,17 +41,17 @@ class TextureData(Data):
 
     def __init__(
         self,
-        texture_image: np.ndarray | None = None,
-        visible=True,
         allow_move=False,
+        texture_image: Image.Image | bytes | np.ndarray | None = None,
+        values: np.recarray | None = None,
         **kwargs,
     ):
         self._texture_image: np.ndarray | None = None
-        super().__init__(allow_move=allow_move, visible=visible, **kwargs)
+        super().__init__(allow_move=allow_move, values=values, **kwargs)
         self.texture_image = texture_image
 
     @property
-    def image(self) -> Image | None:
+    def image(self) -> Image.Image | None:
         """
         Get the image as a :obj:`PIL.Image` object.
         """
@@ -56,8 +59,22 @@ class TextureData(Data):
             return Image.open(BytesIO(self.texture_image))
         return None
 
+    def _set_parent(self, parent):
+        """
+        Set the parent of the texture data.
+        :param parent:
+        :return:
+        """
+        if not hasattr(parent, "vertices"):
+            raise TypeError("The parent of `texture_data` must have vertices.")
+
+        super()._set_parent(parent)
+
     @property
     def texture_image(self) -> np.ndarray:
+        """
+        The texture image associated with the vertices.
+        """
         if self._texture_image is None and self.on_file:
             self._texture_image = self.workspace.fetch_file_object(
                 self.uid, "TextureImage"
@@ -66,7 +83,7 @@ class TextureData(Data):
         return self._texture_image
 
     @texture_image.setter
-    def texture_image(self, value: np.ndarray | bytes | Image | None):
+    def texture_image(self, value: np.ndarray | bytes | Image.Image | None):
         if isinstance(value, np.ndarray):
             if value.ndim not in (2, 3) or (value.ndim == 3 and value.shape[2] != 3):
                 raise ValueError(
@@ -95,9 +112,8 @@ class TextureData(Data):
 
     def validate_values(self, values: Any | None) -> np.ndarray | None:
         """
-        Validate the values.
-
-        To be deprecated along with the standalone Drillhole class in future version.
+        Validate the shape and type of values describing the vector association
+        between vertices and texture.
 
         :param values: Values to validate.
         """
@@ -123,9 +139,15 @@ class TextureData(Data):
                     dtype=self.__VALUES_DTYPE,
                 )
             )
+
         if values.dtype != self.__VALUES_DTYPE:
             raise TypeError(
                 f"Array of 'values' must be of dtype = {self.__VALUES_DTYPE}"
+            )
+
+        if self.parent is not None and len(values) != self.parent.n_vertices:
+            raise ValueError(
+                "The length of 'values' must match the number of vertices in the parent entity."
             )
 
         return values
