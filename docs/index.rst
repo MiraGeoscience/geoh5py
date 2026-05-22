@@ -15,6 +15,19 @@ capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-
 	    :width: 600
 
 
+.. toctree::
+   :maxdepth: 1
+
+   content/installation
+   content/user_guide/index
+   content/geoh5_format/index
+   content/uijson_format/index
+   content/api/modules
+   content/release_notes
+   THIRD_PARTY_SOFTWARE
+
+
+
 License
 ^^^^^^^
 geoh5py is free software: you can redistribute it and/or modify

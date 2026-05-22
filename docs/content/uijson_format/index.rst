@@ -9,3 +9,11 @@ input parameters used in the UI, and pass those parameters to an accompanying py
 .. figure:: ./images/drag_drop.gif
         :align: center
         :width: 800
+
+
+.. toctree::
+   :maxdepth: 1
+
+   usage
+   forms
+   members

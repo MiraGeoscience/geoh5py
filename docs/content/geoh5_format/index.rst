@@ -19,6 +19,18 @@ Given that this specification is public, the
 file format could, with further investment and involvement, become a useful
 exchange format for the broader geoscientific community.
 
+.. toctree::
+    :maxdepth: 1
+
+    workspace
+    groups
+    objects
+    data
+    types
+    giftools
+    integrator/index
+
+
 
 Why GEOH5?
 ----------
