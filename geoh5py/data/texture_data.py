@@ -65,7 +65,7 @@ class TextureData(Data):
         :param parent:
         :return:
         """
-        if not hasattr(parent, "vertices"):
+        if parent is not None and not hasattr(parent, "vertices"):
             raise TypeError("The parent of `texture_data` must have vertices.")
 
         super()._set_parent(parent)
@@ -97,11 +97,11 @@ class TextureData(Data):
                 value *= 255.0 / value.max()
                 value = value.astype("uint8")
 
-            img = Image.fromarray(value)
+            value = Image.fromarray(value)
 
         if isinstance(value, Image.Image):
             bio = BytesIO()
-            img.save(bio, format="PNG")
+            value.save(bio, format="PNG")
             value = bio.getvalue()
 
         self._texture_image = value
