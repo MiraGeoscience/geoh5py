@@ -46,7 +46,7 @@ class TextureData(Data):
         values: np.recarray | None = None,
         **kwargs,
     ):
-        self._texture_image: np.ndarray | None = None
+        self._texture_image: bytes | None = None
         super().__init__(allow_move=allow_move, values=values, **kwargs)
         self.texture_image = texture_image
 
@@ -71,7 +71,7 @@ class TextureData(Data):
         super()._set_parent(parent)
 
     @property
-    def texture_image(self) -> np.ndarray:
+    def texture_image(self) -> bytes | None:
         """
         The texture image associated with the vertices.
         """
@@ -98,12 +98,11 @@ class TextureData(Data):
                 value = value.astype("uint8")
 
             img = Image.fromarray(value)
+
+        if isinstance(value, Image.Image):
             bio = BytesIO()
             img.save(bio, format="PNG")
             value = bio.getvalue()
-
-        if isinstance(value, Image.Image):
-            value = value.tobytes()
 
         self._texture_image = value
 
