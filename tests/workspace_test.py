@@ -66,10 +66,10 @@ def test_workspace_from_kwargs(tmp_path: Path):
 
 
 def test_empty_workspace(tmp_path):
-    Workspace.create(
+    with Workspace.create(
         tmp_path / r"test.geoh5",
-    ).close()
-
+    ) as workspace:
+        assert workspace.geoh5.libver == ("v110", "v114")
     with File(tmp_path / r"test.geoh5", "r+") as file:
         del file["GEOSCIENCE"]["Groups"]
         del file["GEOSCIENCE"]["Data"]

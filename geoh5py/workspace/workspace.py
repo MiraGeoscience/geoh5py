@@ -1305,6 +1305,7 @@ class Workspace(AbstractContextManager):
                 "x",
                 fs_strategy="page",
                 page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+                libver=("v110", "v114"),
             )
 
         H5Writer.init_geoh5(self._geoh5, self)
