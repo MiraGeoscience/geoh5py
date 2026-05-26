@@ -245,6 +245,9 @@ class Workspace(AbstractContextManager):
 
             self.repack = False
 
+        if isinstance(self._h5file, BytesIO):
+            self._h5file.seek(0)
+
     @property
     def contributors(self) -> np.ndarray:
         """
