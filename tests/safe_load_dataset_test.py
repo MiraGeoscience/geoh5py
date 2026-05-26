@@ -102,5 +102,5 @@ def test_safe_load_dataset_error_message_contains_key():
     with patch("geoh5py.io.h5_reader.psutil.virtual_memory") as mock_vm:
         mock_vm.return_value.available = 1
 
-        with pytest.raises(MemoryValidationError, match="test_key"):
+        with pytest.raises(MemoryValidationError, match=r"test_key"):
             safe_load_dataset(mock_ds, "test_key")

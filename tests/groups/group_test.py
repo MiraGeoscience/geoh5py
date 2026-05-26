@@ -77,5 +77,5 @@ def test_add_children_group(tmp_path):
     workspace = Workspace.create(h5file_path)
     group = ContainerGroup.create(workspace, name=group_name)
 
-    with pytest.raises(TypeError, match="Child must be an instance"):
+    with pytest.raises(TypeError, match=r"Child must be an instance"):
         group.add_children("bidon")
