@@ -76,7 +76,7 @@ def test_octree(tmp_path: Path):
                 u_count=32.0,
             )
 
-        with pytest.raises(ValueError, match="power of 2"):
+        with pytest.raises(ValueError, match=r"power of 2"):
             Octree.create(
                 workspace,
                 u_count=15,
@@ -182,7 +182,7 @@ def test_change_octree_cells(tmp_path: Path):
         compare_entities(base_mesh, rec_obj)
 
         with pytest.raises(
-            ValueError, match="New octree_cells array must have the same shape"
+            ValueError, match=r"New octree_cells array must have the same shape"
         ):
             base_mesh.octree_cells = octree_cells
 

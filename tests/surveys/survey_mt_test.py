@@ -57,7 +57,7 @@ def test_create_survey_mt(tmp_path, caplog):
         ):
             mt_survey.receivers = "123"
 
-        with pytest.raises(ValueError, match="Mask must be an array of shape"):
+        with pytest.raises(ValueError, match=r"Mask must be an array of shape"):
             mt_survey.copy(mask=np.r_[1, 2, 3])
 
         for key, value in {
@@ -67,12 +67,12 @@ def test_create_survey_mt(tmp_path, caplog):
         }.items():
             assert getattr(mt_survey, key) == value, f"Error setting defaults for {key}"
 
-        with pytest.raises(ValueError, match="Input 'input_type' must be one of"):
+        with pytest.raises(ValueError, match=r"Input 'input_type' must be one of"):
             mt_survey.input_type = "XYZ"
 
         mt_survey.input_type = "Rx only"
 
-        with pytest.raises(TypeError, match="'metadata' must be of type 'dict'"):
+        with pytest.raises(TypeError, match=r"'metadata' must be of type 'dict'"):
             mt_survey.metadata = "Hello World"
 
         metadata = mt_survey.default_metadata.copy()
@@ -83,7 +83,7 @@ def test_create_survey_mt(tmp_path, caplog):
         assert "Unit" in caplog.text
 
         with pytest.raises(
-            TypeError, match="Values provided as 'channels' must be a list"
+            TypeError, match=r"Values provided as 'channels' must be a list"
         ):
             mt_survey.channels = 1.0
 
@@ -98,7 +98,7 @@ def test_create_survey_mt(tmp_path, caplog):
 
         mt_survey.channels = [5.0, 10.0, 100.0]
 
-        with pytest.raises(TypeError, match="Input data must be nested dictionaries"):
+        with pytest.raises(TypeError, match=r"Input data must be nested dictionaries"):
             mt_survey.add_components_data(123.0)
 
         # Create some simple data

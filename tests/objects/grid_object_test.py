@@ -31,18 +31,18 @@ def test_attribute_setters():
     with Workspace() as workspace:
         grid = Grid2D.create(workspace)
 
-        with pytest.raises(TypeError, match="Rotation angle must be a float."):
+        with pytest.raises(TypeError, match=r"Rotation angle must be a float."):
             grid.rotation = np.r_[0, 1]
 
-        with pytest.raises(TypeError, match="Attribute 'origin' must be a list"):
+        with pytest.raises(TypeError, match=r"Attribute 'origin' must be a list"):
             grid.origin = "abc"
 
         with pytest.raises(
-            ValueError, match="Attribute 'origin' must be a list or array"
+            ValueError, match=r"Attribute 'origin' must be a list or array"
         ):
             grid.origin = np.r_[0, 1]
 
-        with pytest.raises(ValueError, match="Array of 'origin' must be of dtype"):
+        with pytest.raises(ValueError, match=r"Array of 'origin' must be of dtype"):
             grid.origin = np.asarray(
                 [0, 0, 0], dtype=np.dtype([("x", int), ("y", int), ("z", int)])
             )
