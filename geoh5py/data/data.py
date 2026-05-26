@@ -50,12 +50,15 @@ class Data(Entity):
     """
 
     _attribute_map = Entity._attribute_map.copy()
-    _attribute_map.update({"Association": "association", "Modifiable": "modifiable"})
+    _attribute_map.update(
+        {"Association": "association", "Modifiable": "modifiable", "Pinned": "pinned"}
+    )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments
         self,
         association: DataAssociationEnum = DataAssociationEnum.OBJECT,
         modifiable: bool = True,
+        pinned: bool = False,
         visible: bool = False,
         values: Any | None = None,
         **kwargs,
@@ -65,6 +68,7 @@ class Data(Entity):
         super().__init__(visible=visible, **kwargs)
 
         self.modifiable = modifiable
+        self.pinned = pinned
         self.values = values
 
     def copy(
@@ -296,6 +300,20 @@ class Data(Entity):
                 return mask_by_extent(self.parent.centroids, extent, inverse=inverse)
 
         return None
+
+    @property
+    def pinned(self) -> bool:
+        """
+        Controls whether the data is pinned to the beginning of the datatable.
+        """
+        return self._pinned
+
+    @pinned.setter
+    def pinned(self, value: bool):
+        self._pinned = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     def primitive_type(self) -> Enum:
         """Deprecated method to return the primitive type of the class."""

@@ -39,6 +39,7 @@ from ..data import (
     FilenameData,
     ReferencedData,
     ReferenceValueMap,
+    TextureData,
 )
 from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
@@ -328,6 +329,8 @@ class H5Writer:
                 H5Writer.write_group_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
+            elif attribute == "texture_image":
+                H5Writer.write_texture_image(h5file, entity)
             elif attribute in [
                 "values",
             ]:
@@ -991,10 +994,13 @@ class H5Writer:
         :param compression: Compression level for data.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            H5Writer.update_field(h5file, entity, "attributes", compression)
-
+            H5Writer.write_attributes(h5file, entity)
+            attributes = list(entity.attribute_map.values())
             for attribute in KEY_MAP:
-                if getattr(entity, attribute, None) is not None:
+                if (
+                    getattr(entity, attribute, None) is not None
+                    and attribute not in attributes
+                ):
                     H5Writer.update_field(h5file, entity, attribute, compression)
 
     @staticmethod
@@ -1116,3 +1122,30 @@ class H5Writer:
                 H5Writer.write_to_parent(
                     h5file, entity.parent, compression=compression, recursively=True
                 )
+
+    @staticmethod
+    def write_texture_image(file, entity: TextureData) -> None:
+        """
+        Write a dataset for texture stored as bytes.
+
+        :param file: Pointer to the geoh5 Group.
+        :param entity: Target :obj:`~geoh5py.data.texture_data.TextureData` entity.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if entity_handle is None:
+                return
+
+            if entity.texture_image is None:
+                raise AttributeError("Texture data required.")
+
+            if "TextureImage" in entity_handle:
+                del entity_handle["TextureImage"]
+                entity.workspace.repack = True
+
+            entity_handle.create_dataset(
+                "TextureImage",
+                data=np.asarray(np.void(entity.texture_image[:])),
+                shape=(1,),
+            )
