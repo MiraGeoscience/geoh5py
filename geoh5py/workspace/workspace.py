@@ -1296,18 +1296,13 @@ class Workspace(AbstractContextManager):
         """
         Generate a new geoh5 file with core structure.
         """
-        if isinstance(self.h5file, BytesIO):
-            self._geoh5 = h5py.File(self.h5file, "a", libver=("v110", "v114"))
-
-        elif isinstance(self.h5file, Path):
-            self._geoh5 = h5py.File(
-                self.h5file,
-                "x",
-                fs_strategy="page",
-                page_buf_size=DEFAULT_PAGE_BUF_SIZE,
-                libver=("v110", "v114"),
-            )
-
+        self._geoh5 = h5py.File(
+            self.h5file,
+            "x",
+            fs_strategy="page",
+            page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+            libver=("v110", "v114"),
+        )
         H5Writer.init_geoh5(self._geoh5, self)
 
         return self._geoh5
