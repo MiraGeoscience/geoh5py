@@ -69,7 +69,7 @@ def test_create_color_map(tmp_path):
     # Generate a 2D array
     n_x, n_y = 10, 15
 
-    grid, data, rgba = create_object_and_data(workspace, "Grid2D_Colormap", n_x, n_y)
+    _, data, rgba = create_object_and_data(workspace, "Grid2D_Colormap", n_x, n_y)
 
     with pytest.raises(TypeError, match=r"Attribute 'color_map' must be of type"):
         data.entity_type.color_map = 1234
@@ -123,7 +123,7 @@ def test_color_map_filter(tmp_path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
         n_x, n_y = 10, 15
-        grid, data, colormap = create_object_and_data(
+        _, data, colormap = create_object_and_data(
             workspace, "Grid2D_Colormap", n_x, n_y
         )
         data.entity_type.color_map = colormap
