@@ -42,7 +42,7 @@ def test_attribute_validations():
     with pytest.raises(
         TypeError, match=r"Input clipping_ids must be a list of uuid.UUID or None"
     ):
-        Curve.create(workspace, vertices=xyz, clipping_ids=["abc", uuid.uuid4()])
+        Curve.create(workspace, vertices=xyz, clipping_ids=[None, uuid.uuid4()])
 
     with pytest.raises(
         TypeError, match=r"Input clipping_ids must be a list of uuid.UUID or None"
