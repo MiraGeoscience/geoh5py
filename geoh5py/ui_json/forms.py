@@ -18,7 +18,7 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 from typing import Any, Self
 from uuid import UUID
@@ -48,7 +48,7 @@ from geoh5py.ui_json.annotations import (
 )
 
 
-class DependencyType(StrEnum):
+class DependencyType(str, Enum):
     ENABLED = "enabled"
     DISABLED = "disabled"
     SHOW = "show"

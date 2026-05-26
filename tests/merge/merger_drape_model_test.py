@@ -125,6 +125,6 @@ def test_merge_drape_model_attribute_error(tmp_path):
         )
 
         with pytest.raises(
-            ValueError, match=r"All DrapeModel entities must have at least 2 prisms"
+            ValueError, match="All DrapeModel entities must have at least 2 prisms"
         ):
             _ = DrapeModelMerger.merge_objects(workspace, drape_models)

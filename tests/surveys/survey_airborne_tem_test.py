@@ -79,7 +79,7 @@ def test_create_survey_airborne_tem(tmp_path):
         transmitters.transmitters = receivers
 
     receivers.transmitters = transmitters
-    with pytest.raises(TypeError, match=r"Input 'loop_radius' must be of type 'float'"):
+    with pytest.raises(TypeError, match="Input 'loop_radius' must be of type 'float'"):
         receivers.loop_radius = "123"
 
     receivers.loop_radius = 123.0
@@ -134,7 +134,7 @@ def test_create_survey_airborne_tem(tmp_path):
     )
 
     with pytest.raises(
-        TypeError, match=r"Input 'relative_to_bearing' must be one of type 'bool'"
+        TypeError, match="Input 'relative_to_bearing' must be one of type 'bool'"
     ):
         receivers.relative_to_bearing = "nan"
 
@@ -221,10 +221,10 @@ def test_survey_airborne_tem_data(tmp_path):
         }
     )
 
-    with pytest.raises(ValueError, match=r"The number of channel values provided"):
+    with pytest.raises(ValueError, match="The number of channel values provided"):
         receivers.add_components_data({"time_data": data[1:]})
 
-    with pytest.raises(ValueError, match=r"The list of values provided"):
+    with pytest.raises(ValueError, match="The list of values provided"):
         receivers.add_components_data({"time_data": data[1:] + [extras]})
 
     prop_group = receivers.add_components_data({"time_data": data})[0]
@@ -239,7 +239,7 @@ def test_survey_airborne_tem_data(tmp_path):
 
     with pytest.raises(
         ValueError,
-        match=r"PropertyGroup named 'time_data' already exists on the survey entity.",
+        match="PropertyGroup named 'time_data' already exists on the survey entity.",
     ):
         receivers.add_components_data({"time_data": data})
 
@@ -260,34 +260,34 @@ def test_survey_airborne_tem_data(tmp_path):
     )
 
     with pytest.raises(
-        TypeError, match=r"Input value for 'Property groups' must be a PropertyGroup"
+        TypeError, match="Input value for 'Property groups' must be a PropertyGroup"
     ):
         receivers.edit_em_metadata({"Property groups": 1234})
 
     with pytest.raises(
         TypeError,
-        match=r"List of values provided for component 'new_times' must be a list of ",
+        match="List of values provided for component 'new_times' must be a list of ",
     ):
         receivers.add_components_data(
             {"new_times": [["abc"]] * len(receivers.channels)}
         )
 
-    with pytest.raises(ValueError, match=r"Input 'unit' must be one of"):
+    with pytest.raises(ValueError, match="Input 'unit' must be one of"):
         receivers.unit = "hello world"
 
     receivers.unit = "Seconds (s)"
 
     with pytest.raises(
-        ValueError, match=r"Input waveform must be a numpy.ndarray of shape."
+        ValueError, match="Input waveform must be a numpy.ndarray of shape."
     ):
         receivers.waveform = np.ones(3)
 
     with pytest.raises(
-        TypeError, match=r"Input waveform must be a numpy.ndarray or None."
+        TypeError, match="Input waveform must be a numpy.ndarray or None."
     ):
         receivers.waveform = [1, 2, 3]
 
-    with pytest.raises(ValueError, match=r"Input timing_mark must be a float or None."):
+    with pytest.raises(ValueError, match="Input timing_mark must be a float or None."):
         receivers.timing_mark = "abc"
 
     receivers.timing_mark = 10**-3.1
@@ -310,7 +310,7 @@ def test_survey_airborne_tem_data(tmp_path):
     receivers.timing_mark = 10**-3.1
     receivers.waveform = waveform
 
-    with pytest.raises(ValueError, match=r"Mask must be an array of dtype"):
+    with pytest.raises(ValueError, match="Mask must be an array of dtype"):
         receivers.copy(mask=np.r_[1, 2, 3])
 
 

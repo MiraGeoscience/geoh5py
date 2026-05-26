@@ -44,7 +44,7 @@ def test_create_drillhole_data(tmp_path):
         # Create a workspace
         max_depth = 100
 
-        with pytest.warns(UserWarning, match=r"No 'collar' provided"):
+        with pytest.warns(UserWarning, match="No 'collar' provided"):
             well = Drillhole.create(
                 workspace,
                 name=well_name,
@@ -58,7 +58,7 @@ def test_create_drillhole_data(tmp_path):
             np.linspace(-89, -75, n_data),
         ]
 
-        with pytest.raises(ValueError, match=r"Origin must be a list or numpy array"):
+        with pytest.raises(ValueError, match="Origin must be a list or numpy array"):
             well.collar = [1.0, 10]
 
         value_map = {}

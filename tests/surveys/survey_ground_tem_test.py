@@ -88,7 +88,7 @@ def test_create_survey_ground_tem_large_loop(
     with Workspace.create(path) as workspace:
         receivers, transmitters = make_large_loop_survey(workspace)
 
-        with pytest.raises(ValueError, match=r"Input 'input_type' must be one of"):
+        with pytest.raises(ValueError, match="Input 'input_type' must be one of"):
             receivers.input_type = "123"
 
         assert receivers.input_type == "Tx and Rx"
@@ -239,7 +239,7 @@ def test_create_survey_ground_tem(tmp_path):
         receivers.transmitters = transmitters
 
         with pytest.raises(
-            TypeError, match=r"Input 'loop_radius' must be of type 'float'"
+            TypeError, match="Input 'loop_radius' must be of type 'float'"
         ):
             receivers.loop_radius = "123"
 

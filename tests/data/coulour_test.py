@@ -123,7 +123,7 @@ def test_colour_errors():
 
         surface = Surface.create(workspace)
 
-        with pytest.raises(TypeError, match=r"Parent 'Surface' is not allowed"):
+        with pytest.raises(TypeError, match="Parent 'Surface' is not allowed"):
             surface.add_data(
                 {
                     "colour1": {
@@ -142,10 +142,10 @@ def test_colour_errors():
             }
         )
 
-        with pytest.raises(TypeError, match=r"Values must be a numpy array"):
+        with pytest.raises(TypeError, match="Values must be a numpy array"):
             data_colour.values = "test"
 
-        with pytest.raises(ValueError, match=r"Values must be a 2D numpy array"):
+        with pytest.raises(ValueError, match="Values must be a 2D numpy array"):
             data_colour.values = np.array([1, 2, 3])
 
         no_colour = np.array(
@@ -154,11 +154,11 @@ def test_colour_errors():
         )
 
         with pytest.raises(
-            ValueError, match=r"Values must be a 2D numpy array containing RGB bands"
+            ValueError, match="Values must be a 2D numpy array containing RGB bands"
         ):
             data_colour.values = no_colour
 
         with pytest.raises(
-            NotImplementedError, match=r"Only add_data values of type FLOAT,"
+            NotImplementedError, match="Only add_data values of type FLOAT,"
         ):
             points.add_data({"colour_false": {"values": no_colour}})

@@ -66,7 +66,7 @@ def create_mesh_parameters():
 def test_create_vp_model(tmp_path: Path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        with pytest.raises(TypeError, match=r"Attribute 'u_count' "):
+        with pytest.raises(TypeError, match="Attribute 'u_count' "):
             VPModel.validate_count("abc", "u")
 
         layers, prisms, units = create_mesh_parameters()
@@ -85,24 +85,24 @@ def test_create_vp_model(tmp_path: Path):
         assert drape.n_cells == layers.shape[0]
         assert drape.centroids.shape == (drape.n_cells, 3)
 
-    with pytest.raises(TypeError, match=r"Attribute 'flag_property_id' should be"):
+    with pytest.raises(TypeError, match="Attribute 'flag_property_id' should be"):
         drape.flag_property_id = "abc"
 
     with pytest.raises(
-        TypeError, match=r"Attribute 'heterogeneous_property_id' should be"
+        TypeError, match="Attribute 'heterogeneous_property_id' should be"
     ):
         drape.heterogeneous_property_id = "abc"
 
-    with pytest.raises(TypeError, match=r"Attribute 'physical_data_name' should be"):
+    with pytest.raises(TypeError, match="Attribute 'physical_data_name' should be"):
         drape.physical_data_name = 1.0
 
-    with pytest.raises(TypeError, match=r"Attribute 'weight_property_id' should be"):
+    with pytest.raises(TypeError, match="Attribute 'weight_property_id' should be"):
         drape.weight_property_id = "abc"
 
     ws = Workspace()
 
     with pytest.raises(
-        TypeError, match=r"Attribute 'unit_property_id' should be a 'uuid.UUID'"
+        TypeError, match="Attribute 'unit_property_id' should be a 'uuid.UUID'"
     ):
         VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")
 
@@ -131,7 +131,7 @@ def test_vp_valiations(name, dtype: DataType, tmp_path: Path):
         kwargs = {
             name: dtype(association=DataAssociationEnum.OBJECT, entity_type=entity_type)
         }
-        with pytest.raises(ValueError, match=r"not a child of the VPModel"):
+        with pytest.raises(ValueError, match="not a child of the VPModel"):
             VPModel.create(
                 workspace,
                 u_count=64,

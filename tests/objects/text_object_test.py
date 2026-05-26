@@ -63,19 +63,19 @@ def test_text_data_length_mismatch(tmp_path):
         vertices = np.random.rand(5, 3)
         text_object = TextObject.create(workspace, vertices=vertices)
 
-        with pytest.raises(ValidationError, match=r"Field required"):
+        with pytest.raises(ValidationError, match="Field required"):
             text_object.text_mesh_data = '{"abc":{"label": "a"}}'
 
         # Test setting text_mesh_data with bad type
         with pytest.raises(
-            TypeError, match=r"The 'Text Data' must be a dictionary or a JSON string."
+            TypeError, match="The 'Text Data' must be a dictionary or a JSON string."
         ):
             text_object.text_mesh_data = 123
 
         # Test setting value to the text_mesh_data property through setattr
         with pytest.raises(
             ValueError,
-            match=r"The 'Text Data' entries must contain a list of",
+            match="The 'Text Data' entries must contain a list of len\\('n_vertices'\\).",
         ):
             text_object.color = ["#ff00f1ff", "#00ff1fff", "#0000ffff"]
 
@@ -93,7 +93,7 @@ def test_text_data_length_mismatch(tmp_path):
 
         with pytest.raises(
             ValueError,
-            match=r"The 'Text Data' dictionary must contain a list of",
+            match="The 'Text Data' dictionary must contain a list of len\\('n_vertices'\\).",
         ):
             text_object.text_mesh_data = invalid_text_mesh_data
 

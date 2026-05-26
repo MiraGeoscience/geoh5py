@@ -65,22 +65,22 @@ def test_create_texture(tmp_path):
         )
 
         with pytest.raises(
-            ValueError, match=r"Shape of the 'texture_image' must be a 2D"
+            ValueError, match="Shape of the 'texture_image' must be a 2D"
         ):
             texture.texture_image = image.flatten()
 
-        with pytest.raises(TypeError, match=r"Attribute 'values' must be a list"):
+        with pytest.raises(TypeError, match="Attribute 'values' must be a list"):
             texture.values = "abc"
 
-        with pytest.raises(ValueError, match=r"'values' requires an ndarray of shape"):
+        with pytest.raises(ValueError, match="'values' requires an ndarray of shape"):
             texture.values = np.array([1, 2, 3])
 
-        with pytest.raises(TypeError, match=r"Array of 'values' must be of dtype"):
+        with pytest.raises(TypeError, match="Array of 'values' must be of dtype"):
             texture.values = np.asarray(
                 np.rec.fromarrays(((1, 2), (3, 4)), dtype=[("a", int), ("b", int)])
             )
 
-        with pytest.raises(ValueError, match=r"The length of 'values'"):
+        with pytest.raises(ValueError, match="The length of 'values'"):
             texture.values = np.asarray(
                 np.rec.fromarrays(
                     ((1, 2), (3, 4)), dtype=np.dtype([("v[0]", "<f4"), ("v[1]", "<f4")])
@@ -93,7 +93,7 @@ def test_create_texture(tmp_path):
         grid = Grid2D.create(workspace)
 
         with pytest.raises(
-            TypeError, match=r"The parent of `texture_data` must have vertices"
+            TypeError, match="The parent of `texture_data` must have vertices"
         ):
             texture.copy(parent=grid)
 

@@ -35,7 +35,7 @@ from geoh5py.workspace import Workspace
 def test_add_file(tmp_path: Path):
     workspace = Workspace(tmp_path / "test.geoh5")
     workspace_copy = Workspace()
-    with pytest.warns(UserWarning, match=r"No 'vertices' provided."):
+    with pytest.warns(UserWarning, match="No 'vertices' provided."):
         curve = Curve.create(workspace)
     group = ContainerGroup.create(workspace)
 
@@ -68,14 +68,14 @@ def test_add_file(tmp_path: Path):
         compare_entities(file_data, rec_data, ignore=["_parent"])
 
     with pytest.raises(
-        TypeError, match=r"Input 'file_bytes' for FilenameData must be of type 'bytes'."
+        TypeError, match="Input 'file_bytes' for FilenameData must be of type 'bytes'."
     ):
         file_data.file_bytes = "abc"
 
     file_data.values = None
 
     with pytest.raises(
-        AttributeError, match=r"FilenameData requires the 'values' to be set."
+        AttributeError, match="FilenameData requires the 'values' to be set."
     ):
         file_data.file_bytes = b"abc"
 

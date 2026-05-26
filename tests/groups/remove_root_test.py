@@ -108,10 +108,10 @@ def test_remove_root(tmp_path: Path):
             }
         )
 
-        with pytest.raises(ValueError, match=r"Data 'DataValues2b' association"):
+        with pytest.raises(ValueError, match="Data 'DataValues2b' association"):
             points2.add_data_to_group(data2, "bidon")
 
-        with pytest.raises(ValueError, match=r"Data 'abs' not found in parent"):
+        with pytest.raises(ValueError, match="Data 'abs' not found in parent"):
             points2.add_data_to_group(["abs"], "bidon")
 
         points2._property_groups = None

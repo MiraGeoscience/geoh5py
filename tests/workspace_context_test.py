@@ -60,7 +60,7 @@ def test_write_context():
 
 
 def test_read_only():
-    with pytest.raises(UserWarning, match=r"geoh5 file in read-only mode"):
+    with pytest.raises(UserWarning, match="geoh5 file in read-only mode"):
         workspace = Workspace()
         workspace.close()
         with workspace.open(mode="r"):
@@ -72,6 +72,6 @@ def test_deprecation_warnings(tmp_path):
 
     with pytest.warns(
         DeprecationWarning,
-        match=r"The 'finalize' method will be deprecated",
+        match="The 'finalize' method will be deprecated",
     ):
         workspace.finalize()

@@ -51,10 +51,10 @@ def test_metadata(tmp_path):
 
     assert points.metadata is None
 
-    with pytest.raises(TypeError, match=r"Input metadata must be of type"):
+    with pytest.raises(TypeError, match="Input metadata must be of type"):
         points.metadata = "bidon"
 
-    with pytest.raises(TypeError, match=r"Input metadata must be of type"):
+    with pytest.raises(TypeError, match="Input metadata must be of type"):
         points.update_metadata("bidon")
 
 

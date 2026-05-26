@@ -76,7 +76,7 @@ def test_create_text_data(tmp_path: Path):
 
             points.copy(new_workspace)
 
-            with pytest.raises(ValueError, match=r"Input 'values' for"):
+            with pytest.raises(ValueError, match="Input 'values' for"):
                 points.add_data(
                     {
                         "bidon": {

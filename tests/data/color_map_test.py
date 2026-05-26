@@ -71,7 +71,7 @@ def test_create_color_map(tmp_path):
 
     grid, data, rgba = create_object_and_data(workspace, "Grid2D_Colormap", n_x, n_y)
 
-    with pytest.raises(TypeError, match=r"Attribute 'color_map' must be of type"):
+    with pytest.raises(TypeError, match="Attribute 'color_map' must be of type"):
         data.entity_type.color_map = 1234
 
     with pytest.raises(ShapeValidationError) as error:
@@ -83,11 +83,11 @@ def test_create_color_map(tmp_path):
 
     data.entity_type.color_map = rgba
 
-    with pytest.raises(TypeError, match=r"Input 'values' of ColorMap must be of type"):
+    with pytest.raises(TypeError, match="Input 'values' of ColorMap must be of type"):
         data.entity_type.color_map.values = "abc"
 
     with pytest.raises(
-        ValueError, match=r"Input 'values' must contain fields with types"
+        ValueError, match="Input 'values' must contain fields with types"
     ):
         data.entity_type.color_map.values = np.core.records.fromarrays(
             rgba, names=("a", "b", "c", "d", "f")
@@ -129,29 +129,29 @@ def test_color_map_filter(tmp_path):
         data.entity_type.color_map = colormap
 
         with pytest.raises(
-            TypeError, match=r"Attribute 'complement_filter' must be a bool"
+            TypeError, match="Attribute 'complement_filter' must be a bool"
         ):
             data.entity_type.complement_filter = "abc"
 
         data.entity_type.complement_filter = True
 
-        with pytest.raises(TypeError, match=r"Attribute 'filter_max' must be a float"):
+        with pytest.raises(TypeError, match="Attribute 'filter_max' must be a float"):
             data.entity_type.filter_max = "abc"
 
         data.entity_type.filter_max = np.percentile(data.values, 70)
 
-        with pytest.raises(TypeError, match=r"Attribute 'filter_min' must be a float"):
+        with pytest.raises(TypeError, match="Attribute 'filter_min' must be a float"):
             data.entity_type.filter_min = "abc"
 
         with pytest.raises(
-            ValueError, match=r"Attribute 'filter_min' must be less than"
+            ValueError, match="Attribute 'filter_min' must be less than"
         ):
             data.entity_type.filter_min = np.percentile(data.values, 75)
 
         data.entity_type.filter_min = np.percentile(data.values, 25)
 
         with pytest.raises(
-            ValueError, match=r"Attribute 'filter_max' must be greater than"
+            ValueError, match="Attribute 'filter_max' must be greater than"
         ):
             data.entity_type.filter_max = np.percentile(data.values, 15)
 

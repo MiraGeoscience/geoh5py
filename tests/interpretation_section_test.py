@@ -139,10 +139,10 @@ def test_create_interpretation_section_errors(tmp_path: Path):
     with Workspace.create(h5file_path) as workspace:
         group = InterpretationSection.create(workspace)
 
-        with pytest.raises(ValueError, match=r"Invalid key"):
+        with pytest.raises(ValueError, match="Invalid key"):
             group._update_to_metadata("bidon", 666)
 
-        with pytest.raises(TypeError, match=r"'Can add group' must be"):
+        with pytest.raises(TypeError, match="'Can add group' must be"):
             group.can_add_group = 2
 
         param_test = InterpretationSectionParams(
@@ -156,13 +156,13 @@ def test_create_interpretation_section_errors(tmp_path: Path):
             }
         )
 
-        with pytest.raises(TypeError, match=r"Interpretation section must be"):
+        with pytest.raises(TypeError, match="Interpretation section must be"):
             InterpretationSectionParams.create_section("bidon")
 
         assert param_test == InterpretationSectionParams.create_section(param_test)
 
         with pytest.raises(
             TypeError,
-            match=r"The 666 object must be a Slicer object. <class 'int'> provided.",
+            match="The 666 object must be a Slicer object. <class 'int'> provided.",
         ):
             group._verify_object(666, "Slicer")
