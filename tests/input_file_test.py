@@ -87,17 +87,17 @@ def get_workspace(directory: str | Path):
 def test_input_file_json():
     # Test missing required ui_json parameter
     with pytest.raises(
-        ValueError, match="Input 'ui_json' must be of type dict or None"
+        ValueError, match=r"Input 'ui_json' must be of type dict or None"
     ):
         InputFile(ui_json=123)
 
     with pytest.raises(
-        AttributeError, match="'ui_json' must be set before setting data."
+        AttributeError, match=r"'ui_json' must be set before setting data."
     ):
         InputFile().data = {"abc": 123}
 
     with pytest.raises(
-        AttributeError, match="InputFile requires a 'ui_json' to be defined."
+        AttributeError, match=r"InputFile requires a 'ui_json' to be defined."
     ):
         InputFile().update_ui_values({"abc": 123})
 
@@ -115,7 +115,7 @@ def test_input_file_json():
 
     with pytest.raises(
         ValueError,
-        match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
+        match=r"Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
     ):
         InputFile(ui_json=ui_json).data
 
@@ -150,7 +150,7 @@ def test_input_file_name_path(tmp_path: Path):
     # Test handling of path attribute
     with pytest.warns(
         DeprecationWarning,
-        match="The 'workspace' property is deprecated. Use 'geoh5' instead.",
+        match=r"The 'workspace' property is deprecated. Use 'geoh5' instead.",
     ):
         test.workspace = Workspace.create(tmp_path / r"test.geoh5")
 
@@ -161,7 +161,7 @@ def test_input_file_name_path(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         test.path = str(tmp_path / "nonexisting")
 
-    with pytest.raises(ValueError, match="is not a directory"):
+    with pytest.raises(ValueError, match=r"is not a directory"):
         test.path = str(tmp_path / "test.geoh5")
 
     # test path_name method
@@ -169,7 +169,7 @@ def test_input_file_name_path(tmp_path: Path):
     test = InputFile()
     assert test.path_name is None
 
-    with pytest.raises(AttributeError, match="requires 'path' and 'name'"):
+    with pytest.raises(AttributeError, match=r"requires 'path' and 'name'"):
         test.write_ui_json()
 
 
@@ -212,7 +212,7 @@ def test_integer_parameter(tmp_path: Path):
         in_file.data = data
 
     data.pop("integer")
-    with pytest.warns(UserWarning, match="The number of input values"):
+    with pytest.warns(UserWarning, match=r"The number of input values"):
         in_file.data = data
 
     data["integer"] = 123
@@ -413,7 +413,7 @@ def test_object_promotion(tmp_path: Path):
         "Promotion of entity from uuid string failed."
     )
 
-    with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
+    with pytest.raises(ValueError, match=r"Input 'data' must be of type dict or None."):
         new_in_file.data = 123
 
 
@@ -477,7 +477,7 @@ def test_drillhole_group_promotion(tmp_path):
 
     # test_errors specific to drillholes group Values
     with workspace.open("r"):
-        with pytest.raises(TypeError, match="Input value for 'group_value'"):
+        with pytest.raises(TypeError, match=r"Input value for 'group_value'"):
             in_file._update_group_value_ui("object", {"bi": "don"})
 
 
@@ -595,13 +595,13 @@ def test_input_file(tmp_path: Path):
     out_file = in_file.write_ui_json(path=tmp_path)
 
     with pytest.raises(
-        ValueError, match="Input file should have the extension .ui.json"
+        ValueError, match=r"Input file should have the extension .ui.json"
     ):
         InputFile.read_ui_json("somefile.json")
 
     with pytest.raises(
         TypeError,
-        match="expected str, bytes or os.PathLike object|"
+        match=r"expected str, bytes or os.PathLike object|"
         + "argument should be a str or an os.PathLike object where "
         + "__fspath__ returns a str, not 'int'",
     ):
@@ -725,7 +725,7 @@ def test_multi_object_value_parameter(tmp_path: Path):
 
     with pytest.warns(
         UserWarning,
-        match="Data associated with multiSelect dependent is not supported. Validation ignored.",
+        match=r"Data associated with multiSelect dependent is not supported. Validation ignored.",
     ):
         in_file.data
 
@@ -902,7 +902,7 @@ def test_dependency_enabling(tmp_path: Path):
 
     # TODO This operation should raise an error instead of a warning
     # as the parent dependency is enabled
-    with pytest.warns(UserWarning, match="Non-option parameter"):
+    with pytest.warns(UserWarning, match=r"Non-option parameter"):
         in_file.update_ui_values({"parameter_b": None})
 
     # Test disabled
@@ -914,7 +914,7 @@ def test_dependency_enabling(tmp_path: Path):
 
     in_file.write_ui_json(path=tmp_path, name="test.ui.json")
 
-    with pytest.warns(UserWarning, match="Non-option parameter"):
+    with pytest.warns(UserWarning, match=r"Non-option parameter"):
         in_file.update_ui_values({"parameter_b": None})
 
 
@@ -1004,8 +1004,8 @@ def test_copy_uijson(tmp_path):
         assert str(new_in_file.geoh5.h5file)[-12:] == "copied.geoh5"
         assert workspace_2.get_entity("Points_A")[0].name == "Points_A"
 
-    with pytest.raises(FileExistsError, match="The specified geoh5"):
+    with pytest.raises(FileExistsError, match=r"The specified geoh5"):
         in_file.copy(geoh5=h5file_path_2)
 
-    with pytest.raises(ValueError, match="InputFile must have a ui_json"):
+    with pytest.raises(ValueError, match=r"InputFile must have a ui_json"):
         InputFile().copy()

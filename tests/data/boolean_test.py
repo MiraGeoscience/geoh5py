@@ -94,19 +94,21 @@ def test_data_boolean(tmp_path):
 
             with pytest.raises(
                 ValueError,
-                match="Values provided by my_boolean are not containing only 0 or 1",
+                match=r"Values provided by my_boolean are not containing only 0 or 1",
             ):
                 data2.values = np.array([1.1, 0.2, 1.1])
 
             with pytest.raises(
-                TypeError, match="Input 'entity_type' with primitive_type"
+                TypeError, match=r"Input 'entity_type' with primitive_type"
             ):
                 data2.entity_type = non_bool.entity_type
 
-            with pytest.raises(ValueError, match="Values provided by "):
+            with pytest.raises(ValueError, match=r"Values provided by "):
                 data2.values = np.array([0, 2, 1])
 
-            with pytest.raises(TypeError, match="Input 'values' must be a numpy array"):
+            with pytest.raises(
+                TypeError, match=r"Input 'values' must be a numpy array"
+            ):
                 data2.values = "bidon"
 
     with Workspace(h5file_path, mode="r") as workspace:

@@ -104,7 +104,7 @@ def test_format_values_for_display():
 def test_extract_uids_errors():
     assert extract_uids(None) is None
 
-    with pytest.raises(TypeError, match="'bidon' must be of type"):
+    with pytest.raises(TypeError, match=r"'bidon' must be of type"):
         extract_uids("bidon")
 
     class Bidon:
@@ -120,7 +120,7 @@ def test_copy_relatives_errors():
     workspace = Workspace()
     points = Points.create(workspace, name="points", vertices=np.random.rand(10, 3))
 
-    with pytest.raises(ValueError, match="Cannot copy "):
+    with pytest.raises(ValueError, match=r"Cannot copy "):
         copy_dict_relatives({"bidon": points}, workspace)
 
 

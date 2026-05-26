@@ -205,7 +205,7 @@ def test_create_survey_dcip(tmp_path):
             ignore=["_potential_electrodes", "_current_electrodes", "_parent"],
         )
 
-        with pytest.raises(ValueError, match="Input metadata must have"):
+        with pytest.raises(ValueError, match=r"Input metadata must have"):
             currents.metadata = {"Just a general comment": "This is a test"}
 
         currents.metadata = {

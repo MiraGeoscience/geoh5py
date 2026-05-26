@@ -57,16 +57,16 @@ def test_create_drape_model(tmp_path: Path):
     with Workspace.create(h5file_path) as workspace:
         layers, prisms = create_drape_parameters()
 
-        with pytest.raises(TypeError, match="Attribute 'layers' must be"):
+        with pytest.raises(TypeError, match=r"Attribute 'layers' must be"):
             DrapeModel.create(workspace, layers="abc")
 
-        with pytest.raises(ValueError, match="Array of 'layers' must be of shape"):
+        with pytest.raises(ValueError, match=r"Array of 'layers' must be of shape"):
             DrapeModel.create(workspace, layers=(0, 0))
 
-        with pytest.raises(TypeError, match="Attribute 'prisms' must be"):
+        with pytest.raises(TypeError, match=r"Attribute 'prisms' must be"):
             DrapeModel.create(workspace, layers=layers, prisms="abc")
 
-        with pytest.raises(ValueError, match="Array of 'prisms' must be of shape"):
+        with pytest.raises(ValueError, match=r"Array of 'prisms' must be of shape"):
             DrapeModel.create(workspace, layers=layers, prisms=(0, 0))
 
         drape = DrapeModel.create(workspace, layers=layers, prisms=prisms)

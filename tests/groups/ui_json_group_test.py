@@ -199,10 +199,10 @@ def test_uijson_group_errors(tmp_path):
     workspace = Workspace.create(h5file_path)
     group = UIJsonGroup.create(workspace, name="test")
 
-    with pytest.raises(ValueError, match="UIJsonGroup must have options"):
+    with pytest.raises(ValueError, match=r"UIJsonGroup must have options"):
         group.add_ui_json("something")
 
-    with pytest.raises(TypeError, match="Input 'options' must be "):
+    with pytest.raises(TypeError, match=r"Input 'options' must be "):
         group.options = "bidon"
 
     group.options = group.format_input_options(np.array([b'{"name":"bidon"}']))
@@ -211,7 +211,7 @@ def test_uijson_group_errors(tmp_path):
 
     assert workspace.get_entity("test.ui.json")[0]
 
-    with pytest.raises(ValueError, match="Cannot modify the 'geoh5' entry"):
+    with pytest.raises(ValueError, match=r"Cannot modify the 'geoh5' entry"):
         group.modify_option("geoh5", "bidon")
 
 

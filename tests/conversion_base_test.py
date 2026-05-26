@@ -57,5 +57,7 @@ def test_create_grid_2d_data(tmp_path):
 
         points = converter.to_points(grid)
 
-        with pytest.raises(TypeError, match="Input entity for `GridObject` conversion"):
+        with pytest.raises(
+            TypeError, match=r"Input entity for `GridObject` conversion"
+        ):
             converter.to_points(points)

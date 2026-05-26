@@ -115,10 +115,10 @@ def test_data_instantiation(data_class, tmp_path):
             # no more reference on data_type, so it should be gone from the workspace
             assert workspace.find_type(data_type_uid, DataType) is None
 
-        with pytest.raises(TypeError, match="Input 'entity_type' with primitive_type"):
+        with pytest.raises(TypeError, match=r"Input 'entity_type' with primitive_type"):
             data.TextData(data_type="bidon")
 
-        with pytest.raises(NotImplementedError, match="Only add_data"):
+        with pytest.raises(NotImplementedError, match=r"Only add_data"):
             workspace.validate_data_type({}, object())
 
 
@@ -199,7 +199,7 @@ def test_data_type_attributes():
     ):
         data_type.number_of_bins = "abc"
 
-    with pytest.raises(ValueError, match="greater than 0 or None"):
+    with pytest.raises(ValueError, match=r"greater than 0 or None"):
         data_type.number_of_bins = 0
 
     with pytest.raises(
@@ -208,7 +208,7 @@ def test_data_type_attributes():
         data_type.primitive_type = "FLOAT"
 
     with pytest.raises(
-        TypeError, match="Attribute 'transparent_no_data' must be a bool"
+        TypeError, match=r"Attribute 'transparent_no_data' must be a bool"
     ):
         data_type.transparent_no_data = "FLOAT"
 

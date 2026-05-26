@@ -36,29 +36,29 @@ def test_attribute_validations():
     n_data = 12
 
     with Workspace() as workspace:
-        with pytest.raises(TypeError, match="Parts must be a list or numpy array."):
+        with pytest.raises(TypeError, match=r"Parts must be a list or numpy array."):
             Curve.create(workspace, vertices=np.random.randn(n_data, 3), parts="abc")
 
         with pytest.raises(
-            TypeError, match="Attribute 'cells' must be provided as type"
+            TypeError, match=r"Attribute 'cells' must be provided as type"
         ):
             Curve.create(workspace, vertices=np.random.randn(n_data, 3), cells="abc")
 
-        with pytest.raises(TypeError, match="Indices array must be of integer type"):
+        with pytest.raises(TypeError, match=r"Indices array must be of integer type"):
             Curve.create(
                 workspace,
                 vertices=np.random.randn(n_data, 3),
                 cells=np.c_[np.arange(n_data - 1), np.arange(n_data - 1)].astype(float),
             )
 
-        with pytest.raises(ValueError, match="Provided parts must be of shape"):
+        with pytest.raises(ValueError, match=r"Provided parts must be of shape"):
             Curve.create(
                 workspace,
                 vertices=np.random.randn(n_data, 3),
                 parts=np.ones(n_data - 1),
             )
 
-        with pytest.raises(ValueError, match="Found cell indices larger than"):
+        with pytest.raises(ValueError, match=r"Found cell indices larger than"):
             Curve.create(
                 workspace,
                 vertices=np.random.randn(n_data, 3),
@@ -68,7 +68,7 @@ def test_attribute_validations():
         curve = Curve.create(workspace, vertices=np.random.randn(n_data, 3))
 
         with pytest.raises(
-            TypeError, match="Input current_line_id value should be of type"
+            TypeError, match=r"Input current_line_id value should be of type"
         ):
             curve.current_line_id = "abc"
 
@@ -108,7 +108,7 @@ def test_create_curve_data(tmp_path: Path):
         assert cells.shape[0] == 11, "Error creating cells from parts."
 
         with pytest.raises(
-            ValueError, match="New cells array must have the same shape"
+            ValueError, match=r"New cells array must have the same shape"
         ):
             curve.cells = np.c_[1, 2]
 
@@ -146,7 +146,7 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            with pytest.raises(TypeError, match="Values cannot have decimal points."):
+            with pytest.raises(TypeError, match=r"Values cannot have decimal points."):
                 data_vert_rec.values = np.random.randn(n_data)  # warning here
 
             data_vert_rec.values = np.random.randint(
@@ -185,14 +185,14 @@ def test_remove_cells_data(tmp_path: Path):
         curve = workspace.get_entity("new_curve")[0]
 
         with pytest.raises(
-            ValueError, match="Found indices larger than the number of cells."
+            ValueError, match=r"Found indices larger than the number of cells."
         ):
             curve.remove_cells([12])
 
-        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+        with pytest.raises(TypeError, match=r"Indices must be a list or numpy array."):
             curve.remove_cells("abc")
 
-        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+        with pytest.raises(TypeError, match=r"Indices must be a list or numpy array."):
             curve.remove_vertices("abc")
 
         curve.remove_cells([0])
@@ -226,7 +226,7 @@ def test_remove_vertex_data(tmp_path):
         curve.copy(name="validation")
 
         with pytest.raises(
-            ValueError, match="Found indices larger than the number of vertices."
+            ValueError, match=r"Found indices larger than the number of vertices."
         ):
             curve.remove_vertices([12])
 
@@ -234,7 +234,7 @@ def test_remove_vertex_data(tmp_path):
 
         assert len(data[0].values) == 8, "Error removing data values with cells."
         assert len(curve.vertices) == 10, "Error removing vertices from cells."
-        with pytest.raises(ValueError, match="Operation would leave fewer"):
+        with pytest.raises(ValueError, match=r"Operation would leave fewer"):
             curve.remove_vertices(np.arange(curve.n_vertices))
 
         curve.remove_vertices([6])
@@ -255,7 +255,7 @@ def test_copy_cells_data(tmp_path):
             }
         )
 
-        with pytest.raises(ValueError, match="Mask must be an array of dtype"):
+        with pytest.raises(ValueError, match=r"Mask must be an array of dtype"):
             curve.copy(mask=np.r_[1, 2, 3])
 
         mask = np.zeros(11, dtype=bool)

@@ -163,17 +163,17 @@ def test_attribute_setters():
     assert gimage.n_cells == 2
 
     with pytest.raises(
-        TypeError, match="Attribute 'cells' must be provided as type numpy.ndarray"
+        TypeError, match=r"Attribute 'cells' must be provided as type numpy.ndarray"
     ):
         gimage.cells = "abc"
 
-    with pytest.raises(ValueError, match="Array of cells should be of shape"):
+    with pytest.raises(ValueError, match=r"Array of cells should be of shape"):
         gimage.cells = [[0, 0, 0], [1, 1, 1]]
 
-    with pytest.raises(TypeError, match="Indices array must be of integer type"):
+    with pytest.raises(TypeError, match=r"Indices array must be of integer type"):
         gimage.cells = np.array([[0, 0, 0, 0], [1, 1, 1, 1]], ndmin=2, dtype=float)
 
-    with pytest.raises(TypeError, match="Input 'vertices' must be provided "):
+    with pytest.raises(TypeError, match=r"Input 'vertices' must be provided "):
         gimage.vertices = "bidon"
 
     # Test vertices dtype validation
@@ -181,7 +181,7 @@ def test_attribute_setters():
         [("a", "b", "c"), ("d", "e", "f"), ("g", "h", "i"), ("j", "k", "l")],
         dtype=[("x", "U1"), ("y", "U1"), ("z", "U1")],
     )
-    with pytest.raises(TypeError, match="Array of 'vertices' must be of dtype"):
+    with pytest.raises(TypeError, match=r"Array of 'vertices' must be of dtype"):
         gimage.vertices = wrong_dtype_vertices
 
 
@@ -191,22 +191,22 @@ def test_create_copy_empty_geoimage(tmp_path):
 
         assert geoimage.image_georeferenced is None
 
-        with pytest.raises(AttributeError, match="The object contains no image data"):
+        with pytest.raises(AttributeError, match=r"The object contains no image data"):
             geoimage.save_as("test")
 
-        with pytest.raises(AttributeError, match="An 'image' must be set be"):
+        with pytest.raises(AttributeError, match=r"An 'image' must be set be"):
             geoimage.georeference(tie_points)
 
-        with pytest.raises(ValueError, match="Array of 'vertices' must be"):
+        with pytest.raises(ValueError, match=r"Array of 'vertices' must be"):
             geoimage.vertices = [1, 2, 3]
 
         with pytest.raises(
             ValueError,
-            match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
+            match=r"Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
         ):
             geoimage.image = np.random.randn(12)
 
-        with pytest.raises(ValueError, match="Shape of the 'image' must be a 2D or "):
+        with pytest.raises(ValueError, match=r"Shape of the 'image' must be a 2D or "):
             geoimage.image = np.random.randn(12, 12, 4)
 
         grid2d = geoimage.to_grid2d()
@@ -214,11 +214,11 @@ def test_create_copy_empty_geoimage(tmp_path):
         assert geoimage.image is None
 
         with pytest.raises(
-            AttributeError, match="An 'image' must be set before georeferencing."
+            AttributeError, match=r"An 'image' must be set before georeferencing."
         ):
             geoimage.set_tag_from_vertices()
 
-        with pytest.raises(AttributeError, match="The image is not georeferenced"):
+        with pytest.raises(AttributeError, match=r"The image is not georeferenced"):
             geoimage.georeferencing_from_tiff()
 
 
@@ -234,13 +234,13 @@ def test_create_geoimage_dry_georeferencing(tmp_path):
         geoimage.georeferencing_from_image()
 
         with pytest.raises(
-            TypeError, match="float\\(\\) argument must be a string or a real number"
+            TypeError, match=r"argument must be a string or a real number"
         ):
             geoimage.georeference(np.array(zip(pixels[0, :], points, strict=False)))
 
         with pytest.raises(
             AttributeError,
-            match="The 'image' property cannot be reset. Consider creating a new object",
+            match=r"The 'image' property cannot be reset. Consider creating a new object",
         ):
             geoimage.image = np.random.randint(0, 255, (128, 64, 3))
 
@@ -284,7 +284,7 @@ def test_create_geoimage_full_georeferencing(tmp_path):  # pylint: disable=too-m
         geoimage.image.save(tmp_path / r"test.tiff")
         geoimage_file = GeoImage.create(workspace, name="MyGeoImageFile")
 
-        with pytest.raises(ValueError, match="does not exist"):
+        with pytest.raises(ValueError, match=r"does not exist"):
             geoimage_file.image = str(tmp_path / r"abc.tiff")
 
         geoimage_file.image = str(tmp_path / r"test.tiff")
@@ -339,14 +339,14 @@ def test_georeference_image(tmp_path):
         geoimage.tag = None
 
         # test grid2d errors
-        with pytest.raises(ValueError, match="Input 'tag' must"):
+        with pytest.raises(ValueError, match=r"Input 'tag' must"):
             geoimage.tag = 42
 
         # image = Image.open(tmp_path / r"testtif.tif")
         geoimage.tag = {"test": 3}
 
         with pytest.warns(
-            UserWarning, match="The 'tif.' image is missing one or more required tags"
+            UserWarning, match=r"The 'tif.' image is missing one or more required tags"
         ):
             geoimage.georeferencing_from_tiff()
 
@@ -379,13 +379,13 @@ def test_georeference_image(tmp_path):
             geoimage.to_grid2d(new_name="RGB", mode="bidon")
 
         # test save_as
-        with pytest.raises(TypeError, match="has to be a string"):
+        with pytest.raises(TypeError, match=r"has to be a string"):
             geoimage.save_as(0)
 
-        with pytest.raises(TypeError, match="has to be a string"):
+        with pytest.raises(TypeError, match=r"has to be a string"):
             geoimage.save_as("test", 0)
 
-        with pytest.raises(FileNotFoundError, match="No such file or directory"):
+        with pytest.raises(FileNotFoundError, match=r"No such file or directory"):
             geoimage.save_as("test", "path/bidon")
 
         geoimage.save_as("saved_tif.tif", str(tmp_path))
@@ -425,7 +425,7 @@ def test_georeferencing_from_tiff_errors_and_warnings(tmp_path):
             workspace, name="no_tag_image", image=image_array
         )
 
-        with pytest.raises(AttributeError, match="The image is not georeferenced"):
+        with pytest.raises(AttributeError, match=r"The image is not georeferenced"):
             geoimage_no_tag.georeferencing_from_tiff()
 
         # Test 2: UserWarning for missing required tags (KeyError)
@@ -450,7 +450,7 @@ def test_georeferencing_from_tiff_errors_and_warnings(tmp_path):
 
         with pytest.warns(
             UserWarning,
-            match="The 'tif.' image is missing one or more required tags",
+            match=r"The 'tif.' image is missing one or more required tags",
         ):
             geoimage_incomplete.georeferencing_from_tiff()
 
@@ -506,7 +506,7 @@ def test_georeferencing_from_tiff_errors_and_warnings(tmp_path):
 
         with pytest.warns(
             UserWarning,
-            match="Georeferencing from tiff failed because of the following reasons:",
+            match=r"Georeferencing from tiff failed because of the following reasons:",
         ):
             geoimage_non_coplanar.georeferencing_from_tiff()
 
@@ -1085,7 +1085,7 @@ def test_copy_from_extent_error_conditions(tmp_path):
         # Ensure image is None
         assert geoimage_no_image.image is None, "Image should be None for this test"
 
-        with pytest.warns(UserWarning, match="Image is not defined"):
+        with pytest.warns(UserWarning, match=r"Image is not defined"):
             result = geoimage_no_image.copy_from_extent(extent)
             assert result is None, "Should return None when image is not defined"
 
@@ -1095,7 +1095,8 @@ def test_copy_from_extent_error_conditions(tmp_path):
         )
 
         with pytest.raises(
-            NotImplementedError, match="Inverse mask is not implemented yet with images"
+            NotImplementedError,
+            match=r"Inverse mask is not implemented yet with images",
         ):
             geoimage_with_image.copy_from_extent(extent, inverse=True)
 
@@ -1166,21 +1167,21 @@ def test_parse_tie_points():
 
     # Test case 4: ValueError - tuple/list length not multiple of 6
     with pytest.raises(
-        ValueError, match="ModelTiepointTag length must be a multiple of 6"
+        ValueError, match=r"ModelTiepointTag length must be a multiple of 6"
     ):
         GeoImage._parse_tie_points((0.0, 0.0, 0.0, 100.0, 200.0))  # 5 elements
 
     with pytest.raises(
-        ValueError, match="ModelTiepointTag length must be a multiple of 6"
+        ValueError, match=r"ModelTiepointTag length must be a multiple of 6"
     ):
         GeoImage._parse_tie_points([0.0, 0.0, 0.0, 100.0])  # 4 elements
 
     # Test case 5: ValueError - wrong numpy array shape
-    with pytest.raises(ValueError, match="Tie points must have shape"):
+    with pytest.raises(ValueError, match=r"Tie points must have shape"):
         # Wrong dimensions (2D instead of 3D)
         GeoImage._parse_tie_points(np.array([[0.0, 0.0, 0.0], [100.0, 200.0, 0.0]]))
 
-    with pytest.raises(ValueError, match="Tie points must have shape"):
+    with pytest.raises(ValueError, match=r"Tie points must have shape"):
         # Wrong shape in last dimensions
         GeoImage._parse_tie_points(np.array([[[0.0, 0.0], [100.0, 200.0]]]))
 
@@ -1198,7 +1199,7 @@ def test_parse_tie_points():
         ]
     )
     with pytest.raises(
-        ValueError, match="identical pixel coordinates map to multiple world"
+        ValueError, match=r"identical pixel coordinates map to multiple world"
     ):
         GeoImage._parse_tie_points(inconsistent_tie_points)
 
@@ -1216,7 +1217,7 @@ def test_parse_tie_points():
         ]
     )
     with pytest.raises(
-        ValueError, match="identical world coordinates map to multiple pixel"
+        ValueError, match=r"identical world coordinates map to multiple pixel"
     ):
         GeoImage._parse_tie_points(inconsistent_world)
 
@@ -1447,7 +1448,7 @@ def test_compute_image_corners_from_2_tie_points_errors(tmp_path):
         geoimage = GeoImage.create(workspace, name="test", image=image)
 
         # Test case 1: ValueError - less than 2 tie points
-        with pytest.raises(ValueError, match="not enough values to unpack"):
+        with pytest.raises(ValueError, match=r"not enough values to unpack"):
             geoimage._compute_image_corners_from_2_tie_points(
                 np.array([[[0.0, 0.0, 0.0], [100.0, 200.0, 5.0]]])
             )
@@ -1490,7 +1491,7 @@ def test_compute_image_corners_from_2_tie_points_errors(tmp_path):
             ]
         )
         with pytest.raises(
-            ValueError, match="Tie points map to the same world coordinates"
+            ValueError, match=r"Tie points map to the same world coordinates"
         ):
             geoimage._compute_image_corners_from_2_tie_points(tie_points_same_world)
 
@@ -1518,7 +1519,7 @@ def test_georeference_with_duplicate_tie_points(tmp_path):
         # and cell sizes are not provided
         with pytest.raises(
             ValueError,
-            match="Cell sizes must be provided when only 1 tie point is available",
+            match=r"Cell sizes must be provided when only 1 tie point is available",
         ):
             geoimage.georeference(duplicate_tie_points)
 
@@ -1581,7 +1582,7 @@ def test_compute_image_corners_from_3_tie_points(tmp_path):
         assert result_z.shape == (4, 3)
 
         # Test case 4: ValueError - less than 3 tie points
-        with pytest.raises(ValueError, match="all the input array dimensions"):
+        with pytest.raises(ValueError, match=r"all the input array dimensions"):
             geoimage._compute_image_corners_from_3_tie_points(
                 np.array(
                     [
@@ -1609,13 +1610,13 @@ def test_compute_image_corners(tmp_path):
         assert result.shape == (4, 3)
 
         # Test case 2: ValueError - 1 tie point without cell sizes
-        with pytest.raises(ValueError, match="Cell sizes must be provided"):
+        with pytest.raises(ValueError, match=r"Cell sizes must be provided"):
             geoimage._compute_image_corners(
                 tie_points_1, u_cell_size=None, v_cell_size=None
             )
 
         # Test case 3: ValueError - empty tie points array
-        with pytest.raises(ValueError, match="At least 1 tie point is required"):
+        with pytest.raises(ValueError, match=r"At least 1 tie point is required"):
             geoimage._compute_image_corners(
                 np.array([]).reshape(0, 2, 3), u_cell_size=None, v_cell_size=None
             )
@@ -1633,7 +1634,7 @@ def test_compute_image_corners(tmp_path):
                 ],  # This world point breaks coplanarity
             ]
         )
-        with pytest.raises(ValueError, match="Tie points are not coplanar"):
+        with pytest.raises(ValueError, match=r"Tie points are not coplanar"):
             geoimage._compute_image_corners(
                 non_coplanar_points, u_cell_size=None, v_cell_size=None
             )
@@ -1653,7 +1654,7 @@ def test_compute_image_corners(tmp_path):
             ]
         )
         with pytest.raises(
-            ValueError, match="Tie points are not consistent with an affine"
+            ValueError, match=r"Tie points are not consistent with an affine"
         ):
             geoimage._compute_image_corners(
                 non_affine_points, u_cell_size=None, v_cell_size=None
@@ -1741,7 +1742,7 @@ def test_validate_geoimage(tmp_path):
             ).T,
             dtype=geoimage_non_coplanar._GeoImage__VERTICES_DTYPE,
         )
-        with pytest.raises(ValueError, match="GeoImage vertices are not coplanar"):
+        with pytest.raises(ValueError, match=r"GeoImage vertices are not coplanar"):
             GeoImageConversion._validate_geoimage(geoimage_non_coplanar)
 
         # Test case 4: ValueError - non-orthogonal vertices (but coplanar)
@@ -1761,7 +1762,7 @@ def test_validate_geoimage(tmp_path):
             ).T,
             dtype=geoimage_non_orthogonal._GeoImage__VERTICES_DTYPE,
         )
-        with pytest.raises(ValueError, match="GeoImage vertices are not orthogonal"):
+        with pytest.raises(ValueError, match=r"GeoImage vertices are not orthogonal"):
             GeoImageConversion._validate_geoimage(geoimage_non_orthogonal)
 
         # Test case 5: ValueError - non-affine transformation
@@ -1785,7 +1786,7 @@ def test_validate_geoimage(tmp_path):
             dtype=geoimage_non_affine._GeoImage__VERTICES_DTYPE,
         )
         with pytest.raises(
-            ValueError, match="GeoImage vertices do not define an affine"
+            ValueError, match=r"GeoImage vertices do not define an affine"
         ):
             GeoImageConversion._validate_geoimage(geoimage_non_affine)
 
@@ -1850,6 +1851,6 @@ def test_rotation_dip_rotation_only_false(tmp_path):
         # Accessing rotation property should raise ValueError
         with pytest.raises(
             ValueError,
-            match="The vertices do not define a rectangle that can be explained by rotation and dip only",
+            match=r"The vertices do not define a rectangle that can be explained by rotation and dip only",
         ):
             _ = geoimage_invalid.rotation

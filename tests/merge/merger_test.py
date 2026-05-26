@@ -260,10 +260,10 @@ def test_merge_attribute_error(tmp_path):
 
     h5file_path_2 = tmp_path / r"testPoints2.geoh5"
     with Workspace.create(h5file_path_2) as workspace:
-        with pytest.raises(TypeError, match="The input entities must be a list"):
+        with pytest.raises(TypeError, match=r"The input entities must be a list"):
             _ = PointsMerger.merge_objects(workspace, "bidon")
 
-        with pytest.raises(ValueError, match="Need more than one object"):
+        with pytest.raises(ValueError, match=r"Need more than one object"):
             _ = PointsMerger.merge_objects(workspace, [points[0]])
 
         surface = Surface.create(
@@ -271,7 +271,7 @@ def test_merge_attribute_error(tmp_path):
             vertices=np.random.randn(10, 3),
         )
 
-        with pytest.raises(TypeError, match="All objects must be of"):
+        with pytest.raises(TypeError, match=r"All objects must be of"):
             _ = PointsMerger.merge_objects(workspace, [points[0], surface])
 
         surface2 = Surface.create(
@@ -279,13 +279,13 @@ def test_merge_attribute_error(tmp_path):
             vertices=np.random.randn(10, 3),
         )
 
-        with pytest.raises(TypeError, match="The input entities must be a list"):
+        with pytest.raises(TypeError, match=r"The input entities must be a list"):
             _ = PointsMerger.merge_objects(workspace, [surface, surface2])
 
         points[0] = Points.create(workspace)
 
-        with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
+        with pytest.raises(NotImplementedError, match=r"BaseMerger cannot be use"):
             _ = BaseMerger.create_object(workspace, points, name="bidon")
 
-        with pytest.raises(NotImplementedError, match="BaseMerger cannot be use"):
+        with pytest.raises(NotImplementedError, match=r"BaseMerger cannot be use"):
             _ = BaseMerger.validate_structure(points[0])

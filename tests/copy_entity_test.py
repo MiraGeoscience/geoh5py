@@ -81,16 +81,16 @@ def test_copy_entity(tmp_path: Path):
             excinfo.value
         )
 
-        with pytest.raises(ValueError, match="Input file '"):
+        with pytest.raises(ValueError, match=r"Input file '"):
             entity.add_file("bidon.txt")
 
         get_entity = entity.get_entity(entity.uid)
         assert isinstance(get_entity, list)
 
-        with pytest.raises(TypeError, match="Input metadata must be of type"):
+        with pytest.raises(TypeError, match=r"Input metadata must be of type"):
             entity.metadata = 0
 
-    with pytest.raises(FileExistsError, match="File "):
+    with pytest.raises(FileExistsError, match=r"File "):
         _ = Workspace.create(h5file_path)
 
     workspace = Workspace(h5file_path)
