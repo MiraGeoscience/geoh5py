@@ -94,8 +94,6 @@ class BaseForm(BaseModel):
         validate_assignment=True,
     )
 
-    __pydantic_extra__: dict[str, Any]  # For autodoc
-
     label: str
     value: Any
     optional: bool = False
