@@ -210,7 +210,7 @@ class AirborneAppConReceivers(AirborneAppConSurvey, Curve):  # pylint: disable=t
         return self.base_stations
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -230,6 +230,6 @@ class AirborneAppConBaseStations(AirborneAppConSurvey, Points):
         return self.receivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
