@@ -94,21 +94,23 @@ style = "pep440"
 vcs = "git"
 
 [tool.poetry-dynamic-versioning.substitution]
-files = ["geoh5py/_version.py", "recipe.yaml"]
+files = ["geoh5py/_version.py", "_version.json"]
 patterns = [
-    { value = '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''', mode = "str" },
-    { value = '''(^\s*version\s*(?::.*?)?:\s*['"])[^'"]*(['"])''', mode = "str" },
+    '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''',
+    '''(^{\s*"version"\s*:\s*")[^"]*("\s*})''',
 ]
 
 [tool.poetry-dynamic-versioning.files."geoh5py/_version.py"]
 persistent-substitution = true
 initial-content = """
-  # Version placeholder that will be replaced during substitution
-  __version__ = "0.0.0"
+  __version__ = "0.0.0.dev0"
 """
 
-[tool.poetry-dynamic-versioning.files."recipe.yaml"]
+[tool.poetry-dynamic-versioning.files."_version.json"]
 persistent-substitution = true
+initial-content = """
+{ "version": "0.0.0.dev0" }
+"""
 
 [tool.ruff]
 target-version = "py312"
