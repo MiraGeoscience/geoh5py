@@ -81,6 +81,8 @@ class BaseUIJson(BaseModel):
         arbitrary_types_allowed=True, extra="allow", validate_assignment=True
     )
 
+    __pydantic_extra__: dict[str, Any]  # For autodoc
+
     version: str | None = "0.0.0"
     title: str
     geoh5: OptionalPath
