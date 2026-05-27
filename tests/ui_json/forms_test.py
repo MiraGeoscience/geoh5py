@@ -215,7 +215,7 @@ def test_multi_choice_form():
     assert form.value == ["test"]
     assert '"value":["test"]' in form.json_string
 
-    with pytest.raises(ValidationError, match="multi_select: True."):
+    with pytest.raises(ValidationError, match=r"multi_select: True\."):
         _ = MultiChoiceForm(
             label="names",
             value="test",

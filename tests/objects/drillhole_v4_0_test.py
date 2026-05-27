@@ -219,7 +219,7 @@ def test_concatenated_entities(tmp_path):
         prop_group = ConcatenatedPropertyGroup(parent=concat_object, properties=[data])
 
         with pytest.raises(
-            AttributeError, match="Cannot change parent of a property group."
+            AttributeError, match=r"Cannot change parent of a property group\."
         ):
             prop_group.parent = Drillhole
 
@@ -230,7 +230,7 @@ def test_concatenated_entities(tmp_path):
 
         with pytest.raises(
             ValueError,
-            match="The 'parent' of a concatenated data must have an 'add_children' method.",
+            match=r"The 'parent' of a concatenated data must have an 'add_children' method\.",
         ):
             prop_group.parent = "bidon"
 
@@ -290,7 +290,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         # Add both set of log data with 0.5 m tolerance
         values = np.random.randn(48)
         with pytest.raises(
-            UserWarning, match="Input depth 'collocation_distance' must be >0."
+            UserWarning, match=r"Input depth 'collocation_distance' must be >0\."
         ):
             well.add_data(
                 {

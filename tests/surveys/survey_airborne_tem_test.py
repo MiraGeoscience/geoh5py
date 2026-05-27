@@ -239,7 +239,7 @@ def test_survey_airborne_tem_data(tmp_path):
 
     with pytest.raises(
         ValueError,
-        match="PropertyGroup named 'time_data' already exists on the survey entity.",
+        match=r"PropertyGroup named 'time_data' already exists on the survey entity\.",
     ):
         receivers.add_components_data({"time_data": data})
 
@@ -278,16 +278,18 @@ def test_survey_airborne_tem_data(tmp_path):
     receivers.unit = "Seconds (s)"
 
     with pytest.raises(
-        ValueError, match="Input waveform must be a numpy.ndarray of shape."
+        ValueError, match=r"Input waveform must be a numpy.ndarray of shape \(\*, 2\)\."
     ):
         receivers.waveform = np.ones(3)
 
     with pytest.raises(
-        TypeError, match="Input waveform must be a numpy.ndarray or None."
+        TypeError, match=r"Input waveform must be a numpy.ndarray or None\."
     ):
         receivers.waveform = [1, 2, 3]
 
-    with pytest.raises(ValueError, match="Input timing_mark must be a float or None."):
+    with pytest.raises(
+        ValueError, match=r"Input timing_mark must be a float or None\."
+    ):
         receivers.timing_mark = "abc"
 
     receivers.timing_mark = 10**-3.1

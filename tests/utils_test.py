@@ -129,7 +129,7 @@ def test_enum_name_to_str():
         red = 1
         blue = 2
 
-    class Status(str, Enum):
+    class Status(StrEnum):
         north = "north face"
         south = "south face"
 

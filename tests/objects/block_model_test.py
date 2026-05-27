@@ -90,7 +90,7 @@ def test_create_block_model_data(tmp_path):
 
     with Workspace.create(h5file_path) as workspace:
         with pytest.raises(
-            TypeError, match="Attribute 'u_cell_delimiters' must be a numpy array."
+            TypeError, match=r"Attribute 'u_cell_delimiters' must be a numpy array\."
         ):
             BlockModel.create(workspace, u_cell_delimiters="abc")
 

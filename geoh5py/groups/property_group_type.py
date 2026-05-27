@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 
 from ..data import Data, DataAssociationEnum, FloatData, NumericData
 
@@ -146,7 +146,7 @@ GROUP_TYPES = {
 }
 
 
-class GroupTypeEnum(str, Enum):
+class GroupTypeEnum(StrEnum):
     """
     Supported property group types.
     """

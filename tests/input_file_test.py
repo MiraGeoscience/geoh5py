@@ -92,12 +92,12 @@ def test_input_file_json():
         InputFile(ui_json=123)
 
     with pytest.raises(
-        AttributeError, match="'ui_json' must be set before setting data."
+        AttributeError, match=r"'ui_json' must be set before setting data\."
     ):
         InputFile().data = {"abc": 123}
 
     with pytest.raises(
-        AttributeError, match="InputFile requires a 'ui_json' to be defined."
+        AttributeError, match=r"InputFile requires a 'ui_json' to be defined\."
     ):
         InputFile().update_ui_values({"abc": 123})
 
@@ -115,7 +115,7 @@ def test_input_file_json():
 
     with pytest.raises(
         ValueError,
-        match="Input 'geoh5' must be a valid :obj:`geoh5py.workspace.Workspace`.",
+        match=r"Input 'geoh5' must be a valid :obj:`geoh5py.workspace\.Workspace`\.",
     ):
         InputFile(ui_json=ui_json).data
 
@@ -150,7 +150,7 @@ def test_input_file_name_path(tmp_path: Path):
     # Test handling of path attribute
     with pytest.warns(
         DeprecationWarning,
-        match="The 'workspace' property is deprecated. Use 'geoh5' instead.",
+        match=r"The 'workspace' property is deprecated. Use 'geoh5' instead\.",
     ):
         test.workspace = Workspace.create(tmp_path / r"test.geoh5")
 
@@ -413,7 +413,9 @@ def test_object_promotion(tmp_path: Path):
         "Promotion of entity from uuid string failed."
     )
 
-    with pytest.raises(ValueError, match="Input 'data' must be of type dict or None."):
+    with pytest.raises(
+        ValueError, match=r"Input 'data' must be of type dict or None\."
+    ):
         new_in_file.data = 123
 
 
@@ -595,7 +597,7 @@ def test_input_file(tmp_path: Path):
     out_file = in_file.write_ui_json(path=tmp_path)
 
     with pytest.raises(
-        ValueError, match="Input file should have the extension .ui.json"
+        ValueError, match=r"Input file should have the extension \.ui\.json"
     ):
         InputFile.read_ui_json("somefile.json")
 
@@ -725,7 +727,7 @@ def test_multi_object_value_parameter(tmp_path: Path):
 
     with pytest.warns(
         UserWarning,
-        match="Data associated with multiSelect dependent is not supported. Validation ignored.",
+        match=r"Data associated with multiSelect dependent is not supported. Validation ignored\.",
     ):
         in_file.data
 

@@ -163,6 +163,6 @@ def test_create_interpretation_section_errors(tmp_path: Path):
 
         with pytest.raises(
             TypeError,
-            match="The 666 object must be a Slicer object. <class 'int'> provided.",
+            match=r"The 666 object must be a Slicer object. <class 'int'> provided\.",
         ):
             group._verify_object(666, "Slicer")
