@@ -1,4 +1,4 @@
-# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+﻿# ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
@@ -16,32 +16,33 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-
 from __future__ import annotations
 
 import importlib
+import json
+import re
 from pathlib import Path
 
 import pytest
 import yaml
-from packaging.version import InvalidVersion, Version
+from packaging.version import Version
 
 import geoh5py
 
 
-def get_conda_recipe_version():
+def _get_json_version() -> str:
+    version_json_path = Path(__file__).resolve().parents[1] / "_version.json"
+    with version_json_path.open(encoding="utf-8") as file:
+        version_json = json.load(file)
+    return version_json["version"]
+
+
+def _get_conda_recipe_version_def() -> str:
     recipe_path = Path(__file__).resolve().parents[1] / "recipe.yaml"
 
     with recipe_path.open(encoding="utf-8") as file:
         recipe = yaml.safe_load(file)
     return recipe["context"]["version"]
-
-
-def test_version_is_consistent():
-    project_version = Version(geoh5py.__version__)
-    conda_version = Version(get_conda_recipe_version())
-    assert conda_version.base_version == project_version.base_version
 
 
 def _version_module_exists():
@@ -50,6 +51,16 @@ def _version_module_exists():
         return True
     except ModuleNotFoundError:
         return False
+
+
+def test_conda_recipe_version_loads_json():
+    conda_version_def = _get_conda_recipe_version_def()
+    regex = (
+        r"\$\{\{\s*load_from_file\(\s*['\"](_version\.json)['\"]\s*\)"
+        r"\s*\.version\b.*\}\}"
+    )
+    regex_match = re.match(regex, conda_version_def)
+    assert regex_match is not None
 
 
 @pytest.mark.skipif(
@@ -69,28 +80,7 @@ def test_fallback_version_is_zero():
     not _version_module_exists(),
     reason="geoh5py._version cannot be found: uses a fallback version",
 )
-def test_conda_version_is_consistent():
+def test_version_json_is_consistent():
     project_version = Version(geoh5py.__version__)
-    conda_version = Version(get_conda_recipe_version())
-
-    assert conda_version.is_devrelease == project_version.is_devrelease
-    assert conda_version.is_prerelease == project_version.is_prerelease
-    assert conda_version.is_postrelease == project_version.is_postrelease
-    assert conda_version == project_version
-
-
-def test_conda_version_is_pep440():
-    version = Version(get_conda_recipe_version())
-    assert version is not None
-
-
-def validate_version(version_str):
-    try:
-        version = Version(version_str)
-        return (version.major, version.minor, version.micro, version.pre, version.post)
-    except InvalidVersion:
-        return None
-
-
-def test_version_is_valid():
-    assert validate_version(geoh5py.__version__) is not None
+    json_version = Version(_get_json_version())
+    assert project_version == json_version
