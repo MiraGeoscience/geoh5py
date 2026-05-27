@@ -23,10 +23,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from geoh5py.objects import DrapeModel, Grid2D
+from geoh5py.objects import Grid2D
 from geoh5py.workspace import Workspace
-
-from .drape_model_test import create_drape_parameters
 
 
 def test_copy_extent_grid_2d(tmp_path):
