@@ -60,6 +60,7 @@ def test_data_instantiation(data_class, tmp_path):
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
         data_type = DataType(workspace, primitive_type=data_class)
+        parent = Points.create(workspace, name="parent")
         assert data_type.uid is not None
         assert data_type.uid.int != 0
         assert data_type.name == "Entity"
@@ -72,7 +73,10 @@ def test_data_instantiation(data_class, tmp_path):
         assert workspace.find_type(data_type.uid, ObjectType) is None
 
         created_data = data_class(
-            entity_type=data_type, association=DataAssociationEnum.VERTEX, name="test"
+            parent=parent,
+            entity_type=data_type,
+            association=DataAssociationEnum.VERTEX,
+            name="test",
         )
 
         assert created_data.uid is not None

@@ -78,3 +78,20 @@ class GeometricDataConstants(Data):
         :return: A new GeometricDataConstants instance or None.
         """
         return None
+
+    @property
+    def name(self) -> str:
+        """
+        :obj:`str` Name of the entity
+        """
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        self._name = self.fix_up_name(new_name)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+            if hasattr(self._entity_type, "set_parent_reference"):
+                self._entity_type.set_parent_reference(self, new_name)

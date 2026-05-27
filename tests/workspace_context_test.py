@@ -61,15 +61,14 @@ def test_write_context():
 
 def test_read_only():
     with pytest.raises(UserWarning, match="geoh5 file in read-only mode"):
-        with Workspace(mode="r") as workspace:
+        workspace = Workspace()
+        workspace.close()
+        with workspace.open(mode="r"):
             Points.create(workspace)
 
 
 def test_deprecation_warnings(tmp_path):
-    with pytest.warns(
-        match="must be a string or path to an existing file",
-    ):
-        workspace = Workspace(tmp_path / r"test.geoh5")
+    workspace = Workspace.create(tmp_path / r"test.geoh5")
 
     with pytest.warns(
         DeprecationWarning,

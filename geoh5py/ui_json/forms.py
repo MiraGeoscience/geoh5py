@@ -18,11 +18,9 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-from __future__ import annotations
-
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 from uuid import UUID
 
 import numpy as np
@@ -114,7 +112,7 @@ class BaseForm(BaseModel):
     def infer(
         cls,
         data: dict[str, Any],
-    ) -> type[BaseForm]:
+    ) -> type[Self]:
         """
         Infer and return the appropriate form.
 
@@ -149,15 +147,18 @@ class BaseForm(BaseModel):
         """Returns the data for the form."""
         return self.value
 
-    def validate_data(self, params: dict[str, Any]):
-        """Validate the form data."""
-
     def set_value(self, value: Any):
-        """Set the form value."""
+        """
+        Set the form value.
+        """
         self.value = value
 
-        if "optional" in self.model_fields_set:
-            self.enabled = self.value is not None
+    @property
+    def is_optional(self) -> bool:
+        """
+        Whether the field is optional or not.
+        """
+        return self.optional or self.group_optional or len(self.dependency) > 0
 
 
 class StringForm(BaseForm):
@@ -472,9 +473,12 @@ class DataForm(DataFormMixin, BaseForm):
     Geoh5py uijson form for data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
+
+    When ``multiselect`` is ``True`` the value may be a list of UUIDs; otherwise
+    a single UUID or ``None`` is expected.
     """
 
-    value: OptionalUUID
+    value: OptionalUUIDList
 
 
 class DataGroupForm(DataForm):
@@ -536,6 +540,33 @@ class GroupMultiDataForm(BaseForm):
             raise TypeError(f"'value' must be a list of strings; got '{type(value)}'")
         return value
 
+    def flatten(self) -> dict:
+        """Returns the property, data and is_complement values for the form."""
+        return {
+            "group_value": self.group_value,
+            "value": self.value,
+        }
+
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+
+        :param value: The input value(s) for the form. Can be
+            - string or list of strings for the name of data selected, set to 'value'.
+            - UUID or None defining 'group_value' field.
+            - dict of values for the fields of the form.
+
+        """
+        if isinstance(value, dict):
+            for key, val in value.items():
+                setattr(self, key, val)
+
+        if isinstance(value, list | str):
+            self.value = value
+
+        if isinstance(value, UUID | None):
+            self.group_value = value
+
 
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
@@ -571,20 +602,25 @@ class DataOrValueForm(DataFormMixin, BaseForm):
         return self.value
 
     def set_value(self, value: Any):
-        """Set the form value."""
+        """
+        Set the form value.
+
+        :param value: Either a numeric (float/int) value or a UUID. When a UUID is
+            provided, it is assigned to the ``property`` field and ``is_value`` is set
+            to False. When None or a numeric value is provided, ``is_value`` is set
+            to True.
+
+        """
         try:
             self.value = value
             self.is_value = True
         except ValidationError:
-            if value is not None:
+            if value is None:
+                self.is_value = True
+                self.property = value
+            else:
                 self.property = value
                 self.is_value = False
-            else:
-                self.is_value = True
-                self.property = None
-
-        if "optional" in self.model_fields_set:
-            self.enabled = value is not None
 
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
@@ -607,20 +643,6 @@ class MultiSelectDataForm(DataFormMixin, BaseForm):
             raise ValueError("MultiSelectForm must have multi_select: True.")
         return value
 
-    @field_validator("value", mode="before")
-    @classmethod
-    def to_list(cls, value: str | list[str]) -> list[str]:
-        """
-        Validate that value is a list, converting it if it's a string.
-
-        :param value: The value to validate.
-
-        :return: A list of strings representing the value.
-        """
-        if not isinstance(value, list):
-            value = [value]
-        return value
-
 
 class DataRangeForm(DataFormMixin, BaseForm):
     """
@@ -628,22 +650,49 @@ class DataRangeForm(DataFormMixin, BaseForm):
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
-    :param value: The value can be a single float or a list of two floats.
-        Geoscience ANALYST will estimate a range on load if a single float
-        is provided, but will always return a list.
-    :param property: The UUID of the property to which the range applies.
-    :param range_label: Label for the range.
     :param allow_complement: If True, the complement option will be available
         in Geoscience ANALYST as a checkbox.
     :param is_complement: If True, the range slider in Geoscience ANALYST will
         be inverted and the implied selection is outside of the range provided.
+    :param range_label: Label for the range.
+    :param property: The UUID of the property to which the range applies.
+    :param value: The value can be a single float or a list of two floats.
+        Geoscience ANALYST will estimate a range on load if a single float
+        is provided, but will always return a list.
     """
 
-    value: OptionalValueList
-    property: OptionalUUID
-    range_label: str
     allow_complement: bool = False
     is_complement: bool = False
+    range_label: str
+    property: OptionalUUID
+    value: OptionalValueList
+
+    def flatten(self) -> dict:
+        """Returns the property, data and is_complement values for the form."""
+        return {
+            "is_complement": self.is_complement,
+            "property": self.property,
+            "value": self.value,
+        }
+
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+
+        :param value: The input value(s) for the form. Can be
+            - list of two floats defining the lower and upper bounds of the 'value' field.
+            - UUID or None defining 'property' field.
+            - dict of values for the fields 'is_complement', 'property' and 'value'.
+        """
+        if isinstance(value, dict):
+            for key, val in value.items():
+                setattr(self, key, val)
+
+        if isinstance(value, list):
+            self.value = value
+
+        if isinstance(value, UUID | None):
+            self.property = value
 
 
 def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
@@ -676,10 +725,10 @@ def indicator_attributes(
     List all the mandatory attributes defined in a subclass.
 
     The function return a list of 2 lists:
-    - The first contains the sets of attributes
-        that are different between the parent and each child class.
-    - The second contains the sets of mandatory attributes
-        that are different between the parent and each child class.
+        - The first contains the sets of attributes
+            that are different between the parent and each child class.
+        - The second contains the sets of mandatory attributes
+            that are different between the parent and each child class.
 
     :param parent: The parent class to compare against.
     :param children: The list of child classes to compare.

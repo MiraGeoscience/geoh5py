@@ -22,50 +22,28 @@ from __future__ import annotations
 
 import uuid
 
-import numpy as np
-
-from .cell_object import CellObject
+from ..curve import Curve
 
 
-class Surface(CellObject):
+class AirborneGravity(Curve):
     """
-    Surface object defined by vertices and cells
+    An airborne gravity survey object.
+
+    .. warning:: Partially implemented.
+
     """
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
-    )
-    _default_name = "Surface"
-    _minimum_vertices = 3
+    _TYPE_UID = uuid.UUID("{b54f6be6-0eb5-4a4e-887a-ba9d276f9a83}")
+    _default_name = "Survey airborne gravity"
 
-    def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
-        r"""
-        Validate or generate cells made up of triplets of vertices making
-            up triangles.
 
-        :param indices: Array of indices, shape(\*, 3). If None provided, the
-            vertices are connected sequentially.
+class GroundGravity(Curve):
+    """
+    A ground gravity survey object.
 
-        :return: Array of indices defining connecting vertices.
-        """
-        if isinstance(indices, (tuple | list)):
-            indices = np.array(indices, ndmin=2)
+    .. warning:: Partially implemented.
 
-        if indices is None:
-            n_vert = self.vertices.shape[0]
-            indices = np.c_[
-                np.arange(0, n_vert - 2), np.arange(1, n_vert - 1), np.arange(2, n_vert)
-            ].astype("uint32")
+    """
 
-        if not isinstance(indices, np.ndarray):
-            raise AttributeError(
-                "Attribute 'cells' must be provided as type numpy.ndarray, list or tuple."
-            )
-
-        if indices.ndim != 2 or indices.shape[-1] != 3:
-            raise ValueError("Array of 'cells' should be of shape (*, 3).")
-
-        if not np.issubdtype(indices.dtype, np.integer):
-            raise TypeError("Indices array must be of integer type")
-
-        return indices.astype(np.int32)
+    _TYPE_UID = uuid.UUID("{5ffa3816-358d-4cdd-9b7d-e1f7f5543e05}")
+    _default_name = "Survey ground gravity"

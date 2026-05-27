@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import TYPE_CHECKING, Literal, get_args
 from uuid import UUID
 
@@ -38,6 +39,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ..objects import ObjectBase
     from ..workspace import Workspace
     from .data import Data
+    from .geometric_data import GeometricDataConstants
     from .referenced_data import ReferencedData
 
 ColorMapping = Literal[
@@ -58,9 +60,12 @@ class DataType(EntityType):
 
     :param workspace: An active Workspace.
     :param primitive_type: The primitive type of the data.
+    :param complement_filter: Filter color map on complement of the min-max filter
     :param color_map: The colormap used for plotting.
     :param duplicate_on_copy: Force a copy on copy of the data entity.
     :param duplicate_type_on_copy: Force a copy on copy of the data entity.
+    :param filter_max: Maximum value for the colormap filter.
+    :param filter_min: Minimum value for the colormap filter.
     :param hidden: If the data are hidden or not.
     :param mapping: The type of color stretching to plot the colormap.
     :param number_of_bins: The number of bins used by the histogram.
@@ -76,25 +81,34 @@ class DataType(EntityType):
     _attribute_map = EntityType._attribute_map.copy()
     _attribute_map.update(
         {
-            "Hidden": "hidden",
-            "Mapping": "mapping",
-            "Number of bins": "number_of_bins",
-            "Precision": "precision",
-            "Primitive type": "primitive_type",
-            "Transparent no data": "transparent_no_data",
-            "Scale": "scale",
-            "Scientific notation": "scientific_notation",
+            key: utils.INV_KEY_MAP[key]
+            for key in [
+                "Complement filter",
+                "Filter max",
+                "Filter min",
+                "Hidden",
+                "Mapping",
+                "Number of bins",
+                "Precision",
+                "Primitive type",
+                "Transparent no data",
+                "Scale",
+                "Scientific notation",
+            ]
         }
     )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-locals
         self,
         workspace: Workspace,
         *,
         primitive_type: (type[Data] | PrimitiveTypeEnum | str) = "UNKNOWN",
         color_map: ColorMap | None = None,
+        complement_filter: bool = False,
         duplicate_on_copy: bool = False,
         duplicate_type_on_copy: bool = False,
+        filter_max: int | float | None = None,
+        filter_min: int | float | None = None,
         hidden: bool = False,
         mapping: ColorMapping = "equal_area",
         number_of_bins: int | None = None,
@@ -108,8 +122,11 @@ class DataType(EntityType):
         super().__init__(workspace, **kwargs)
 
         self.color_map = color_map
+        self.complement_filter = complement_filter
         self.duplicate_on_copy = duplicate_on_copy
         self.duplicate_type_on_copy = duplicate_type_on_copy
+        self.filter_max = filter_max
+        self.filter_min = filter_min
         self.hidden = hidden
         self.mapping = mapping
         self.number_of_bins = number_of_bins
@@ -163,6 +180,25 @@ class DataType(EntityType):
         self.workspace.update_attribute(self, "color_map")
 
     @property
+    def complement_filter(self) -> bool:
+        """
+        Filter color map on complement of the min-max filter.
+        """
+        return self._complement_filter
+
+    @complement_filter.setter
+    def complement_filter(self, value: bool):
+        if not isinstance(value, bool) and value != 1 and value != 0:
+            raise TypeError(
+                f"Attribute 'complement_filter' must be a bool, not {type(value)}"
+            )
+
+        self._complement_filter = bool(value)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
     def dtype(self) -> type:
         """
         The data type of the data.
@@ -203,6 +239,56 @@ class DataType(EntityType):
 
         self._duplicate_type_on_copy = bool(value)
         self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def filter_max(self) -> float | None:
+        """
+        Maximum value of the colormap filter.
+        """
+        return self._filter_max
+
+    @filter_max.setter
+    def filter_max(self, value: float | None):
+        if not isinstance(value, float | int | None):
+            raise TypeError(
+                f"Attribute 'filter_max' must be a float, not {type(value)}"
+            )
+
+        filter_min: None | float = getattr(self, "_filter_min", None)
+        if filter_min and value and value < filter_min:
+            raise ValueError(
+                "Attribute 'filter_max' must be greater than or equal to 'filter_min'."
+            )
+
+        self._filter_max = float(value) if value else None
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def filter_min(self) -> float | None:
+        """
+        Minimum value of the colormap filter.
+        """
+        return self._filter_min
+
+    @filter_min.setter
+    def filter_min(self, value: float | None):
+        if not isinstance(value, float | int | None):
+            raise TypeError(
+                f"Attribute 'filter_min' must be a float, not {type(value)}"
+            )
+
+        filter_max: None | float = getattr(self, "_filter_max", None)
+        if filter_max and value and value > filter_max:
+            raise ValueError(
+                "Attribute 'filter_min' must be less than or equal to 'filter_max'."
+            )
+
+        self._filter_min = float(value) if value else None
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @classmethod
     def find_or_create_type(
@@ -520,7 +606,7 @@ class ReferenceDataType(DataType):
             return None
 
         if isinstance(value_map, dict | np.ndarray | tuple):
-            value_map = ReferenceValueMap(value_map)
+            value_map = ReferenceValueMap(value_map, main=True)
 
         if not isinstance(value_map, ReferenceValueMap):
             raise TypeError(
@@ -681,6 +767,26 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         )
         self._parent = parent
 
+    def set_parent_reference(self, data: GeometricDataConstants, new_name: str):
+        """
+        Change the metadata keys on the referenced data.
+
+        :param data: Geometric data entity referenced in the data map
+        :param new_name: Name to be replaced in the data map
+        """
+        if self.referenced_data is None or self.referenced_data.data_maps is None:
+            raise ValueError(
+                "Parent 'referenced_data' with a 'data_map' needs to be set."
+            )
+
+        data_maps = copy(self.referenced_data.data_maps)
+        for key, value in self.referenced_data.data_maps.items():
+            if value == data:
+                data_maps.pop(key, None)
+                data_maps[new_name] = data
+
+        self.referenced_data.data_maps = data_maps
+
     def get_parent_reference(self, parent: ObjectBase):
         """
         Recover the parent ReferencedData by name.
@@ -764,8 +870,8 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
                 raise ValueError("Referenced data has no data maps.")
 
             value_map = None
-            for count, name in enumerate(self.referenced_data.metadata):
-                if name == self.name.rsplit(": ")[1]:
+            for count, data in enumerate(self.referenced_data.data_maps.values()):
+                if data.entity_type.uid == self.uid:
                     value_map = self.workspace.fetch_array_attribute(
                         self.referenced_data.entity_type, f"Value map {count + 1}"
                     )

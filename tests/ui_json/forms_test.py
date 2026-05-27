@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 
 import numpy as np
@@ -57,10 +58,10 @@ from geoh5py.ui_json.ui_json import BaseUIJson
 
 
 def setup_from_uijson(workspace, form):
-    class MyUIJson(BaseUIJson):
+    class MyBaseUIJson(BaseUIJson):
         my_param: type(form)
 
-    uijson = MyUIJson.model_construct(
+    uijson = MyBaseUIJson.model_construct(
         version="blahblah",
         title="my title",
         geoh5=workspace.h5file,
@@ -70,7 +71,7 @@ def setup_from_uijson(workspace, form):
         my_param=form,
     )
     uijson.write(workspace.h5file.parent / "test.ui.json")
-    uijson = MyUIJson.read(workspace.h5file.parent / "test.ui.json")
+    uijson = MyBaseUIJson.read(workspace.h5file.parent / "test.ui.json")
     return uijson.my_param
 
 
@@ -136,15 +137,6 @@ def test_base_form_serieralization(sample_form):
     form = sample_form(label="name", value="test", dependency_type="disabled")
     json = form.json_string
     assert "dependencyType" in json
-
-
-def test_hide_dependency_type(tmp_path):
-    with Workspace.create(tmp_path / "test.geoh5") as ws:
-        form = StringForm(
-            label="name", value="test", dependency="my_param", dependency_type="show"
-        )
-        form = setup_from_uijson(ws, form)
-        assert form.dependency_type == "show"
 
 
 def test_string_form():
@@ -458,6 +450,16 @@ def test_data_form():
     assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
     assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
 
+    data_uid_2 = str(uuid.uuid4())
+    form = DataForm(
+        label="name",
+        value=[data_uid, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    assert form.value == [uuid.UUID(data_uid), uuid.UUID(data_uid_2)]
+
 
 def test_data_group_form():
     group_uid = str(uuid.uuid4())
@@ -525,12 +527,10 @@ def test_data_or_value_form():
     assert optional_form.enabled
     optional_form.set_value(None)
     assert optional_form.is_value
-    assert not optional_form.enabled
 
     optional_form.set_value(data_uid)
     assert not optional_form.is_value
     assert optional_form.property == uuid.UUID(data_uid)
-    assert optional_form.enabled
 
     form.set_value(2)
     assert form.value == 2
@@ -549,7 +549,7 @@ def test_multichoice_data_form():
         multi_select=True,
     )
     assert form.label == "name"
-    assert form.value == [uuid.UUID(data_uid_1)]
+    assert form.value == uuid.UUID(data_uid_1)
     assert form.parent == "my_param"
     assert form.association.name == "VERTEX"
     assert form.data_type.name == "FLOAT"
@@ -596,7 +596,7 @@ def test_multichoice_data_form_serialization():
         data_type="Float",
         multi_select=True,
     )
-    data = form.model_dump()
+    data = json.loads(form.model_dump_json())
     assert data["value"] == [data_uid_1, data_uid_2]
 
     form = MultiSelectDataForm(
@@ -608,21 +608,18 @@ def test_multichoice_data_form_serialization():
         multi_select=True,
     )
     data = form.model_dump()
-    assert data["value"] == [data_uid_1]
+    assert data["value"] == uuid.UUID(data_uid_1)
 
     form = MultiSelectDataForm(
         label="name",
-        value=[],
+        value=[data_uid_1, data_uid_2],
         parent="my_param",
         association="Vertex",
         data_type="Float",
-        is_value=False,
-        property=[data_uid_1, data_uid_2],
         multi_select=True,
     )
     data = form.model_dump()
-    assert data["property"] == [data_uid_1, data_uid_2]
-    assert data["value"] == []
+    assert data["value"] == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
 
 
 def test_data_range_form():
@@ -643,6 +640,29 @@ def test_data_range_form():
     assert form.association.name == "VERTEX"
     assert form.data_type.name == "FLOAT"
     assert form.range_label == "value range"
+
+    assert isinstance(form.flatten(), dict)
+    assert (
+        set(form.flatten()).difference({"is_complement", "property", "value"}) == set()
+    )
+
+    # Set only the range
+    form.set_value([0.5, 1.5])
+    assert form.value == [0.5, 1.5]
+
+    # Set only the property
+    form.set_value(None)
+    assert form.property is None
+
+    # Set value as coming from form.flatten()
+    values = {
+        "is_complement": False,
+        "property": uuid.uuid4(),
+        "value": [0.0, 1.0],
+    }
+    form.set_value(values)
+
+    assert all(val == getattr(form, key) for key, val in values.items())
 
 
 def test_flatten(sample_form):

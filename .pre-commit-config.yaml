@@ -17,7 +17,7 @@ repos:
     -   id: poetry-check
         args: [--lock, --no-plugins]
 -   repo: https://github.com/hadialqattan/pycln
-    rev: v2.5.0
+    rev: v2.6.0
     hooks:
     -   id: pycln
         args: [--config=pyproject.toml]

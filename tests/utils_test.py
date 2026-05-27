@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+from enum import Enum, StrEnum
 from uuid import uuid4
 
 import numpy as np
@@ -30,6 +31,7 @@ from geoh5py.objects import Points
 from geoh5py.shared.utils import (
     copy_dict_relatives,
     dip_azimuth_to_vector,
+    enum_name_to_str,
     extract_uids,
     find_unique_name,
     format_numeric_values,
@@ -120,3 +122,42 @@ def test_copy_relatives_errors():
 
     with pytest.raises(ValueError, match="Cannot copy "):
         copy_dict_relatives({"bidon": points}, workspace)
+
+
+def test_enum_name_to_str():
+    class Color(Enum):
+        red = 1
+        blue = 2
+
+    class Status(str, Enum):
+        north = "north face"
+        south = "south face"
+
+    class Direction(StrEnum):
+        north = "north face"
+        south = "south face"
+
+    # Plain Enum: name is capitalized
+    assert enum_name_to_str(Color.red) == "Red"
+    assert enum_name_to_str(Color.blue) == "Blue"
+
+    # (str, Enum): treated as plain Enum, name is capitalized
+    assert enum_name_to_str(Status.north) == "North"
+    assert enum_name_to_str(Status.south) == "South"
+
+    # StrEnum: value is returned as-is
+    assert enum_name_to_str(Direction.north) == "north face"
+    assert enum_name_to_str(Direction.south) == "south face"
+
+    # Non-enum value passes through unchanged
+    assert enum_name_to_str(42) == 42
+    assert enum_name_to_str("hello") == "hello"
+    assert enum_name_to_str(None) is None
+
+    # List of mixed values
+    result = enum_name_to_str([Color.red, Direction.north, 99])
+    assert result == ["Red", "north face", 99]
+
+    # Nested list
+    result = enum_name_to_str([Color.red, [Direction.south]])
+    assert result == ["Red", ["south face"]]

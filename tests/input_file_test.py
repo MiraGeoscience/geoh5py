@@ -47,8 +47,7 @@ from geoh5py.ui_json.constants import default_ui_json, ui_validations
 from geoh5py.ui_json.input_file import DEFAULT_UI_JSON_NAME, InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
-
-from .drillhole_v4_0_test import create_drillholes
+from tests.objects.drillhole_v4_0_test import create_drillholes
 
 
 def get_workspace(directory: str | Path):
@@ -446,7 +445,7 @@ def test_group_promotion(tmp_path):
 
 
 def test_drillhole_group_promotion(tmp_path):
-    _, workspace = create_drillholes(tmp_path)
+    _, workspace = create_drillholes(tmp_path / f"{__name__}.geoh5")
 
     with workspace.open("r+"):
         dh_group = workspace.get_entity("DH_group")[0]

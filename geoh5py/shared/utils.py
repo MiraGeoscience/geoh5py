@@ -25,7 +25,7 @@ import types as types_module
 from abc import ABC
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
-from enum import Enum
+from enum import Enum, StrEnum
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
@@ -39,8 +39,6 @@ import numpy as np
 from .exceptions import Geoh5FileClosedError
 
 
-UidOrNumeric = UUID | float | int | None
-StringOrNumeric = str | float | int
 # pylint: disable=too-many-lines
 
 if TYPE_CHECKING:
@@ -48,6 +46,7 @@ if TYPE_CHECKING:
     from .entity import Entity
     from .entity_container import EntityContainer
 
+DEFAULT_PAGE_BUF_SIZE = 16777216
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
     "Allow delete contents": "allow_delete_content",
@@ -64,6 +63,7 @@ INV_KEY_MAP = {
     "Collar": "collar",
     "Color map": "color_map",
     "Colour": "COLOUR",
+    "Complement filter": "complement_filter",
     "Contributors": "contributors",
     "Concatenated object IDs": "concatenated_object_ids",
     "Cost": "cost",
@@ -79,6 +79,8 @@ INV_KEY_MAP = {
     "Face": "FACE",
     "File name": "name",
     "Filename": "FILENAME",
+    "Filter max": "filter_max",
+    "Filter min": "filter_min",
     "Float": "FLOAT",
     "Geometric": "GEOMETRIC",
     "Group": "GROUP",
@@ -106,6 +108,7 @@ INV_KEY_MAP = {
     "Origin": "origin",
     "Octree Cells": "octree_cells",
     "Partially hidden": "partially_hidden",
+    "Pinned": "pinned",
     "Planning": "planning",
     "Precision": "precision",
     "Primitive type": "primitive_type",
@@ -122,6 +125,8 @@ INV_KEY_MAP = {
     "Surveys": "surveys",
     "Text": "TEXT",
     "TextMesh Data": "text_mesh_data",
+    "TextureImage": "texture_image",
+    "Texture 2D": "TEXTURE",
     "Trace": "trace",
     "TraceDepth": "trace_depth",
     "Transparent no data": "transparent_no_data",
@@ -837,7 +842,9 @@ def map_attributes(object_, **kwargs):
     set_attributes(object_, **values)
 
 
-def stringify(values: dict[str, Any]) -> dict[str, Any]:
+def stringify(
+    values: Any | dict[str, Any],
+) -> dict[str, str] | dict[str, list[str]] | str | list[str]:
     """
     Convert all values in a dictionary to string.
 
@@ -846,11 +853,13 @@ def stringify(values: dict[str, Any]) -> dict[str, Any]:
     :return: Dictionary of string values.
     """
     mappers = [
+        type2uuid,
         entity2uuid,
         nan2str,
         inf2str,
         as_str_if_uuid,
         none2str,
+        enum_name_to_str,
         workspace2path,
         path2str,
     ]
@@ -889,31 +898,6 @@ def to_tuple(value: Any) -> tuple:
     return (value,)
 
 
-class SetDict(dict):
-    def __init__(self, **kwargs):
-        kwargs = {k: self.make_set(v) for k, v in kwargs.items()}
-        super().__init__(kwargs)
-
-    def make_set(self, value):
-        if isinstance(value, (set, tuple, list)):
-            value = set(value)
-        else:
-            value = {value}
-        return value
-
-    def __setitem__(self, key, value):
-        value = self.make_set(value)
-        super().__setitem__(key, value)
-
-    def update(self, value: dict, **kwargs) -> None:  # type: ignore
-        for key, val in value.items():
-            val = self.make_set(val)
-            if key in self:
-                val = self[key].union(val)
-            value[key] = val
-        super().update(value, **kwargs)
-
-
 def inf2str(value):  # map np.inf to "inf"
     if not isinstance(value, (int, float)):
         return value
@@ -944,8 +928,15 @@ def nan2str(value):
     return value
 
 
-def str2none(value):
-    if value == "":
+def str2none(value: Any) -> Any:
+    """
+    Convert an empty string or zero UUID string to None.
+
+    :param value: Value to convert.
+
+    :return: None if value is an empty string or zero UUID, original value otherwise.
+    """
+    if value in ("", "{00000000-0000-0000-0000-000000000000}"):
         return None
     return value
 
@@ -1263,7 +1254,7 @@ def uuid_from_values(data: dict | str) -> UUID:
     converted to uid strings.
 
     :param data: Dictionary or a string representation of a dictionary containing
-    parameters/values of an application.
+        parameters/values of an application.
 
     :returns: Unique but recoverable uuid file identifier string.
     """
@@ -1443,7 +1434,7 @@ def map_to_class(
     return class_map
 
 
-def enum_name_to_str(value: Enum) -> str:
+def enum_name_to_str(value: Any | Enum) -> Any | str:
     """
     Convert enum name to capitalized string.
 
@@ -1451,4 +1442,23 @@ def enum_name_to_str(value: Enum) -> str:
 
     :return: Capitalized string.
     """
-    return value.name.capitalize()
+    if isinstance(value, list):
+        return [enum_name_to_str(v) for v in value]
+
+    if isinstance(value, Enum):
+        if isinstance(value, StrEnum):
+            return value.value
+        return value.name.capitalize()
+
+    return value
+
+
+def type2uuid(value: Any) -> Any | UUID:
+    """
+    Convert an Entity type to its default uuid.
+
+    :param value: An entity type or any.
+    """
+    if isinstance(value, type) and hasattr(value, "default_type_uid"):
+        return value.default_type_uid()
+    return value

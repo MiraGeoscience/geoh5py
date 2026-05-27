@@ -30,20 +30,12 @@ from geoh5py.shared.validators import ShapeValidationError
 from geoh5py.workspace import Workspace
 
 
-def test_create_color_map(tmp_path):
-    name = "Grid2D_Colormap"
-
-    # Generate a 2D array
-    n_x, n_y = 10, 15
+def create_object_and_data(workspace: Workspace, name: str, n_x: int, n_y: int):
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
-
-    h5file_path = tmp_path / r"test_color_map.geoh5"
 
     standalone = ColorMap()
     assert standalone.values.shape[1] == 0
 
-    # Create a workspace
-    workspace = Workspace.create(h5file_path)
     grid = Grid2D.create(
         workspace,
         origin=[0, 0, 0],
@@ -56,29 +48,40 @@ def test_create_color_map(tmp_path):
     )
 
     data = grid.add_data({"DataValues": {"values": values.flatten()}})
-
     n_c = 10
-    rgba = np.vstack(
+    colormap = np.vstack(
         [
-            np.linspace(values.min(), values.max(), n_c),  # Values
+            np.linspace(data.values.min(), data.values.max(), n_c),  # Values
             np.linspace(0, 255, n_c),  # Red
             np.linspace(255, 0, n_c),  # Green
             np.linspace(125, 15, n_c),  # Blue,
             np.ones(n_c) * 255,  # Alpha,
         ]
-    )
+    ).T
+
+    return grid, data, colormap
+
+
+def test_create_color_map(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    # Create a workspace
+    workspace = Workspace.create(h5file_path)
+    # Generate a 2D array
+    n_x, n_y = 10, 15
+
+    grid, data, rgba = create_object_and_data(workspace, "Grid2D_Colormap", n_x, n_y)
 
     with pytest.raises(TypeError, match="Attribute 'color_map' must be of type"):
         data.entity_type.color_map = 1234
 
     with pytest.raises(ShapeValidationError) as error:
-        data.entity_type.color_map = rgba
+        data.entity_type.color_map = rgba.T
 
     assert ShapeValidationError.message("values", "(5, 10)", "(*, 5)") == str(
         error.value
     )
 
-    data.entity_type.color_map = rgba.T
+    data.entity_type.color_map = rgba
 
     with pytest.raises(TypeError, match="Input 'values' of ColorMap must be of type"):
         data.entity_type.color_map.values = "abc"
@@ -87,7 +90,7 @@ def test_create_color_map(tmp_path):
         ValueError, match="Input 'values' must contain fields with types"
     ):
         data.entity_type.color_map.values = np.core.records.fromarrays(
-            rgba.T, names=("a", "b", "c", "d", "f")
+            rgba, names=("a", "b", "c", "d", "f")
         )
 
     data.entity_type.color_map.name = "my colours"
@@ -114,3 +117,51 @@ def test_create_color_map(tmp_path):
     ), "Issue copying the ColorMap."
 
     assert len(rec_data.entity_type.color_map) == 10
+
+
+def test_color_map_filter(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        n_x, n_y = 10, 15
+        grid, data, colormap = create_object_and_data(
+            workspace, "Grid2D_Colormap", n_x, n_y
+        )
+        data.entity_type.color_map = colormap
+
+        with pytest.raises(
+            TypeError, match="Attribute 'complement_filter' must be a bool"
+        ):
+            data.entity_type.complement_filter = "abc"
+
+        data.entity_type.complement_filter = True
+
+        with pytest.raises(TypeError, match="Attribute 'filter_max' must be a float"):
+            data.entity_type.filter_max = "abc"
+
+        data.entity_type.filter_max = np.percentile(data.values, 70)
+
+        with pytest.raises(TypeError, match="Attribute 'filter_min' must be a float"):
+            data.entity_type.filter_min = "abc"
+
+        with pytest.raises(
+            ValueError, match="Attribute 'filter_min' must be less than"
+        ):
+            data.entity_type.filter_min = np.percentile(data.values, 75)
+
+        data.entity_type.filter_min = np.percentile(data.values, 25)
+
+        with pytest.raises(
+            ValueError, match="Attribute 'filter_max' must be greater than"
+        ):
+            data.entity_type.filter_max = np.percentile(data.values, 15)
+
+        data.entity_type.filter_min = None
+
+    # Read it back in
+    with Workspace(h5file_path) as workspace:
+        rec_data = workspace.get_entity("DataValues")[0]
+        assert rec_data.entity_type.complement_filter
+        np.testing.assert_almost_equal(
+            rec_data.entity_type.filter_max, np.percentile(data.values, 70)
+        )
+        assert not rec_data.entity_type.filter_min
