@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import logging
 from copy import deepcopy
+from typing import Any  # nopycln: import
 
 import numpy as np
 import pytest
