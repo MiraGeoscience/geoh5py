@@ -35,10 +35,11 @@ def test_create_point_data(tmp_path):
     # Generate a random cloud of points
     values = np.random.randn(12)
     h5file_path = tmp_path / r"testPoints.geoh5"
-    workspace = Workspace.create(h5file_path)
+    workspace = Workspace()
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
+    workspace.save_as(h5file_path)
     with pytest.raises(ValueError, match="Association flag should be one of"):
         points.add_data({"test": {"association": "ABC", "values": values}})
 
