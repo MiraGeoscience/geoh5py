@@ -23,6 +23,7 @@ jobs:
       source-repo-names: '["public-noremote-conda-dev"]'
       conda-channels: '["conda-forge"]'
       publish-repo-names: '["public-noremote-conda-dev"]'
+      build-experimental: true
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
