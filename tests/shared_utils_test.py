@@ -72,7 +72,7 @@ def test_iterable_message():
 def test_mask_by_extent():
     corners = [[-1, -2], [4, 5], [2, 3]]
     points = [-100, 100, 0]
-    with pytest.raises(ValueError, match=r"Input 'extent' must be a 2D array-like\."):
+    with pytest.raises(ValueError, match=r"Input 'extent' must be a 2D array-like\b"):
         mask_by_extent(np.vstack([points]), 1.0)
 
     with pytest.raises(

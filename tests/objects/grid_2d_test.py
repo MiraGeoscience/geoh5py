@@ -140,7 +140,9 @@ def test_grid2d_to_geoimage(tmp_path):
         with pytest.raises(TypeError, match="'The keys must be pass as a list"):
             grid.to_geoimage(("test", 3))
 
-        with pytest.raises(KeyError, match=r" you entered does not exists\."):
+        with pytest.raises(
+            KeyError, match=r"The key 'DataValues' you entered does not exists\b"
+        ):
             grid.to_geoimage("DataValues")
 
         with pytest.raises(
