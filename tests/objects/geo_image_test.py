@@ -163,7 +163,7 @@ def test_attribute_setters():
     assert gimage.n_cells == 2
 
     with pytest.raises(
-        TypeError, match="Attribute 'cells' must be provided as type numpy.ndarray"
+        TypeError, match=r"Attribute 'cells' must be provided as type numpy\.ndarray"
     ):
         gimage.cells = "abc"
 
@@ -202,7 +202,7 @@ def test_create_copy_empty_geoimage(tmp_path):
 
         with pytest.raises(
             ValueError,
-            match="Input 'value' for the 'image' property must be a 2D or 3D numpy.ndarray",
+            match=r"Input 'value' for the 'image' property must be a 2D or 3D numpy\.ndarray",
         ):
             geoimage.image = np.random.randn(12)
 
@@ -214,7 +214,7 @@ def test_create_copy_empty_geoimage(tmp_path):
         assert geoimage.image is None
 
         with pytest.raises(
-            AttributeError, match="An 'image' must be set before georeferencing."
+            AttributeError, match=r"An 'image' must be set before georeferencing\."
         ):
             geoimage.set_tag_from_vertices()
 
@@ -234,13 +234,13 @@ def test_create_geoimage_dry_georeferencing(tmp_path):
         geoimage.georeferencing_from_image()
 
         with pytest.raises(
-            TypeError, match="float\\(\\) argument must be a string or a real number"
+            TypeError, match=r"float\(\) argument must be a string or a real number"
         ):
             geoimage.georeference(np.array(zip(pixels[0, :], points, strict=False)))
 
         with pytest.raises(
             AttributeError,
-            match="The 'image' property cannot be reset. Consider creating a new object",
+            match=r"The 'image' property cannot be reset\. Consider creating a new object",
         ):
             geoimage.image = np.random.randint(0, 255, (128, 64, 3))
 

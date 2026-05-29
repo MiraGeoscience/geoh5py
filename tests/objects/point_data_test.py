@@ -46,7 +46,7 @@ def test_create_point_data(tmp_path):
     with pytest.raises(TypeError, match="Association must be of type"):
         points.add_data({"test": {"association": Points, "values": values}})
 
-    with pytest.warns(UserWarning, match="Input 'values' converted to a 1D array."):
+    with pytest.warns(UserWarning, match=r"Input 'values' converted to a 1D array\."):
         points.add_data({"test": {"values": values.reshape(-1, 1)}})
 
     with pytest.raises(TypeError, match="Input 'data' must be of type"):
@@ -115,7 +115,7 @@ def test_remove_point_data(tmp_path):
             "Error returning None mask."
         )
 
-        with pytest.raises(TypeError, match="Indices must be a list or numpy array."):
+        with pytest.raises(TypeError, match=r"Indices must be a list or numpy array\."):
             points.remove_vertices("abc")
 
         data = points.add_data(
@@ -128,7 +128,7 @@ def test_remove_point_data(tmp_path):
             points.vertices = np.random.randn(10, 3)
 
         with pytest.raises(
-            ValueError, match="Found indices larger than the number of vertices."
+            ValueError, match=r"Found indices larger than the number of vertices\."
         ):
             points.remove_vertices([12])
 

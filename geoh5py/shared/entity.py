@@ -180,9 +180,11 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
             verified_values = []
             for val in to_list(value):
                 val = self.workspace.get_entity(str2uuid(val))[0]
+
                 if getattr(val, "_default_name", None) != "Slicer":
                     raise TypeError(msg)
-                verified_values.append(val.uid)
+
+                verified_values.append(val.uid)  # type: ignore
             value = verified_values
 
         self._clipping_ids = value
