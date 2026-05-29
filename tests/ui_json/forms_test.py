@@ -22,10 +22,11 @@ from __future__ import annotations
 
 import json
 import uuid
+from typing import Any  # nopycln: import
 
 import numpy as np
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from geoh5py import Workspace
 from geoh5py.data import DataAssociationEnum, DataTypeEnum

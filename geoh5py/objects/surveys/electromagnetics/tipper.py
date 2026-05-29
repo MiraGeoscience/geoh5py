@@ -210,7 +210,7 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
         return self.base_stations
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -230,6 +230,6 @@ class TipperBaseStations(TipperSurvey, Points):
         return self.receivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

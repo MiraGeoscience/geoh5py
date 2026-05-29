@@ -117,7 +117,7 @@ class BaseSurvey(ObjectBase, ABC):
 
     @property
     @abstractmethod
-    def type(self):
+    def type_name(self):
         """Survey element type"""
 
     @property
@@ -158,13 +158,13 @@ class BaseSurvey(ObjectBase, ABC):
 
         setattr(
             new_entity,
-            self.type_map[self.complement.type],
+            self.type_map[self.complement.type_name],
             new_complement,
         )
 
         setattr(
             new_complement,
-            self.type_map[new_entity.type],
+            self.type_map[new_entity.type_name],
             new_entity,
         )
 

@@ -80,7 +80,7 @@ class BaseUIJson(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True, extra="allow", validate_assignment=True
     )
-
+    __pydantic_extra__: dict[str, str | float | int | dict]  # For autodoc
     version: str | None = "0.0.0"
     title: str
     geoh5: OptionalPath
