@@ -299,7 +299,7 @@ class PotentialElectrode(BaseElectrode):
         return self
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -399,6 +399,6 @@ class CurrentElectrode(BaseElectrode):
         self._ab_cell_id = ab_cell_id
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

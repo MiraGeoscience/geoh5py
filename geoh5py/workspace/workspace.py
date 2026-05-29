@@ -245,6 +245,9 @@ class Workspace(AbstractContextManager):
 
             self.repack = False
 
+        if isinstance(self._h5file, BytesIO):
+            self._h5file.seek(0)
+
     @property
     def contributors(self) -> np.ndarray:
         """
@@ -1296,17 +1299,13 @@ class Workspace(AbstractContextManager):
         """
         Generate a new geoh5 file with core structure.
         """
-        if isinstance(self.h5file, BytesIO):
-            self._geoh5 = h5py.File(self.h5file, "a")
-
-        elif isinstance(self.h5file, Path):
-            self._geoh5 = h5py.File(
-                self.h5file,
-                "x",
-                fs_strategy="page",
-                page_buf_size=DEFAULT_PAGE_BUF_SIZE,
-            )
-
+        self._geoh5 = h5py.File(
+            self.h5file,
+            "x",
+            fs_strategy="page",
+            page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+            libver=("v110", "v114"),
+        )
         H5Writer.init_geoh5(self._geoh5, self)
 
         return self._geoh5

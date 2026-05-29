@@ -71,7 +71,7 @@ class Group(EntityContainer):
 
         if copy_children and new_entity is not None:
             for child in self.children:
-                if hasattr(child, "complement") and child.type != "Receivers":
+                if hasattr(child, "complement") and child.type_name != "Receivers":
                     continue
 
                 child.copy(

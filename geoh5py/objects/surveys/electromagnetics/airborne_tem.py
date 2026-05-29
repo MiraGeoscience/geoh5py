@@ -92,7 +92,7 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
         return self.transmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -111,6 +111,6 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
         return self.receivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

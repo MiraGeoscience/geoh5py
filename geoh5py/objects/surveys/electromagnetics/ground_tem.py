@@ -89,7 +89,7 @@ class MovingLoopGroundTEMReceivers(MovingLoopGroundTEMSurvey):  # pylint: disabl
         return MovingLoopGroundTEMTransmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -115,7 +115,7 @@ class MovingLoopGroundTEMTransmitters(MovingLoopGroundTEMSurvey):  # pylint: dis
         return MovingLoopGroundTEMReceivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -177,7 +177,7 @@ class LargeLoopGroundTEMReceivers(LargeLoopGroundTEMSurvey):
         return LargeLoopGroundTEMTransmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -205,6 +205,6 @@ class LargeLoopGroundTEMTransmitters(LargeLoopGroundTEMSurvey):
         return LargeLoopGroundTEMReceivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

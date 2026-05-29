@@ -90,7 +90,7 @@ class MovingLoopGroundFEMReceivers(MovingLoopGroundFEMSurvey):  # pylint: disabl
         return MovingLoopGroundFEMTransmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -116,7 +116,7 @@ class MovingLoopGroundFEMTransmitters(MovingLoopGroundFEMSurvey):  # pylint: dis
         return MovingLoopGroundFEMReceivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -177,7 +177,7 @@ class LargeLoopGroundFEMReceivers(LargeLoopGroundFEMSurvey):  # pylint: disable=
         return LargeLoopGroundFEMTransmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -203,6 +203,6 @@ class LargeLoopGroundFEMTransmitters(LargeLoopGroundFEMSurvey):  # pylint: disab
         return LargeLoopGroundFEMReceivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

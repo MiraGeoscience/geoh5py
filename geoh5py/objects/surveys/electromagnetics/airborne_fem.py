@@ -92,7 +92,7 @@ class AirborneFEMReceivers(AirborneFEMSurvey):  # pylint: disable=too-many-ances
         return self.transmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -111,6 +111,6 @@ class AirborneFEMTransmitters(AirborneFEMSurvey):  # pylint: disable=too-many-an
         return self.receivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

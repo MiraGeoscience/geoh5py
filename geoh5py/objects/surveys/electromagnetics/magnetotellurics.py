@@ -84,7 +84,7 @@ class MTReceivers(FEMSurvey, Points):  # pylint: disable=too-many-ancestors
         return type(None)
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 

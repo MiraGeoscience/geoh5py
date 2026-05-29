@@ -33,8 +33,8 @@ from geoh5py.workspace import Workspace
 
 
 def test_add_file(tmp_path: Path):
-    workspace = Workspace(tmp_path / "test.geoh5")
-    workspace_copy = Workspace()
+    workspace = Workspace.create(tmp_path / f"{__name__}.geoh5")
+    workspace_copy = Workspace.create(tmp_path / f"{__name__}_copy.geoh5")
     with pytest.warns(UserWarning, match=r"No 'vertices' provided\."):
         curve = Curve.create(workspace)
     group = ContainerGroup.create(workspace)
