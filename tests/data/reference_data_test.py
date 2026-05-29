@@ -65,7 +65,7 @@ def generate_value_map(workspace, n_data=12, n_class=8, unique_name=False):
 def test_reference_value_map():
     workspace = Workspace()
 
-    with pytest.raises(TypeError, match=r"Value map must be a numpy array or dict."):
+    with pytest.raises(TypeError, match=r"Value map must be a numpy array or dict\."):
         ReferenceValueMap("value_map")
 
     with pytest.raises(KeyError, match=r"Key must be an positive integer"):
@@ -133,7 +133,7 @@ def test_create_reference_data(tmp_path):
 
         data._entity_type._value_map = None  #  pylint: disable=protected-access
 
-        with pytest.raises(ValueError, match=r"Entity type must have a value map."):
+        with pytest.raises(ValueError, match=r"Entity type must have a value map\."):
             _ = data.mapped_values
 
 
@@ -158,7 +158,7 @@ def test_add_data_map(tmp_path):
             data.data_maps = data_map
 
         with pytest.raises(
-            TypeError, match=r"Value map must be a numpy array or dict."
+            TypeError, match=r"Value map must be a numpy array or dict\."
         ):
             data.add_data_map("test", "abc")
 
@@ -167,7 +167,7 @@ def test_add_data_map(tmp_path):
         value_map = data.entity_type.value_map
         data.entity_type.value_map = None
 
-        with pytest.raises(ValueError, match=r"Entity type must have a value map."):
+        with pytest.raises(ValueError, match=r"Entity type must have a value map\."):
             data.add_data_map("test", data_map)
 
         data.entity_type.value_map = value_map

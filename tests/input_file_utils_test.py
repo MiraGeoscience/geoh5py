@@ -331,5 +331,5 @@ def test_range_label():
 
 
 def test_optional_error():
-    with pytest.raises(ValueError, match=r"Unrecognized state option."):
+    with pytest.raises(ValueError, match=r"Unrecognized state option\."):
         templates.optional_parameter("bidon")

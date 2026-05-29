@@ -653,7 +653,7 @@ def test_geoh5_validate_extension(tmp_path):
     h5file = tmp_path / "test"
     h5file.touch()
 
-    with pytest.raises(ValidationError, match=r"must have a '.geoh5' file extension."):
+    with pytest.raises(ValidationError, match=r"must have a '.geoh5' file extension\."):
         _ = BaseUIJson(
             version="0.1.0",
             title="my application",

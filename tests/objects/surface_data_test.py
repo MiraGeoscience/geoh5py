@@ -99,7 +99,7 @@ def test_remove_cells_surface_data(tmp_path: Path):
         surface.add_data({"TMI": {"values": values}})
 
         with pytest.raises(
-            ValueError, match=r"Found indices larger than the number of cells."
+            ValueError, match=r"Found indices larger than the number of cells\."
         ):
             surface.remove_cells([101])
 
@@ -136,7 +136,7 @@ def test_remove_vertices_surface_data(tmp_path: Path):
         )
 
         with pytest.raises(
-            ValueError, match=r"Found indices larger than the number of vertices."
+            ValueError, match=r"Found indices larger than the number of vertices\."
         ):
             surface.remove_vertices([1001])
 

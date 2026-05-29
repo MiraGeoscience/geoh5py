@@ -53,7 +53,7 @@ def test_copy_extent_grid_2d(tmp_path):
 
     data = grid.add_data({"rando": {"values": values.flatten()}})
 
-    with pytest.raises(TypeError, match=r"Expected a numpy array of extent values."):
+    with pytest.raises(TypeError, match=r"Expected a numpy array of extent values\."):
         grid.copy_from_extent(data)
 
     assert (

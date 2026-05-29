@@ -102,7 +102,7 @@ def test_create_vp_model(tmp_path: Path):
     ws = Workspace()
 
     with pytest.raises(
-        TypeError, match=r"Attribute 'unit_property_id' should be a 'uuid.UUID'"
+        TypeError, match=r"Attribute 'unit_property_id' should be a 'uuid\.UUID'"
     ):
         VPModel.create(ws, layers=layers, prisms=prisms, unit_property_id="abc")
 

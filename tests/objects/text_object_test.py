@@ -68,14 +68,14 @@ def test_text_data_length_mismatch(tmp_path):
 
         # Test setting text_mesh_data with bad type
         with pytest.raises(
-            TypeError, match=r"The 'Text Data' must be a dictionary or a JSON string."
+            TypeError, match=r"The 'Text Data' must be a dictionary or a JSON string\."
         ):
             text_object.text_mesh_data = 123
 
         # Test setting value to the text_mesh_data property through setattr
         with pytest.raises(
             ValueError,
-            match=r"The 'Text Data' entries must contain a list",
+            match=r"The 'Text Data' entries must contain a list of len\('n_vertices'\)\.",
         ):
             text_object.color = ["#ff00f1ff", "#00ff1fff", "#0000ffff"]
 
@@ -93,7 +93,7 @@ def test_text_data_length_mismatch(tmp_path):
 
         with pytest.raises(
             ValueError,
-            match=r"The 'Text Data' dictionary must contain a list",
+            match=r"The 'Text Data' dictionary must contain a list of len\('n_vertices'\)\.",
         ):
             text_object.text_mesh_data = invalid_text_mesh_data
 
