@@ -85,14 +85,14 @@ def test_visual_parameters(tmp_path, caplog):
             )
         assert any("Visual Parameters should not" in m for m in caplog.messages)
 
-        with pytest.raises(UserWarning, match=r"Visual parameters already exist"):
+        with pytest.raises(UserWarning, match="Visual parameters already exist"):
             points.add_default_visual_parameters()
 
-        with pytest.raises(TypeError, match=r"Input 'visual_parameters'"):
+        with pytest.raises(TypeError, match="Input 'visual_parameters'"):
             points.visual_parameters = 1
 
         with pytest.raises(
-            TypeError, match=r"Input 'colour' values must be a list of 3 or 4 integers"
+            TypeError, match="Input 'colour' values must be a list of 3 or 4 integers"
         ):
             points.visual_parameters.colour = [255, 0]  # Wrong length
 

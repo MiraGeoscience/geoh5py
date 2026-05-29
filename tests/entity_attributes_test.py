@@ -33,10 +33,10 @@ def test_attribute_validations():
     workspace = Workspace()
     xyz = np.random.randn(10, 3)
 
-    with pytest.raises(TypeError, match=r"Input uid must be a string or uuid"):
+    with pytest.raises(TypeError, match="Input uid must be a string or uuid"):
         Curve.create(workspace, vertices=xyz, uid="abc")
 
-    with pytest.raises(TypeError, match=r"Attribute 'on_file' must be of type bool"):
+    with pytest.raises(TypeError, match="Attribute 'on_file' must be of type bool"):
         Curve.create(workspace, vertices=xyz, on_file="abc")
 
     with pytest.raises(

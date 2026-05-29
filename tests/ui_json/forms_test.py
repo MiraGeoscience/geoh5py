@@ -110,7 +110,7 @@ def test_base_form_config_alias(sample_form):
     assert form.dependency_type == "enabled"
     assert not hasattr(form, "dependencyType")
 
-    with pytest.raises(ValidationError, match=r"dependencyType"):
+    with pytest.raises(ValidationError, match="dependencyType"):
         _ = sample_form(
             label="name", value="test", dependency="my_param", dependencyType=1
         )
@@ -123,8 +123,7 @@ def test_dependency_type_enum(sample_form):
     assert form.dependency_type == "enabled"
 
     with pytest.raises(
-        ValidationError,
-        match=r"Input should be 'enabled', 'disabled', 'show' or 'hide'",
+        ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
         _ = sample_form(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
@@ -245,7 +244,7 @@ def test_file_form(tmp_path):
         assert file_form.file_type == ["ext"]
         assert 'my_file.ext",' in file_form.json_string
 
-    with pytest.raises(ValidationError, match=r"has an invalid extension"):
+    with pytest.raises(ValidationError, match="has an invalid extension"):
         _ = FileForm(
             label="file",
             value=tmp_path / "my_file.ext",
@@ -279,7 +278,7 @@ def test_multi_file_form(tmp_path):
             or "my_file.ext;/tmp" in multi_file_form.json_string
         )
 
-    with pytest.raises(ValidationError, match=r"does not exist"):
+    with pytest.raises(ValidationError, match="does not exist"):
         _ = MultiFileForm(
             label="Files",
             value=[str(tmp_path / "non_existent.ext")],
@@ -288,7 +287,7 @@ def test_multi_file_form(tmp_path):
             file_multi=True,
         )
 
-    with pytest.raises(ValidationError, match=r"must be the same length"):
+    with pytest.raises(ValidationError, match="must be the same length"):
         _ = MultiFileForm(
             label="Files",
             value=[str(p) for p in paths],
@@ -297,7 +296,7 @@ def test_multi_file_form(tmp_path):
             file_multi=True,
         )
 
-    with pytest.raises(ValidationError, match=r"have invalid extensions"):
+    with pytest.raises(ValidationError, match="have invalid extensions"):
         _ = MultiFileForm(
             label="Files",
             value=[str(p) for p in paths],
@@ -322,7 +321,7 @@ def test_directory_form(tmp_path):
         assert file_form.file_description == ["Directory"]
         assert file_form.directory_only
 
-    with pytest.raises(ValidationError, match=r"is not a valid directory"):
+    with pytest.raises(ValidationError, match="is not a valid directory"):
         filepath = tmp_path / "my_file.ext"
         filepath.touch()
         _ = DirectoryForm(
@@ -330,7 +329,7 @@ def test_directory_form(tmp_path):
             value=tmp_path / "my_file.ext",
         )
 
-    with pytest.raises(ValidationError, match=r"is not a valid directory"):
+    with pytest.raises(ValidationError, match="is not a valid directory"):
         _ = DirectoryForm(
             label="working directory",
             value=tmp_path / "non_existent_dir",
@@ -344,7 +343,7 @@ def test_object_form():
     assert form.value == uuid.UUID(obj_uid)
     assert form.mesh_type == [Points, Surface]
 
-    with pytest.raises(ValidationError, match=r"Input should be a valid UUID"):
+    with pytest.raises(ValidationError, match="Input should be a valid UUID"):
         _ = ObjectForm(
             label="name",
             value="not a uuid",
@@ -400,7 +399,7 @@ def test_object_form_mesh_type():
     )
     assert form.mesh_type == [DrapeModel] * 5
 
-    with pytest.raises(ValidationError, match=r"not a recognized geoh5py object"):
+    with pytest.raises(ValidationError, match="not a recognized geoh5py object"):
         _ = ObjectForm(label="name", value=obj_uid, mesh_type="DrapeModel")
 
 
@@ -500,7 +499,7 @@ def test_data_or_value_form():
     assert form.property == uuid.UUID(data_uid)
 
     with pytest.raises(
-        ValidationError, match=r"A property must be provided if is_value is used"
+        ValidationError, match="A property must be provided if is_value is used"
     ):
         _ = DataOrValueForm(
             label="name",
@@ -930,7 +929,7 @@ def test_multi_data_group_form():
     assert form.multi_select
     assert form.tooltip == ["some ", "tooltip ", "text"]
 
-    with pytest.raises(TypeError, match=r"'value' must be a list"):
+    with pytest.raises(TypeError, match="'value' must be a list"):
         _ = GroupMultiDataForm(
             label="name",
             value=data_uid_1,

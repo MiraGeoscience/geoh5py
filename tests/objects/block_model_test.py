@@ -94,7 +94,7 @@ def test_create_block_model_data(tmp_path):
         ):
             BlockModel.create(workspace, u_cell_delimiters="abc")
 
-        with pytest.raises(ValueError, match=r"must be a 1D array of floats"):
+        with pytest.raises(ValueError, match="must be a 1D array of floats"):
             BlockModel.create(workspace, u_cell_delimiters=np.ones((2, 2)))
 
         grid = BlockModel.create(
@@ -129,7 +129,7 @@ def test_create_block_model_data(tmp_path):
             compare_entities(grid, rec_obj)
             compare_entities(data, rec_data)
 
-        with pytest.raises(TypeError, match=r"Mask must be a numpy array of shape"):
+        with pytest.raises(TypeError, match="Mask must be a numpy array of shape"):
             grid.copy(mask="abc")
 
         # mask = np.ones(grid.n_cells, dtype=bool)

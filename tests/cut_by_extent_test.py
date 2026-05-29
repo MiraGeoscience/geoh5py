@@ -100,7 +100,7 @@ def test_extent_from_vertices_and_box_input_validation_extent():
             extent=bad,
         )
 
-    with pytest.raises(ValueError, match=r"Planar object must have"):
+    with pytest.raises(ValueError, match="Planar object must have"):
         plane.extent_from_vertices_and_box(
             planar_object=None,  # type: ignore
             vertices=vertices,

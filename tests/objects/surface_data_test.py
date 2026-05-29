@@ -54,9 +54,7 @@ def test_create_surface_data(tmp_path: Path):
         # Create a grid of points and triangulate
         xyz, simplices, values = generate_surface(10)
 
-        with pytest.warns(
-            UserWarning, match=r"Attribute 'vertices' has fewer elements"
-        ):
+        with pytest.warns(UserWarning, match="Attribute 'vertices' has fewer elements"):
             singleton = Surface.create(
                 workspace,
             )
@@ -64,10 +62,10 @@ def test_create_surface_data(tmp_path: Path):
         assert singleton.n_cells == 1, "Error creating surface with no cells."
 
         # Create a geoh5 surface
-        with pytest.raises(ValueError, match=r"Array of 'cells' should be of shape"):
+        with pytest.raises(ValueError, match="Array of 'cells' should be of shape"):
             Surface.create(workspace, name="mySurf", vertices=xyz, cells=np.c_[[0, 1]])
 
-        with pytest.raises(TypeError, match=r"Indices array must be of integer type"):
+        with pytest.raises(TypeError, match="Indices array must be of integer type"):
             Surface.create(
                 workspace, name="mySurf", vertices=xyz, cells=simplices.astype(float)
             )
@@ -104,7 +102,7 @@ def test_remove_cells_surface_data(tmp_path: Path):
             surface.remove_cells([101])
 
         with pytest.raises(
-            ValueError, match=r"New cells array must have the same shape"
+            ValueError, match="New cells array must have the same shape"
         ):
             surface.cells = surface.cells[1:, :]
 

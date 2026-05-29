@@ -63,7 +63,7 @@ def test_text_data_length_mismatch(tmp_path):
         vertices = np.random.rand(5, 3)
         text_object = TextObject.create(workspace, vertices=vertices)
 
-        with pytest.raises(ValidationError, match=r"Field required"):
+        with pytest.raises(ValidationError, match="Field required"):
             text_object.text_mesh_data = '{"abc":{"label": "a"}}'
 
         # Test setting text_mesh_data with bad type

@@ -213,7 +213,7 @@ def test_concatenated_entities(tmp_path):
 
         assert data.property_group is None
 
-        with pytest.raises(TypeError, match=r"must have a 'property_groups' attribute"):
+        with pytest.raises(TypeError, match="must have a 'property_groups' attribute"):
             ConcatenatedPropertyGroup(None)
 
         prop_group = ConcatenatedPropertyGroup(parent=concat_object, properties=[data])
@@ -275,7 +275,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
         singleton = Drillhole.create(
             workspace,
         )
-        with pytest.warns(match=r"Expected a Concatenated object"):
+        with pytest.warns(match="Expected a Concatenated object"):
             singleton.parent = dh_group
 
         assert len(dh_group.children) == 1
@@ -284,7 +284,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
 
         assert len(dh_group.children) == 2
 
-        with pytest.raises(UserWarning, match=r"does not have a property or values"):
+        with pytest.raises(UserWarning, match="does not have a property or values"):
             dh_group.update_array_attribute(well, "abc")
 
         # Add both set of log data with 0.5 m tolerance
@@ -303,7 +303,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
             )
 
         # Add both set of log data with 0.5 m tolerance
-        with pytest.raises(AttributeError, match=r"Input data dictionary must contain"):
+        with pytest.raises(AttributeError, match="Input data dictionary must contain"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -312,7 +312,7 @@ def test_create_drillhole_data(tmp_path):  # pylint: disable=too-many-statements
                 },
             )
 
-        with pytest.raises(ValueError, match=r"Mismatch between input"):
+        with pytest.raises(ValueError, match="Mismatch between input"):
             well.add_data(
                 {
                     "my_log_values/": {
@@ -540,7 +540,7 @@ def test_copy_and_append_drillhole_data(tmp_path):
             prop_group = [
                 k for k in well.property_groups if k.name == "property_group"
             ][0]
-            with pytest.raises(ValueError, match=r"Input values with shape"):
+            with pytest.raises(ValueError, match="Input values with shape"):
                 well.add_data(
                     {
                         "new_data": {"values": np.random.randn(24).astype(np.float32)},
@@ -569,7 +569,7 @@ def test_copy_and_append_drillhole_data(tmp_path):
                 property_group=prop_group.name,
             )
 
-            with pytest.raises(AttributeError, match=r"Input data property group"):
+            with pytest.raises(AttributeError, match="Input data property group"):
                 well.add_data(
                     {
                         "new_data_bidon": {
@@ -1082,28 +1082,28 @@ def test_tables_errors(tmp_path):
     )
 
     with workspace.open():
-        with pytest.raises(TypeError, match=r"The parent must be a Concatenator"):
+        with pytest.raises(TypeError, match="The parent must be a Concatenator"):
             DrillholesGroupTable._get_property_groups("bidon", "bidon")
 
-        with pytest.raises(ValueError, match=r"No property group with name"):
+        with pytest.raises(ValueError, match="No property group with name"):
             DrillholesGroupTable._get_property_groups(drillhole_group, "bidon")
 
-        with pytest.raises(KeyError, match=r"The name must"):
+        with pytest.raises(KeyError, match="The name must"):
             drillhole_group.drillholes_tables[
                 "property_group"
             ].add_values_to_property_group(name=123, values=np.random.randn(50))
 
-        with pytest.raises(ValueError, match=r"The length of the values"):
+        with pytest.raises(ValueError, match="The length of the values"):
             drillhole_group.drillholes_tables[
                 "property_group"
             ].add_values_to_property_group(name="new value", values=np.random.randn(49))
 
-        with pytest.raises(KeyError, match=r"The names are not in the list"):
+        with pytest.raises(KeyError, match="The names are not in the list"):
             drillhole_group.drillholes_tables["property_group"].depth_table_by_name(
                 ("bidon", "bidon")
             )
 
-        with pytest.raises(KeyError, match=r"The name 'bidon' is not in"):
+        with pytest.raises(KeyError, match="The name 'bidon' is not in"):
             drillhole_group.drillholes_tables["property_group"].nan_value_from_name(
                 "bidon"
             )

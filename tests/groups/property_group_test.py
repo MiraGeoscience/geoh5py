@@ -188,43 +188,43 @@ def test_property_group_errors(tmp_path):
 
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        with pytest.raises(TypeError, match=r"Name must be"):
+        with pytest.raises(TypeError, match="Name must be"):
             PropertyGroup(parent=curve, name=42)  # type: ignore
 
-        with pytest.raises(TypeError, match=r"Parent bidon"):
+        with pytest.raises(TypeError, match="Parent bidon"):
             PropertyGroup(parent="bidon")  # type: ignore
 
-        with pytest.raises(TypeError, match=r"Data must be of type Data"):
+        with pytest.raises(TypeError, match="Data must be of type Data"):
             PropertyGroup(parent=curve, properties=[123])
 
-        with pytest.raises(TypeError, match=r"Could not convert input uid"):
+        with pytest.raises(TypeError, match="Could not convert input uid"):
             prop_group.uid = 123
 
-        with pytest.raises(TypeError, match=r"Attribute 'on_file' must be a boolean"):
+        with pytest.raises(TypeError, match="Attribute 'on_file' must be a boolean"):
             prop_group.on_file = "bidon"
 
         with pytest.raises(
-            ValueError, match=r"At least one of 'properties' or 'association'"
+            ValueError, match="At least one of 'properties' or 'association'"
         ):
             PropertyGroup(parent=curve)
 
-        with pytest.raises(TypeError, match=r"Property group must be of type"):
+        with pytest.raises(TypeError, match="Property group must be of type"):
             curve.add_data_to_group(data="bidon", property_group=123)
 
         # test error for allow delete
-        with pytest.raises(TypeError, match=r"allow_delete must be a boolean"):
+        with pytest.raises(TypeError, match="allow_delete must be a boolean"):
             prop_group.allow_delete = "bidon"
 
-        with pytest.raises(TypeError, match=r"Association must be"):
+        with pytest.raises(TypeError, match="Association must be"):
             PropertyGroup(parent=curve, association=123)
 
-        with pytest.raises(TypeError, match=r"'Property group type' must be of type"):
+        with pytest.raises(TypeError, match="'Property group type' must be of type"):
             PropertyGroup(parent=curve, property_group_type=123)
 
-        with pytest.raises(ValueError, match=r"'Property group type' must be one of"):
+        with pytest.raises(ValueError, match="'Property group type' must be one of"):
             PropertyGroup(parent=curve, property_group_type="badType")
 
-        with pytest.raises(ValueError, match=r"Data 'bidon' not found"):
+        with pytest.raises(ValueError, match="Data 'bidon' not found"):
             prop_group._validate_data("bidon")  # pylint: disable=protected-access
 
         curve.add_data(
@@ -235,7 +235,7 @@ def test_property_group_errors(tmp_path):
             {"TestAssociation": {"values": np.random.rand(11), "association": "CELL"}},
         )
 
-        with pytest.raises(ValueError, match=r"Data 'TestAssociation' association"):
+        with pytest.raises(ValueError, match="Data 'TestAssociation' association"):
             prop_group._validate_data("TestAssociation")  # pylint: disable=protected-access
 
         test = Curve.create(
@@ -247,7 +247,7 @@ def test_property_group_errors(tmp_path):
             {"WrongParent": {"values": np.random.rand(10), "association": "CELL"}},
         )
 
-        with pytest.raises(ValueError, match=r"Data 'WrongParent' parent"):
+        with pytest.raises(ValueError, match="Data 'WrongParent' parent"):
             prop_group._validate_data(test_data)  # pylint: disable=protected-access
 
 
@@ -374,15 +374,13 @@ def test_property_group_table_error(tmp_path):
 
         prop_group = curve.fetch_property_group(name="myGroup")
 
-        with pytest.raises(ValueError, match=r"The association DataAssociation"):
+        with pytest.raises(ValueError, match="The association DataAssociation"):
             _ = prop_group.table.locations
 
-        with pytest.raises(ValueError, match=r"The association DataAssociation"):
+        with pytest.raises(ValueError, match="The association DataAssociation"):
             _ = prop_group.table.size
 
-        with pytest.raises(
-            TypeError, match=r"'property_group' must be a PropertyGroup"
-        ):
+        with pytest.raises(TypeError, match="'property_group' must be a PropertyGroup"):
             PropertyGroupTable(property_group=123)  # type: ignore
 
         drillhole = Drillhole.create(workspace, name="test")
@@ -392,7 +390,7 @@ def test_property_group_table_error(tmp_path):
         )
 
         with pytest.raises(
-            NotImplementedError, match=r"PropertyGroupTable is not supported"
+            NotImplementedError, match="PropertyGroupTable is not supported"
         ):
             _ = prop_group.table
 
@@ -411,10 +409,10 @@ def test_property_group_table_error(tmp_path):
             properties=strike_dip,
         )
 
-        with pytest.raises(ValueError, match=r"Cannot add properties to "):
+        with pytest.raises(ValueError, match="Cannot add properties to "):
             prop_group.add_properties(curve)
 
-        with pytest.raises(ValueError, match=r"Cannot remove properties from "):
+        with pytest.raises(ValueError, match="Cannot remove properties from "):
             prop_group.remove_properties(curve)
 
 
@@ -439,20 +437,20 @@ def test_group_type_enum(tmp_path):
         property_group="myGroup2",
     )
 
-    with pytest.raises(TypeError, match=r"First children of 'Depth table'"):
+    with pytest.raises(TypeError, match="First children of 'Depth table'"):
         GroupTypeEnum("Depth table").verify([data])
 
-    with pytest.raises(TypeError, match=r"Children of 'Dip direction & dip'"):
+    with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
         GroupTypeEnum("Dip direction & dip").verify([data])
 
-    with pytest.raises(TypeError, match=r"First two children of 'Interval table'"):
+    with pytest.raises(TypeError, match="First two children of 'Interval table'"):
         GroupTypeEnum("Interval table").verify([data])
 
-    with pytest.raises(TypeError, match=r"Children of 'Multi-element'"):
+    with pytest.raises(TypeError, match="Children of 'Multi-element'"):
         GroupTypeEnum("Multi-element").verify([data_text])
 
-    with pytest.raises(TypeError, match=r"Children of 'Strike & dip'"):
+    with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
         GroupTypeEnum("Strike & dip").verify([data])
 
-    with pytest.raises(TypeError, match=r"Children of '3D vector'"):
+    with pytest.raises(TypeError, match="Children of '3D vector'"):
         GroupTypeEnum("3D vector").verify([data])

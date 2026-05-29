@@ -35,7 +35,7 @@ from geoh5py.workspace import Workspace
 
 def test_attribute_setters():
     with Workspace() as workspace_context:
-        with pytest.raises(TypeError, match=r"Attribute 'v_cell_size' must be"):
+        with pytest.raises(TypeError, match="Attribute 'v_cell_size' must be"):
             Grid2D.create(
                 workspace_context,
                 origin=[0, 0, 0],
@@ -46,7 +46,7 @@ def test_attribute_setters():
                 vertical=True,
             )
 
-        with pytest.raises(TypeError, match=r"Dip angle must be a float"):
+        with pytest.raises(TypeError, match="Dip angle must be a float"):
             Grid2D.create(
                 workspace_context,
                 origin=[0, 0, 0],
@@ -59,10 +59,10 @@ def test_attribute_setters():
 
         grid = Grid2D.create(workspace_context)
 
-        with pytest.raises(TypeError, match=r"Attribute 'last_focus'"):
+        with pytest.raises(TypeError, match="Attribute 'last_focus'"):
             grid.last_focus = 666
 
-        with pytest.raises(TypeError, match=r"Input 'entity_type'"):
+        with pytest.raises(TypeError, match="Input 'entity_type'"):
             grid.validate_entity_type("bidon")
 
 
@@ -109,7 +109,7 @@ def test_copy_from_extent():
         )
         assert grid.dip == 90.0
 
-        with pytest.raises(TypeError, match=r"Expected a 2D numpy array"):
+        with pytest.raises(TypeError, match="Expected a 2D numpy array"):
             grid.copy_from_extent(np.ones((3, 3)))
 
 
@@ -137,14 +137,14 @@ def test_grid2d_to_geoimage(tmp_path):
 
         assert isinstance(grid.origin, np.ndarray)
 
-        with pytest.raises(TypeError, match=r"'The keys must be pass as a list"):
+        with pytest.raises(TypeError, match="'The keys must be pass as a list"):
             grid.to_geoimage(("test", 3))
 
         with pytest.raises(KeyError, match=r" you entered does not exists\."):
             grid.to_geoimage("DataValues")
 
         with pytest.raises(
-            IndexError, match=r"'int' values pass as key can't be larger"
+            IndexError, match="'int' values pass as key can't be larger"
         ):
             grid.to_geoimage(1000)
 
@@ -161,7 +161,7 @@ def test_grid2d_to_geoimage(tmp_path):
         compare_entities(grid, rec_obj)
         compare_entities(data, rec_data)
 
-        with pytest.raises(IndexError, match=r"Only 1, 3, or 4 layers can be selected"):
+        with pytest.raises(IndexError, match="Only 1, 3, or 4 layers can be selected"):
             grid.to_geoimage(["DataValues", "DataValues"])
 
         grid.rotation = 0.0
@@ -182,7 +182,7 @@ def test_grid2d_to_geoimage(tmp_path):
         with pytest.raises(AttributeError, match=r"No data is selected\."):
             converter.convert_to_pillow("test")
 
-        with pytest.raises(TypeError, match=r"The dtype of the keys must be"):
+        with pytest.raises(TypeError, match="The dtype of the keys must be"):
             converter.key_to_data(grid, [0, 1])
 
 
@@ -245,11 +245,11 @@ def test_get_unique_data_errors():
     with Workspace() as workspace:
         grid = Grid2D.create(workspace, u_count=2, v_count=2)
 
-        with pytest.raises(ValueError, match=r"No data"):
+        with pytest.raises(ValueError, match="No data"):
             grid.shaped_data_values("NonExistent")
 
         grid.add_data(
             {"ObjectData": {"association": "OBJECT", "values": np.array([1.0])}}
         )
-        with pytest.raises(ValueError, match=r"expected 'CELL'"):
+        with pytest.raises(ValueError, match="expected 'CELL'"):
             grid.shaped_data_values("ObjectData")

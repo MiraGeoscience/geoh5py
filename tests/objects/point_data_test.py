@@ -39,23 +39,23 @@ def test_create_point_data(tmp_path):
     points = Points.create(workspace, vertices=np.random.randn(12, 3), allow_move=False)
     data = points.add_data({"DataValues": {"association": "VERTEX", "values": values}})
 
-    with pytest.raises(ValueError, match=r"Association flag should be one of"):
+    with pytest.raises(ValueError, match="Association flag should be one of"):
         points.add_data({"test": {"association": "ABC", "values": values}})
 
-    with pytest.raises(TypeError, match=r"Association must be of type"):
+    with pytest.raises(TypeError, match="Association must be of type"):
         points.add_data({"test": {"association": Points, "values": values}})
 
     with pytest.warns(UserWarning, match=r"Input 'values' converted to a 1D array\."):
         points.add_data({"test": {"values": values.reshape(-1, 1)}})
 
-    with pytest.raises(TypeError, match=r"Input 'data' must be of type"):
+    with pytest.raises(TypeError, match="Input 'data' must be of type"):
         points.add_data("bidon")
 
     tag = points.add_data(
         {"my_comment": {"association": "OBJECT", "values": "hello_world"}}
     )
 
-    with pytest.raises(TypeError, match=r"Given value to data"):
+    with pytest.raises(TypeError, match="Given value to data"):
         points.add_data({"my_comment": "bidon"})
 
     # Change some data attributes for testing
@@ -105,7 +105,7 @@ def test_remove_point_data(tmp_path):
         pt = Points.create(workspace)
         assert pt.n_vertices == 1
 
-        with pytest.raises(ValueError, match=r"Array of 'vertices' should be of shape"):
+        with pytest.raises(ValueError, match="Array of 'vertices' should be of shape"):
             Points.create(workspace, vertices=np.r_[1, 2, 3])
 
         points = Points.create(workspace, vertices=np.random.randn(12, 3))
@@ -122,7 +122,7 @@ def test_remove_point_data(tmp_path):
         )
 
         with pytest.raises(
-            ValueError, match=r"New vertices array must have the same shape"
+            ValueError, match="New vertices array must have the same shape"
         ):
             points.vertices = np.random.randn(10, 3)
 
@@ -149,13 +149,13 @@ def test_copy_points_data(tmp_path):
             {"DataValues": {"association": "VERTEX", "values": values}}
         )
 
-        with pytest.raises(ValueError, match=r"Mask must be an array of shape"):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             points.copy(mask=np.r_[1, 2, 3])
 
-        with pytest.raises(ValueError, match=r"Mask must be an array of shape"):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             data.copy(mask=np.r_[1, 2, 3])
 
-        with pytest.raises(ValueError, match=r"Mask must be an array of shape"):
+        with pytest.raises(ValueError, match="Mask must be an array of shape"):
             data.copy(mask="abc")
 
         mask = np.zeros(12, dtype=bool)

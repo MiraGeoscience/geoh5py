@@ -68,5 +68,5 @@ def test_merge_surface(tmp_path):
             == np.vstack([surface0.cells, surface1.cells + np.max(simplices) + 1])
         )
 
-        with pytest.raises(TypeError, match=r"The input entities must be a list of"):
+        with pytest.raises(TypeError, match="The input entities must be a list of"):
             SurfaceMerger.validate_type("bidon")

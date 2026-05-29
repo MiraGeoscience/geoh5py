@@ -68,13 +68,13 @@ def test_reference_value_map():
     with pytest.raises(TypeError, match=r"Value map must be a numpy array or dict\."):
         ReferenceValueMap("value_map")
 
-    with pytest.raises(KeyError, match=r"Key must be an positive integer"):
+    with pytest.raises(KeyError, match="Key must be an positive integer"):
         ReferenceValueMap({-1: "test"})
 
-    with pytest.raises(ValueError, match=r"Value for key 0 must be b'Unknown'"):
+    with pytest.raises(ValueError, match="Value for key 0 must be b'Unknown'"):
         ReferencedValueMapType(workspace, value_map=((0, "test"),))
 
-    with pytest.raises(ValueError, match=r"Array of 'value_map' must be of dtype"):
+    with pytest.raises(ValueError, match="Array of 'value_map' must be of dtype"):
         array = np.array([(0, "test")], dtype=[("I", "i1"), ("K", "<U13")])
         ReferenceValueMap(array)
 
@@ -116,7 +116,7 @@ def test_create_reference_data(tmp_path):
         points, data, _ = generate_value_map(workspace)
 
         with pytest.raises(
-            TypeError, match=r"Input 'entity_type' with primitive_type 'None'"
+            TypeError, match="Input 'entity_type' with primitive_type 'None'"
         ):
             data.entity_type = "abc"
 
@@ -154,7 +154,7 @@ def test_add_data_map(tmp_path):
 
         # Add duplicate value
         data_map[1, 1] = data_map[0, 1]
-        with pytest.raises(TypeError, match=r"Property maps must be a dictionary"):
+        with pytest.raises(TypeError, match="Property maps must be a dictionary"):
             data.data_maps = data_map
 
         with pytest.raises(

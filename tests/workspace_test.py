@@ -49,7 +49,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
         warning[0]
     )
 
-    with pytest.raises(ValueError, match=r"must have a 'geoh5' extension"):
+    with pytest.raises(ValueError, match="must have a 'geoh5' extension"):
         Workspace(**attr).save_as(tmp_path / r"test.zip")
 
     workspace.close()
@@ -141,7 +141,7 @@ def test_reopening_mode(tmp_path):
         with fetch_active_workspace(workspace, mode="r") as re_open:
             assert re_open.geoh5.mode == "r"
 
-        with pytest.warns(UserWarning, match=r"Closing the workspace in mode 'r'"):
+        with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
             with fetch_active_workspace(workspace, mode="r+"):
                 assert workspace.geoh5.mode == "r+"
 
@@ -206,7 +206,7 @@ def test_disk_save_as(tmp_path):
 
 
 def test_create_bytesio():
-    with pytest.raises(TypeError, match=r"The 'h5file' attribute must be a str"):
+    with pytest.raises(TypeError, match="The 'h5file' attribute must be a str"):
         Workspace.create(123)
 
     workspace = Workspace.create()
@@ -217,5 +217,5 @@ def test_create_bytesio():
 def test_network_drive_warning(tmp_path):
     network_drive = tmp_path / "Dropbox"
     network_drive.mkdir()
-    with pytest.warns(match=r"Opening workspace with write access in a network drive"):
+    with pytest.warns(match="Opening workspace with write access in a network drive"):
         _ = Workspace(network_drive / "test.geoh5")
