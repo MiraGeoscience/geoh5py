@@ -24,7 +24,6 @@ requirements:
     - python ${{ python_min }}.*
     - poetry-core >=1.8.0
     - poetry-dynamic-versioning >=1.9, 1.*
-    - setuptools
     - pip
   run:
     - python >=${{ python_min }}
