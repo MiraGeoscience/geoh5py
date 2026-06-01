@@ -2,14 +2,14 @@ schema_version: 1
 
 context:
   name: "geoh5py"
+  python_min: "3.12"
   # Extract version from auto-generated _version.json
-  version: ${{ load_from_file("_version.json").version | trim }}
-  python_min: '3.12'
+  version: "${{ load_from_file('_version.json').version | trim }}"
   module_name: ${{ name|lower|replace("-", "_") }}
 
 package:
   name: ${{ name|lower }}
-  version: ${{ version }}
+  version: "${{ version }}"
 
 source:
   path: ../${{ name}}
