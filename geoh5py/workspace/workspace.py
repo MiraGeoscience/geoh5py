@@ -115,6 +115,7 @@ class Workspace(AbstractContextManager):
     :param name: Name of the project.
     :param repack: Repack the *geoh5* file after closing.
     :param version: Version of the project.
+    :param page_buf_size: Page buffer size of the h5 file.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
@@ -136,6 +137,7 @@ class Workspace(AbstractContextManager):
         name: str = "GEOSCIENCE",
         repack: bool = False,
         version: float = 2.1,
+        page_buf_size: int = DEFAULT_PAGE_BUF_SIZE,
     ):
         self._root: RootGroup
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
@@ -152,7 +154,7 @@ class Workspace(AbstractContextManager):
         self._repack: bool = repack
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._version: float = version
-
+        self._page_buf_size: int = page_buf_size
         self._h5file = self.validate_h5file_input(h5file)
 
         self.open(mode=mode)
@@ -1303,7 +1305,8 @@ class Workspace(AbstractContextManager):
             self.h5file,
             "x",
             fs_strategy="page",
-            page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+            page_buf_size=self._page_buf_size,
+            fs_page_size=self._page_buf_size,
             libver=("v110", "v114"),
         )
         H5Writer.init_geoh5(self._geoh5, self)
