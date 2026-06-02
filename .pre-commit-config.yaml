@@ -31,11 +31,11 @@ repos:
 #        -   --unsafe-fixes
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    rev: v1.15.0
     hooks:
     -   id: mypy
         additional_dependencies: [
-#            numpy==2.4.*,  # TODO: fix mypy errors related to numpy
+            # numpy==2.4.*,  # TODO: fix mypy errors related to numpy
             pydantic==2.12.*,
             tomli, # to read config from pyproject.toml
             types-toml,
