@@ -219,3 +219,22 @@ def test_network_drive_warning(tmp_path):
     network_drive.mkdir()
     with pytest.warns(match="Opening workspace with write access in a network drive"):
         _ = Workspace(network_drive / "test.geoh5")
+
+
+def test_page_size(tmp_path):
+
+    with pytest.raises(TypeError, match="Page buf size must be an integer"):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size="abc")
+
+    with pytest.raises(
+        ValueError, match="Page buf size must be an integer multiple of 2, and"
+    ):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=128)
+
+    with pytest.raises(
+        ValueError, match="Page buf size must be an integer multiple of 2, and"
+    ):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=601)
+
+    workspace = Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=512)
+    assert workspace.geoh5.page_buf_size == 512 * 256
