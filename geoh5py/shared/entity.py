@@ -227,7 +227,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.metadata = {"Coordinate Reference System": coordinate_reference_system}
 
     @classmethod
-    def create(cls, workspace, compression=5, **kwargs):
+    def create(cls, workspace, compression: int = 5, **kwargs):
         """
         Function to create an entity.
 
