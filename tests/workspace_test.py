@@ -20,6 +20,8 @@
 from __future__ import annotations
 
 import io
+import operator
+import os
 from pathlib import Path
 
 import numpy as np
@@ -237,4 +239,32 @@ def test_page_size(tmp_path):
         Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=601)
 
     workspace = Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=512)
-    assert workspace.geoh5.page_buf_size == 512 * 256
+
+    assert workspace.page_size == 512
+
+
+@pytest.mark.parametrize(
+    "n_values, compressions, expected_opt",
+    [
+        (100, (1, 5), operator.eq),  # No compression since < page_size
+        (10000, (1, 5), operator.gt),
+    ],
+)
+def test_compression_below_page(
+    tmp_path, n_values: int, compressions: tuple, expected_opt
+):
+    vertices = np.c_[np.arange(n_values), np.arange(n_values), np.arange(n_values)]
+    values = np.arange(n_values)
+
+    with Workspace.create(tmp_path / "test_low.geoh5", page_size=512) as ws:
+        pt = Points.create(ws, vertices=vertices, compression=compressions[0])
+        pt.add_data({"values": {"values": values}}, compression=compressions[0])
+
+    with Workspace.create(tmp_path / "test_high.geoh5", page_size=512) as ws:
+        pt = Points.create(ws, vertices=vertices, compression=compressions[1])
+        pt.add_data({"values": {"values": values}}, compression=compressions[1])
+
+    size_low_comp = os.stat(tmp_path / "test_low.geoh5").st_size
+    size_med_comp = os.stat(tmp_path / "test_high.geoh5").st_size
+
+    assert expected_opt(size_low_comp, size_med_comp)
