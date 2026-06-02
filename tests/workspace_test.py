@@ -225,22 +225,21 @@ def test_network_drive_warning(tmp_path):
 
 def test_page_size(tmp_path):
 
-    with pytest.raises(TypeError, match="Page buf size must be an integer"):
+    with pytest.raises(TypeError, match="Page size must be an integer"):
         Workspace.create(tmp_path / f"{__name__}.geoh5", page_size="abc")
 
     with pytest.raises(
-        ValueError, match="Page buf size must be an integer multiple of 2, and"
+        ValueError, match="Page size must be an integer multiple of 2, and"
     ):
         Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=128)
 
     with pytest.raises(
-        ValueError, match="Page buf size must be an integer multiple of 2, and"
+        ValueError, match="Page size must be an integer multiple of 2, and"
     ):
         Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=601)
 
-    workspace = Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=512)
-
-    assert workspace.page_size == 512
+    with Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=512) as workspace:
+        assert workspace.page_size == 512
 
 
 @pytest.mark.parametrize(

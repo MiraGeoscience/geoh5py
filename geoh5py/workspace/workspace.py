@@ -115,7 +115,7 @@ class Workspace(AbstractContextManager):
     :param name: Name of the project.
     :param repack: Repack the *geoh5* file after closing.
     :param version: Version of the project.
-    :param page_size: Page buffer size of the h5 file.
+    :param page_size: Page size of the h5 file.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
@@ -1318,7 +1318,7 @@ class Workspace(AbstractContextManager):
         """
         HDF5 page size.
 
-        Must be a multiple of 2, greater of equal to 512.
+        Must be a multiple of 2, greater than or equal 512.
         """
         return self._page_size
 
@@ -1621,16 +1621,16 @@ def active_workspace(workspace: Workspace):
 
 def validate_page_size(value: int) -> int:
     """
-    Check if a page buf size is valid value.
+    Check if a page size is valid value.
 
     :param value: A positive integer multiple of 2, >=512.
 
-    :return: Page buf size
+    :return: Page size value
     """
     if not isinstance(value, int):
-        raise TypeError("Page buf size must be an integer.")
+        raise TypeError("Page size must be an integer.")
 
     if value // 512 < 1 or value % 2 != 0:
-        raise ValueError("Page buf size must be an integer multiple of 2, and >=512.")
+        raise ValueError("Page size must be an integer multiple of 2, and >=512.")
 
     return value

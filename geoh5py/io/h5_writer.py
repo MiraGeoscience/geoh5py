@@ -603,6 +603,8 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
+        :param values: Values to be written to geoh5
+        :param compression: Compression level `compression_opts` of the h5 file.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
