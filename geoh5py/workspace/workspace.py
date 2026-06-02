@@ -154,7 +154,7 @@ class Workspace(AbstractContextManager):
         self._repack: bool = repack
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._version: float = version
-        self._page_buf_size: int = page_buf_size
+        self._page_buf_size: int = validate_page_buf_size(page_buf_size)
         self._h5file = self.validate_h5file_input(h5file)
 
         self.open(mode=mode)
@@ -1306,12 +1306,21 @@ class Workspace(AbstractContextManager):
             "x",
             fs_strategy="page",
             page_buf_size=self._page_buf_size,
-            fs_page_size=self._page_buf_size,
+            fs_page_size=self._page_buf_size // 256,
             libver=("v110", "v114"),
         )
         H5Writer.init_geoh5(self._geoh5, self)
 
         return self._geoh5
+
+    @property
+    def page_buf_size(self) -> int:
+        """
+        HDF5 page buf size.
+
+        Must be a multiple of 256.
+        """
+        return self._page_buf_size
 
     def promote(self, value: Any) -> Any:
         """
@@ -1608,3 +1617,20 @@ def active_workspace(workspace: Workspace):
     previous_active = previous_active_ref()
     if previous_active is not None:
         previous_active.activate()  # pylint: disable=no-member
+
+
+def validate_page_buf_size(value: int) -> int:
+    """
+    Check if a page buf size is valid value.
+
+    :param value: A positive integer multiple of 256.
+
+    :return: Page buf size
+    """
+    if not isinstance(value, int) or value % 2 != 0:
+        raise TypeError("Page buf size must be an integer multiple of 2.")
+
+    if value // 256 < 1:
+        raise ValueError("Page buf size must be an integer greater than 131072.")
+
+    return value
