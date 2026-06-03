@@ -20,6 +20,8 @@
 from __future__ import annotations
 
 import io
+import operator
+import os
 from pathlib import Path
 
 import numpy as np
@@ -219,3 +221,49 @@ def test_network_drive_warning(tmp_path):
     network_drive.mkdir()
     with pytest.warns(match="Opening workspace with write access in a network drive"):
         _ = Workspace(network_drive / "test.geoh5")
+
+
+def test_page_size(tmp_path):
+
+    with pytest.raises(TypeError, match="Page size must be an integer"):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size="abc")
+
+    with pytest.raises(
+        ValueError, match="Page size must be an integer multiple of 2, and"
+    ):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=128)
+
+    with pytest.raises(
+        ValueError, match="Page size must be an integer multiple of 2, and"
+    ):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=601)
+
+    with Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=512) as workspace:
+        assert workspace.page_size == 512
+
+
+@pytest.mark.parametrize(
+    "n_values, compressions, expected_opt",
+    [
+        (100, (1, 5), operator.eq),  # No compression since < page_size
+        (10000, (1, 5), operator.gt),
+    ],
+)
+def test_compression_below_page(
+    tmp_path, n_values: int, compressions: tuple, expected_opt
+):
+    vertices = np.c_[np.arange(n_values), np.arange(n_values), np.arange(n_values)]
+    values = np.arange(n_values)
+
+    with Workspace.create(tmp_path / "test_low.geoh5", page_size=512) as ws:
+        pt = Points.create(ws, vertices=vertices, compression=compressions[0])
+        pt.add_data({"values": {"values": values}}, compression=compressions[0])
+
+    with Workspace.create(tmp_path / "test_high.geoh5", page_size=512) as ws:
+        pt = Points.create(ws, vertices=vertices, compression=compressions[1])
+        pt.add_data({"values": {"values": values}}, compression=compressions[1])
+
+    size_low_comp = os.stat(tmp_path / "test_low.geoh5").st_size
+    size_med_comp = os.stat(tmp_path / "test_high.geoh5").st_size
+
+    assert expected_opt(size_low_comp, size_med_comp)
