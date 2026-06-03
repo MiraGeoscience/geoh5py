@@ -46,7 +46,8 @@ if TYPE_CHECKING:
     from .entity import Entity
     from .entity_container import EntityContainer
 
-DEFAULT_PAGE_SIZE = 65536
+DEFAULT_PAGE_SIZE = 65536  # Default page_size for H5, in bytes
+
 INV_KEY_MAP = {
     "Allow delete": "allow_delete",
     "Allow delete contents": "allow_delete_content",

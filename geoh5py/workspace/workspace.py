@@ -1300,6 +1300,11 @@ class Workspace(AbstractContextManager):
     def _create_h5(self) -> h5py.File:
         """
         Generate a new geoh5 file with core structure.
+
+        Default mode for ANALYST uses:
+            - Page size (fs_page_size) of 65536 bytes.
+            - Page buffer (page_buf_size) is able to hold 256 pages.
+            - Library version (libver) fixed with (lower, upper) bound.
         """
         self._geoh5 = h5py.File(
             self.h5file,
@@ -1621,16 +1626,16 @@ def active_workspace(workspace: Workspace):
 
 def validate_page_size(value: int) -> int:
     """
-    Check if a page size is valid value.
+    Check if a page size is valid value. Raise an error if not valid,
+    else return the value as-is.
 
     :param value: A positive integer multiple of 2, >=512.
-
-    :return: Page size value
+    :return: Page size value, same as :param value:
     """
     if not isinstance(value, int):
         raise TypeError("Page size must be an integer.")
 
-    if value // 512 < 1 or value % 2 != 0:
+    if value < 512 or value % 2 != 0:
         raise ValueError("Page size must be an integer multiple of 2, and >=512.")
 
     return value
