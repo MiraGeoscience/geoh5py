@@ -115,7 +115,7 @@ class Workspace(AbstractContextManager):
     :param name: Name of the project.
     :param repack: Repack the *geoh5* file after closing.
     :param version: Version of the project.
-    :param page_size: Page size of the h5 file.
+    :param page_size: Page size of the h5 file, in bytes.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
