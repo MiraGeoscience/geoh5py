@@ -21,8 +21,8 @@
 from __future__ import annotations
 
 import pytest
-
 from geoh5py.groups.giftools.dcoctree_inv import DCOctreeInversion
+
 from geoh5py.groups.giftools.giftools import GIFtoolsGroup
 from geoh5py.groups.giftools.octree_inversion import GIFtoolInversion
 from geoh5py.objects import Octree
