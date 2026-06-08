@@ -25,7 +25,8 @@ from .base import Group
 from .container import ContainerGroup
 from .custom import CustomGroup
 from .drillhole import DrillholeGroup, IntegratorDrillholeGroup
-from .giftools import GIFtoolsGroup, DCOctreeInversion
+from .giftools.giftools import GIFtoolsGroup
+from .giftools.octree_inversion import DCOctreeInversion
 from .group_type import GroupType
 from .integrator import (
     AirborneTheme,
