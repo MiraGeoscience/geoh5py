@@ -227,11 +227,12 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.metadata = {"Coordinate Reference System": coordinate_reference_system}
 
     @classmethod
-    def create(cls, workspace, **kwargs):
+    def create(cls, workspace, compression: int = 5, **kwargs):
         """
         Function to create an entity.
 
         :param workspace: Workspace to be added to.
+        :param compression: Compression to be applied to the entity.
         :param kwargs: List of keyword arguments defining the properties of a class.
 
         :return entity: Registered Entity to the workspace.
@@ -242,9 +243,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
             else {}
         )
         new_object = workspace.create_entity(
-            cls,
-            entity=kwargs,
-            entity_type=entity_type_kwargs,
+            cls, entity=kwargs, entity_type=entity_type_kwargs, compression=compression
         )
         return new_object
 

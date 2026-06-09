@@ -256,18 +256,23 @@ class MaxwellPlate(ObjectBase):
 
     @classmethod
     def create(
-        cls, workspace, geometry: PlateGeometry | None = None, **kwargs
+        cls,
+        workspace,
+        compression: int = 5,
+        geometry: PlateGeometry | None = None,
+        **kwargs,
     ) -> MaxwellPlate:
         """
         Function to create an entity.
 
         :param workspace: Workspace to be added to.
+        :param compression: Compression parameter for the Maxwell Plate.
         :param geometry: Geometry parameters for the Maxwell Plate.
         :param kwargs: List of keyword arguments defining the properties of a class.
 
         :return entity: Registered Entity to the workspace.
         """
-        plate = super().create(workspace, **kwargs)
+        plate = super().create(workspace, compression=compression, **kwargs)
 
         if geometry is not None:
             plate.geometry = geometry
