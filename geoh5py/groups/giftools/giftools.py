@@ -115,11 +115,13 @@ class GIFtoolsGroup(Group):
             value = []
 
         if not isinstance(value, list):
-            raise TypeError(f"Input 'gif_parameters' must be of type {dict}.")
+            raise TypeError(f"Input 'gif_parameters' must be of type {list}.")
 
         promoted = dict_mapper(value, [str2uuid, entity2uuid])
-        dict_values = {}
+        dict_values: dict[UUID, dict] = {}
         for element in promoted:
+            if not isinstance(element, dict) or "uuid" not in element:
+                raise ValueError("Each gif_parameters entry must be a dict containing a 'uuid' key.")
             dict_values[element["uuid"]] = element
 
         return dict_values
