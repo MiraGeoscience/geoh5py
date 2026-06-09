@@ -67,7 +67,9 @@ class GIFtoolsGroup(Group):
         super().add_children(children)
         for child in self.children:
             if hasattr(child, "parameters") and child.uid not in self._gif_parameters:
-                self._gif_parameters[child.uid] = child.parameters
+                form = child.parameters
+                form["uuid"] = child.uid
+                self._gif_parameters[child.uid] = form
 
         if self.on_file:
             self.workspace.update_attribute(self, "gif_parameters")
@@ -115,7 +117,7 @@ class GIFtoolsGroup(Group):
             value = []
 
         if not isinstance(value, list):
-            raise TypeError(f"Input 'gif_parameters' must be of type {dict}.")
+            raise TypeError(f"Input 'gif_parameters' must be of type {list}.")
 
         promoted = dict_mapper(value, [str2uuid, entity2uuid])
         dict_values = {}
@@ -132,7 +134,6 @@ class GIFtoolsGroup(Group):
         :param kwargs: Keyword arguments
         """
         form = self._gif_parameters[child_uid]
-        form["uuid"] = child_uid
         self._gif_parameters[child_uid] = update_dict_parameters(form, **kwargs)
         self.workspace.update_attribute(self, "gif_parameters")
 
