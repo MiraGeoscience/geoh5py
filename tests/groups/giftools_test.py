@@ -28,15 +28,15 @@ from geoh5py.objects import Octree
 from geoh5py.workspace import Workspace
 
 
-@pytest.mark.parametrize("group", (DCOctreeInversion,))
-def test_create_group(tmp_path, group: type[GIFtoolInversion]):
+@pytest.mark.parametrize("group_cls", (DCOctreeInversion,))
+def test_create_group(tmp_path, group_cls: type[GIFtoolInversion]):
     h5file_path = tmp_path / r"testGroup.geoh5"
-    group_name = group._default_name
+    group_name = group_cls._default_name
 
     # Create a workspace
     with Workspace.create(h5file_path) as workspace:
         gif = GIFtoolsGroup.create(workspace)
-        group = DCOctreeInversion.create(workspace, parent=gif)
+        group = group_cls.create(workspace, parent=gif)
         octree = Octree.create(
             workspace,
             parent=gif,

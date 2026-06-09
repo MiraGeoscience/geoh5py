@@ -354,7 +354,9 @@ class H5Writer:
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                H5Writer.write_array_attribute(h5file, entity, attribute, **kwargs)
+                H5Writer.write_array_attribute(
+                    h5file, entity, attribute, compression=compression, **kwargs
+                )
             elif attribute == "property_groups":
                 H5Writer.write_property_groups(h5file, entity)
             elif attribute == "color_map":
@@ -588,7 +590,12 @@ class H5Writer:
 
     @staticmethod
     def write_array_attribute(
-        file: str | h5py.File, entity, attribute, values=None, **kwargs
+        file: str | h5py.File,
+        entity,
+        attribute,
+        values=None,
+        compression: int = 9,
+        **kwargs,
     ) -> None:
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
@@ -596,6 +603,8 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
+        :param values: Values to be written to geoh5
+        :param compression: Compression level `compression_opts` of the h5 file.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -624,7 +633,7 @@ class H5Writer:
                     KEY_MAP[attribute],
                     data=values,
                     compression="gzip",
-                    compression_opts=9,
+                    compression_opts=compression,
                     **kwargs,
                 )
 

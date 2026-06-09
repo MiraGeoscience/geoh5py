@@ -70,7 +70,7 @@ from geoh5py.shared.entity import Entity
 from geoh5py.shared.entity_type import EntityType
 from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import (
-    DEFAULT_PAGE_BUF_SIZE,
+    DEFAULT_PAGE_SIZE,
     ClassIdentifierEnum,
     as_str_if_utf8_bytes,
     clear_array_attributes,
@@ -115,6 +115,7 @@ class Workspace(AbstractContextManager):
     :param name: Name of the project.
     :param repack: Repack the *geoh5* file after closing.
     :param version: Version of the project.
+    :param page_size: Page size of the h5 file, in bytes.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
@@ -136,6 +137,7 @@ class Workspace(AbstractContextManager):
         name: str = "GEOSCIENCE",
         repack: bool = False,
         version: float = 2.1,
+        page_size: int = DEFAULT_PAGE_SIZE,
     ):
         self._root: RootGroup
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
@@ -152,7 +154,7 @@ class Workspace(AbstractContextManager):
         self._repack: bool = repack
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._version: float = version
-
+        self._page_size: int = validate_page_size(page_size)
         self._h5file = self.validate_h5file_input(h5file)
 
         self.open(mode=mode)
@@ -1298,17 +1300,32 @@ class Workspace(AbstractContextManager):
     def _create_h5(self) -> h5py.File:
         """
         Generate a new geoh5 file with core structure.
+
+        Default mode for ANALYST uses:
+            - Page size (fs_page_size) of 65536 bytes.
+            - Page buffer (page_buf_size) is able to hold 256 pages.
+            - Library version (libver) fixed with (lower, upper) bound.
         """
         self._geoh5 = h5py.File(
             self.h5file,
             "x",
             fs_strategy="page",
-            page_buf_size=DEFAULT_PAGE_BUF_SIZE,
+            page_buf_size=self._page_size * 256,
+            fs_page_size=self._page_size,
             libver=("v110", "v114"),
         )
         H5Writer.init_geoh5(self._geoh5, self)
 
         return self._geoh5
+
+    @property
+    def page_size(self) -> int:
+        """
+        HDF5 page size.
+
+        Must be a multiple of 2, greater than or equal 512.
+        """
+        return self._page_size
 
     def promote(self, value: Any) -> Any:
         """
@@ -1605,3 +1622,20 @@ def active_workspace(workspace: Workspace):
     previous_active = previous_active_ref()
     if previous_active is not None:
         previous_active.activate()  # pylint: disable=no-member
+
+
+def validate_page_size(value: int) -> int:
+    """
+    Check if a page size is valid value. Raise an error if not valid,
+    else return the value as-is.
+
+    :param value: A positive integer multiple of 2, >=512.
+    :return: Page size value, same as :param value:
+    """
+    if not isinstance(value, int):
+        raise TypeError("Page size must be an integer.")
+
+    if value < 512 or value % 2 != 0:
+        raise ValueError("Page size must be an integer multiple of 2, and >=512.")
+
+    return value
