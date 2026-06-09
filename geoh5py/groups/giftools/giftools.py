@@ -93,11 +93,12 @@ class GIFtoolsGroup(Group):
         return self._version
 
     @version.setter
+    @version.setter
     def version(self, version: int) -> None:
-        if not isinstance(version, np.integer):
+        if not isinstance(version, (int, np.integer)):
             raise TypeError(f"Input 'version' must be of type {int}.")
 
-        self._version = version
+        self._version = int(version)
 
     @property
     def gif_parameters(self) -> list[dict]:
