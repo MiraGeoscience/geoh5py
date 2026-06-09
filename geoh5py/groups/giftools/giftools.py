@@ -122,7 +122,9 @@ class GIFtoolsGroup(Group):
         dict_values: dict[UUID, dict] = {}
         for element in promoted:
             if not isinstance(element, dict) or "uuid" not in element:
-                raise ValueError("Each gif_parameters entry must be a dict containing a 'uuid' key.")
+                raise ValueError(
+                    "Each gif_parameters entry must be a dict containing a 'uuid' key."
+                )
             dict_values[element["uuid"]] = element
 
         return dict_values
