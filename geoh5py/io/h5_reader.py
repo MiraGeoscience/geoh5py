@@ -117,7 +117,7 @@ class H5Reader:
             # TODO Use lazy pointer to data
             if entity_type != "Data":
                 for key, value in entity.items():
-                    if key.lower() in ["metadata", "options"]:
+                    if key.lower() in ["metadata", "options", "parameters", "giftools"]:
                         attributes[INV_KEY_MAP[key]] = cls.fetch_metadata(
                             file, uid, entity_type, key
                         )

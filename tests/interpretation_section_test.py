@@ -86,7 +86,7 @@ def test_create_interpretation_section(tmp_path: Path):
         group = workspace.get_entity(group.uid)[0]
 
         assert group.metadata == {
-            "Interpretation curves": ["{%s}" % str(curve.uid)],
+            "Interpretation curves": [curve.uid],
             "Interpretation sections": [section],
             "Section object ID": slicer.uid,
         }

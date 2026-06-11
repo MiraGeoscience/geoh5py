@@ -198,4 +198,4 @@ def test_map_to_class():
     assert mapper[groups.ContainerGroup.default_type_uid()] == groups.ContainerGroup
     mapper = map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects, groups])
     assert mapper[objects.DrapeModel._default_name] == objects.DrapeModel
-    assert mapper[groups.GiftoolsGroup._default_name] == groups.GiftoolsGroup
+    assert mapper[groups.GIFtoolsGroup._default_name] == groups.GIFtoolsGroup

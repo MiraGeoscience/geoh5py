@@ -20,15 +20,40 @@
 
 from __future__ import annotations
 
-import uuid
+import pytest
 
-from .base import Group
+from geoh5py.groups.giftools.giftools import GIFtoolsGroup
+from geoh5py.groups.giftools.octree_inversion import DCOctreeInversion, GIFtoolInversion
+from geoh5py.objects import Octree
+from geoh5py.workspace import Workspace
 
 
-class GiftoolsGroup(Group):
-    """The type for a GIFtools group."""
+@pytest.mark.parametrize("group_cls", (DCOctreeInversion,))
+def test_create_group(tmp_path, group_cls: type[GIFtoolInversion]):
+    h5file_path = tmp_path / r"testGroup.geoh5"
+    group_name = group_cls._default_name
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)
-    )
-    _default_name = "GIFtools Project"
+    # Create a workspace
+    with Workspace.create(h5file_path) as workspace:
+        gif = GIFtoolsGroup.create(workspace)
+        group = group_cls.create(workspace, parent=gif)
+        octree = Octree.create(
+            workspace,
+            parent=gif,
+            origin=[0, 0, 0],
+            u_count=32,
+            v_count=16,
+            w_count=8,
+            u_cell_size=1.0,
+            v_cell_size=1.0,
+            w_cell_size=2.0,
+            rotation=45,
+        )
+        group.set_parameters(mesh=octree)
+
+    # Read the group back in
+    with Workspace(h5file_path) as workspace:
+        rec_obj = workspace.get_entity(group_name)[0]
+
+        assert rec_obj.name == group_name
+        assert rec_obj.parent.gif_parameters[0]["mesh"]["value"] == octree.uid
