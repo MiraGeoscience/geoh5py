@@ -41,7 +41,7 @@ jobs:
   call-workflow-pypi-release:
     name: Publish production PyPI package (JFrog Artifactory, PyPI)
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-pypi == 'true' }}
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@v3.6.0
     permissions:
       contents: write
     with:
