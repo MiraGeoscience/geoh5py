@@ -31,7 +31,7 @@ jobs:
       security-events: write
       contents: read
       actions: read
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-advanced-security.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-advanced-security.yml@v3.6.0
 
   call-workflow-zizmor-annotate:
     name: Zizmor analysis (annotate)
