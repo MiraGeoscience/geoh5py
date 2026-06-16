@@ -25,6 +25,7 @@ from typing import Any
 # Parameters shared by the GIFtools octree inversion groups.
 # Note -- this will likely be restructured as we know more about what the commonalities and
 # differences are between different GIFtools/GIFtools octree/GIFtools inversion groups.
+# pylint: disable=duplicate-code
 OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "active_model": {
         "association": "Cell",
@@ -276,5 +277,3 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "version": "",
     "working_directory": "",
 }
-
-

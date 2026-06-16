@@ -24,9 +24,12 @@ from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
 
+
 # Default parameters for the maginv3d_60 inversion group.
 # Note -- as we add support for more GIFtools groups, these may be able to be restructured to avoid
 # some redundancy between groups.
+
+# pylint: disable=duplicate-code
 MAGINV3D_PARAMETERS: dict[str, Any] = {
     "Lp_model": {
         "association": "Cell",
@@ -357,4 +360,3 @@ class MagInv3D(BaseGIFtoolsGroup):
     _TYPE_UID = UUID("{b99e8db8-e118-4042-864e-9e1128f2d1e6}")
     _default_name = "maginv3d_60"
     _default_parameters: dict[str, Any] = MAGINV3D_PARAMETERS
-

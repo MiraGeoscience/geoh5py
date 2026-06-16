@@ -17,10 +17,14 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
+
 from typing import Any
+
 from geoh5py.groups.base import Group
 from geoh5py.groups.giftools.giftools import GIFtoolsGroup, update_dict_parameters
 from geoh5py.shared.utils import dict_mapper, entity2uuid, str2uuid
+
+
 class BaseGIFtoolsGroup(Group):
     """
     Base class for the GIFtools application groups that live under a
@@ -29,10 +33,13 @@ class BaseGIFtoolsGroup(Group):
     Concrete subclasses only need to define ``_TYPE_UID``, ``_default_name`` and
     ``_default_parameters``.
     """
+
     _default_parameters: dict[str, Any]
+
     def __init__(self, parameters: dict | None = None, **kwargs):
         self._parameters = self._validate_parameters(parameters)
         super().__init__(**kwargs)
+
     @property
     def parameters(self) -> dict:
         """
@@ -40,6 +47,7 @@ class BaseGIFtoolsGroup(Group):
         Return a copy of the dictionary to avoid accidental modifications.
         """
         return self._parameters.copy()
+
     def set_parameters(self, **kwargs):
         """
         Set parameter values in the 'parameters' dictionary.
@@ -52,6 +60,7 @@ class BaseGIFtoolsGroup(Group):
             update_dict_parameters(self._parameters, **kwargs)
         if self.on_file:
             self.workspace.update_attribute(self, "parameters")
+
     def _validate_parameters(self, value: dict | None) -> dict:
         """
         Validate and reformat the entries of the 'parameters' dictionary.
