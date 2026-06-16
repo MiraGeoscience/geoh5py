@@ -26,7 +26,6 @@ from .container import ContainerGroup
 from .custom import CustomGroup
 from .drillhole import DrillholeGroup, IntegratorDrillholeGroup
 from .giftools.giftools import GIFtoolsGroup
-from .giftools.base import BaseGIFtoolsGroup
 from .giftools.magnetics_inversion import MagInv3D
 from .giftools.octree_inversion import DCOctreeInversion
 from .group_type import GroupType
