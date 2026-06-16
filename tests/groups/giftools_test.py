@@ -59,6 +59,7 @@ def _make_block_model(workspace, parent):
         rotation=45,
     )
 
+
 # Test each GIFtools group can take in an appropriate object/mesh type.
 @pytest.mark.parametrize(
     "group_cls, make_mesh",

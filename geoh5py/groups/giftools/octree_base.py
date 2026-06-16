@@ -276,5 +276,3 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "version": "",
     "working_directory": "",
 }
-
-
