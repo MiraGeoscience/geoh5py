@@ -23,13 +23,13 @@ from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
 
 
 # Default parameters for the maginv3d_60 inversion group.
 # Note -- as we add support for more GIFtools groups, these may be able to be restructured to avoid
 # some redundancy between groups.
 
-# pylint: disable=duplicate-code
 MAGINV3D_PARAMETERS: dict[str, Any] = {
     "Lp_model": {
         "association": "Cell",
@@ -79,19 +79,7 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 2,
     },
-    "active_model": {
-        "association": "Cell",
-        "dataType": ["Integer", "Boolean"],
-        "default": "",
-        "enabled": False,
-        "group": "Model parameters",
-        "label": "Active model",
-        "main": False,
-        "optional": True,
-        "parent": "mesh",
-        "suffix": ".act",
-        "value": "",
-    },
+    "active_model": merge_field(BASE_PARAMETERS["active_model"], main=False),
     "auto_threshold": {
         "choiceList": ["Relative error", "Specify value"],
         "default": "Relative error",
@@ -125,19 +113,7 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 10,
     },
-    "cell_weight": {
-        "association": "Cell",
-        "dataType": "Float",
-        "default": "",
-        "enabled": False,
-        "group": "Model objective function",
-        "label": "Weights (Ws)",
-        "ndv": 1,
-        "optional": True,
-        "parent": "mesh",
-        "suffix": ".wgt",
-        "value": "",
-    },
+    "cell_weight": BASE_PARAMETERS["cell_weight"],
     "data": {
         "default": "",
         "gifType": ["MAGdata", "MAGAMPdata"],
@@ -177,31 +153,8 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "min": 0,
         "value": 0,
     },
-    "face_weight": {
-        "association": "Face",
-        "dataType": "Float",
-        "default": "",
-        "enabled": False,
-        "group": "Model objective function",
-        "label": "Weights (Wxyz)",
-        "ndv": 1,
-        "optional": True,
-        "parent": "mesh",
-        "suffix": ".wgt",
-        "value": "",
-    },
-    "initial_model": {
-        "association": "Cell",
-        "dataType": "Float",
-        "default": 0.0010000000474974513,
-        "group": "Model parameters",
-        "isValue": True,
-        "label": "Initial model",
-        "main": False,
-        "parent": "mesh",
-        "property": "",
-        "value": 0.0010000000474974513,
-    },
+    "face_weight": BASE_PARAMETERS["face_weight"],
+    "initial_model": BASE_PARAMETERS["initial_model"],
     "inversion_mode": {
         "choiceList": ["Chifactor", "Single beta"],
         "default": "Chifactor",
@@ -288,14 +241,8 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 0,
     },
-    "results_loaded": False,
-    "smooth_mod": {
-        "default": False,
-        "group": "Model objective function",
-        "label": "Reference model in Wxyz",
-        "tooltip": "Wxyz(m-mref): SMOOTH_MOD_DIF option",
-        "value": False,
-    },
+    "results_loaded": BASE_PARAMETERS["results_loaded"],
+    "smooth_mod": BASE_PARAMETERS["smooth_mod"],
     "threshold": {
         "default": 0.05000000074505806,
         "enabled": True,
@@ -313,7 +260,7 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "optional": True,
         "value": "",
     },
-    "uuid": "",
+    "uuid": BASE_PARAMETERS["uuid"],
     "version": "6",
     "wavelet": {
         "choiceList": [
@@ -343,7 +290,7 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "main": False,
         "value": False,
     },
-    "working_directory": "",
+    "working_directory": BASE_PARAMETERS["working_directory"],
     "xy_localize": {
         "default": False,
         "label": "Localize coordinates",

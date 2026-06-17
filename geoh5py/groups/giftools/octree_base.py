@@ -21,24 +21,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
+
 
 # Parameters shared by the GIFtools octree inversion groups.
 # Note -- this will likely be restructured as we know more about what the commonalities and
 # differences are between different GIFtools/GIFtools octree/GIFtools inversion groups.
-# pylint: disable=duplicate-code
+
 OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
-    "active_model": {
-        "association": "Cell",
-        "dataType": ["Integer", "Boolean"],
-        "default": "",
-        "enabled": False,
-        "group": "Model parameters",
-        "label": "Active model",
-        "optional": True,
-        "parent": "mesh",
-        "suffix": ".act",
-        "value": "",
-    },
+    "active_model": BASE_PARAMETERS["active_model"],
     "assignConRes": {
         "alternateLabel": "Resistivity",
         "group": "Model parameters",
@@ -75,19 +66,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "label": "No bounds",
         "value": True,
     },
-    "cell_weight": {
-        "association": "Cell",
-        "dataType": "Float",
-        "default": "",
-        "enabled": False,
-        "group": "Model objective function",
-        "label": "Weights (Ws)",
-        "ndv": 1,
-        "optional": True,
-        "parent": "mesh",
-        "suffix": ".wgt",
-        "value": "",
-    },
+    "cell_weight": BASE_PARAMETERS["cell_weight"],
     "delta_beta": {
         "default": -1234567,
         "dependency": "beta_given",
@@ -95,19 +74,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "label": "Beta step",
         "value": 0.25,
     },
-    "face_weight": {
-        "association": "Face",
-        "dataType": "Float",
-        "default": "",
-        "enabled": False,
-        "group": "Model objective function",
-        "label": "Weights (Wxyz)",
-        "ndv": 1,
-        "optional": True,
-        "parent": "mesh",
-        "suffix": ".wgt",
-        "value": "",
-    },
+    "face_weight": BASE_PARAMETERS["face_weight"],
     "global_weight": {
         "association": "Cell",
         "dataType": "Float",
@@ -126,20 +93,12 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "label": "Solver tolerance",
         "value": 0.009999999776482582,
     },
-    "initial_model": {
-        "association": "Cell",
-        "dataType": "Float",
-        "default": 0.0010000000474974513,
-        "group": "Model parameters",
-        "isValue": True,
-        "label": "Initial model",
-        "main": False,
-        "max": 100000000,
-        "min": 9.99999993922529e-09,
-        "parent": "mesh",
-        "property": "",
-        "value": 0.0010000000474974513,
-    },
+    # initial_model shares the common base and octree adds max/min bounds.
+    "initial_model": merge_field(
+        BASE_PARAMETERS["initial_model"],
+        max=100000000,
+        min=9.99999993922529e-09,
+    ),
     "inversion_chifact": {
         "default": 1,
         "group": "Inversion parameters",
@@ -231,14 +190,8 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 0.0010000000474974513,
     },
-    "results_loaded": False,
-    "smooth_mod": {
-        "default": False,
-        "group": "Model objective function",
-        "label": "Reference model in Wxyz",
-        "tooltip": "Wxyz(m-mref): SMOOTH_MOD_DIF option",
-        "value": False,
-    },
+    "results_loaded": BASE_PARAMETERS["results_loaded"],
+    "smooth_mod": BASE_PARAMETERS["smooth_mod"],
     "topography": {
         "association": "Cell",
         "dataType": ["Integer", "Boolean"],
@@ -273,7 +226,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 10,
     },
-    "uuid": "",
+    "uuid": BASE_PARAMETERS["uuid"],
     "version": "",
-    "working_directory": "",
+    "working_directory": BASE_PARAMETERS["working_directory"],
 }
