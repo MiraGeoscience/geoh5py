@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 from uuid import UUID
 
@@ -30,7 +31,7 @@ from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMET
 # Fields unique to maginv3d, in addition to the shared potential field parameters.
 
 MAGINV3D_PARAMETERS: dict[str, Any] = {
-    **POTENTIAL_FIELD_PARAMETERS,
+    **copy.deepcopy(POTENTIAL_FIELD_PARAMETERS),
     "bound_model_lower": {
         "association": "Cell",
         "dataType": "Float",
