@@ -152,7 +152,7 @@ def to_class(
     if isinstance(value, UUID):
         value = class_or_raise(value)
 
-    if not issubclass(value, (ObjectBase, Group)):
+    if not isinstance(value, type) or not issubclass(value, (ObjectBase, Group)):
         raise ValueError(
             f"Provided type_uid string {value!s} is not a recognized "
             f"geoh5py object or group type uid."
