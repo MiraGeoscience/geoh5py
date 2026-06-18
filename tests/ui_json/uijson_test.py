@@ -30,7 +30,7 @@ import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
-from geoh5py.groups import UIJsonGroup
+from geoh5py.groups import ContainerGroup, UIJsonGroup
 from geoh5py.objects import Curve, Points
 from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
@@ -38,6 +38,7 @@ from geoh5py.ui_json.forms import (
     DataForm,
     DataOrValueForm,
     FloatForm,
+    GroupForm,
     IntegerForm,
     MultiSelectDataForm,
     ObjectForm,
@@ -286,7 +287,7 @@ def test_validate_dependency_type_validation(tmp_path):
 
     # Non-optional non-bool dependency is invalid
     kwargs["my_parameter"].pop("optional")
-    msg = "Dependency form 'my_parameter' must be either optional, group_optional or of boolean type"
+    msg = "Dependency form 'my_parameter' must be either optional, groupoptional or of boolean type"
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
         _ = uijson.to_params()
@@ -353,6 +354,33 @@ def test_mesh_type_validation(tmp_path):
     # Data is not a child of the parent object
     kwargs["my_object_parameter"]["mesh_type"] = [Curve]
     msg = "Object's mesh type must be one of"
+    with pytest.raises(UIJsonError, match=msg):
+        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        _ = uijson.to_params()
+
+
+def test_group_type_validation(tmp_path):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+    group = ContainerGroup.create(ws, name="test")
+
+    class MyBaseUIJson(BaseUIJson):
+        my_group_parameter: GroupForm
+
+    kwargs = {
+        "my_group_parameter": {
+            "label": "test",
+            "group_type": ContainerGroup,
+            "value": group.uid,
+        },
+    }
+
+    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    params = uijson.to_params()
+    assert params["my_group_parameter"].uid == group.uid
+
+    # Data is not a child of the parent object
+    kwargs["my_group_parameter"]["group_type"] = UIJsonGroup
+    msg = "Group's group type must be one of"
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
         _ = uijson.to_params()
