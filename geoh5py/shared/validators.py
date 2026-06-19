@@ -93,7 +93,7 @@ def name_or_uid_to_type(
     Convert a string to a geoh5py type or group type.
 
     :param value: String representing geoh5py type, either as a UUID or name.
-    :return:
+    :return: Type of object, group or UUID
     """
     if not isinstance(value, str):
         return value
