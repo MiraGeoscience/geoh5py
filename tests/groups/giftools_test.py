@@ -25,6 +25,7 @@ import pytest
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
 from geoh5py.groups.giftools.giftools import GIFtoolsGroup
+from geoh5py.groups.giftools.gravity_gradiometry_inversion import GGInv3D
 from geoh5py.groups.giftools.magnetics_inversion import MagInv3D
 from geoh5py.groups.giftools.octree_inversion import DCOctreeInversion
 from geoh5py.objects import BlockModel, Octree
@@ -66,6 +67,7 @@ def _make_block_model(workspace, parent):
     (
         (DCOctreeInversion, _make_octree),
         (MagInv3D, _make_block_model),
+        (GGInv3D, _make_block_model),
     ),
 )
 def test_create_group(tmp_path, group_cls: type[BaseGIFtoolsGroup], make_mesh):
