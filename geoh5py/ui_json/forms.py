@@ -84,6 +84,7 @@ class BaseForm(BaseModel):
         optional or True if a bool type.
     :param placeholder_text: Text displayed in ui element when no data
         has been provided.
+    :param visible: Whether the form is displayed
     """
 
     model_config = ConfigDict(
@@ -109,6 +110,7 @@ class BaseForm(BaseModel):
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
     placeholder_text: str = ""
+    visible: bool = True
 
     @classmethod
     def infer(
@@ -585,6 +587,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
+    line_edit: bool = False
 
     @model_validator(mode="after")
     def property_if_not_is_value(self):
