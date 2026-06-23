@@ -41,7 +41,7 @@ GZINV3D_PARAMETERS: dict[str, Any] = {
         "label": "Data",
         "main": True,
         "meshType": "",
-        "value": "{00000000-0000-0000-0000-000000000000}",
+        "value": "",
     },
     "matlab": "GRAVinversion",
     "uuid": BASE_PARAMETERS["uuid"],
