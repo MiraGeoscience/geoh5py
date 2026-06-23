@@ -16,7 +16,6 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 from __future__ import annotations
 
 import copy
@@ -31,27 +30,27 @@ from geoh5py.groups.giftools.potential_field_base import (
 )
 
 
-# Fields unique to gginv3d, in addition to the shared potential field parameters.
+# Fields unique to gzinv3d_60, in addition to the shared potential field parameters.
 
-GGINV3D_PARAMETERS: dict[str, Any] = {
+GZINV3D_PARAMETERS: dict[str, Any] = {
     **copy.deepcopy(POTENTIAL_FIELD_PARAMETERS),
     **GRAV_BOUND_MODEL_LOWER,
     "data": {
         "default": "",
-        "gifType": ["GGdata", "FALCONdata"],
+        "gifType": ["GRAVdata"],
         "label": "Data",
         "main": True,
         "meshType": "",
-        "value": "",
+        "value": "{00000000-0000-0000-0000-000000000000}",
     },
-    "matlab": "GGinversion",
+    "matlab": "GRAVinversion",
     "uuid": BASE_PARAMETERS["uuid"],
 }
 
 
-class GGInv3D(BaseGIFtoolsGroup):
-    """Inversion group for UBC-GGINV3D (gginv3d)."""
+class GZInv3D(BaseGIFtoolsGroup):
+    """Inversion group for UBC-GZINV3D (gzinv3d_60)."""
 
-    _TYPE_UID = UUID("{0f080369-b3a3-464c-83fa-9b3c1efa9895}")
-    _default_name = "gginv3d"
-    _default_parameters: dict[str, Any] = GGINV3D_PARAMETERS
+    _TYPE_UID = UUID("{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}")
+    _default_name = "gzinv3d_60"
+    _default_parameters: dict[str, Any] = GZINV3D_PARAMETERS
