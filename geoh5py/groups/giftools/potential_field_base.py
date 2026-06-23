@@ -275,3 +275,18 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "value": False,
     },
 }
+
+GRAV_BOUND_MODEL_LOWER: dict[str, Any] = {
+    "bound_model_lower": {
+        "association": "Cell",
+        "dataType": "Float",
+        "default": -10,
+        "group": "Model parameters",
+        "isValue": True,
+        "label": "Bounds (lower)",
+        "main": False,
+        "parent": "mesh",
+        "property": "",
+        "value": -10,
+    }
+}
