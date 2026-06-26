@@ -44,7 +44,6 @@ class Label(ObjectBase):
     _default_name = "Label"
 
     def __init__(self, **kwargs):
-        # TODO
         self.target_position = None
         self.label_position = None
 
