@@ -22,7 +22,7 @@ from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS
+from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
 from geoh5py.groups.giftools.potential_field_base import (
     BOUND_MODEL_LOWER_FIELD,
     POTENTIAL_FIELD_PARAMETERS,
@@ -33,7 +33,7 @@ from geoh5py.groups.giftools.potential_field_base import (
 
 GZINV3D_PARAMETERS: dict[str, Any] = {
     **POTENTIAL_FIELD_PARAMETERS,
-    **BOUND_MODEL_LOWER_FIELD,
+    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD),
     "data": {
         "default": "",
         "gifType": ["GRAVdata"],

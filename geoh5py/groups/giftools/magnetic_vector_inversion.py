@@ -34,7 +34,7 @@ from geoh5py.groups.giftools.potential_field_base import (
 MVIINV_PARAMETERS: dict[str, Any] = {
     **POTENTIAL_FIELD_PARAMETERS,
     "bound_model_lower": merge_field(
-        BOUND_MODEL_LOWER_FIELD["bound_model_lower"],
+        BOUND_MODEL_LOWER_FIELD,
         drop_keys="dataType",
         dataGroupType="3D vector",
     ),
