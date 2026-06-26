@@ -276,7 +276,7 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
     },
 }
 
-GRAV_BOUND_MODEL_LOWER: dict[str, Any] = {
+BOUND_MODEL_LOWER_FIELD: dict[str, Any] = {
     "bound_model_lower": {
         "association": "Cell",
         "dataType": "Float",

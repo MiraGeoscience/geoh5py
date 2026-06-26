@@ -19,14 +19,13 @@
 
 from __future__ import annotations
 
-import copy
 from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
 from geoh5py.groups.giftools.parameters import BASE_PARAMETERS
 from geoh5py.groups.giftools.potential_field_base import (
-    GRAV_BOUND_MODEL_LOWER,
+    BOUND_MODEL_LOWER_FIELD,
     POTENTIAL_FIELD_PARAMETERS,
 )
 
@@ -34,8 +33,8 @@ from geoh5py.groups.giftools.potential_field_base import (
 # Fields unique to gginv3d, in addition to the shared potential field parameters.
 
 GGINV3D_PARAMETERS: dict[str, Any] = {
-    **copy.deepcopy(POTENTIAL_FIELD_PARAMETERS),
-    **GRAV_BOUND_MODEL_LOWER,
+    **POTENTIAL_FIELD_PARAMETERS,
+    **BOUND_MODEL_LOWER_FIELD,
     "data": {
         "default": "",
         "gifType": ["GGdata", "FALCONdata"],
