@@ -18,6 +18,7 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 from geoh5py.groups.base import Group
@@ -68,7 +69,7 @@ class BaseGIFtoolsGroup(Group):
         :return: Formatted dictionary of parameters.
         """
         if value is None:
-            value = self._default_parameters.copy()
+            value = copy.deepcopy(self._default_parameters)
         if not isinstance(value, dict):
             raise TypeError(f"Input 'parameters' must be of type {dict}.")
         return dict_mapper(value, [str2uuid, entity2uuid])

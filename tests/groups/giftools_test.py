@@ -27,6 +27,7 @@ from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
 from geoh5py.groups.giftools.giftools import GIFtoolsGroup
 from geoh5py.groups.giftools.gravity_gradiometry_inversion import GGInv3D
 from geoh5py.groups.giftools.gravity_inversion import GZInv3D
+from geoh5py.groups.giftools.magnetic_vector_inversion import MVIInv
 from geoh5py.groups.giftools.magnetics_inversion import MagInv3D
 from geoh5py.groups.giftools.octree_inversion import DCOctreeInversion
 from geoh5py.objects import BlockModel, Octree
@@ -70,6 +71,7 @@ def _make_block_model(workspace, parent):
         (MagInv3D, _make_block_model),
         (GGInv3D, _make_block_model),
         (GZInv3D, _make_block_model),
+        (MVIInv, _make_block_model),
     ),
 )
 def test_create_group(tmp_path, group_cls: type[BaseGIFtoolsGroup], make_mesh):
@@ -90,3 +92,21 @@ def test_create_group(tmp_path, group_cls: type[BaseGIFtoolsGroup], make_mesh):
 
         assert rec_obj.name == group_name
         assert rec_obj.parent.gif_parameters[0]["mesh"]["value"] == mesh_uid
+
+
+def test_default_parameters_are_deep_copied():
+    """Changing one group's nested parameters should not mutate shared defaults."""
+    workspace = Workspace()
+
+    # Create a group and change some of its parameters
+    group_a = MagInv3D.create(workspace)
+    group_a.set_parameters(mesh="mesh-a", cell_weight="weights-a")
+
+    # Create another group and check that its parameters are still the default values
+    group_b = MagInv3D.create(workspace, name="maginv3d_60 copy")
+
+    assert group_b.parameters["mesh"]["value"] == ""
+    assert group_b.parameters["cell_weight"]["value"] == ""
+
+    assert MagInv3D._default_parameters["mesh"]["value"] == ""
+    assert MagInv3D._default_parameters["cell_weight"]["value"] == ""

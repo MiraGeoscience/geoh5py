@@ -30,6 +30,7 @@ from .giftools.gravity_gradiometry_inversion import GGInv3D
 from .giftools.gravity_inversion import GZInv3D
 from .giftools.magnetics_inversion import MagInv3D
 from .giftools.octree_inversion import DCOctreeInversion
+from .giftools.magnetic_vector_inversion import MVIInv
 from .group_type import GroupType
 from .integrator import (
     AirborneTheme,

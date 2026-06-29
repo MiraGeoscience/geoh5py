@@ -19,31 +19,22 @@
 
 from __future__ import annotations
 
-import copy
 from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS
-from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
+from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
+from geoh5py.groups.giftools.potential_field_base import (
+    BOUND_MODEL_LOWER_FIELD,
+    POTENTIAL_FIELD_PARAMETERS,
+)
 
 
 # Fields unique to maginv3d, in addition to the shared potential field parameters.
 
 MAGINV3D_PARAMETERS: dict[str, Any] = {
-    **copy.deepcopy(POTENTIAL_FIELD_PARAMETERS),
-    "bound_model_lower": {
-        "association": "Cell",
-        "dataType": "Float",
-        "default": 0,
-        "group": "Model parameters",
-        "isValue": True,
-        "label": "Bounds (lower)",
-        "main": False,
-        "parent": "mesh",
-        "property": "",
-        "value": 0,
-    },
+    **POTENTIAL_FIELD_PARAMETERS,
+    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD, default=0, value=0),
     "data": {
         "default": "",
         "gifType": ["MAGdata", "MAGAMPdata"],
