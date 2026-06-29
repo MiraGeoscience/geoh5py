@@ -168,7 +168,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
                 "Inverse mask is not implemented yet with images."
             )
 
-        # todo: image can contains several images attached as children
         if copy_children is False:
             warnings.warn(
                 "The 'copy_children' argument is not applicable to GeoImage objects."
@@ -598,7 +597,6 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
 
         :return: Image converted to FileNameData object.
         """
-        # todo: this should be changed in the future to accept n dims tiff images
         if isinstance(image, np.ndarray) and image.ndim in [2, 3]:
             if image.ndim == 3 and image.shape[2] != 3:
                 raise ValueError(

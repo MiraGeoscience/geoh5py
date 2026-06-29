@@ -248,7 +248,6 @@ class AssociationValidator(BaseValidator):
             return
 
         if isinstance(valid, Workspace):
-            # TODO add a generic method to workspace to get all uuid
             children = valid.get_entity(uid)
             if None in children:
                 children = valid.fetch_children(valid.root, recursively=True)
