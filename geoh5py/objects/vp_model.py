@@ -167,7 +167,7 @@ class VPModel(GridObject, DrapeModel):
         return data.uid
 
     @classmethod
-    def create(cls, workspace, **kwargs):
+    def create(cls, workspace, compression: int = 5, **kwargs):
         """
         Function to create an entity.
 
