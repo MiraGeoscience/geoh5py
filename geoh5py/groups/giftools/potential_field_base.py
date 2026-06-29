@@ -276,17 +276,17 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
     },
 }
 
-GRAV_BOUND_MODEL_LOWER: dict[str, Any] = {
-    "bound_model_lower": {
-        "association": "Cell",
-        "dataType": "Float",
-        "default": -10,
-        "group": "Model parameters",
-        "isValue": True,
-        "label": "Bounds (lower)",
-        "main": False,
-        "parent": "mesh",
-        "property": "",
-        "value": -10,
-    }
+# base "bound_model_lower" field that can be easily edited for any specific differences,
+# e.g. different default and value or using "dataGroupType" instead of "dataType"
+BOUND_MODEL_LOWER_FIELD: dict[str, Any] = {
+    "association": "Cell",
+    "dataType": "Float",
+    "default": -10,
+    "group": "Model parameters",
+    "isValue": True,
+    "label": "Bounds (lower)",
+    "main": False,
+    "parent": "mesh",
+    "property": "",
+    "value": -10,
 }

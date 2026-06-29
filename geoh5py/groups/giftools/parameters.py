@@ -17,23 +17,35 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 import copy
+from collections.abc import Iterable
 from typing import Any
 
 
-def merge_field(base_field: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+def merge_field(
+    base_field: dict[str, Any],
+    *,
+    drop_keys: str | Iterable[str] = (),
+    **overrides: Any,
+) -> dict[str, Any]:
     """
-    Return a deep copy of a :data:`BASE_PARAMETERS` field with ``overrides`` applied.
+    Return a deep copy of a shared parameter field with ``overrides`` applied.
 
-    Can be used when a group shares a field with the common base, but needs a small
-    difference (an extra key or a changed value). The deep copy ensures the per-group dict
-    never aliases the shared ``BASE_PARAMETERS`` template, so in-place edits
-    cannot leak between groups.
+    Can be used when a group shares a field with a common parameter dict (e.g.
+    :data:`BASE_PARAMETERS` or similar) that needs a small difference, such as
+    an extra key or a changed value. The deep copy ensures the per-group dict
+    never aliases the shared template, so in-place edits cannot leak between
+    groups.
 
-    :param base_field: The shared field taken from :data:`BASE_PARAMETERS`.
+    :param base_field: A shared field dict to use as the starting point.
+    :param drop_keys: Key or keys to remove from the copied field before applying overrides.
     :param overrides: Keys to add or override on the copied field.
     :return: A new field dict, safe to embed in a group's parameter dict.
     """
     field = copy.deepcopy(base_field)
+    if isinstance(drop_keys, str):
+        drop_keys = (drop_keys,)
+    for key in drop_keys:
+        field.pop(key, None)
     field.update(overrides)
     return field
 
