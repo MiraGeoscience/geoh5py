@@ -586,17 +586,6 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     max: float = np.inf
     precision: int = 2
 
-    @model_validator(mode="after")
-    def property_if_not_is_value(self):
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-            and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
-        ):
-            raise ValueError("A property must be provided if is_value is used.")
-
-        return self
-
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
         if "is_value" in self.model_fields_set and not self.is_value:
