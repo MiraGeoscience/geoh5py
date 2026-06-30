@@ -142,14 +142,16 @@ def test_base_form_serieralization(sample_form):
 
 
 def test_label_form():
-    form = LabelForm(label="name")
+    form = LabelForm(label="name")
+
     assert form.label == "name"
     assert form.value is None
-    assert '"value"' not in form.json_string
-
+    assert '"value"' not in form.json_string
+
     msg = "Input should be None"
     with pytest.raises(ValueError, match=msg):
         _ = LabelForm(label="name", value=1)
+
 
 def test_string_form():
     form = StringForm(label="name", value="test")
