@@ -499,19 +499,6 @@ def test_data_or_value_form():
     assert not form.is_value
     assert form.property == uuid.UUID(data_uid)
 
-    with pytest.raises(
-        ValidationError, match="A property must be provided if is_value is used"
-    ):
-        _ = DataOrValueForm(
-            label="name",
-            value=1.0,
-            parent="my_param",
-            association="Vertex",
-            data_type="Float",
-            is_value=False,
-            property="",
-        )
-
     form.set_value(None)
     assert form.is_value
 

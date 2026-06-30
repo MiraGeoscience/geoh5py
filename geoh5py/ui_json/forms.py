@@ -472,7 +472,7 @@ class DataFormMixin(BaseModel):
 
 class DataForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson form for data associated with an object.
+    Uijson form for data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -485,7 +485,7 @@ class DataForm(DataFormMixin, BaseForm):
 
 class DataGroupForm(DataForm):
     """
-    Geoh5py uijson form for grouped data associated with an object.
+    Uijson form for grouped data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -498,7 +498,7 @@ class DataGroupForm(DataForm):
 
 class GroupMultiDataForm(BaseForm):
     """
-    Geoh5py uijson form for selecting (multi) data within a group.
+    Uijson form for selecting (multi) data within a group.
 
     Shares documented attributes with the BaseForm.
 
@@ -572,7 +572,7 @@ class GroupMultiDataForm(BaseForm):
 
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson data form that also accepts a single value.
+    Uijson data form that also accepts a single value.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -616,7 +616,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson data form with multi-selection.
+    Uijson data form with multi-selection.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
