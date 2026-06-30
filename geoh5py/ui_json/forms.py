@@ -170,8 +170,7 @@ class LabelForm(BaseForm):
     Shares documented attributes with the BaseForm.
     """
 
-    value: None
-
+    value: None = None
 
 class StringForm(BaseForm):
     """
