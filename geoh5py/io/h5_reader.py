@@ -114,7 +114,6 @@ class H5Reader:
             for key, value in entity.attrs.items():
                 attributes[INV_KEY_MAP.get(key, key)] = value
 
-            # TODO Use lazy pointer to data
             if entity_type != "Data":
                 for key, value in entity.items():
                     if key.lower() in ["metadata", "options", "parameters", "giftools"]:

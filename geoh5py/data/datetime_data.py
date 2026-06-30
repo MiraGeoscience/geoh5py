@@ -27,9 +27,3 @@ class DatetimeData(TextData):
     """
     DatetimeData class for storing datetime values in a geoh5 file.
     """
-
-    # TODO: implement specialization to access values.
-    # Stored as a 1D array of variable-length strings formatted according to the ISO 8601
-    # extended specification for representations of UTC dates and times (Qt implementation),
-    # taking the form YYYY-MM-DDTHH:mm:ss[Z|[+|-]HH:mm]
-    # No data value : empty string

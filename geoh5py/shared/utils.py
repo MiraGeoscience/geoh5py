@@ -530,7 +530,6 @@ def str2uuid(value: Any) -> UUID | Any:
         value = value.decode("utf-8")
 
     if is_uuid(value):
-        # TODO insert validation
         return UUID(str(value))
     return value
 
@@ -795,8 +794,6 @@ def yz_rotation_matrix(angle: float) -> np.ndarray:
 def set_attributes(entity, **kwargs):
     """
     Loop over kwargs and set attributes to an entity.
-
-    TODO: Deprecate in favor of explicit attribute setting.
     """
     for key, value in kwargs.items():
         try:
