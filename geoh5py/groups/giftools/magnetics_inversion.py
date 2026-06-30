@@ -34,7 +34,7 @@ from geoh5py.groups.giftools.potential_field_base import (
 
 MAGINV3D_PARAMETERS: dict[str, Any] = {
     **POTENTIAL_FIELD_PARAMETERS,
-    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD, default=0, value=0),
+    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD, default=0.0, value=0.0),
     "data": {
         "default": "",
         "gifType": ["MAGdata", "MAGAMPdata"],

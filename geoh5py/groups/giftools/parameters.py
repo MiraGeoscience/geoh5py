@@ -92,14 +92,14 @@ BASE_PARAMETERS: dict[str, Any] = {
     "initial_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0.0010000000474974513,
+        "default": 0.001,
         "group": "Model parameters",
         "isValue": True,
         "label": "Initial model",
         "main": False,
         "parent": "mesh",
         "property": "",
-        "value": 0.0010000000474974513,
+        "value": 0.001,
     },
     "results_loaded": False,
     "smooth_mod": {
