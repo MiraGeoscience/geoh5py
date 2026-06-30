@@ -333,7 +333,7 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
         ind = 0
         label = ""
         if len(self.from_) > 0:
-            ind = len(list(set(self.from_)))
+            ind = len(set(self.from_))
             label = f"({ind})"
 
         if property_group is None:
