@@ -55,7 +55,7 @@ from geoh5py.ui_json.validation import (
 logger = logging.getLogger(__name__)
 
 
-class BaseUIJson(BaseModel):
+class UIJson(BaseModel):
     """
     Base class for storing ui.json data on disk.
 
@@ -141,7 +141,7 @@ class BaseUIJson(BaseModel):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> BaseUIJson:
+    def from_dict(cls, data: dict) -> UIJson:
         """
         Create a UIJson instance from a dictionary.
 
@@ -161,7 +161,7 @@ class BaseUIJson(BaseModel):
         return self._form_dependencies
 
     @staticmethod
-    def infer(title="UnknownUIJson", **kwargs) -> type[BaseUIJson]:
+    def infer(title="UnknownUIJson", **kwargs) -> type[UIJson]:
         """
         Create a UIJson subclass dynamically based on inferred form types.
 
@@ -177,7 +177,7 @@ class BaseUIJson(BaseModel):
         """
         fields = {}
         for name, value in kwargs.items():
-            if name in BaseUIJson.model_fields.keys():
+            if name in UIJson.model_fields.keys():
                 continue
             if isinstance(value, dict):
                 form_type = BaseForm.infer(value)
@@ -187,7 +187,7 @@ class BaseUIJson(BaseModel):
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
-            __base__=BaseUIJson,
+            __base__=UIJson,
             **fields,
         )
         return model
@@ -235,7 +235,7 @@ class BaseUIJson(BaseModel):
         self._group_dependencies, self._form_dependencies = self._get_dependency_links()
 
     @classmethod
-    def read(cls, path: str | Path) -> BaseUIJson:
+    def read(cls, path: str | Path) -> UIJson:
         """
         Create a UIJson instance from ui.json file.
 
@@ -254,7 +254,7 @@ class BaseUIJson(BaseModel):
 
         return cls.from_dict(kwargs)
 
-    def set_enabled(self, copy: bool = False, **states) -> BaseUIJson:
+    def set_enabled(self, copy: bool = False, **states) -> UIJson:
         """
         Set the enabled state of fields, and handle the state of dependencies.
 
@@ -291,7 +291,7 @@ class BaseUIJson(BaseModel):
 
         return uijson
 
-    def set_values(self, copy: bool = False, **kwargs) -> BaseUIJson:
+    def set_values(self, copy: bool = False, **kwargs) -> UIJson:
         """
         Fill the UIJson with new values.
 
