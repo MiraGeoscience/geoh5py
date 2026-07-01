@@ -108,7 +108,6 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.public = public
         self.visible = visible
 
-        # TODO Deprecate in favor of explicit attribute setter
         map_attributes(self, **kwargs)
         self.workspace.register(self)
 
@@ -275,8 +274,6 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         :return: a valid name built from the given name. It simply returns the given name
         if it was already valid.
         """
-        # TODO: implement an actual fixup
-        #  (possibly it has to be abstract with different implementations per Entity type)
         return name
 
     @abstractmethod

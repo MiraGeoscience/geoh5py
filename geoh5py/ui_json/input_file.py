@@ -506,8 +506,6 @@ class InputFile:
         """
         Convert uuids to entities from the workspace.
 
-        TODO: change validation to use a simpler function here?
-
         :param var: Dictionary to promote.
 
         :return: Promoted dictionary.
@@ -546,7 +544,7 @@ class InputFile:
         if isinstance(value, UUID) and self._geoh5 is not None:
             if self.validate:
                 self.association_validator(key, value, self._geoh5)
-            # todo: why uuid2 entity here?
+
             value = uuid2entity(value, self._geoh5)
 
         return value
