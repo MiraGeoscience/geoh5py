@@ -21,7 +21,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
+from geoh5py.groups.giftools.parameters import (
+    BASE_LENGTH_SCALES,
+    BASE_PARAMETERS,
+    merge_field,
+)
 
 
 # Parameters shared by GIFtools potential-field inversion groups that operate on a
@@ -120,7 +124,7 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "dependency": "default_decay",
         "group": "Sensitivity weight options",
         "label": "Weighting decay constant",
-        "min": 0.0,
+        "min": 1.0e-8,
         "value": 3.0,
     },
     "depth_weighting_z0": {
@@ -128,8 +132,8 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "dependency": "default_decay",
         "group": "Sensitivity weight options",
         "label": "Weighting offset (m)",
-        "min": 0.0,
-        "value": 0.0,
+        "min": 1.0e-8,
+        "value": 1.0e-8,
     },
     "face_weight": BASE_PARAMETERS["face_weight"],
     "initial_model": BASE_PARAMETERS["initial_model"],
@@ -148,32 +152,21 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "value": 1.0,
     },
     "inversion_tolerance": {
-        "default": 0.05,
+        "default": 5.0e-2,
         "group": "Inversion stopping criteria",
         "label": "Tolerance",
         "max": 0.5,
-        "min": 0.001,
-        "value": 0.05,
+        "min": 1e-3,
+        "value": 5.0e-2,
     },
-    "length_scales": {
-        "alpha_s": 0.001,
-        "alpha_x": 1.0,
-        "alpha_y": 1.0,
-        "alpha_z": 1.0,
-        "group": "Model objective function",
-        "is_length": True,
-        "length_x": 100.0,
-        "length_y": 100.0,
-        "length_z": 100.0,
-        "parent": "mesh",
-    },
+    "length_scales": merge_field(BASE_LENGTH_SCALES, is_length=True),
     "lp_epsilon": {
         "default": -1234567,
         "enabled": False,
         "group": "Block model scaling",
         "groupOptional": True,
         "label": "A epsilon",
-        "value": 0.001,
+        "value": 1e-3,
     },
     "lp_lq_scale": {
         "default": -1234567,
@@ -189,7 +182,7 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "group": "Block model scaling",
         "groupOptional": True,
         "label": "ENZ epsilon",
-        "value": 1e-05,
+        "value": 1e-5,
     },
     "matrix_file": {
         "enabled": False,
@@ -209,24 +202,24 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
     "reference_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0.0,
+        "default": 1.0e-8,
         "group": "Model parameters",
         "isValue": True,
         "label": "Reference model",
         "main": False,
         "parent": "mesh",
         "property": "",
-        "value": 0.0,
+        "value": 1.0e-8,
     },
     "results_loaded": BASE_PARAMETERS["results_loaded"],
     "smooth_mod": BASE_PARAMETERS["smooth_mod"],
     "threshold": {
-        "default": 0.05,
+        "default": 5.0e-2,
         "enabled": True,
         "group": "Wavelet compression",
         "groupOptional": True,
         "label": "Threshold value",
-        "value": 0.05,
+        "value": 5.0e-2,
     },
     "topography": {
         "default": "",

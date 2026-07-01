@@ -21,7 +21,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
+from geoh5py.groups.giftools.parameters import (
+    BASE_LENGTH_SCALES,
+    BASE_PARAMETERS,
+    merge_field,
+)
 
 
 # Parameters shared by the GIFtools octree inversion groups.
@@ -42,7 +46,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "group": "Inversion parameters",
         "label": "Beta minimum",
         "min": 1e-10,
-        "value": 0.001,
+        "value": 1e-3,
     },
     "beta_two": {
         "default": -1234567,
@@ -50,7 +54,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "group": "Inversion parameters",
         "label": "Beta maximum",
         "min": 1e-10,
-        "value": 1000.0,
+        "value": 1.0e3,
     },
     "bounds_defined": {
         "group": "Model parameters",
@@ -79,16 +83,16 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "visible": True,
     },
     "gn_tolerance": {
-        "default": 0.01,
+        "default": 1e-2,
         "group": "Gauss-Newton options",
         "label": "Solver tolerance",
-        "value": 0.01,
+        "value": 1e-2,
     },
     # initial_model shares the common base and octree adds max/min bounds.
     "initial_model": merge_field(
         BASE_PARAMETERS["initial_model"],
-        max=100000000.0,
-        min=0.0,
+        max=1.0e8,
+        min=1.0e-8,
     ),
     "inversion_chifact": {
         "default": 1.0,
@@ -105,11 +109,11 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": 20,
     },
     "ipcg_tolerance": {
-        "default": 0.01,
+        "default": 1e-2,
         "group": "Gauss-Newton options",
         "label": "IPCG tolerance",
         "tooltip": "Fractional percent norm of the iterative solver residual",
-        "value": 0.01,
+        "value": 1e-2,
     },
     "iterations_per_beta": {
         "default": 3,
@@ -125,33 +129,22 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": "Iterative",
         "visible": False,
     },
-    "length_scales": {
-        "alpha_s": 0.0001,
-        "alpha_x": 1.0,
-        "alpha_y": 1.0,
-        "alpha_z": 1.0,
-        "group": "Model objective function",
-        "is_length": False,
-        "length_x": 100.0,
-        "length_y": 100.0,
-        "length_z": 100.0,
-        "parent": "mesh",
-    },
+    "length_scales": merge_field(BASE_LENGTH_SCALES, is_length=False),
     "lower_bound_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0.0,
+        "default": 1.0e-8,
         "dependency": "bounds_defined",
         "dependencyType": "disabled",
         "group": "Model parameters",
         "isValue": True,
         "label": "Lower bounds",
         "main": False,
-        "max": 100000000.0,
-        "min": 0.0,
+        "max": 1.0e8,
+        "min": 1.0e-8,
         "parent": "mesh",
         "property": "",
-        "value": 0.0,
+        "value": 1.0e-8,
     },
     "matlab": "",
     "mesh": {
@@ -162,24 +155,24 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": "",
     },
     "model_perturbation": {
-        "default": 0.001,
+        "default": 1e-3,
         "group": "Gauss-Newton options",
         "label": "Minimum model perturbation",
-        "value": 0.001,
+        "value": 1e-3,
     },
     "reference_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0.001,
+        "default": 1e-3,
         "group": "Model parameters",
         "isValue": True,
         "label": "Reference model",
         "main": False,
-        "max": 100000000.0,
-        "min": 0.0,
+        "max": 1.0e8,
+        "min": 1.0e-8,
         "parent": "mesh",
         "property": "",
-        "value": 0.001,
+        "value": 1e-3,
     },
     "results_loaded": BASE_PARAMETERS["results_loaded"],
     "smooth_mod": BASE_PARAMETERS["smooth_mod"],
@@ -211,8 +204,8 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "isValue": True,
         "label": "Upper bounds",
         "main": False,
-        "max": 100000000.0,
-        "min": 0.0,
+        "max": 1.0e8,
+        "min": 1.0e-8,
         "parent": "mesh",
         "property": "",
         "value": 10.0,

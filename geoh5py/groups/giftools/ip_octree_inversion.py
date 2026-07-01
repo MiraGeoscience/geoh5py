@@ -43,13 +43,13 @@ IPOCTREE_PARAMETERS.update(
             "dataType": "Float",
             "label": "Conductivity model",
             "main": True,
-            "ndv": 0.0,
+            "ndv": 1.0e-8,
             "parent": "mesh",
             "suffix": ".con",
             "value": "",
         },
         "reference_model": merge_field(
-            OCTREE_INVERSION_PARAMETERS["reference_model"], default=0.0, value=0.0
+            OCTREE_INVERSION_PARAMETERS["reference_model"], default=1.0e-8, value=1.0e-8
         ),
         "rx_data": {
             "default": "",
