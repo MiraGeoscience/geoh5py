@@ -83,7 +83,7 @@ IPINV3D_PARAMETERS: dict[str, Any] = {
         "ndv": 1e-8,
         "parent": "mesh",
         "suffix": ".con",
-        "toolTip": "Conductivity in S/m",
+        "tooltip": "Conductivity in S/m",
         "value": "",
     },
     "reference_model": _PF["reference_model"],
