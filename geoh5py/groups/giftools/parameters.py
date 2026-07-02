@@ -92,14 +92,14 @@ BASE_PARAMETERS: dict[str, Any] = {
     "initial_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0.0010000000474974513,
+        "default": 1e-3,
         "group": "Model parameters",
         "isValue": True,
         "label": "Initial model",
         "main": False,
         "parent": "mesh",
         "property": "",
-        "value": 0.0010000000474974513,
+        "value": 1e-3,
     },
     "results_loaded": False,
     "smooth_mod": {
@@ -111,4 +111,18 @@ BASE_PARAMETERS: dict[str, Any] = {
     },
     "uuid": "",
     "working_directory": "",
+}
+
+# Shared length-scale field reused across potential-field and octree inversion groups.
+# Set ``is_length`` to True/False via merge_field when embedding in a parameter dict.
+BASE_LENGTH_SCALES: dict[str, Any] = {
+    "alpha_s": 1e-4,
+    "alpha_x": 1.0,
+    "alpha_y": 1.0,
+    "alpha_z": 1.0,
+    "group": "Model objective function",
+    "length_x": 1.0e2,
+    "length_y": 1.0e2,
+    "length_z": 1.0e2,
+    "parent": "mesh",
 }

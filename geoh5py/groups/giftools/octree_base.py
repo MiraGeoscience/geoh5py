@@ -21,7 +21,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
+from geoh5py.groups.giftools.parameters import (
+    BASE_LENGTH_SCALES,
+    BASE_PARAMETERS,
+    merge_field,
+)
 
 
 # Parameters shared by the GIFtools octree inversion groups.
@@ -30,15 +34,6 @@ from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
 
 OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "active_model": BASE_PARAMETERS["active_model"],
-    "assignConRes": {
-        "alternateLabel": "Resistivity",
-        "group": "Model parameters",
-        "label": "Model Type",
-        "main": False,
-        "originalLabel": "Conductivity",
-        "tooltip": "Resistivity (Ohm-m) or Conductivity (S/m)",
-        "value": "Conductivity",
-    },
     "beta_given": {
         "default": False,
         "group": "Inversion parameters",
@@ -51,7 +46,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "group": "Inversion parameters",
         "label": "Beta minimum",
         "min": 1e-10,
-        "value": 0.0010000000474974513,
+        "value": 1e-3,
     },
     "beta_two": {
         "default": -1234567,
@@ -59,7 +54,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "group": "Inversion parameters",
         "label": "Beta maximum",
         "min": 1e-10,
-        "value": 1000,
+        "value": 1.0e3,
     },
     "bounds_defined": {
         "group": "Model parameters",
@@ -88,22 +83,22 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "visible": True,
     },
     "gn_tolerance": {
-        "default": 0.009999999776482582,
+        "default": 1e-2,
         "group": "Gauss-Newton options",
         "label": "Solver tolerance",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     # initial_model shares the common base and octree adds max/min bounds.
     "initial_model": merge_field(
         BASE_PARAMETERS["initial_model"],
-        max=100000000,
-        min=9.99999993922529e-09,
+        max=1.0e8,
+        min=1.0e-8,
     ),
     "inversion_chifact": {
-        "default": 1,
+        "default": 1.0,
         "group": "Inversion parameters",
         "label": "Chi factor",
-        "value": 1,
+        "value": 1.0,
     },
     "ipcg_iterations": {
         "default": 20,
@@ -114,11 +109,11 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": 20,
     },
     "ipcg_tolerance": {
-        "default": 0.009999999776482582,
+        "default": 1e-2,
         "group": "Gauss-Newton options",
         "label": "IPCG tolerance",
         "tooltip": "Fractional percent norm of the iterative solver residual",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "iterations_per_beta": {
         "default": 3,
@@ -134,33 +129,22 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": "Iterative",
         "visible": False,
     },
-    "length_scales": {
-        "alpha_s": 9.999999747378752e-05,
-        "alpha_x": 1,
-        "alpha_y": 1,
-        "alpha_z": 1,
-        "group": "Model objective function",
-        "is_length": False,
-        "length_x": 100,
-        "length_y": 100,
-        "length_z": 100,
-        "parent": "mesh",
-    },
+    "length_scales": merge_field(BASE_LENGTH_SCALES, is_length=False),
     "lower_bound_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0,
+        "default": 1.0e-8,
         "dependency": "bounds_defined",
         "dependencyType": "disabled",
         "group": "Model parameters",
         "isValue": True,
         "label": "Lower bounds",
         "main": False,
-        "max": 100000000,
-        "min": 9.99999993922529e-09,
+        "max": 1.0e8,
+        "min": 1.0e-8,
         "parent": "mesh",
         "property": "",
-        "value": 0,
+        "value": 1.0e-8,
     },
     "matlab": "",
     "mesh": {
@@ -171,24 +155,24 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": "",
     },
     "model_perturbation": {
-        "default": 0.0010000000474974513,
+        "default": 1e-3,
         "group": "Gauss-Newton options",
         "label": "Minimum model perturbation",
-        "value": 0.0010000000474974513,
+        "value": 1e-3,
     },
     "reference_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 0.0010000000474974513,
+        "default": 1e-3,
         "group": "Model parameters",
         "isValue": True,
         "label": "Reference model",
         "main": False,
-        "max": 100000000,
-        "min": 9.99999993922529e-09,
+        "max": 1.0e8,
+        "min": 1.0e-8,
         "parent": "mesh",
         "property": "",
-        "value": 0.0010000000474974513,
+        "value": 1e-3,
     },
     "results_loaded": BASE_PARAMETERS["results_loaded"],
     "smooth_mod": BASE_PARAMETERS["smooth_mod"],
@@ -213,20 +197,27 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "upper_bound_model": {
         "association": "Cell",
         "dataType": "Float",
-        "default": 10,
+        "default": 10.0,
         "dependency": "bounds_defined",
         "dependencyType": "disabled",
         "group": "Model parameters",
         "isValue": True,
         "label": "Upper bounds",
         "main": False,
-        "max": 100000000,
-        "min": 9.99999993922529e-09,
+        "max": 1.0e8,
+        "min": 1.0e-8,
         "parent": "mesh",
         "property": "",
-        "value": 10,
+        "value": 10.0,
     },
     "uuid": BASE_PARAMETERS["uuid"],
     "version": "",
     "working_directory": BASE_PARAMETERS["working_directory"],
+    "xy_localize": {
+        "default": False,
+        "label": "Localize coordinates",
+        "main": True,
+        "tooltip": "Writes files to disk with respect to UBC origin of 3D grid",
+        "value": False,
+    },
 }
