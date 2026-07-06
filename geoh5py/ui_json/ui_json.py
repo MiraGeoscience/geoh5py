@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,8 @@ from pydantic import (
 )
 
 from geoh5py import Workspace
-from geoh5py.groups import UIJsonGroup
+from geoh5py.data import FilenameData
+from geoh5py.shared.entity_container import EntityContainer
 from geoh5py.shared.utils import (
     copy_dict_relatives,
     dict_mapper,
@@ -118,8 +120,7 @@ class UIJson(BaseModel):
         """
         Flatten the UIJson data to dictionary of key/value pairs.
 
-        Chooses between value/property in data forms depending on the is_value
-        field.
+        Relies on individual BaseForm.flatten method when possible.
 
         :param skip_disabled: If True, skips fields with 'enabled' set to False.
         :param active_only: If True, skips fields that have not been explicitly set.
@@ -318,11 +319,20 @@ class UIJson(BaseModel):
 
         return uijson
 
+    def to_file_data(self, entity: EntityContainer) -> FilenameData:
+        """
+        Add ui.json as FileData to entity.
+
+        :param entity: Object to add ui.json file to.
+        """
+        file = self.write()
+        return entity.add_file(file)
+
     def to_params(
         self, workspace: Workspace | None = None, validate=True
     ) -> dict[str, Any]:
         """
-        Promote, flatten and validate parameter/values dictionary.
+        Flatten, promote and validate parameter/values dictionary.
 
         :param workspace: Workspace to fetch entities from.  Used for passing active
             workspaces to avoid closing and flushing data.
@@ -360,35 +370,6 @@ class UIJson(BaseModel):
 
         return data
 
-    def to_ui_json_group(
-        self, workspace: Workspace | None = None, **kwargs
-    ) -> UIJsonGroup:
-        """
-        Convert the UIJson to a UIJsonGroup.
-
-        :param workspace: Workspace to fetch entities from.  Used for passing active
-            workspaces to avoid closing and flushing data.
-        :param kwargs: Additional keyword arguments to update the UIJson data before
-
-        :return: A UIJsonGroup representing the application.
-        """
-        with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
-            if geoh5 is None:
-                raise ValueError("Workspace cannot be None.")
-
-            ui_json_group = UIJsonGroup.create(
-                workspace=geoh5,
-                options=self.model_dump(mode="json", exclude_unset=True, by_alias=True),
-                name=kwargs.pop("name", self.title),
-                **kwargs,
-            )
-            options = ui_json_group.options
-            options["out_group"]["value"] = ui_json_group.uid
-            options["out_group"]["enabled"] = True
-            ui_json_group.options = options
-
-            return ui_json_group
-
     @field_validator("geoh5", mode="after")
     @classmethod
     def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
@@ -417,19 +398,23 @@ class UIJson(BaseModel):
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
-    def write(self, path: Path) -> Path:
+    def write(self, path: Path | None = None) -> Path | BytesIO:
         """
         Write the UIJson object to file.
 
         :param path: Path to write the .ui.json file.
 
-        :return: Return path to the ui_json file.
+        :return: Return path to the ui_json file or BytesIO object.
         """
-        with open(path, "w", encoding="utf-8") as file:
-            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
-            file.write(data)
+        data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
 
-        return path
+        if isinstance(path, Path):
+            with open(path, "w", encoding="utf-8") as file:
+                file.write(data)
+
+            return path
+        else:
+            return BytesIO(data.encode("utf-8"))
 
     def _cross_validations(
         self, params: dict[str, Any], errors: dict[str, Any] | None = None

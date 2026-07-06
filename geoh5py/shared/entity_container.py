@@ -25,6 +25,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -115,7 +116,7 @@ class EntityContainer(Entity):
                 "Comments": self.comments.values["Comments"] + [comment_dict]
             }
 
-    def add_file(self, file: str | Path | bytes, name: str = "filename.dat"):
+    def add_file(self, file: str | Path | bytes | BytesIO, name: str = "filename.dat"):
         """
         Add a file to the object or group stored as bytes on a FilenameData
 
@@ -136,6 +137,9 @@ class EntityContainer(Entity):
 
         elif isinstance(file, bytes):
             blob = file
+
+        elif isinstance(file, BytesIO):
+            blob = file.getvalue()
 
         else:
             raise TypeError(
