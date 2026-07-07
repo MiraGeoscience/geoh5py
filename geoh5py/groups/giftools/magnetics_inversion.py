@@ -22,8 +22,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
 from geoh5py.groups.giftools.potential_field_base import (
     BOUND_MODEL_LOWER_FIELD,
     POTENTIAL_FIELD_PARAMETERS,
@@ -34,7 +33,9 @@ from geoh5py.groups.giftools.potential_field_base import (
 
 MAGINV3D_PARAMETERS: dict[str, Any] = {
     **POTENTIAL_FIELD_PARAMETERS,
-    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD, default=0, value=0),
+    "bound_model_lower": merge_field(
+        BOUND_MODEL_LOWER_FIELD, default=1.0e-8, value=1.0e-8
+    ),
     "data": {
         "default": "",
         "gifType": ["MAGdata", "MAGAMPdata"],
