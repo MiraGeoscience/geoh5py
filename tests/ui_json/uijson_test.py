@@ -203,6 +203,34 @@ def test_allow_extra(tmp_path):
     }
 
 
+def test_data_disabled(tmp_path):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+
+    pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+
+    class MyBaseUIJson(BaseUIJson):
+        parent: ObjectForm
+        parameter: DataOrValueForm
+
+    kwargs = {
+        "parent": {"label": "parent", "value": pts.uid, "mesh_type": [Points]},
+        "parameter": {
+            "label": "some parameter",
+            "value": 1.0,
+            "is_value": False,
+            "optional": True,
+            "parent": "parent",
+            "association": "Vertex",
+            "property": "",
+            "data_type": "Float",
+            "enabled": False,
+        },
+    }
+    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    options = uijson.to_params()
+    assert "parameter" not in options
+
+
 def test_multiple_validations(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
