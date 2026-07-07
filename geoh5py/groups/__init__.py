@@ -31,6 +31,7 @@ from .giftools.gravity_inversion import GZInv3D
 from .giftools.magnetics_inversion import MagInv3D
 from .giftools.dc_octree_inversion import DCOctreeInversion
 from .giftools.ip_octree_inversion import IPOctreeInversion
+from .giftools.ip_3d_inversion import IPInv3D
 from .giftools.magnetic_vector_inversion import MVIInv
 from .group_type import GroupType
 from .integrator import (

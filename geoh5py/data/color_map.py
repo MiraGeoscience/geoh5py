@@ -61,7 +61,7 @@ class ColorMap:
         where V (Values) are sorted floats defining the position of each RGBA.
         R (Red), G (Green), B (Blue) and A (Alpha) are integer values between [0, 255].
         """
-        return np.vstack([self._values[name] for name in self._names])
+        return np.vstack([self._values[name] for name in self._names]).T
 
     @values.setter
     def values(self, values: np.ndarray):
@@ -69,6 +69,12 @@ class ColorMap:
             raise TypeError(f"Input 'values' of ColorMap must be of type {np.ndarray}.")
 
         if np.issubdtype(values.dtype.base, np.number):
+            if values.ndim != 2:
+                raise ValueError("Input 'values' array must have 2 dimensions.")
+
+            if values.shape[1] != 5 and values.shape[0] == 5:
+                values = values.T
+
             if values.shape[1] != 5:
                 raise ShapeValidationError("values", values.shape, "(*, 5)")
 

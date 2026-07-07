@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from geoh5py.groups.giftools.parameters import (
+from geoh5py.groups.giftools.base import (
     BASE_LENGTH_SCALES,
     BASE_PARAMETERS,
     merge_field,
