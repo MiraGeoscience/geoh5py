@@ -165,6 +165,16 @@ class BaseForm(BaseModel):
         return self.optional or self.group_optional or len(self.dependency) > 0
 
 
+class LabelForm(BaseForm):
+    """
+    Label uijson form.
+
+    Shares documented attributes with the BaseForm.
+    """
+
+    value: None = None
+
+
 class StringForm(BaseForm):
     """
     String valued uijson form.
@@ -474,7 +484,7 @@ class DataFormMixin(BaseModel):
 
 class DataForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson form for data associated with an object.
+    Uijson form for data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -487,7 +497,7 @@ class DataForm(DataFormMixin, BaseForm):
 
 class DataGroupForm(DataForm):
     """
-    Geoh5py uijson form for grouped data associated with an object.
+    Uijson form for grouped data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -500,7 +510,7 @@ class DataGroupForm(DataForm):
 
 class GroupMultiDataForm(BaseForm):
     """
-    Geoh5py uijson form for selecting (multi) data within a group.
+    Uijson form for selecting (multi) data within a group.
 
     Shares documented attributes with the BaseForm.
 
@@ -574,7 +584,7 @@ class GroupMultiDataForm(BaseForm):
 
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson data form that also accepts a single value.
+    Uijson data form that also accepts a single value.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -588,17 +598,6 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     max: float = np.inf
     precision: int = 2
     line_edit: bool = False
-
-    @model_validator(mode="after")
-    def property_if_not_is_value(self):
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-            and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
-        ):
-            raise ValueError("A property must be provided if is_value is used.")
-
-        return self
 
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
@@ -630,7 +629,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson data form with multi-selection.
+    Uijson data form with multi-selection.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
