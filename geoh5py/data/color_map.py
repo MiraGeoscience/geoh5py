@@ -69,6 +69,9 @@ class ColorMap:
             raise TypeError(f"Input 'values' of ColorMap must be of type {np.ndarray}.")
 
         if np.issubdtype(values.dtype.base, np.number):
+            if values.ndim != 2:
+                raise ValueError("Input 'values' array must have 2 dimensions.")
+
             if values.shape[1] != 5 and values.shape[0] == 5:
                 values = values.T
 
