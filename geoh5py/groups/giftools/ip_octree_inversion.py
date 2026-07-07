@@ -25,8 +25,8 @@ from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
 from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
-IPOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
-IPOCTREE_PARAMETERS.update(
+IPOCTREEINV_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
+IPOCTREEINV_PARAMETERS.update(
     {
         "matlab": "IPoctreeinversion",
         "modeConRes": {
@@ -68,4 +68,4 @@ class IPOctreeInversion(BaseGIFtoolsGroup):
 
     _TYPE_UID = UUID("{d9fd455e-ea94-40f5-9d86-e7c49c7b5005}")
     _default_name = "ipoctree_inv"
-    _default_parameters: dict[str, Any] = IPOCTREE_PARAMETERS
+    _default_parameters: dict[str, Any] = IPOCTREEINV_PARAMETERS
