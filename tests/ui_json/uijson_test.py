@@ -39,6 +39,7 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     FloatForm,
     IntegerForm,
+    LabelForm,
     MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
@@ -692,6 +693,32 @@ def test_geoh5_validate_extension(tmp_path):
             conda_environment="test",
             workspace_geoh5=None,
         )
+
+
+def test_label_form(tmp_path):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+
+    # BoolForm dependency is valid
+    class MyBaseUIJson(BaseUIJson):
+        my_parameter: StringForm
+        my_label: LabelForm
+
+    kwargs = {
+        "my_parameter": {"label": "test", "value": "string", "main": True},
+        "my_label": {
+            "label": "Label with hyperlinks",
+            "value": None,
+            "icon": "information",
+            "main": True,
+        },
+    }
+
+    uijson = generate_test_uijson(workspace=ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson.write(tmp_path / "test_label.ui.json")
+
+    new_json = BaseUIJson.read(tmp_path / "test_label.ui.json")
+
+    assert uijson.my_label == new_json.my_label
 
 
 # ---------------------------------------------------------------------------

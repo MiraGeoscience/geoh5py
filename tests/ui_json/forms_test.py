@@ -46,6 +46,7 @@ from geoh5py.ui_json.forms import (
     GroupForm,
     GroupMultiDataForm,
     IntegerForm,
+    LabelForm,
     MultiChoiceForm,
     MultiFileForm,
     MultiSelectDataForm,
@@ -138,6 +139,18 @@ def test_base_form_serieralization(sample_form):
     form = sample_form(label="name", value="test", dependency_type="disabled")
     json = form.json_string
     assert "dependencyType" in json
+
+
+def test_label_form():
+    form = LabelForm(label="name")
+
+    assert form.label == "name"
+    assert form.value is None
+    assert '"value"' not in form.json_string
+
+    msg = "Input should be None"
+    with pytest.raises(ValueError, match=msg):
+        _ = LabelForm(label="name", value=1)
 
 
 def test_string_form():
@@ -694,6 +707,8 @@ def test_flatten(sample_form):
 def test_base_form_infer(tmp_path):
     form = BaseForm.infer({"label": "test", "value": "test"})
     assert form == StringForm
+    form = BaseForm.infer({"label": "test", "value": None})
+    assert form == LabelForm
     form = BaseForm.infer(
         {
             "label": "test",
