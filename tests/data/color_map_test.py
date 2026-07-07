@@ -34,7 +34,7 @@ def create_object_and_data(workspace: Workspace, name: str, n_x: int, n_y: int):
     values, _ = np.meshgrid(np.linspace(0, np.pi, n_x), np.linspace(0, np.pi, n_y))
 
     standalone = ColorMap()
-    assert standalone.values.shape[1] == 0
+    assert standalone.values.shape[1] == 5
 
     grid = Grid2D.create(
         workspace,
@@ -75,9 +75,9 @@ def test_create_color_map(tmp_path):
         data.entity_type.color_map = 1234
 
     with pytest.raises(ShapeValidationError) as error:
-        data.entity_type.color_map = rgba.T
+        data.entity_type.color_map = np.array([[1, 2]])
 
-    assert ShapeValidationError.message("values", "(5, 10)", "(*, 5)") == str(
+    assert ShapeValidationError.message("values", "(1, 2)", "(*, 5)") == str(
         error.value
     )
 
