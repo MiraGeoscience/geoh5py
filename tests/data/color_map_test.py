@@ -165,3 +165,26 @@ def test_color_map_filter(tmp_path):
             rec_data.entity_type.filter_max, np.percentile(data.values, 70)
         )
         assert not rec_data.entity_type.filter_min
+
+
+def test_color_map_circular_values():
+    values = np.array(
+        [
+            [0, 90, 90, 90, 0],
+            [1, 255, 51, 51, 255],
+        ]
+    )
+    color_map = ColorMap(values=values)
+    new_color_map = ColorMap(values=color_map.values)
+    assert np.allclose(color_map.values, new_color_map.values)
+
+
+def test_color_map_values_setter():
+    values = np.array(
+        [
+            [0, 90, 90, 90, 0],
+            [1, 255, 51, 51, 255],
+        ]
+    )
+    color_map = ColorMap(values=values.T)
+    assert np.allclose(values, color_map.values)
