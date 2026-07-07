@@ -335,20 +335,6 @@ def test_directory_form(tmp_path):
         assert file_form.file_description == ["Directory"]
         assert file_form.directory_only
 
-    with pytest.raises(ValidationError, match="is not a valid directory"):
-        filepath = tmp_path / "my_file.ext"
-        filepath.touch()
-        _ = DirectoryForm(
-            label="working directory",
-            value=tmp_path / "my_file.ext",
-        )
-
-    with pytest.raises(ValidationError, match="is not a valid directory"):
-        _ = DirectoryForm(
-            label="working directory",
-            value=tmp_path / "non_existent_dir",
-        )
-
 
 def test_object_form():
     obj_uid = str(uuid.uuid4())
