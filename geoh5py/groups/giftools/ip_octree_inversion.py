@@ -21,9 +21,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
 from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
-from geoh5py.groups.giftools.parameters import merge_field
 
 
 IPOCTREEINV_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
