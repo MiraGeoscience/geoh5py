@@ -163,6 +163,16 @@ class BaseForm(BaseModel):
         return self.optional or self.group_optional or len(self.dependency) > 0
 
 
+class LabelForm(BaseForm):
+    """
+    Label uijson form.
+
+    Shares documented attributes with the BaseForm.
+    """
+
+    value: None = None
+
+
 class StringForm(BaseForm):
     """
     String valued uijson form.
