@@ -22,36 +22,24 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
-from geoh5py.groups.giftools.potential_field_base import (
-    BOUND_MODEL_LOWER_FIELD,
-    POTENTIAL_FIELD_PARAMETERS,
-)
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.potential_field_base import BOUND_MODEL_LOWER_FIELD
 
 
 # Local alias to save visual space and make the parameters dict a bit easier to read.
-_PF = POTENTIAL_FIELD_PARAMETERS
+BASE = BASE_PARAMETERS
 
 
-# Fields unique to ipinv3d. Only a subset of POTENTIAL_FIELD_PARAMETERS is used
-
-# *Note - this file couldn't reuse the POTENTIAL_FIELD_PARAMETERS dict as it doesn't require some of
-# the fields in that one, and it needs to adjust several other fields from
-# POTENTIAL_FIELD_PARAMETERS. If more GIFtools groups seem to have the same issue, it would make
-# sense to look into further refactors or breaking up of large base dicts. My thinking is it's
-# better to increase complexity of base dicts like BASE_PARAMETERS and POTENTIAL_FIELD_PARAMETERS
-# than to have a lot of duplicate code in the derived dicts, but it depends on the patterns that
-# emerge down the line.
+# Fields unique to ipinv3d. Only a subset of BASE_PARAMETERS is used
 
 IPINV3D_PARAMETERS: dict[str, Any] = {
-    "active_model": merge_field(_PF["active_model"], visible=False),
-    "auto_threshold": merge_field(_PF["auto_threshold"], groupOptional=False),
+    "active_model": merge_field(BASE["active_model"], main=False, visible=False),
+    "auto_threshold": merge_field(BASE["auto_threshold"], groupOptional=False),
     "bound_model_lower": merge_field(
         BOUND_MODEL_LOWER_FIELD, value=1.0e-8, visible=False
     ),
-    "bound_model_upper": _PF["bound_model_upper"],
-    "cell_weight": _PF["cell_weight"],
+    "bound_model_upper": BASE["bound_model_upper"],
+    "cell_weight": BASE["cell_weight"],
     "data": {
         "default": "",
         "gifType": "IP3Ddata",
@@ -60,21 +48,21 @@ IPINV3D_PARAMETERS: dict[str, Any] = {
         "meshType": "",
         "value": "",
     },
-    "face_weight": _PF["face_weight"],
+    "face_weight": BASE["face_weight"],
     "forward_tolerance": {
         "default": 1e-5,
         "label": "Forward solver tolerance",
         "min": 1e-12,
         "value": 1e-5,
     },
-    "initial_model": _PF["initial_model"],
-    "inversion_mode": _PF["inversion_mode"],
-    "inversion_par": _PF["inversion_par"],
-    "inversion_tolerance": _PF["inversion_tolerance"],
-    "length_scales": _PF["length_scales"],
+    "initial_model": BASE["initial_model"],
+    "inversion_mode": BASE["inversion_mode"],
+    "inversion_par": BASE["inversion_par"],
+    "inversion_tolerance": BASE["inversion_tolerance"],
+    "length_scales": BASE["length_scales"],
     "matlab": "IP3Dinversion",
-    "matrix_file": _PF["matrix_file"],
-    "mesh": _PF["mesh"],
+    "matrix_file": BASE["matrix_file"],
+    "mesh": BASE["mesh"],
     "model_conductivity": {
         "association": "Cell",
         "dataType": "Float",
@@ -86,9 +74,9 @@ IPINV3D_PARAMETERS: dict[str, Any] = {
         "tooltip": "Conductivity in S/m",
         "value": "",
     },
-    "reference_model": _PF["reference_model"],
-    "results_loaded": _PF["results_loaded"],
-    "smooth_mod": merge_field(_PF["smooth_mod"], visible=False),
+    "reference_model": BASE["reference_model"],
+    "results_loaded": BASE["results_loaded"],
+    "smooth_mod": merge_field(BASE["smooth_mod"], visible=False),
     "store_vectors": {
         "default": -1,
         "enabled": False,
@@ -96,13 +84,13 @@ IPINV3D_PARAMETERS: dict[str, Any] = {
         "optional": True,
         "value": -1,
     },
-    "threshold": merge_field(_PF["threshold"], groupOptional=False),
-    "topography": _PF["topography"],
-    "uuid": BASE_PARAMETERS["uuid"],
+    "threshold": merge_field(BASE["threshold"], groupOptional=False),
+    "topography": BASE["topography"],
+    "uuid": BASE["uuid"],
     "version": "5",
-    "wavelet": merge_field(_PF["wavelet"], groupOptional=False),
-    "working_directory": _PF["working_directory"],
-    "xy_localize": _PF["xy_localize"],
+    "wavelet": merge_field(BASE["wavelet"], groupOptional=False),
+    "working_directory": BASE["working_directory"],
+    "xy_localize": BASE["xy_localize"],
 }
 
 
