@@ -21,9 +21,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
 from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
-from geoh5py.groups.giftools.parameters import merge_field
+from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
 
 OCTGRVDEINVERSION_PARAMETERS: dict[str, Any] = OCTREE_INVERSION_PARAMETERS.copy()
@@ -40,24 +40,18 @@ OCTGRVDEINVERSION_PARAMETERS.update(
             "label": "Specify exponent decay",
             "value": False,
         },
-        "depth_weighting_beta": {
-            "default": -1234567,
-            "dependency": "default_decay",
-            "group": "Weight creation",
-            "label": "Weighting decay constant",
-            "max": 6.0,
-            "min": 1e-3,
-            "value": 2.0,
-        },
-        "depth_weighting_z0": {
-            "default": -1234567,
-            "dependency": "default_decay",
-            "group": "Weight creation",
-            "label": "Weighting offset (m)",
-            "max": 1.0e6,
-            "min": 0.0,
-            "value": 0.0,
-        },
+        "depth_weighting_beta": merge_field(
+            POTENTIAL_FIELD_PARAMETERS["depth_weighting_beta"],
+            group="Weight creation",
+            max=6.0,
+            min=1e-3,
+            value=2.0,
+        ),
+        "depth_weighting_z0": merge_field(
+            POTENTIAL_FIELD_PARAMETERS["depth_weighting_z0"],
+            group="Weight creation",
+            max=1.0e6,
+        ),
         "initial_model": merge_field(
             OCTREE_INVERSION_PARAMETERS["initial_model"],
             drop_keys=("max", "min"),
