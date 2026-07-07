@@ -142,9 +142,9 @@ def test_base_form_serieralization(sample_form):
 
 
 def test_label_form():
-    form = LabelForm(label="name")
+    form = LabelForm(label=["name", "url"])
 
-    assert form.label == "name"
+    assert form.label == ["name", "url"]
     assert form.value is None
     assert '"value"' not in form.json_string
 
