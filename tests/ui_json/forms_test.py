@@ -142,9 +142,9 @@ def test_base_form_serieralization(sample_form):
 
 
 def test_label_form():
-    form = LabelForm(label="name")
+    form = LabelForm(label=["name", "url"])
 
-    assert form.label == "name"
+    assert form.label == ["name", "url"]
     assert form.value is None
     assert '"value"' not in form.json_string
 
@@ -334,20 +334,6 @@ def test_directory_form(tmp_path):
         assert file_form.file_type == ["directory"]
         assert file_form.file_description == ["Directory"]
         assert file_form.directory_only
-
-    with pytest.raises(ValidationError, match="is not a valid directory"):
-        filepath = tmp_path / "my_file.ext"
-        filepath.touch()
-        _ = DirectoryForm(
-            label="working directory",
-            value=tmp_path / "my_file.ext",
-        )
-
-    with pytest.raises(ValidationError, match="is not a valid directory"):
-        _ = DirectoryForm(
-            label="working directory",
-            value=tmp_path / "non_existent_dir",
-        )
 
 
 def test_object_form():

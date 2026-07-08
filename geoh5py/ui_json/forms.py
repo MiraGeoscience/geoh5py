@@ -97,7 +97,7 @@ class BaseForm(BaseModel):
 
     __pydantic_extra__: dict[str, str | float | int]  # For autodoc
 
-    label: str
+    label: str | list[str]
     value: Any
     optional: bool = False
     enabled: bool = True
@@ -409,13 +409,6 @@ class DirectoryForm(BaseForm):
     @field_serializer("value", when_used="json")
     def to_string(self, value: Path) -> str:
         return str(value)
-
-    @field_validator("value")
-    @classmethod
-    def valid_directory(cls, value: Path) -> Path:
-        if not value.exists() or not value.is_dir():
-            raise ValueError(f"Provided path {value} is not a valid directory.")
-        return value
 
     @field_validator("directory_only", mode="before")
     @classmethod
