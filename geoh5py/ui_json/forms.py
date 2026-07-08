@@ -60,7 +60,7 @@ class BaseForm(BaseModel):
     Base class for uijson forms
 
     :param label: Label(s) for ui element.
-        A list of labels will be rendered as a single space separated string.
+        A list of labels is rendered as a single space separated string.
     :param value: The parameter's value.
     :param optional: If True, ui element is rendered with a checkbox to
         control the enabled state.
