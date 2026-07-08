@@ -21,34 +21,51 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
-from geoh5py.groups.giftools.potential_field_base import (
-    BOUND_MODEL_LOWER_FIELD,
-    POTENTIAL_FIELD_PARAMETERS,
+from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
+
+
+IPOCTREEINV_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
+IPOCTREEINV_PARAMETERS.update(
+    {
+        "matlab": "IPoctreeinversion",
+        "modeConRes": {
+            "alternateLabel": "Resistivity",
+            "label": "Model Type",
+            "main": True,
+            "originalLabel": "Conductivity",
+            "tooltip": "Resistivity (Ohm-m) or Conductivity (S/m)",
+            "value": "Conductivity",
+        },
+        "model_conductivity": {
+            "association": "Cell",
+            "dataType": "Float",
+            "label": "Conductivity model",
+            "main": True,
+            "ndv": 1.0e-8,
+            "parent": "mesh",
+            "suffix": ".con",
+            "value": "",
+        },
+        "reference_model": merge_field(
+            OCTREE_INVERSION_PARAMETERS["reference_model"], default=1.0e-8, value=1.0e-8
+        ),
+        "rx_data": {
+            "default": "",
+            "gifType": "IP3Ddata",
+            "label": "Data",
+            "main": True,
+            "meshType": "",
+            "value": "",
+        },
+        "version": "20200508",
+    }
 )
 
 
-# Fields unique to gzinv3d_60, in addition to the shared potential field parameters.
+class IPOctreeInversion(BaseGIFtoolsGroup):
+    """Inversion group for UBC-IPOctree."""
 
-GZINV3D_PARAMETERS: dict[str, Any] = {
-    **POTENTIAL_FIELD_PARAMETERS,
-    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD),
-    "data": {
-        "default": "",
-        "gifType": ["GRAVdata"],
-        "label": "Data",
-        "main": True,
-        "meshType": "",
-        "value": "",
-    },
-    "matlab": "GRAVinversion",
-    "uuid": BASE_PARAMETERS["uuid"],
-}
-
-
-class GZInv3D(BaseGIFtoolsGroup):
-    """Inversion group for UBC-GZINV3D (gzinv3d_60)."""
-
-    _TYPE_UID = UUID("{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}")
-    _default_name = "gzinv3d_60"
-    _default_parameters: dict[str, Any] = GZINV3D_PARAMETERS
+    _TYPE_UID = UUID("{d9fd455e-ea94-40f5-9d86-e7c49c7b5005}")
+    _default_name = "ipoctree_inv"
+    _default_parameters: dict[str, Any] = IPOCTREEINV_PARAMETERS

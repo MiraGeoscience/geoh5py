@@ -29,6 +29,15 @@ from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 DCOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
 DCOCTREE_PARAMETERS.update(
     {
+        "assignConRes": {
+            "alternateLabel": "Resistivity",
+            "group": "Model parameters",
+            "label": "Model Type",
+            "main": False,
+            "originalLabel": "Conductivity",
+            "tooltip": "Resistivity (Ohm-m) or Conductivity (S/m)",
+            "value": "Conductivity",
+        },
         "matlab": "DCoctreeinversion",
         "rx_data": {
             "default": "",
@@ -37,13 +46,6 @@ DCOCTREE_PARAMETERS.update(
             "main": True,
             "meshType": "",
             "value": "",
-        },
-        "xy_localize": {
-            "default": False,
-            "label": "Localize coordinates",
-            "main": True,
-            "tooltip": "Writes files to disk with respect to UBC origin of 3D grid",
-            "value": False,
         },
         "version": "20200508",
     }
