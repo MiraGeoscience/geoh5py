@@ -28,6 +28,8 @@ import warnings
 import numpy as np
 from h5py import special_dtype
 
+from geoh5py.shared.utils import PROPERTY_KWARGS
+
 from ...data import Data, DataAssociationEnum
 from ...data.data_type import DataType
 from ...groups import Group
@@ -39,17 +41,6 @@ from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup, PropertyGroup
-
-
-PROPERTY_KWARGS = {
-    "trace": {"maxshape": (None,)},
-    "trace_depth": {"maxshape": (None,)},
-    "property_group_ids": {
-        "dtype": special_dtype(vlen=str),
-        "maxshape": (None,),
-    },
-    "surveys": {"maxshape": (None,)},
-}
 
 
 class Concatenator(Group):  # pylint: disable=too-many-public-methods
@@ -556,22 +547,22 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         :param field: Name of the attribute
         """
-        field = INV_KEY_MAP.get(field, field)
-        alias = KEY_MAP.get(field, field)
-        self.workspace.update_attribute(self, "index", alias)
+        alias = INV_KEY_MAP.get(field, field)
 
-        if field in PROPERTY_KWARGS:  # For group property
+        self.workspace.update_attribute(self, "index", field)
+
+        if alias in PROPERTY_KWARGS:  # For group property
             if field == "property_groups":
                 field = "property_group_ids"
 
             self.workspace.update_attribute(
                 self,
-                field,
-                values=self.data.get(alias),
-                **PROPERTY_KWARGS.get(field, {}),
+                alias,
+                values=self.data.get(field),
+                **PROPERTY_KWARGS.get(alias, {}),
             )
         else:  # For data values
-            self.workspace.update_attribute(self, "data", alias)
+            self.workspace.update_attribute(self, "data", field)
 
     def update_attributes(
         self, entity: ConcatenatedObject | ConcatenatedData, label: str
