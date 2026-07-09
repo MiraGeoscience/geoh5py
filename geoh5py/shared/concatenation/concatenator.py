@@ -662,7 +662,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             field = "property_group_ids"
             values = [as_str_if_uuid(val.uid).encode() for val in values]
 
-        alias = KEY_MAP.get(field, field)
+        if field in PROPERTY_KWARGS:
+            alias = KEY_MAP.get(field, field)
+        else:
+            alias = field
 
         start = self.fetch_start_index(entity, alias)
 
@@ -692,7 +695,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self.data[alias] = values
 
-        self.save_attribute(field)
+        self.save_attribute(alias)
 
     @property
     def drillholes_tables(self) -> dict:
