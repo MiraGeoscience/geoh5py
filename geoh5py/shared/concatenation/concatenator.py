@@ -28,14 +28,19 @@ import warnings
 import numpy as np
 from h5py import special_dtype
 
-from geoh5py.shared.utils import PROPERTY_KWARGS
-
 from ...data import Data, DataAssociationEnum
 from ...data.data_type import DataType
 from ...groups import Group
 from ..entity import Entity
 from ..entity_type import EntityType
-from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
+from ..utils import (
+    INV_KEY_MAP,
+    KEY_MAP,
+    PROPERTY_KWARGS,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+    str2uuid,
+)
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
@@ -549,12 +554,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         """
         alias = INV_KEY_MAP.get(field, field)
 
-        self.workspace.update_attribute(self, "index", field)
-
         if alias in PROPERTY_KWARGS:  # For group property
-            if field == "property_groups":
-                field = "property_group_ids"
-
+            if alias == "property_groups":
+                alias = "property_group_ids"
+            field = KEY_MAP.get(alias, alias)
+            self.workspace.update_attribute(self, "index", field)
             self.workspace.update_attribute(
                 self,
                 alias,
@@ -562,6 +566,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 **PROPERTY_KWARGS.get(alias, {}),
             )
         else:  # For data values
+            self.workspace.update_attribute(self, "index", field)
             self.workspace.update_attribute(self, "data", field)
 
     def update_attributes(
