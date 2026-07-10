@@ -29,8 +29,13 @@ from .giftools.giftools import GIFtoolsGroup
 from .giftools.gravity_gradiometry_inversion import GGInv3D
 from .giftools.gravity_inversion import GZInv3D
 from .giftools.magnetics_inversion import MagInv3D
-from .giftools.octree_inversion import DCOctreeInversion
+from .giftools.dc_octree_inversion import DCOctreeInversion
+from .giftools.ip_octree_inversion import IPOctreeInversion
+from .giftools.octree_gravity_inversion import OCTGRVDEInversion
+from .giftools.ip_3d_inversion import IPInv3D
 from .giftools.magnetic_vector_inversion import MVIInv
+from .giftools.e3d_inversion import E3DInv
+from .giftools.h3dtd_inversion import H3DTDInv
 from .group_type import GroupType
 from .integrator import (
     AirborneTheme,

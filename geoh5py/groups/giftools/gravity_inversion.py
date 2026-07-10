@@ -21,12 +21,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
-from geoh5py.groups.giftools.potential_field_base import (
-    BOUND_MODEL_LOWER_FIELD,
-    POTENTIAL_FIELD_PARAMETERS,
-)
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
+from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
 
 # Fields unique to gzinv3d_60, in addition to the shared potential field parameters.

@@ -21,12 +21,9 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.parameters import BASE_PARAMETERS, merge_field
-from geoh5py.groups.giftools.potential_field_base import (
-    BOUND_MODEL_LOWER_FIELD,
-    POTENTIAL_FIELD_PARAMETERS,
-)
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
+from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
 
 # Fields unique to mviinv, in addition to the shared potential field parameters.
@@ -72,12 +69,12 @@ MVIINV_PARAMETERS: dict[str, Any] = {
         visible=False,
     ),
     "gamma": {
-        "default": 1,
+        "default": 1.0,
         "group": "Model parameters",
         "label": "Remanent/induced trade-off",
-        "max": 100000,
-        "min": 0,
-        "value": 1,
+        "max": 1.0e5,
+        "min": 1.0e-8,
+        "value": 1.0,
     },
     "initial_model": merge_field(
         BASE_PARAMETERS["initial_model"],
@@ -90,21 +87,21 @@ MVIINV_PARAMETERS: dict[str, Any] = {
         "group": "Angle Lq scaling values",
         "groupOptional": True,
         "label": "Phi Easting",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "phi_qy": {
         "enabled": False,
         "group": "Angle Lq scaling values",
         "groupOptional": True,
         "label": "Phi Northing",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "phi_qz": {
         "enabled": False,
         "group": "Angle Lq scaling values",
         "groupOptional": True,
         "label": "Phi Vertical",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "reference_model": merge_field(
         POTENTIAL_FIELD_PARAMETERS["reference_model"],
@@ -127,21 +124,21 @@ MVIINV_PARAMETERS: dict[str, Any] = {
         "group": "Angle Lq scaling values",
         "groupOptional": True,
         "label": "Theta Easting",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "theta_qy": {
         "enabled": False,
         "group": "Angle Lq scaling values",
         "groupOptional": True,
         "label": "Theta Northing",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "theta_qz": {
         "enabled": False,
         "group": "Angle Lq scaling values",
         "groupOptional": True,
         "label": "Theta Vertical",
-        "value": 0.009999999776482582,
+        "value": 1e-2,
     },
     "uuid": BASE_PARAMETERS["uuid"],
     "version": "3",

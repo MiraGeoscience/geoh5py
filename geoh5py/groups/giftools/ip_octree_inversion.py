@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
+#  Copyright (c) 2026 Mira Geoscience Ltd.                                     '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -16,43 +16,56 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 from __future__ import annotations
 
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
 from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
-DCOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
-DCOCTREE_PARAMETERS.update(
+IPOCTREEINV_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
+IPOCTREEINV_PARAMETERS.update(
     {
-        "matlab": "DCoctreeinversion",
+        "matlab": "IPoctreeinversion",
+        "modeConRes": {
+            "alternateLabel": "Resistivity",
+            "label": "Model Type",
+            "main": True,
+            "originalLabel": "Conductivity",
+            "tooltip": "Resistivity (Ohm-m) or Conductivity (S/m)",
+            "value": "Conductivity",
+        },
+        "model_conductivity": {
+            "association": "Cell",
+            "dataType": "Float",
+            "label": "Conductivity model",
+            "main": True,
+            "ndv": 1.0e-8,
+            "parent": "mesh",
+            "suffix": ".con",
+            "value": "",
+        },
+        "reference_model": merge_field(
+            OCTREE_INVERSION_PARAMETERS["reference_model"], default=1.0e-8, value=1.0e-8
+        ),
         "rx_data": {
             "default": "",
-            "gifType": "DC3Ddata",
+            "gifType": "IP3Ddata",
             "label": "Data",
             "main": True,
             "meshType": "",
             "value": "",
-        },
-        "xy_localize": {
-            "default": False,
-            "label": "Localize coordinates",
-            "main": True,
-            "tooltip": "Writes files to disk with respect to UBC origin of 3D grid",
-            "value": False,
         },
         "version": "20200508",
     }
 )
 
 
-class DCOctreeInversion(BaseGIFtoolsGroup):
-    """Inversion group for UBC-DCOctree."""
+class IPOctreeInversion(BaseGIFtoolsGroup):
+    """Inversion group for UBC-IPOctree."""
 
-    _TYPE_UID = UUID("{54d296de-0588-472c-9a62-480098303394}")
-    _default_name = "dcoctree_inv"
-    _default_parameters: dict[str, Any] = DCOCTREE_PARAMETERS
+    _TYPE_UID = UUID("{d9fd455e-ea94-40f5-9d86-e7c49c7b5005}")
+    _default_name = "ipoctree_inv"
+    _default_parameters: dict[str, Any] = IPOCTREEINV_PARAMETERS

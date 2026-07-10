@@ -22,34 +22,32 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
-from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
-from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
+from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.inversion_base import ASSIGN_CON_RES_FIELD
+from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
-# Fields unique to maginv3d, in addition to the shared potential field parameters.
-
-MAGINV3D_PARAMETERS: dict[str, Any] = {
-    **POTENTIAL_FIELD_PARAMETERS,
-    "bound_model_lower": merge_field(
-        BOUND_MODEL_LOWER_FIELD, default=1.0e-8, value=1.0e-8
-    ),
-    "data": {
-        "default": "",
-        "gifType": ["MAGdata", "MAGAMPdata"],
-        "label": "Data",
-        "main": True,
-        "meshType": "",
-        "value": "",
-    },
-    "matlab": "MAGinversion",
-    "uuid": BASE_PARAMETERS["uuid"],
-}
+DCOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
+DCOCTREE_PARAMETERS.update(
+    {
+        "assignConRes": ASSIGN_CON_RES_FIELD,
+        "matlab": "DCoctreeinversion",
+        "rx_data": {
+            "default": "",
+            "gifType": "DC3Ddata",
+            "label": "Data",
+            "main": True,
+            "meshType": "",
+            "value": "",
+        },
+        "version": "20200508",
+    }
+)
 
 
-class MagInv3D(BaseGIFtoolsGroup):
-    """Inversion group for UBC-MAGINV3D (maginv3d_60)."""
+class DCOctreeInversion(BaseGIFtoolsGroup):
+    """Inversion group for UBC-DCOctree."""
 
-    _TYPE_UID = UUID("{b99e8db8-e118-4042-864e-9e1128f2d1e6}")
-    _default_name = "maginv3d_60"
-    _default_parameters: dict[str, Any] = MAGINV3D_PARAMETERS
+    _TYPE_UID = UUID("{54d296de-0588-472c-9a62-480098303394}")
+    _default_name = "dcoctree_inv"
+    _default_parameters: dict[str, Any] = DCOCTREE_PARAMETERS
