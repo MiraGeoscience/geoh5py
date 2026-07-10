@@ -22,10 +22,8 @@ from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
-from geoh5py.groups.giftools.octree_base import (
-    ASSIGN_CON_RES_FIELD,
-    OCTREE_INVERSION_PARAMETERS,
-)
+from geoh5py.groups.giftools.inversion_base import ASSIGN_CON_RES_FIELD
+from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
 # Fields unique to e3d. Only a subset of BASE_PARAMETERS is used
@@ -102,6 +100,6 @@ E3DINV_PARAMETERS.update(
 class E3DInv(BaseGIFtoolsGroup):
     """Inversion group for UBC-E3D."""
 
-    _TYPE_UID = UUID("{8cf239e3-63a6-4813-adf8-9714293b602e}")
+    _TYPE_UID = UUID("{9a0b9d39-9e6d-409e-a7cd-ffc72474feed}")
     _default_name = "e3d"
     _default_parameters: dict[str, Any] = E3DINV_PARAMETERS

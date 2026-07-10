@@ -23,7 +23,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from geoh5py.groups import E3DInv, IPInv3D, IPOctreeInversion, OCTGRVDEInversion
+from geoh5py.groups import (
+    E3DInv,
+    H3DTDInv,
+    IPInv3D,
+    IPOctreeInversion,
+    OCTGRVDEInversion,
+)
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
 from geoh5py.groups.giftools.dc_octree_inversion import DCOctreeInversion
 from geoh5py.groups.giftools.giftools import GIFtoolsGroup
@@ -77,6 +83,7 @@ def _make_block_model(workspace, parent):
         (GZInv3D, _make_block_model),
         (MVIInv, _make_block_model),
         (IPInv3D, _make_block_model),
+        (H3DTDInv, _make_block_model),
     ),
 )
 def test_create_group(tmp_path, group_cls: type[BaseGIFtoolsGroup], make_mesh):

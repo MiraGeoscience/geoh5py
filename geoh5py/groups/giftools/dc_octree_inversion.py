@@ -23,10 +23,8 @@ from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
-from geoh5py.groups.giftools.octree_base import (
-    ASSIGN_CON_RES_FIELD,
-    OCTREE_INVERSION_PARAMETERS,
-)
+from geoh5py.groups.giftools.inversion_base import ASSIGN_CON_RES_FIELD
+from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
 DCOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
