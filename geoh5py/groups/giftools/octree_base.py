@@ -28,6 +28,17 @@ from geoh5py.groups.giftools.base import (
 )
 
 
+ASSIGN_CON_RES_FIELD: dict[str, Any] = {
+    "alternateLabel": "Resistivity",
+    "group": "Model parameters",
+    "label": "Model Type",
+    "main": False,
+    "originalLabel": "Conductivity",
+    "tooltip": "Resistivity (Ohm-m) or Conductivity (S/m)",
+    "value": "Conductivity",
+}
+
+
 # Parameters shared by the GIFtools octree inversion groups.
 # Note -- this will likely be restructured as we know more about what the commonalities and
 # differences are between different GIFtools/GIFtools octree/GIFtools inversion groups.
@@ -67,7 +78,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "dependency": "beta_given",
         "group": "Inversion parameters",
         "label": "Beta step",
-        "value": 0.25,
+        "value": 2.5e-1,
     },
     "face_weight": BASE_PARAMETERS["face_weight"],
     "global_weight": {
