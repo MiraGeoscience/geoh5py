@@ -17,5 +17,5 @@ jobs:
       components: '[{"name": "geoh5py"}]'
     secrets:
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL_WRITE }}
