@@ -1463,3 +1463,14 @@ def type2uuid(value: Any) -> Any | UUID:
     if isinstance(value, type) and hasattr(value, "default_type_uid"):
         return value.default_type_uid()
     return value
+
+
+PROPERTY_KWARGS = {
+    "trace": {"maxshape": (None,)},
+    "trace_depth": {"maxshape": (None,)},
+    "property_group_ids": {
+        "dtype": h5py.special_dtype(vlen=str),
+        "maxshape": (None,),
+    },
+    "surveys": {"maxshape": (None,)},
+}

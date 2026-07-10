@@ -33,23 +33,19 @@ from ...data.data_type import DataType
 from ...groups import Group
 from ..entity import Entity
 from ..entity_type import EntityType
-from ..utils import INV_KEY_MAP, KEY_MAP, as_str_if_utf8_bytes, as_str_if_uuid, str2uuid
+from ..utils import (
+    INV_KEY_MAP,
+    KEY_MAP,
+    PROPERTY_KWARGS,
+    as_str_if_utf8_bytes,
+    as_str_if_uuid,
+    str2uuid,
+)
 from .concatenated import Concatenated
 from .data import ConcatenatedData
 from .drillholes_group_table import DrillholesGroupTable
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup, PropertyGroup
-
-
-PROPERTY_KWARGS = {
-    "trace": {"maxshape": (None,)},
-    "trace_depth": {"maxshape": (None,)},
-    "property_group_ids": {
-        "dtype": special_dtype(vlen=str),
-        "maxshape": (None,),
-    },
-    "surveys": {"maxshape": (None,)},
-}
 
 
 class Concatenator(Group):  # pylint: disable=too-many-public-methods
@@ -556,22 +552,22 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         :param field: Name of the attribute
         """
-        field = INV_KEY_MAP.get(field, field)
-        alias = KEY_MAP.get(field, field)
-        self.workspace.update_attribute(self, "index", alias)
+        alias = INV_KEY_MAP.get(field, field)
 
-        if field in PROPERTY_KWARGS:  # For group property
-            if field == "property_groups":
-                field = "property_group_ids"
-
+        if alias in PROPERTY_KWARGS:  # For group property
+            if alias == "property_groups":
+                alias = "property_group_ids"
+            field = KEY_MAP.get(alias, alias)
+            self.workspace.update_attribute(self, "index", field)
             self.workspace.update_attribute(
                 self,
-                field,
-                values=self.data.get(alias),
-                **PROPERTY_KWARGS.get(field, {}),
+                alias,
+                values=self.data.get(field),
+                **PROPERTY_KWARGS.get(alias, {}),
             )
         else:  # For data values
-            self.workspace.update_attribute(self, "data", alias)
+            self.workspace.update_attribute(self, "index", field)
+            self.workspace.update_attribute(self, "data", field)
 
     def update_attributes(
         self, entity: ConcatenatedObject | ConcatenatedData, label: str
@@ -671,7 +667,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             field = "property_group_ids"
             values = [as_str_if_uuid(val.uid).encode() for val in values]
 
-        alias = KEY_MAP.get(field, field)
+        if field in PROPERTY_KWARGS:
+            alias = KEY_MAP.get(field, field)
+        else:
+            alias = field
 
         start = self.fetch_start_index(entity, alias)
 
@@ -701,7 +700,7 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
             self.data[alias] = values
 
-        self.save_attribute(field)
+        self.save_attribute(alias)
 
     @property
     def drillholes_tables(self) -> dict:
