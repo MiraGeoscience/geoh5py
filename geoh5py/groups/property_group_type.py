@@ -65,7 +65,7 @@ class DepthType(PropertyGroupType):
         ):
             raise TypeError(
                 "First children of 'Depth table' property group type "
-                "must be FloatData of 'Depth' association. "
+                "must be FloatData of 'Depth' association."
             )
 
 
@@ -79,7 +79,7 @@ class DipDirType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of 'Dip direction & dip' property group type "
-                "must be a list of 2 NumericData entities"
+                "must be a list of 2 NumericData entities."
             )
 
 
@@ -103,7 +103,7 @@ class MultiElementType(PropertyGroupType):
         if not all(isinstance(child, NumericData) for child in children):
             raise TypeError(
                 "Children of 'Multi-element' property group type "
-                "must be a list of NumericData entities"
+                "must be a list of NumericData entities."
             )
 
 
@@ -117,7 +117,7 @@ class StrikeDipType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of 'Strike & dip' property group type "
-                "must be a list of 2 NumericData entities"
+                "must be a list of 2 NumericData entities."
             )
 
 
@@ -131,7 +131,7 @@ class TrendPlungeType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of 'Trend & plunge' property group type "
-                "must be a list of 2 NumericData entities"
+                "must be a list of 2 NumericData entities."
             )
 
 
@@ -145,7 +145,7 @@ class VectorType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of '3D vector' property group type "
-                "must be a list of 3 NumericData entities"
+                "must be a list of 3 NumericData entities."
             )
 
 
