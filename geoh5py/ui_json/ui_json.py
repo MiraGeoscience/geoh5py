@@ -398,7 +398,7 @@ class UIJson(BaseModel):
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
-    def write(self, path: Path | None = None) -> Path | BytesIO:
+    def write(self, path: Path | str | None = None) -> Path | BytesIO:
         """
         Write the UIJson object to file.
 
@@ -408,8 +408,8 @@ class UIJson(BaseModel):
         """
         data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
 
-        if isinstance(path, Path):
-            with open(path, "w", encoding="utf-8") as file:
+        if isinstance(path, Path | str):
+            with open(Path(path), "w", encoding="utf-8") as file:
                 file.write(data)
 
             return path
