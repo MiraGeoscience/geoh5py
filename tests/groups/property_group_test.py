@@ -429,11 +429,12 @@ def test_property_group_table_error(tmp_path):
 def test_group_type_enum(tmp_path, group_type):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         curve, _ = make_example(ws, add_str_column=True)
+        props = [child for child in curve.children if isinstance(child, Data)]
 
         with pytest.raises(TypeError, match=f"Children of '{group_type}'"):
             PropertyGroup(
                 parent=curve,
-                properties=curve.children[:-1] * 4,
+                properties=props * 4,
                 property_group_type=group_type,
             )
 
@@ -442,10 +443,11 @@ def test_group_type_enum(tmp_path, group_type):
 def test_property_group_depth_types(tmp_path, group_type):
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
         curve, _ = make_example(ws, add_str_column=True)
+        bad_prop = curve.get_data("StrColumn")[0]
 
         with pytest.raises(TypeError, match="must be FloatData of"):
             PropertyGroup(
                 parent=curve,
-                properties=[curve.children[-2]],
+                properties=[bad_prop],
                 property_group_type=group_type,
             )
