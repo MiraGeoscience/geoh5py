@@ -31,14 +31,8 @@ GIF Executables
 
 *To be documented*
 
-Each implemented executable group stores a ``parameters`` dictionary that
-contains the inversion form (options, linked entities, and execution values).
-
-All executable groups below derive from
-``geoh5py.groups.giftools.base.BaseGIFtoolsGroup``.
-
-gzinv3d
-^^^^^^^
+gzinv3d_60
+^^^^^^^^^^
 
 **UUID : {20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}**
 
@@ -64,8 +58,8 @@ magfor3d
 
 *To be documented*
 
-maginv3d
-^^^^^^^^
+maginv3d_60
+^^^^^^^^^^^
 
 **UUID : {b99e8db8-e118-4042-864e-9e1128f2d1e6}**
 
