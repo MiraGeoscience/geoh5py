@@ -48,70 +48,54 @@ if TYPE_CHECKING:
 # pylint: disable=too-many-public-methods
 class ObjectsHandler:
     def get_type(self, object_class: int) -> i_Uuid:
-        # TODO
         pass
 
     def get_class(self, type_uid: i_Uuid) -> int:
-        # TODO
         pass
 
     @staticmethod
     def get_all() -> list[i_Object]:
         Workspace.active().data
-        # TODO
         return []
 
     def find(self, query: i_ObjectQuery) -> list[i_Object]:
-        # TODO
         pass
 
     def set_allow_move(self, objects: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def move_to_group(self, objects: list[i_Uuid], destination_group: i_Uuid) -> None:
-        # TODO
         pass
 
     def get(self, uid: i_Uuid) -> i_Object:
         Workspace.active().find_object(uuid.UUID(uid.id))
-        # TODO
         return interfaces.objects.Object()
 
     def narrow_points(self, uid: i_Uuid) -> i_Points:
-        # TODO
         pass
 
     def narrow_curve(self, uid: i_Uuid) -> i_Curve:
-        # TODO
         pass
 
     def narrow_surface(self, uid: i_Uuid) -> i_Surface:
-        # TODO
         pass
 
     def narrow_grid2d(self, uid: i_Uuid) -> i_Grid2D:
-        # TODO
         pass
 
     def narrow_drillhole(self, uid: i_Uuid) -> i_Drillhole:
-        # TODO
         pass
 
     def narrow_blockmodel(self, uid: i_Uuid) -> i_BlockModel:
-        # TODO
         pass
 
     def narrow_octree(self, uid: i_Uuid) -> i_Octree:
-        # TODO
         pass
 
     def narrow_geoimage(self, uid: i_Uuid) -> i_GeoImage:
-        # TODO
         pass
 
     def narrow_label(self, uid: i_Uuid) -> i_Label:
-        # TODO
         pass
 
     def create_any_object(
@@ -121,31 +105,24 @@ class ObjectsHandler:
         parent_group: i_Uuid,
         attributes: dict[str, str],
     ) -> i_Object:
-        # TODO
         pass
 
     def transform(
         self, objects: list[i_Uuid], transformation: i_GeometryTransformation
     ) -> None:
-        # TODO
         pass
 
     def set_public(self, entities: list[i_Uuid], is_public: bool) -> None:
-        # TODO
         pass
 
     def set_visible(self, entities: list[i_Uuid], visible: bool) -> None:
-        # TODO
         pass
 
     def set_allow_delete(self, entities: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def set_allow_rename(self, entities: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def rename(self, entities: i_Uuid, new_name: str) -> None:
-        # TODO
         pass

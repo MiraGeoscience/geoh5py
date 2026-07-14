@@ -17,18 +17,39 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
 from __future__ import annotations
 
-import uuid
+from typing import Any
+from uuid import UUID
 
-from .base import Group
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
+from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
 
-class GiftoolsGroup(Group):
-    """The type for a GIFtools group."""
+# Fields unique to maginv3d, in addition to the shared potential field parameters.
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0x585B3218, 0xC24B, 0x41FE, 0xAD, 0x1F, 0x24D5E6E8348A)
-    )
-    _default_name = "GIFtools Project"
+MAGINV3D_PARAMETERS: dict[str, Any] = {
+    **POTENTIAL_FIELD_PARAMETERS,
+    "bound_model_lower": merge_field(
+        BOUND_MODEL_LOWER_FIELD, default=1.0e-8, value=1.0e-8
+    ),
+    "data": {
+        "default": "",
+        "gifType": ["MAGdata", "MAGAMPdata"],
+        "label": "Data",
+        "main": True,
+        "meshType": "",
+        "value": "",
+    },
+    "matlab": "MAGinversion",
+    "uuid": BASE_PARAMETERS["uuid"],
+}
+
+
+class MagInv3D(BaseGIFtoolsGroup):
+    """Inversion group for UBC-MAGINV3D (maginv3d_60)."""
+
+    _TYPE_UID = UUID("{b99e8db8-e118-4042-864e-9e1128f2d1e6}")
+    _default_name = "maginv3d_60"
+    _default_parameters: dict[str, Any] = MAGINV3D_PARAMETERS
