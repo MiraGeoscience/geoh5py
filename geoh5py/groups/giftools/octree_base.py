@@ -26,49 +26,26 @@ from geoh5py.groups.giftools.base import (
     BASE_PARAMETERS,
     merge_field,
 )
+from geoh5py.groups.giftools.inversion_base import INVERSION_CONTROL_PARAMETERS
+
+
+CONTROL = INVERSION_CONTROL_PARAMETERS
 
 
 # Parameters shared by the GIFtools octree inversion groups.
-# Note -- this will likely be restructured as we know more about what the commonalities and
-# differences are between different GIFtools/GIFtools octree/GIFtools inversion groups.
 
 OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "active_model": BASE_PARAMETERS["active_model"],
-    "beta_given": {
-        "default": False,
-        "group": "Inversion parameters",
-        "label": "Specify Beta range",
-        "value": False,
-    },
-    "beta_one": {
-        "default": -1234567,
-        "dependency": "beta_given",
-        "group": "Inversion parameters",
-        "label": "Beta minimum",
-        "min": 1e-10,
-        "value": 1e-3,
-    },
-    "beta_two": {
-        "default": -1234567,
-        "dependency": "beta_given",
-        "group": "Inversion parameters",
-        "label": "Beta maximum",
-        "min": 1e-10,
-        "value": 1.0e3,
-    },
+    "beta_given": CONTROL["beta_given"],
+    "beta_one": CONTROL["beta_one"],
+    "beta_two": CONTROL["beta_two"],
     "bounds_defined": {
         "group": "Model parameters",
         "label": "No bounds",
         "value": True,
     },
     "cell_weight": BASE_PARAMETERS["cell_weight"],
-    "delta_beta": {
-        "default": -1234567,
-        "dependency": "beta_given",
-        "group": "Inversion parameters",
-        "label": "Beta step",
-        "value": 0.25,
-    },
+    "delta_beta": CONTROL["delta_beta"],
     "face_weight": BASE_PARAMETERS["face_weight"],
     "global_weight": {
         "association": "Cell",
@@ -82,46 +59,17 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "value": "",
         "visible": True,
     },
-    "gn_tolerance": {
-        "default": 1e-2,
-        "group": "Gauss-Newton options",
-        "label": "Solver tolerance",
-        "value": 1e-2,
-    },
+    "gn_tolerance": CONTROL["gn_tolerance"],
     # initial_model shares the common base and octree adds max/min bounds.
     "initial_model": merge_field(
         BASE_PARAMETERS["initial_model"],
         max=1.0e8,
         min=1.0e-8,
     ),
-    "inversion_chifact": {
-        "default": 1.0,
-        "group": "Inversion parameters",
-        "label": "Chi factor",
-        "value": 1.0,
-    },
-    "ipcg_iterations": {
-        "default": 20,
-        "group": "Gauss-Newton options",
-        "label": "IPCG iterations",
-        "min": 1,
-        "tooltip": "Maximum iterations of incomplete-preconditioned-conjugate gradient (IPCG)",
-        "value": 20,
-    },
-    "ipcg_tolerance": {
-        "default": 1e-2,
-        "group": "Gauss-Newton options",
-        "label": "IPCG tolerance",
-        "tooltip": "Fractional percent norm of the iterative solver residual",
-        "value": 1e-2,
-    },
-    "iterations_per_beta": {
-        "default": 3,
-        "group": "Gauss-Newton options",
-        "label": "Iterations per beta",
-        "min": 1,
-        "value": 3,
-    },
+    "inversion_chifact": CONTROL["inversion_chifact"],
+    "ipcg_iterations": CONTROL["ipcg_iterations"],
+    "ipcg_tolerance": CONTROL["ipcg_tolerance"],
+    "iterations_per_beta": CONTROL["iterations_per_beta"],
     "iterative_solver": {
         "choiceList": ["Direct", "Iterative"],
         "group": "Inversion parameters",
@@ -154,12 +102,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "meshType": "{4ea87376-3ece-438b-bf12-3479733ded46}",
         "value": "",
     },
-    "model_perturbation": {
-        "default": 1e-3,
-        "group": "Gauss-Newton options",
-        "label": "Minimum model perturbation",
-        "value": 1e-3,
-    },
+    "model_perturbation": CONTROL["model_perturbation"],
     "reference_model": {
         "association": "Cell",
         "dataType": "Float",
@@ -188,12 +131,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "suffix": ".act",
         "value": "",
     },
-    "update_ref": {
-        "default": True,
-        "group": "Model objective function",
-        "label": "Update reference model",
-        "value": True,
-    },
+    "update_ref": CONTROL["update_ref"],
     "upper_bound_model": {
         "association": "Cell",
         "dataType": "Float",

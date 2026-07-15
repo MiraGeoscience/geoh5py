@@ -23,21 +23,14 @@ from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.inversion_base import ASSIGN_CON_RES_FIELD
 from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
 DCOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
 DCOCTREE_PARAMETERS.update(
     {
-        "assignConRes": {
-            "alternateLabel": "Resistivity",
-            "group": "Model parameters",
-            "label": "Model Type",
-            "main": False,
-            "originalLabel": "Conductivity",
-            "tooltip": "Resistivity (Ohm-m) or Conductivity (S/m)",
-            "value": "Conductivity",
-        },
+        "assignConRes": ASSIGN_CON_RES_FIELD,
         "matlab": "DCoctreeinversion",
         "rx_data": {
             "default": "",
