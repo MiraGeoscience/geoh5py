@@ -24,7 +24,7 @@ import json
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal, Self
 from uuid import UUID, uuid4
 
 from pydantic import (
@@ -92,7 +92,7 @@ class UIJson(BaseModel):
 
     _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
     _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)
-    _out_group_class: type[UIJsonGroup] = UIJsonGroup
+    _out_group_class: ClassVar[type[UIJsonGroup]] = UIJsonGroup
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
@@ -140,7 +140,7 @@ class UIJson(BaseModel):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> UIJson:
+    def from_dict(cls, data: dict) -> Self:
         """
         Create a UIJson instance from a dictionary.
 
@@ -159,8 +159,8 @@ class UIJson(BaseModel):
         """Stashed inter-form dependencies."""
         return self._form_dependencies
 
-    @staticmethod
-    def infer(title="UnknownUIJson", **kwargs) -> type[UIJson]:
+    @classmethod
+    def infer(cls, title="UnknownUIJson", **kwargs) -> type[Self]:
         """
         Create a UIJson subclass dynamically based on inferred form types.
 
@@ -186,7 +186,7 @@ class UIJson(BaseModel):
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
-            __base__=UIJson,
+            __base__=cls,
             **fields,
         )
         return model
@@ -234,7 +234,7 @@ class UIJson(BaseModel):
         self._group_dependencies, self._form_dependencies = self._get_dependency_links()
 
     @classmethod
-    def read(cls, path: str | Path) -> UIJson:
+    def read(cls, path: str | Path) -> Self:
         """
         Create a UIJson instance from ui.json file.
 
