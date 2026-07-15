@@ -209,7 +209,7 @@ def test_data_disabled(tmp_path):
 
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         parent: ObjectForm
         parameter: DataOrValueForm
 
@@ -227,7 +227,7 @@ def test_data_disabled(tmp_path):
             "enabled": False,
         },
     }
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     options = uijson.to_params()
     assert "parameter" not in options
 
@@ -727,7 +727,7 @@ def test_label_form(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     # BoolForm dependency is valid
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: StringForm
         my_label: LabelForm
 
@@ -741,10 +741,10 @@ def test_label_form(tmp_path):
         },
     }
 
-    uijson = generate_test_uijson(workspace=ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(workspace=ws, uijson=MyUIJson, data=kwargs)
     uijson.write(tmp_path / "test_label.ui.json")
 
-    new_json = BaseUIJson.read(tmp_path / "test_label.ui.json")
+    new_json = UIJson.read(tmp_path / "test_label.ui.json")
 
     assert uijson.my_label == new_json.my_label
 
@@ -914,6 +914,8 @@ def test_to_ui_json_group_creates_group(tmp_path):
 
     assert isinstance(group, UIJsonGroup)
     assert ws.get_entity(group.uid)[0] is not None
+
+    assert group.options.get("out_group", None) is not None
 
 
 def test_to_ui_json_group_default_name(tmp_path):

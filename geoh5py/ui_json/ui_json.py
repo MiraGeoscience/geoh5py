@@ -24,7 +24,8 @@ import json
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+from uuid import UUID, uuid4
 
 from pydantic import (
     BaseModel,
@@ -36,13 +37,9 @@ from pydantic import (
 
 from geoh5py import Workspace
 from geoh5py.data import FilenameData
+from geoh5py.groups import UIJsonGroup
 from geoh5py.shared.entity_container import EntityContainer
-from geoh5py.shared.utils import (
-    copy_dict_relatives,
-    dict_mapper,
-    entity2uuid,
-    fetch_active_workspace,
-)
+from geoh5py.shared.utils import copy_dict_relatives, fetch_active_workspace, stringify
 from geoh5py.ui_json.annotations import OptionalPath, OptionalString
 from geoh5py.ui_json.forms import BaseForm, DependencyType, GroupForm
 from geoh5py.ui_json.validation import (
@@ -95,6 +92,7 @@ class UIJson(BaseModel):
 
     _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
     _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)
+    _out_group_class: type[UIJsonGroup] = UIJsonGroup
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
@@ -315,9 +313,22 @@ class UIJson(BaseModel):
 
                 uijson.set_enabled(copy=False, **{field: value is not None})
             else:
-                setattr(uijson, field, dict_mapper(value, [entity2uuid]))
+                setattr(uijson, field, stringify(value))
 
         return uijson
+
+    def serialize(self, mode: Literal["json", "python", "str"] | str = "python"):
+        """
+        Return a demoted uijson dictionary representation the params data.
+
+        :param mode: Define the schema used for serialization. Either 'json', 'python', 'str'
+
+        :return: Serialized uijson dictionary or string.
+        """
+        if mode == "str":
+            return self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
+
+        return self.model_dump(exclude_unset=True, by_alias=True, mode=mode)
 
     def to_file_data(
         self, entity: EntityContainer, name: str | None = None
@@ -376,6 +387,50 @@ class UIJson(BaseModel):
 
         return data
 
+    def to_ui_json_group(
+        self, workspace: Workspace | None = None, **kwargs
+    ) -> UIJsonGroup:
+        """
+        Convert the UIJson class to a UIJsonGroup.
+
+        :param workspace: The workspace to use for storage.
+        :param kwargs: Extra arguments to pass to the UIJsonGroup class creation.
+
+        :return: UIJsonGroup with options mirroring the current state.
+        """
+        with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
+            # Add the form if not available
+            out_group: UUID | GroupForm = uuid4()
+            if self.out_group is None:
+                out_group = GroupForm(
+                    label="UIJson Group",
+                    group_type=UIJsonGroup,
+                    optional=True,
+                    enabled=True,
+                    main=False,
+                    value=uuid4(),
+                )
+
+            uijson_copy = self.set_values(
+                copy=True, **{"geoh5": geoh5, "out_group": out_group}
+            )
+            options = uijson_copy.serialize("json")
+
+            if not kwargs:
+                kwargs = {}
+
+            kwargs["options"] = options
+
+            if "name" not in kwargs:
+                kwargs["name"] = self.title
+
+            ui_json_group = self._out_group_class.create(
+                workspace=geoh5,
+                **kwargs,
+            )
+
+        return ui_json_group
+
     @field_validator("geoh5", mode="after")
     @classmethod
     def valid_geoh5_extension(cls, path: Path | None) -> Path | None:
@@ -412,15 +467,15 @@ class UIJson(BaseModel):
 
         :return: Return path to the ui_json file or BytesIO object.
         """
-        data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
+        data = self.serialize(mode="str")
 
         if isinstance(path, Path | str):
             with open(Path(path), "w", encoding="utf-8") as file:
                 file.write(data)
 
             return Path(path)
-        else:
-            return BytesIO(data.encode("utf-8"))
+
+        return BytesIO(data.encode("utf-8"))
 
     def _cross_validations(
         self, params: dict[str, Any], errors: dict[str, Any] | None = None
@@ -538,7 +593,7 @@ class UIJson(BaseModel):
     def __str__(self) -> str:
         """String level shows the full json representation."""
 
-        json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        json_string = self.serialize(mode="str")
         for field in type(self).model_fields.keys():
             value = getattr(self, field)
             if isinstance(value, BaseForm):
