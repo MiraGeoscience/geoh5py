@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
+#  Copyright (c) 2026 Mira Geoscience Ltd.                                     '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -16,48 +16,37 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-
 from __future__ import annotations
 
-import uuid
-from typing import TYPE_CHECKING
+from typing import Any
+from uuid import UUID
 
-from .object_base import ObjectBase
-
-
-if TYPE_CHECKING:
-    from numpy import ndarray
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
+from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
 
-class Label(ObjectBase):
-    """
-    Label object for annotation in viewport.
+# Fields unique to gzinv3d_60, in addition to the shared potential field parameters.
 
-    .. warning:: Not yet implemented.
+GZINV3D_PARAMETERS: dict[str, Any] = {
+    **POTENTIAL_FIELD_PARAMETERS,
+    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD),
+    "data": {
+        "default": "",
+        "gifType": ["GRAVdata"],
+        "label": "Data",
+        "main": True,
+        "meshType": "",
+        "value": "",
+    },
+    "matlab": "GRAVinversion",
+    "uuid": BASE_PARAMETERS["uuid"],
+}
 
-    """
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
-    )
-    _default_name = "Label"
+class GZInv3D(BaseGIFtoolsGroup):
+    """Inversion group for UBC-GZINV3D (gzinv3d_60)."""
 
-    def __init__(self, **kwargs):
-        self.target_position = None
-        self.label_position = None
-
-        super().__init__(**kwargs)
-
-    @property
-    def extent(self):
-        """
-        Geography bounding box of the object.
-        """
-        return None
-
-    def mask_by_extent(self, extent: ndarray, inverse: bool = False) -> None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-        return None
+    _TYPE_UID = UUID("{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}")
+    _default_name = "gzinv3d_60"
+    _default_parameters: dict[str, Any] = GZINV3D_PARAMETERS

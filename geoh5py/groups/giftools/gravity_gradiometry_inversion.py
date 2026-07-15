@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
+#  Copyright (c) 2026 Mira Geoscience Ltd.                                     '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -17,47 +17,37 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
 from __future__ import annotations
 
-import uuid
-from typing import TYPE_CHECKING
+from typing import Any
+from uuid import UUID
 
-from .object_base import ObjectBase
-
-
-if TYPE_CHECKING:
-    from numpy import ndarray
+from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
+from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
 
-class Label(ObjectBase):
-    """
-    Label object for annotation in viewport.
+# Fields unique to gginv3d, in addition to the shared potential field parameters.
 
-    .. warning:: Not yet implemented.
+GGINV3D_PARAMETERS: dict[str, Any] = {
+    **POTENTIAL_FIELD_PARAMETERS,
+    "bound_model_lower": merge_field(BOUND_MODEL_LOWER_FIELD),
+    "data": {
+        "default": "",
+        "gifType": ["GGdata", "FALCONdata"],
+        "label": "Data",
+        "main": True,
+        "meshType": "",
+        "value": "",
+    },
+    "matlab": "GGinversion",
+    "uuid": BASE_PARAMETERS["uuid"],
+}
 
-    """
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
-    )
-    _default_name = "Label"
+class GGInv3D(BaseGIFtoolsGroup):
+    """Inversion group for UBC-GGINV3D (gginv3d)."""
 
-    def __init__(self, **kwargs):
-        self.target_position = None
-        self.label_position = None
-
-        super().__init__(**kwargs)
-
-    @property
-    def extent(self):
-        """
-        Geography bounding box of the object.
-        """
-        return None
-
-    def mask_by_extent(self, extent: ndarray, inverse: bool = False) -> None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-        return None
+    _TYPE_UID = UUID("{0f080369-b3a3-464c-83fa-9b3c1efa9895}")
+    _default_name = "gginv3d"
+    _default_parameters: dict[str, Any] = GGINV3D_PARAMETERS

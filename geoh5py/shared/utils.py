@@ -84,6 +84,7 @@ INV_KEY_MAP = {
     "Filter min": "filter_min",
     "Float": "FLOAT",
     "Geometric": "GEOMETRIC",
+    "GIFtools": "gif_parameters",
     "Group": "GROUP",
     "Group Name": "name",
     "GA Version": "ga_version",
@@ -108,6 +109,7 @@ INV_KEY_MAP = {
     "Object": "OBJECT",
     "Origin": "origin",
     "Octree Cells": "octree_cells",
+    "parameters": "parameters",
     "Partially hidden": "partially_hidden",
     "Pinned": "pinned",
     "Planning": "planning",
@@ -528,7 +530,6 @@ def str2uuid(value: Any) -> UUID | Any:
         value = value.decode("utf-8")
 
     if is_uuid(value):
-        # TODO insert validation
         return UUID(str(value))
     return value
 
@@ -569,13 +570,7 @@ def str_json_to_dict(string: str | bytes) -> dict:
     """
     value = as_str_if_utf8_bytes(string)
     json_dict = loads(value)
-
-    for key, val in json_dict.items():
-        if isinstance(val, dict):
-            for sub_key, sub_val in val.items():
-                json_dict[key][sub_key] = str2uuid(sub_val)
-        else:
-            json_dict[key] = str2uuid(val)
+    json_dict = dict_mapper(json_dict, [str2uuid])
 
     return json_dict
 
@@ -799,8 +794,6 @@ def yz_rotation_matrix(angle: float) -> np.ndarray:
 def set_attributes(entity, **kwargs):
     """
     Loop over kwargs and set attributes to an entity.
-
-    TODO: Deprecate in favor of explicit attribute setting.
     """
     for key, value in kwargs.items():
         try:

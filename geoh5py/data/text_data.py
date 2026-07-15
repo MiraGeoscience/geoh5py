@@ -37,7 +37,7 @@ def text_formating(values: None | np.ndarray | str) -> ndarray | None:
 
     :return: The formatted values.
     """
-    # todo: values[0] seems dangerous here
+
     if values is None or isinstance(values[0], bytes):
         return values
 

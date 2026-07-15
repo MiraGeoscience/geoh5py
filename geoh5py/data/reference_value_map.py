@@ -106,8 +106,6 @@ class ReferenceValueMap:
                 value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
             )
 
-            # TODO: Replace with numpy.dtypes.StringDType instead for support of variable
-            # length string after moving to numpy >=2.0
             str_len = max((len(str(val)) for val in value_map["Value"]), default=32)
             value_map["Value"] = np.char.encode(
                 value_map["Value"].astype(f"U{str_len}"),

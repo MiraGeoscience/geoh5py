@@ -406,9 +406,32 @@ def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     form = getattr(ui_json, name)
     mesh_types = form.mesh_type
 
+    if not isinstance(mesh_types, list):
+        mesh_types = [mesh_types]
+
     obj = data[name]
     if not isinstance(obj, tuple(mesh_types)):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
+
+
+def group_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+    """
+    Validate that value is one of the provided group types.
+
+    :param name: Name of the form
+    :param data: Input data with known validations.
+    :param ui_json: A UIJson object.
+    """
+
+    form = getattr(ui_json, name)
+    group_types = form.group_type
+
+    if not isinstance(group_types, list):
+        group_types = [group_types]
+
+    obj = data[name]
+    if not isinstance(obj, tuple(group_types)):
+        raise UIJsonError(f"Group's group type must be one of {group_types}.")
 
 
 def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
@@ -473,5 +496,6 @@ def promote_or_catch(
 
 VALIDATIONS_MAP = {
     "mesh_type": mesh_type_validation,
+    "group_type": group_type_validation,
     "parent": parent_validation,
 }

@@ -30,7 +30,7 @@ from pydantic import ValidationError
 
 from geoh5py import Workspace
 from geoh5py.data import DataAssociationEnum, DataTypeEnum
-from geoh5py.groups import GroupTypeEnum, PropertyGroup
+from geoh5py.groups import DrillholeGroup, GroupTypeEnum, UIJsonGroup
 from geoh5py.objects import Curve, DrapeModel, Points, Surface
 from geoh5py.ui_json.forms import (
     BaseForm,
@@ -362,15 +362,17 @@ def test_object_form():
 def test_object_form_mesh_type():
     obj_uid = str(uuid.uuid4())
     form = ObjectForm(label="name", value=obj_uid, mesh_type=Points)
-    assert form.mesh_type == [Points]
+    assert form.mesh_type == Points
 
     obj_uid = str(uuid.uuid4())
-    form = ObjectForm(label="name", value=obj_uid, mesh_type=Points.default_type_uid())
+    form = ObjectForm(
+        label="name", value=obj_uid, mesh_type=[Points.default_type_uid()]
+    )
     assert form.mesh_type == [Points]
 
     obj_uid = str(uuid.uuid4())
     form = ObjectForm(
-        label="name", value=obj_uid, mesh_type=str(Points.default_type_uid())
+        label="name", value=obj_uid, mesh_type=[str(Points.default_type_uid())]
     )
     assert form.mesh_type == [Points]
 
@@ -381,7 +383,7 @@ def test_object_form_mesh_type():
     assert form.mesh_type == [Points, Curve]
 
     form = ObjectForm(label="name", value=obj_uid, mesh_type="Points")
-    assert form.mesh_type == [Points]
+    assert form.mesh_type == Points
 
     form = ObjectForm(label="name", value=obj_uid, mesh_type=["Points", "Curve"])
     assert form.mesh_type == [Points, Curve]
@@ -761,7 +763,7 @@ def test_base_form_infer(tmp_path):
     )
     assert form == ObjectForm
     form = BaseForm.infer(
-        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())},
+        {"label": "test", "groupType": DrillholeGroup, "value": str(uuid.uuid4())},
     )
     assert form == GroupForm
     form = BaseForm.infer(
@@ -804,7 +806,7 @@ def test_base_form_infer(tmp_path):
             "parent": "my_param",
             "association": "Vertex",
             "dataType": "Float",
-            "groupType": [PropertyGroup],
+            "groupType": [DrillholeGroup],
             "groupValue": str(uuid.uuid4()),
             "multiSelect": False,
         }
@@ -814,7 +816,7 @@ def test_base_form_infer(tmp_path):
         {
             "label": "test",
             "multiselect": True,
-            "groupType": PropertyGroup,
+            "groupType": DrillholeGroup,
             "groupValue": str(uuid.uuid4()),
             "dataType": "Float",
             "value": ["bidon"],
@@ -898,6 +900,51 @@ def test_all_subclasses():
     assert all_subclasses(TestFour) == []
 
 
+def test_group_form():
+    group_uid = str(uuid.uuid4())
+
+    form = GroupForm(
+        label="name",
+        value=group_uid,
+        group_type=DrillholeGroup,
+        tooltip=["some ", "tooltip ", "text"],
+    )
+
+    with pytest.raises(ValueError, match="Input should be a subclass of Group"):
+        GroupForm(
+            label="name",
+            value=group_uid,
+            group_type=Points,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="Provided string abc is not a recognized geoh5py object or group type",
+    ):
+        GroupForm(
+            label="name",
+            value=group_uid,
+            group_type="abc",
+        )
+
+    form_str = GroupForm(
+        label="name",
+        value=group_uid,
+        group_type=DrillholeGroup._TYPE_UID,
+        tooltip=["some ", "tooltip ", "text"],
+    )
+
+    assert form == form_str
+
+    form_multi = GroupForm(
+        label="name",
+        value=str(group_uid),
+        group_type=[DrillholeGroup, UIJsonGroup],
+        tooltip=["some ", "tooltip ", "text"],
+    )
+    assert len(form_multi.group_type) == 2
+
+
 def test_multi_data_group_form():
     group_uid = str(uuid.uuid4())
     data_uid_1 = str(uuid.uuid4())
@@ -905,12 +952,13 @@ def test_multi_data_group_form():
     form = GroupMultiDataForm(
         label="name",
         value=[data_uid_1, data_uid_2],
-        group_type=PropertyGroup,
+        group_type=DrillholeGroup,
         data_type=["Float", "Integer"],
         group_value=group_uid,
         multi_select=True,
         tooltip=["some ", "tooltip ", "text"],
     )
+
     assert form.label == "name"
     assert form.value == [data_uid_1, data_uid_2]
     assert form.group_value == uuid.UUID(group_uid)
@@ -922,7 +970,7 @@ def test_multi_data_group_form():
         _ = GroupMultiDataForm(
             label="name",
             value=data_uid_1,
-            group_type=PropertyGroup,
+            group_type=DrillholeGroup,
             data_type="Float",
             group_value=group_uid,
         )

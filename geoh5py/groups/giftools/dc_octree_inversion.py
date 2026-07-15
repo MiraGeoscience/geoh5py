@@ -17,47 +17,37 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-
 from __future__ import annotations
 
-import uuid
-from typing import TYPE_CHECKING
+from typing import Any
+from uuid import UUID
 
-from .object_base import ObjectBase
-
-
-if TYPE_CHECKING:
-    from numpy import ndarray
+from geoh5py.groups.giftools.base import BaseGIFtoolsGroup
+from geoh5py.groups.giftools.inversion_base import ASSIGN_CON_RES_FIELD
+from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
-class Label(ObjectBase):
-    """
-    Label object for annotation in viewport.
+DCOCTREE_PARAMETERS = OCTREE_INVERSION_PARAMETERS.copy()
+DCOCTREE_PARAMETERS.update(
+    {
+        "assignConRes": ASSIGN_CON_RES_FIELD,
+        "matlab": "DCoctreeinversion",
+        "rx_data": {
+            "default": "",
+            "gifType": "DC3Ddata",
+            "label": "Data",
+            "main": True,
+            "meshType": "",
+            "value": "",
+        },
+        "version": "20200508",
+    }
+)
 
-    .. warning:: Not yet implemented.
 
-    """
+class DCOctreeInversion(BaseGIFtoolsGroup):
+    """Inversion group for UBC-DCOctree."""
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0xE79F449D, 0x74E3, 0x4598, 0x9C, 0x9C, 0x351A28B8B69E)
-    )
-    _default_name = "Label"
-
-    def __init__(self, **kwargs):
-        self.target_position = None
-        self.label_position = None
-
-        super().__init__(**kwargs)
-
-    @property
-    def extent(self):
-        """
-        Geography bounding box of the object.
-        """
-        return None
-
-    def mask_by_extent(self, extent: ndarray, inverse: bool = False) -> None:
-        """
-        Sub-class extension of :func:`~geoh5py.shared.entity.Entity.mask_by_extent`.
-        """
-        return None
+    _TYPE_UID = UUID("{54d296de-0588-472c-9a62-480098303394}")
+    _default_name = "dcoctree_inv"
+    _default_parameters: dict[str, Any] = DCOCTREE_PARAMETERS

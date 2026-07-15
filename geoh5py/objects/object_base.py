@@ -234,7 +234,6 @@ class ObjectBase(EntityContainer):
                     property_group_type=GroupTypeEnum.find_type(data_associated),
                 )
 
-        # TODO: Legacy re-sorting for old drillhole format
         self.post_processing()
 
         if len(data_objects) == 1:
@@ -261,13 +260,6 @@ class ObjectBase(EntityContainer):
 
         if data.entity_type.value_map is None:
             raise ValueError("Entity type must have a value map.")
-
-        # TODO: Enforce that the keys of the data map are a subset
-        #  of the value map keys once GA changes its behavior
-        # if not set(reference_data.map["Key"]).issubset(
-        #     set(self.entity_type.value_map.map["Key"])
-        # ):
-        #     raise KeyError("Data map keys must be a subset of the value map keys.")
 
         data_type = self.add_data_map_type(name, values, data.entity_type.name)
 
@@ -406,7 +398,6 @@ class ObjectBase(EntityContainer):
             **kwargs,
         )
 
-        # TODO: Clean up after GEOPY-2427
         if not new_object:
             return None
 

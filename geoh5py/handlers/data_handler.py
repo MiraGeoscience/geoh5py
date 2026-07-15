@@ -43,86 +43,66 @@ class DataHandler:
     @staticmethod
     def get_all() -> list[i_Data]:
         Workspace.active().data
-        # TODO
         return []
 
     def find(self, query: i_DataQuery) -> list[i_Data]:
-        # TODO
         pass
 
     def get(self, uid: i_Uuid) -> i_Data:
         Workspace.active().find_data(uuid.UUID(uid.id))
-        # TODO
         return interfaces.data.Data()
 
     def get_float_values(self, data: i_Uuid, slab: i_DataSlab) -> list[float]:
-        # TODO
         pass
 
     def get_integer_values(self, data: i_Uuid, slab: i_DataSlab) -> list[int]:
-        # TODO
         pass
 
     def get_text_values(self, data: i_Uuid, slab: i_DataSlab) -> list[str]:
-        # TODO
         pass
 
     def get_referenced_values(
         self, data: i_Uuid, slab: i_DataSlab
     ) -> i_ReferencedValues:
-        # TODO
         pass
 
     def get_datetime_values(self, data: i_Uuid, slab: i_DataSlab) -> list[str]:
-        # TODO
         pass
 
     def get_filename_values(self, data: i_Uuid, slab: i_DataSlab) -> list[str]:
-        # TODO
         pass
 
     def get_file_content(self, data: i_Uuid, file_name: str) -> str:
-        # TODO
         pass
 
     def get_blob_values(self, data: i_Uuid, slab: i_DataSlab) -> list[int]:
-        # TODO
         pass
 
     def get_blob_element(self, data: i_Uuid, index: int) -> str:
-        # TODO
         pass
 
     def get_all_types(
         self,
     ) -> list[i_DataType]:
-        # TODO
         pass
 
     def find_types(self, query: i_DataTypeQuery) -> list[i_DataType]:
-        # TODO
         pass
 
     def get_type(self, uid: i_Uuid) -> i_DataType:
-        # TODO
         pass
 
     def set_public(self, entities: list[i_Uuid], is_public: bool) -> None:
-        # TODO
         pass
 
     def set_visible(self, entities: list[i_Uuid], visible: bool) -> None:
-        # TODO
         pass
 
     def set_allow_delete(self, entities: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def set_allow_rename(self, entities: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def rename(self, entities: i_Uuid, new_name: str) -> None:
-        # TODO
         pass

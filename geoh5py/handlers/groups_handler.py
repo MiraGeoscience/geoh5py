@@ -56,51 +56,39 @@ class GroupsHandler:
         return None
 
     def get_type(self, group_class: int) -> i_Uuid:
-        # TODO
         pass
 
     def get_class(self, type_uid: i_Uuid) -> int:
-        # TODO
         pass
 
     @staticmethod
     def get_all() -> list[i_Group]:
         Workspace.active().groups
-        # TODO
         return []
 
     def find(self, query: i_GroupQuery) -> list[i_Group]:
-        # TODO
         pass
 
     def set_allow_move(self, groups: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def move_to_group(self, groups: list[i_Uuid], destination_group: i_Uuid) -> None:
-        # TODO
         pass
 
     def create(self, type_uid: i_Uuid) -> i_Group:
-        # TODO
         pass
 
     def set_public(self, entities: list[i_Uuid], is_public: bool) -> None:
-        # TODO
         pass
 
     def set_visible(self, entities: list[i_Uuid], visible: bool) -> None:
-        # TODO
         pass
 
     def set_allow_delete(self, entities: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def set_allow_rename(self, entities: list[i_Uuid], allow: bool) -> None:
-        # TODO
         pass
 
     def rename(self, entities: i_Uuid, new_name: str) -> None:
-        # TODO
         pass
