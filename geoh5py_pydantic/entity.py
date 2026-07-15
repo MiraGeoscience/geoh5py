@@ -42,8 +42,16 @@ class PydanticEntity(BaseModel):
         validate_assignment=True,
     )
 
-    uid: UUID = Field(default_factory=uuid4, validation_alias=AliasChoices("uid", "ID"))
-    name: str = Field(default="Entity", validation_alias=AliasChoices("name", "Name"))
+    uid: UUID = Field(
+        default_factory=uuid4,
+        validation_alias=AliasChoices("uid", "ID"),
+        serialization_alias="ID",
+    )
+    name: str = Field(
+        default="Entity",
+        validation_alias=AliasChoices("name", "Name"),
+        serialization_alias="Name",
+    )
     type_uid: UUID | None = Field(
         default=None,
         validation_alias=AliasChoices(
@@ -52,30 +60,45 @@ class PydanticEntity(BaseModel):
     )
     parent_uid: UUID | None = None
     allow_delete: bool = Field(
-        default=True, validation_alias=AliasChoices("allow_delete", "Allow delete")
+        default=True,
+        validation_alias=AliasChoices("allow_delete", "Allow delete"),
+        serialization_alias="Allow delete",
     )
     allow_move: bool = Field(
-        default=True, validation_alias=AliasChoices("allow_move", "Allow move")
+        default=True,
+        validation_alias=AliasChoices("allow_move", "Allow move"),
+        serialization_alias="Allow move",
     )
     allow_rename: bool = Field(
-        default=True, validation_alias=AliasChoices("allow_rename", "Allow rename")
+        default=True,
+        validation_alias=AliasChoices("allow_rename", "Allow rename"),
+        serialization_alias="Allow rename",
     )
     clipping_ids: list[UUID] | None = Field(
-        default=None, validation_alias=AliasChoices("clipping_ids", "Clipping IDs")
+        default=None,
+        validation_alias=AliasChoices("clipping_ids", "Clipping IDs"),
+        serialization_alias="Clipping IDs",
     )
     metadata: dict[str, Any] | None = Field(
-        default=None, validation_alias=AliasChoices("metadata", "Metadata")
+        default=None,
+        validation_alias=AliasChoices("metadata", "Metadata"),
+        serialization_alias="Metadata",
     )
     on_file: bool = False
     partially_hidden: bool = Field(
         default=False,
         validation_alias=AliasChoices("partially_hidden", "Partially hidden"),
+        serialization_alias="Partially hidden",
     )
     public: bool = Field(
-        default=True, validation_alias=AliasChoices("public", "Public")
+        default=True,
+        validation_alias=AliasChoices("public", "Public"),
+        serialization_alias="Public",
     )
     visible: bool = Field(
-        default=True, validation_alias=AliasChoices("visible", "Visible")
+        default=True,
+        validation_alias=AliasChoices("visible", "Visible"),
+        serialization_alias="Visible",
     )
 
     @field_validator("metadata", mode="before")
@@ -106,6 +129,8 @@ class PydanticEntity(BaseModel):
     def from_legacy_entity(cls, entity: Any, **overrides) -> Self:
         """
         Build a pydantic model from an existing geoh5py Entity-like object.
+
+        TODO: Won't be needed at the end of development. Remove after final design.
         """
         parent = getattr(entity, "parent", None)
         attrs = {
@@ -127,20 +152,3 @@ class PydanticEntity(BaseModel):
         attrs.update(overrides)
 
         return cls.model_validate(attrs)
-
-    def model_dump_geoh5_attributes(self) -> dict[str, Any]:
-        """
-        Dump the core entity attributes using geoh5 naming.
-        """
-        return {
-            "ID": self.uid,
-            "Name": self.name,
-            "Allow delete": self.allow_delete,
-            "Allow move": self.allow_move,
-            "Allow rename": self.allow_rename,
-            "Clipping IDs": self.clipping_ids,
-            "Metadata": self.metadata,
-            "Partially hidden": self.partially_hidden,
-            "Public": self.public,
-            "Visible": self.visible,
-        }

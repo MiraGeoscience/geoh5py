@@ -24,7 +24,7 @@ from typing import Any, ClassVar, Self
 from uuid import UUID
 
 import numpy as np
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field, field_serializer, field_validator
 
 from .arrays import ArraySource, LazyArray
 from .entity import PydanticEntity
@@ -32,6 +32,31 @@ from .entity import PydanticEntity
 
 POINTS_TYPE_UID = UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
+
+
+def _coerce_vertices_dtype(value: Any) -> Any:
+    """
+    Normalize a structured ``VERTICES_DTYPE`` array into a plain ``(n, 3)``
+    float array. Anything else is passed through unchanged.
+
+    This is attached as a ``LazyArray`` validator so the coercion runs
+    consistently whether vertices are loaded lazily or supplied eagerly.
+    """
+    if isinstance(value, np.ndarray) and value.dtype == VERTICES_DTYPE:
+        return value.view("<f8").reshape((-1, 3))
+
+    return value
+
+
+def _vertices_to_geoh5(value: np.ndarray) -> np.ndarray:
+    """
+    Convert a plain ``(n, 3)`` float array into the structured dtype used
+    for vertices in geoh5 files.
+
+    Attached as the ``LazyArray`` serializer so vertices can serialize
+    themselves in-chain via :meth:`LazyArray.to_geoh5`.
+    """
+    return np.asarray(np.rec.fromarrays(value.T.tolist(), dtype=VERTICES_DTYPE))
 
 
 class PointsModel(PydanticEntity):
@@ -42,26 +67,50 @@ class PointsModel(PydanticEntity):
     supplied directly or as :class:`LazyArray` instances backed by an adapter.
     """
 
-    type_uid: UUID = POINTS_TYPE_UID
-    name: str = "Points"
-    last_focus: str = Field(
-        default="None", validation_alias=AliasChoices("last_focus", "Last focus")
+    type_uid: UUID = Field(
+        default=POINTS_TYPE_UID,
+        validation_alias=AliasChoices(
+            "type_uid", "Type ID", "Object Type ID", "Data Type ID"
+        ),
+        serialization_alias="Object Type ID",
     )
-    vertices: np.ndarray | LazyArray = Field(
+    name: str = Field(
+        default="Points",
+        validation_alias=AliasChoices("name", "Name"),
+        serialization_alias="Name",
+    )
+    last_focus: str = Field(
+        default="None",
+        validation_alias=AliasChoices("last_focus", "Last focus"),
+        serialization_alias="Last focus",
+    )
+    vertices: LazyArray = Field(
         default=None,
         validate_default=True,
         validation_alias=AliasChoices("vertices", "Vertices"),
+        serialization_alias="Vertices",
     )
 
     minimum_vertices: ClassVar[int] = 1
 
     @field_validator("vertices", mode="before")
     @classmethod
-    def validate_vertices_field(cls, value: Any) -> np.ndarray | LazyArray:
+    def validate_vertices_field(cls, value: Any) -> LazyArray:
         if isinstance(value, LazyArray):
-            return value.with_validator(cls.validate_vertices)
+            return (
+                value.with_validator(_coerce_vertices_dtype)
+                .with_validator(cls.validate_vertices)
+                .with_serializer(_vertices_to_geoh5)
+            )
 
-        return cls.validate_vertices(value)
+        return LazyArray(
+            source=None,
+            uid=None,
+            key="vertices",
+            validator=[_coerce_vertices_dtype, cls.validate_vertices],
+            serializer=_vertices_to_geoh5,
+            value=value,
+        )
 
     @classmethod
     def validate_vertices(cls, value: Any) -> np.ndarray:
@@ -69,8 +118,10 @@ class PointsModel(PydanticEntity):
         Validate vertices as a plain ``(n, 3)`` float array.
 
         The legacy ``Points`` object stores vertices as a structured array on
-        disk. This model keeps a friendlier numpy representation internally and
-        converts to the structured dtype only at IO boundaries.
+        disk. This model keeps a friendlier numpy representation internally;
+        the structured dtype used at IO boundaries is handled by the
+        ``LazyArray`` itself (see ``_coerce_vertices_dtype``/
+        ``_vertices_to_geoh5``).
         """
         if value is None:
             warnings.warn(
@@ -79,9 +130,6 @@ class PointsModel(PydanticEntity):
             )
             value = (0.0, 0.0, 0.0)
 
-        if isinstance(value, LazyArray):
-            return value.load()
-
         if isinstance(value, (list, tuple)):
             value = np.array(value, ndmin=2)
 
@@ -89,9 +137,6 @@ class PointsModel(PydanticEntity):
             raise ValueError(
                 "Vertices must be a numpy array, list, tuple or LazyArray."
             )
-
-        if value.dtype == VERTICES_DTYPE:
-            value = value.view("<f8").reshape((-1, 3))
 
         if len(value) < cls.minimum_vertices:
             warnings.warn(
@@ -112,6 +157,14 @@ class PointsModel(PydanticEntity):
             )
 
         return np.asarray(value, dtype="<f8")
+
+    @field_serializer("vertices")
+    def _serialize_vertices(self, value: LazyArray) -> np.ndarray:
+        """
+        Serialize vertices using the geoh5 structured dtype, delegating the
+        conversion to the ``LazyArray`` itself via ``to_geoh5``.
+        """
+        return value.to_geoh5()
 
     @property
     def vertices_array(self) -> np.ndarray:
@@ -145,10 +198,11 @@ class PointsModel(PydanticEntity):
     def as_geoh5_vertices(self) -> np.ndarray:
         """
         Convert vertices to the structured dtype used in geoh5 files.
+
+        Delegates to :meth:`LazyArray.to_geoh5`, which owns the conversion
+        via the ``_vertices_to_geoh5`` serializer attached to the field.
         """
-        return np.asarray(
-            np.rec.fromarrays(self.vertices_array.T.tolist(), dtype=VERTICES_DTYPE)
-        )
+        return self.vertices.to_geoh5()  # pylint: disable=no-member
 
     @classmethod
     def from_array_source(
@@ -164,7 +218,7 @@ class PointsModel(PydanticEntity):
         """
         return cls(
             uid=uid,
-            vertices=LazyArray(source, uid, key, validator=cls.validate_vertices),
+            vertices=LazyArray(source, uid, key, validator=[]),
             **attributes,
         )
 
@@ -184,12 +238,13 @@ class PointsModel(PydanticEntity):
         )
 
     def model_dump_geoh5_attributes(self) -> dict[str, Any]:
-        attrs = super().model_dump_geoh5_attributes()
-        attrs.update(
-            {
-                "Object Type ID": self.type_uid,
-                "Last focus": self.last_focus,
-                "Vertices": self.as_geoh5_vertices(),
-            }
-        )
-        return attrs
+        """
+        Dump the geoh5 attributes for this points object.
+
+        With every field carrying its own ``serialization_alias`` (and
+        ``vertices`` serialized in-chain via ``LazyArray.to_geoh5``, see
+        ``_serialize_vertices``), this is just ``model_dump(by_alias=True)``.
+        ``parent_uid``/``on_file`` are workspace/session bookkeeping fields
+        with no geoh5 attribute equivalent, so they are excluded.
+        """
+        return self.model_dump(by_alias=True, exclude={"parent_uid", "on_file"})

@@ -35,7 +35,7 @@ import numpy as np
 ArrayValidator = Callable[[np.ndarray], np.ndarray]
 
 
-class ArraySource(Protocol):  # pylint: disable=R0903
+class ArraySource(Protocol):  # pylint: disable=too-few-public-methods
     """
     Minimal interface for fetching large entity arrays on demand.
 
@@ -89,33 +89,63 @@ class LazyArray:
 
     def __init__(
         self,
-        source: ArraySource,
-        uid: UUID,
+        source: ArraySource | None,
+        uid: UUID | None,
         key: str,
         *,
-        validator: ArrayValidator | None = None,
+        validator: list[ArrayValidator],
         value: np.ndarray | None = None,
+        serializer: ArrayValidator | None = None,
     ):
+        """
+        :param source: Object implementing the :class:`ArraySource` protocol,
+            used to fetch the array on demand. May be ``None`` if ``value`` is
+            provided directly and the array is never expected to be fetched.
+        :param uid: UUID of the entity that owns this array. This is passed
+            through to ``source.fetch_array`` so the source knows which
+            entity's data to retrieve, and is also used in error messages.
+        :param key: The geoh5py attribute name identifying which array on the
+            entity to fetch (e.g. ``"vertices"``, ``"values"``). Passed
+            through to ``source.fetch_array`` alongside ``uid``.
+        :param validator: List of callables applied, in order, to any value
+            assigned or fetched. Each validator receives the array returned
+            by the previous one, allowing simple validators to be composed
+            (e.g. a type/shape coercion validator followed by a stricter
+            shape-validation added later via :meth:`with_validator`).
+        :param value: An already-loaded array. If provided, it is run through
+            ``validator`` immediately and no fetch from ``source`` occurs
+            until the value is cleared.
+        :param serializer: Optional callable used by :meth:`to_geoh5` to
+            convert the in-memory value to the representation expected on
+            disk (e.g. a structured dtype). If ``None``, :meth:`to_geoh5`
+            returns the value unchanged.
+        """
         self.source = source
         self.uid = uid
         self.key = key
-        self.validator = validator
-        self._value = self._validate(value) if value is not None else None
-
-    def _validate(self, value: np.ndarray) -> np.ndarray:
-        if self.validator is None:
-            return value
-
-        return self.validator(value)
+        self.validator: list[ArrayValidator] = list(validator)
+        self.serializer = serializer
+        self._value: np.ndarray | None = None
+        if value is not None:
+            self.value = value
 
     def with_validator(self, validator: ArrayValidator) -> LazyArray:
         """
-        Attach or replace the validator used when loading this array.
+        Attach an additional validator, run after any existing ones, used
+        whenever this array is loaded or (re)assigned.
         """
-        self.validator = validator
-        if self._value is not None:
-            self._value = self._validate(self._value)
+        if validator not in self.validator:
+            self.validator.append(validator)
+            if self._value is not None:
+                self.value = self._value
 
+        return self
+
+    def with_serializer(self, serializer: ArrayValidator) -> LazyArray:
+        """
+        Attach or replace the serializer used by :meth:`to_geoh5`.
+        """
+        self.serializer = serializer
         return self
 
     @property
@@ -125,37 +155,68 @@ class LazyArray:
         """
         return self._value is not None
 
-    def load(self) -> np.ndarray:
+    @property
+    def value(self) -> np.ndarray:
         """
         Return the loaded array, fetching it from the source if necessary.
         """
         if self._value is None:
-            value = self.source.fetch_array(self.uid, self.key)
-            if value is None:
+            source = self.source
+            uid = self.uid
+            if source is None or uid is None:
                 raise ValueError(
-                    f"Array '{self.key}' for entity '{self.uid}' could not be loaded."
+                    f"Array '{self.key}' for entity '{uid}' has no value "
+                    "and no source/uid to load it from."
                 )
 
-            self._value = self._validate(value)
+            fetched = source.fetch_array(uid, self.key)
+            if fetched is None:
+                raise ValueError(
+                    f"Array '{self.key}' for entity '{uid}' could not be loaded."
+                )
 
-        return self._value
+            self.value = fetched
+
+        value = self._value
+        assert value is not None
+        return value
+
+    @value.setter
+    def value(self, value: np.ndarray) -> None:
+        for validator in self.validator:
+            value = validator(value)
+
+        self._value = value
+
+    def to_geoh5(self) -> np.ndarray:
+        """
+        Return the array converted to its on-disk geoh5 representation.
+
+        Applies the ``serializer`` supplied at construction (if any), so a
+        model can delegate datatype conversions (e.g. structured arrays) to the
+        ``LazyArray`` itself instead of handling them separately.
+        """
+        if self.serializer is None:
+            return self.value
+
+        return self.serializer(self.value)
 
     @property
     def shape(self) -> tuple[int, ...]:
-        return self.load().shape
+        return self.value.shape
 
     @property
     def dtype(self) -> np.dtype:
-        return self.load().dtype
+        return self.value.dtype
 
     def __array__(self, dtype=None) -> np.ndarray:
-        return np.asarray(self.load(), dtype=dtype)
+        return np.asarray(self.value, dtype=dtype)
 
     def __getitem__(self, item):
-        return self.load()[item]
+        return self.value[item]
 
     def __len__(self) -> int:
-        return len(self.load())
+        return len(self.value)
 
     def __repr__(self) -> str:
         state = "loaded" if self.is_loaded else "lazy"
