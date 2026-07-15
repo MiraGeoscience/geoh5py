@@ -319,14 +319,20 @@ class UIJson(BaseModel):
 
         return uijson
 
-    def to_file_data(self, entity: EntityContainer) -> FilenameData:
+    def to_file_data(
+        self, entity: EntityContainer, name: str | None = None
+    ) -> FilenameData:
         """
         Add ui.json as FileData to entity.
 
         :param entity: Object to add ui.json file to.
         """
         file = self.write()
-        return entity.add_file(file)
+
+        if name is None:
+            name = self.title + ".ui.json"
+
+        return entity.add_file(file, name=name)
 
     def to_params(
         self, workspace: Workspace | None = None, validate=True
@@ -412,7 +418,7 @@ class UIJson(BaseModel):
             with open(Path(path), "w", encoding="utf-8") as file:
                 file.write(data)
 
-            return path
+            return Path(path)
         else:
             return BytesIO(data.encode("utf-8"))
 
