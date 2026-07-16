@@ -25,6 +25,7 @@ import pytest
 
 from geoh5py.groups import (
     E3DInv,
+    E3DMTInv,
     H3DTDInv,
     IPInv3D,
     IPOctreeInversion,
@@ -78,6 +79,7 @@ def _make_block_model(workspace, parent):
         (IPOctreeInversion, _make_octree),
         (OCTGRVDEInversion, _make_octree),
         (E3DInv, _make_octree),
+        (E3DMTInv, _make_octree),
         (MagInv3D, _make_block_model),
         (GGInv3D, _make_block_model),
         (GZInv3D, _make_block_model),
