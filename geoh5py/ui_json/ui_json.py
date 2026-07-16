@@ -140,11 +140,13 @@ class UIJson(BaseModel):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> Self:
+    def from_dict(cls, data: dict, validate: bool = True) -> Self:
         """
         Create a UIJson instance from a dictionary.
 
         :param data: Dictionary representing the ui json object.
+        :param validate: Indicate whether to validate the ui json object.
+            Pydantic class is instantiated with 'model_construct' if False.
 
         :returns: UIJson object.
         """
@@ -152,7 +154,10 @@ class UIJson(BaseModel):
 
         ui_json_class = cls.infer(**kwargs)
 
-        return ui_json_class(**kwargs)
+        if validate:
+            return ui_json_class(**kwargs)
+        else:
+            return ui_json_class.model_construct(**kwargs)  # type: ignore[return-value, arg-type]
 
     @property
     def form_dependencies(self) -> dict[str, dict[str, bool]]:
@@ -237,7 +242,7 @@ class UIJson(BaseModel):
         self._group_dependencies, self._form_dependencies = self._get_dependency_links()
 
     @classmethod
-    def read(cls, path: str | Path | BytesIO) -> Self:
+    def read(cls, path: str | Path | BytesIO, validate: bool = True) -> Self:
         """
         Create a UIJson instance from ui.json file.
 
@@ -249,12 +254,14 @@ class UIJson(BaseModel):
         if you want to handle validation errors yourself.
 
         :param path: Path to the .ui.json file.
+        :param validate: Indicate whether to validate the ui json object.
+            Pydantic class is instantiated with 'model_construct' if False.
 
         :returns: UIJson object.
         """
         kwargs = cls.load(path)
 
-        return cls.from_dict(kwargs)
+        return cls.from_dict(kwargs, validate=validate)
 
     def set_enabled(self, copy: bool = False, **states) -> UIJson:
         """
@@ -537,7 +544,7 @@ class UIJson(BaseModel):
             if name not in form_dependencies:
                 form_dependencies[name] = {}
 
-            form = getattr(self, name)
+            form = getattr(self, name, None)
 
             if not isinstance(form, BaseForm):
                 continue
