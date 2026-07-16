@@ -481,7 +481,7 @@ class UIJson(BaseModel):
             with open(file_name, "w", encoding="utf-8") as file:
                 file.write(data)
 
-            return Path(path)
+            return file_name
 
         return BytesIO(data.encode("utf-8"))
 
