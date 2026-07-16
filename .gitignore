@@ -149,4 +149,6 @@ dmypy.json
 #version ignore
 geoh5py/_version.py
 /_version.json
-/.idea/geoh5py.iml
+
+# pickle files
+*.pkl
