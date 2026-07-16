@@ -158,7 +158,7 @@ def test_uijson(sample_uijson):
         my_multi_select_data_parameter: MultiSelectDataForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
-        my_radio_button_parameter: RadioLabelForm
+        my_radio_label_parameter: RadioLabelForm
 
     uijson = MyUIJson.read(sample_uijson)
     with pytest.raises(UIJsonError) as err:

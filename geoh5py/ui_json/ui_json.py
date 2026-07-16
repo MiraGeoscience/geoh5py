@@ -174,7 +174,7 @@ class UIJson(BaseModel):
 
         :return: A new :class:`UIJson` subclass whose extra fields match the inferred types.
         """
-        fields = {}
+        fields: dict[str, tuple] = {}
         for name, value in kwargs.items():
             if name in UIJson.model_fields.keys():
                 continue
@@ -182,7 +182,10 @@ class UIJson(BaseModel):
                 form_type = BaseForm.infer(value)
                 fields[name] = (form_type, ...)
             else:
-                fields[name] = (type(value), ...)
+                if isinstance(value, str | None):
+                    fields[name] = (OptionalString, ...)
+                else:
+                    fields[name] = (type(value), ...)
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
@@ -234,7 +237,7 @@ class UIJson(BaseModel):
         self._group_dependencies, self._form_dependencies = self._get_dependency_links()
 
     @classmethod
-    def read(cls, path: str | Path) -> Self:
+    def read(cls, path: str | Path | BytesIO) -> Self:
         """
         Create a UIJson instance from ui.json file.
 
@@ -249,7 +252,7 @@ class UIJson(BaseModel):
 
         :returns: UIJson object.
         """
-        kwargs = cls._load(path)
+        kwargs = cls.load(path)
 
         return cls.from_dict(kwargs)
 
@@ -470,7 +473,12 @@ class UIJson(BaseModel):
         data = self.serialize(mode="str")
 
         if isinstance(path, Path | str):
-            with open(Path(path), "w", encoding="utf-8") as file:
+            file_name = Path(path)
+
+            if file_name.suffixes != [".ui", ".json"]:
+                file_name = file_name.with_suffix(".ui.json")
+
+            with open(file_name, "w", encoding="utf-8") as file:
                 file.write(data)
 
             return Path(path)
@@ -562,7 +570,7 @@ class UIJson(BaseModel):
         return group_dependencies, form_dependencies
 
     @staticmethod
-    def _load(path: str | Path) -> dict:
+    def load(path: str | Path | BytesIO) -> dict:
         """
         Load data and generate a UIJson class from file.
 
@@ -570,6 +578,9 @@ class UIJson(BaseModel):
 
         :return: UIJson class and dictionary representing the ui json object.
         """
+        if isinstance(path, BytesIO):
+            return json.loads(path.getvalue().decode())
+
         if isinstance(path, str):
             path = Path(path)
 
