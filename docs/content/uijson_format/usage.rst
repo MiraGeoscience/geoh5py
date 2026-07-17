@@ -20,15 +20,15 @@ For example, a simple ui.json below describes a single parameter called 'grid_ob
 .. code-block:: json
 
     {
-    "grid_object": {
-    "meshType": ["{B020A277-90E2-4CD7-84D6-612EE3F25051}"],
-    "main": true,
-    "label": "Select Block Model",
-    "value": ""
-    },
-    "title":"My first UI",
-    "run_command": "run_me",
-    "conda_environment": "my_env"
+        "grid_object": {
+            "meshType": ["{B020A277-90E2-4CD7-84D6-612EE3F25051}"],
+            "main": true,
+            "label": "Select Block Model",
+            "value": ""
+        },
+        "title":"My first UI",
+        "run_command": "run_me",
+        "conda_environment": "my_env"
     }
 
 .. figure:: ./images/block_model_uijson.png
@@ -36,24 +36,17 @@ For example, a simple ui.json below describes a single parameter called 'grid_ob
 Note: The **meshType** used to select the grid object is defined by a list of UUID. A complete list of UUID's for geoh5
 object types are available in the :ref:`geoh5 objects<geoh5_objects>` documentation page.
 
-Within the accompanying python script, the parameters from the ui.json may be accessed using the InputFile module of
+Within the accompanying python script, the parameters from the ui.json may be accessed using the UIJson module of
 geoh5py as shown below:
 
 .. code-block:: python
 
     import sys
-    from geoh5py.ui_json import InputFile
+    from geoh5py.ui_json import UIJson
 
     ui_json = sys.argv[1]
-    ifile = InputFile.read_ui_json(ui_json)
-    params = ifile.data
-
-    # Get the block model grid object
-    bm = params["grid_object"]
-    print(f"The selected object name is {bm.name}")
-
-
-.. figure:: ./images/block_model_output.png
+    ifile = UIJson.read(ui_json)
+    selector = ifile.grid_object
 
 
 Rendering
