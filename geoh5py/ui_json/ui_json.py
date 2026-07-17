@@ -156,8 +156,8 @@ class UIJson(BaseModel):
 
         if validate:
             return ui_json_class(**kwargs)
-        else:
-            return ui_json_class.model_construct(**kwargs)  # type: ignore[return-value, arg-type]
+
+        return ui_json_class.model_construct(**kwargs)  # type: ignore[return-value, arg-type]
 
     @property
     def form_dependencies(self) -> dict[str, dict[str, bool]]:
