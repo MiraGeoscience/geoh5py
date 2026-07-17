@@ -22,7 +22,10 @@ from typing import Any
 from uuid import UUID
 
 from geoh5py.groups.giftools.base import BaseGIFtoolsGroup, merge_field
-from geoh5py.groups.giftools.inversion_base import ASSIGN_CON_RES_FIELD
+from geoh5py.groups.giftools.inversion_base import (
+    ASSIGN_CON_RES_FIELD,
+    SUSCEPTIBILITY_FIELD,
+)
 from geoh5py.groups.giftools.octree_base import OCTREE_INVERSION_PARAMETERS
 
 
@@ -61,21 +64,7 @@ E3DINV_PARAMETERS.update(
             "meshType": "",
             "value": "",
         },
-        "susceptibility": {
-            "association": "Cell",
-            "dataType": "Float",
-            "default": 1e-8,
-            "enabled": False,
-            "group": "Model parameters",
-            "isValue": True,
-            "label": "Susceptibility (SI)",
-            "main": False,
-            "optional": True,
-            "parent": "mesh",
-            "property": "",
-            "tooltip": "Susceptibility (SI)",
-            "value": 1e-8,
-        },
+        "susceptibility": SUSCEPTIBILITY_FIELD,
         "topography": merge_field(
             OCTREE_INVERSION_PARAMETERS["topography"],
             association="Cell",

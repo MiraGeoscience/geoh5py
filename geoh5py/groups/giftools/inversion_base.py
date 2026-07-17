@@ -31,6 +31,22 @@ ASSIGN_CON_RES_FIELD: dict[str, Any] = {
     "value": "Conductivity",
 }
 
+SUSCEPTIBILITY_FIELD: dict[str, Any] = {
+    "association": "Cell",
+    "dataType": "Float",
+    "default": 1e-8,
+    "enabled": False,
+    "group": "Model parameters",
+    "isValue": True,
+    "label": "Susceptibility (SI)",
+    "main": False,
+    "optional": True,
+    "parent": "mesh",
+    "property": "",
+    "tooltip": "Susceptibility (SI)",
+    "value": 1e-8,
+}
+
 BOUND_MODEL_LOWER_FIELD: dict[str, Any] = {
     "association": "Cell",
     "dataType": "Float",
