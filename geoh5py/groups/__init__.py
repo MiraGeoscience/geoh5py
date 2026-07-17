@@ -35,6 +35,7 @@ from .giftools.octree_gravity_inversion import OCTGRVDEInversion
 from .giftools.ip_3d_inversion import IPInv3D
 from .giftools.magnetic_vector_inversion import MVIInv
 from .giftools.e3d_inversion import E3DInv
+from .giftools.e3dmt_inversion import E3DMTInv
 from .giftools.h3dtd_inversion import H3DTDInv
 from .group_type import GroupType
 from .integrator import (
