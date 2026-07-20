@@ -1,28 +1,16 @@
 UI.JSON Format
 --------------
 
-The **ui.json** format provides a schema to create a simple User Interface (UI) connecting `Geoscience ANALYST Pro <http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_ and Python. The format uses the `JSON format <https://json-schema.org/specification.html>`_ to store the state of the UI and to pass those parameters to an accompanying Python script.
+The **ui.json** format provides a schema to create a simple User Interface (UI) for a two-way connection between `Geoscience ANALYST Pro <http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_ and Python. The schema uses the `JSON format <https://json-schema.org/specification.html>`_ to store the state of the UI and to pass those parameters to an accompanying Python script.
 
 .. figure:: ./images/python_scripts.png
-        :align: center
-        :width: 800
+    :align: center
+    :width: 800
 
 Usage
 =====
 
-A ui.json file contains `forms <Forms>`_ that drive an accompanying Python script to be executed from Geoscience ANALYST.
-
-To be valid, the **ui.json** file must contain at least the following fields:
-
-- **title** ``str``
-    Title of user interface window
-- **run_command** ``str``
-    Name of Python script excluding the .py extension (i.e., "run_me" for run_me.py) required for Geoscience ANALYST Pro
-    to run on save or auto-load.
-- **conda_environment** ``str``
-    [Optional] Name of conda environment to activate when running the Python script in *run_command*
-
-For example, a simple ui.json below describes a single ``grid_object`` parameter, which is used to select a block model within a geoh5 file. See the `Object form <Object form>`_ section for more details on this type of selection form.
+A ui.json file contains customizable :ref:`Forms <form_types>` that encodes UI elements rendered by Geoscience ANALYST. For example, the simple ui.json shown below describes a ``grid_object`` parameter, which is used to select a block model within a geoh5 file.
 
 .. code-block:: json
 
@@ -39,33 +27,75 @@ For example, a simple ui.json below describes a single ``grid_object`` parameter
     }
 
 .. figure:: ./images/block_model_uijson.png
+    :align: center
+    :width: 800
 
+    See the :ref:`Object form <object_form>` section for more details on this type of selection form.
+
+To be valid file, the **ui.json** must contain at least the following fields:
+
+- **title** ``str``
+    Title of user interface window
+- **run_command** ``str``
+    Name of Python script excluding the .py extension (i.e., "run_me" for run_me.py) required for Geoscience ANALYST Pro
+    to run on save or auto-load.
+- **conda_environment** ``str``
+    [Optional] Name of conda environment to activate when running the Python script in *run_command*. Note that the ``mirageo`` conda environment is the default environment for Geoscience ANALYST Pro.
+
+Upon execution, the choices made by the users are saved to disk and provided as input parameters to an accompanying Python program.
 
 Execution
 ^^^^^^^^^
 
 When a **ui.json** is run within Geoscience ANALYST Pro (either ``OK`` or ``Apply``), the following steps occur:
 
-- The **value** and **enabled** fields of every forms are updated to reflect the current state of the UI. For example, the **value** field of the ``grid_object`` is set to the selected object ``UUID``. If no object is selected, the **value** field is set to an empty string.
-- A ``ui.json`` file is written to disk at the selected location, along with a geoh5 file containing all the objects within the parameters of the **ui.json**.
-- ANALYST Pro executes the Python script specified in the **run_command** field of the **ui.json** file. The script is executed in the conda environment specified in the **conda_environment** field of the **ui.json** file (if provided). For example, the ``run_me.py`` script is executed in the ``mirageo`` conda environment:
+- The **value** and **enabled** fields of every forms are updated to reflect the current state of the UI. For example, the **value** field of the ``grid_object`` is set to the selected object ``UUID``.
+- A ``ui.json`` file is written to disk in a temporary directory, along with a geoh5 file containing all the objects within the parameters of the **ui.json**.
+- ANALYST activates the specified **conda_environment** (if provided)
+- ANALYST executes the Python script specified in the **run_command** field of the **ui.json** file,
+
+    .. code-block::
+
+        python -m run_me.py my_file.ui.json
 
 
+- If included in the Python script, the results can be written back to the monitored directory, which will update the objects in the geoh5 file and refresh the ANALYST Pro viewport.
 
-Note that the ``mirageo`` conda environment is the default environment for Geoscience ANALYST Pro. Users can create their own conda environments and specify them in the **conda_environment** field of the **ui.json** file.
-
-Within the accompanying Python script, the parameters from the ui.json may be accessed using the UIJson module of
-geoh5py as shown below:
+The simple Python script below demonstrates how to access input values from the ``ui.json`` file and deliver results back to ANALYST Pro through the ``monitored directory``.
 
 .. code-block:: python
 
     import sys
+    from geoh5py import Workspace
     from geoh5py.ui_json import UIJson
+    from geoh5py.ui_json.utils import monitored_directory_copy
 
-    ui_json = sys.argv[1]
-    ifile = UIJson.read(ui_json)
-    selector = ifile.grid_object
+    def main(ui_file):
 
+        # Read the file as pydantic class
+        ifile = UIJson.read(ui_file)
+
+        # Access the selection
+        selector = ifile.grid_object
+        print(f"Selected UUID: {selector.value}")
+
+        with Workspace(ifile.geoh5) as workspace:
+            # Convert to a dict with geoh5py entities
+            my_inputs = ifile.to_params(workspace=workspace)
+
+            # Change something
+            my_inputs['grid_object'].name = "New name"
+
+            # Send the result back to ANALYST
+            monitored_directory_copy(ifile.monitoring_directory, my_inputs['grid_object'])
+
+
+    if __name__ == '__main__':
+        ui_file = sys.argv[1]
+        main(ui_file)
+
+
+The UIJson class provides a convenient way to read and write the **ui.json** file, as well as access the parameters in a structured way. It leverages `Pydantic <https://pydantic.dev/docs/>`_ to validate and serialize the forms and input values. The ``to_params`` method converts the UIJson object into a dictionary of geoh5py entities.
 
 Rendering
 ^^^^^^^^^
@@ -90,12 +120,3 @@ b. **Add to Python Script Menu:**
    .. figure:: ./images/dropdown.gif
       :align: center
       :width: 800
-
-
-General Tips
-^^^^^^^^^^^^
-- Keep labels concise
-- Write detailed tooltips
-- Group related attributes
-- Don't include the **main** member with every parameter. "Non-main" members are designated to a second page under *Optional parameters*
-- Utilize **optional** object members and dependencies.
