@@ -1,5 +1,5 @@
 UI.JSON Format
---------------
+==============
 
 The **ui.json** format provides a schema to create a simple User Interface (UI) for a two-way connection between `Geoscience ANALYST Pro <http://www.mirageoscience.com/our-products/software-product/geoscience-analyst>`_ and Python. The schema uses the `JSON format <https://json-schema.org/specification.html>`_ to store the state of the UI and to pass those parameters to an accompanying Python script.
 
@@ -8,7 +8,7 @@ The **ui.json** format provides a schema to create a simple User Interface (UI) 
     :width: 800
 
 Usage
-=====
+-----
 
 A ui.json file contains customizable :ref:`Forms <form_types>` that encodes UI elements rendered by Geoscience ANALYST. For example, the simple ui.json shown below describes a ``grid_object`` parameter, which is used to select a block model within a geoh5 file.
 
@@ -45,7 +45,7 @@ To be valid file, the **ui.json** must contain at least the following fields:
 Upon execution, the choices made by the users are saved to disk and provided as input parameters to an accompanying Python program.
 
 Execution
-^^^^^^^^^
+---------
 
 When a **ui.json** is run within Geoscience ANALYST Pro (either ``OK`` or ``Apply``), the following steps occur:
 
@@ -98,7 +98,7 @@ The simple Python script below demonstrates how to access input values from the 
 The UIJson class provides a convenient way to read and write the **ui.json** file, as well as access the parameters in a structured way. It leverages `Pydantic <https://pydantic.dev/docs/>`_ to validate and serialize the forms and input values. The ``to_params`` method converts the UIJson object into a dictionary of geoh5py entities.
 
 Rendering
-^^^^^^^^^
+---------
 
 The user interface defined by the ``ui.json`` file can be opened in ANALYST Pro in two ways:
 
