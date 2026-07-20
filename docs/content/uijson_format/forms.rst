@@ -3,15 +3,23 @@
 Forms
 =====
 
-The following sections describe the different types of parameters that can be used in the **ui.json** format. At a minimum, a parameter must have the following **fields**:
+The following sections describe the different types of forms that can be used in the **ui.json** format.
+
+Core fields
+-----------
+
+At a minimum, a parameter must have the following **fields**:
 
 "label" ``str``
     Name of the field displayed in the UI.
 
 "value"
-    The value of the parameter. The type of the value is determined by the parameter type.
+    The value of the parameter. The type of the value is determined by the form type as described in the following sections.
 
-The following optional fields are also available:
+Optional fields
+^^^^^^^^^^^^^^^
+
+The following optional fields can be used to customize the UI. These fields are available for all parameter types unless otherwise specified.
 
 "main" ``bool``
     Boolean whether the parameter is a main parameter (**true**) or as optional (**false**). The default is false.
@@ -21,25 +29,8 @@ The following optional fields are also available:
     Boolean whether the parameter is enabled (**true**) or disabled (**false**). The default is true.
 "optional" ``bool``
     Boolean whether the parameter is optional (**true**) or required (**false**). The default is false. A checkbox is displayed in the UI to allow the user to select whether to use the parameter or not.
-"group" ``str``
-    Grouped ui elements will be rendered within a box labelled with the group name.
-"group_optional" ``bool``
-    If True, ui group is rendered with a checkbox that controls the enabled state of all of the groups members
-"dependency" ``str``
-    Name of parameter that controls the enabled or visible state of the ui element.
-"dependency_type" ``str``
-    Either ``enabled`` or ``visible``.
-    Controls whether the ui element is enabled or visible when the dependency is enabled if optional or True if a bool type.
-"group_dependency" ``str``
-    Name of the group that controls the enabled or visible state of the ui group.
-"group_dependency_type" ``str``
-    Controls whether the ui group is enabled or visible when the group dependency is enabled if optional or True if a bool type.
-"placeholder_text" ``str``
-    Text displayed in ui element when no data has been provided.
-"visible" ``bool``
-    Whether the form is displayed
 
-
+See the `Form dependencies`_ section for additional inter-form customization.
 
 .. _bool_param:
 
@@ -60,7 +51,7 @@ A parameter named "input" that has a ``bool`` value.
    }
 
 .. figure:: ./images/bool_param.png
-    :height: 100
+    :width: 400
 
 
 Integer form
@@ -86,7 +77,7 @@ A parameter that has an ``int`` value. The optional parameters are:
    }
 
 .. figure:: ./images/int_param.png
-    :height: 100
+    :width: 400
 
 
 Float form
@@ -119,7 +110,7 @@ A parameter that has a ``float`` value. The optional parameters are:
    }
 
 .. figure:: ./images/float_param.png
-    :height: 100
+    :width: 400
 
 
 String form
@@ -142,7 +133,7 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
    }
 
 .. figure:: ./images/str_param.png
-    :height: 100
+    :width: 400
 
 
 Radio Label form
@@ -180,10 +171,10 @@ Radio label parameters allow for a two-choice radio button with label choices. A
     }
 
 .. figure:: ./images/radio_label_param_before.png
-    :height: 100
+    :width: 400
 
 .. figure:: ./images/radio_label_param_after.png
-    :height: 100
+    :width: 400
 
 Multi-choice string form
 ------------------------
@@ -213,7 +204,7 @@ For a dropdown selection of choice list.
     }
 
 .. figure:: ./images/choice_list_param.png
-    :height: 100
+    :width: 400
 
 
 
@@ -302,11 +293,7 @@ The Drillhole group data parameter allows users to select a drillhole group and 
 Object form
 -----------
 
-The object parameter allows users to select geoh5py objects from a dropdown in ANALYST.  The **meshType** member is
-required to filter the :ref:`Object Type <object_types>` available in the dropdown.  It is provided as a single type
-uuid, an array of uuids or by name. A **multiSelect** member is available to allow selecting more than one object. The value
-returned is the uuid of the ANALYST object selected, or an array of uuids if many have been selected with the
-**multiSelect** option.
+The object parameter allows users to select geoh5py objects from a dropdown in ANALYST.  The **meshType** member is required to filter the :ref:`Object Type <object_types>` available in the dropdown.  It is provided as a single type uuid, an array of uuids or by name. A **multiSelect** member is available to allow selecting more than one object. The value returned is the uuid of the ANALYST object selected, or an array of uuids if many have been selected with the **multiSelect** option. A complete list of UUID's for geoh5 object types are available in the :ref:`geoh5 objects<geoh5_objects>` documentation page
 
 .. code-block:: json
 
@@ -375,12 +362,7 @@ Data selector from a parent object:
 
 Data or value form
 ------------------
-In some cases, a parameter may take its data from a object or simply a ``float`` value. The use of
-the member **isValue** and **property** together allows for the UI to switch between these two cases. In the top image,
-the **isValue** is true, so the **value** member of 1.0 will initially be active. When the icon is clicked, the type of
-input is switched to the **property** member (bottom image). The **uncertainty channel** object also depends on the
-**data_mesh** object. The drop-down selection will filter data from the chosen object that is located on the vertices
-and is float. The **isValue** is set to false upon export in this case.
+In some cases, a parameter may take its data from a object or simply a ``float`` value. The use of the member **isValue** and **property** together allows for the UI to switch between these two cases. In the top image, the **isValue** is true, so the **value** member of 1.0 will initially be active. When the icon is clicked, the type of input is switched to the **property** member (bottom image). The **uncertainty channel** object also depends on the **data_mesh** object. The drop-down selection will filter data from the chosen object that is located on the vertices and is float. The **isValue** is set to false upon export in this case.
 
 
 .. code-block:: json
@@ -417,13 +399,7 @@ and is float. The **isValue** is set to false upon export in this case.
 Range slider form
 -----------------
 
-The range slider parameter allows users to select a data channel and select a range of values from within the data bounds.
-Compared to the data or value parameter, the range slider parameter adds the required **rangeLabel**, **allowComplement**
-and **isComplement** members.  If allowComplement is true, the user may flip the inclusion from within the bounds to outside
-the bounds, and when it is false the icon for flipping the complement is grey and inactive.  When saved the ui.json file
-will have its **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected
-data, whereas the **value** will contain the range values.  If is complement is false, then the data are intended to be
-included within the bounds, and if it is false they are meant to be included outside the bounds.
+The range slider parameter allows users to select a data channel and select a range of values from within the data bounds. Compared to the data or value parameter, the range slider parameter adds the required **rangeLabel**, **allowComplement** and **isComplement** members.  If allowComplement is true, the user may flip the inclusion from within the bounds to outside the bounds, and when it is false the icon for flipping the complement is grey and inactive.  When saved the ui.json file will have its **isComplement**, **property** and **value** updated.  The **property** will contain the uuid to the selected data, whereas the **value** will contain the range values.  If is complement is false, then the data are intended to be included within the bounds, and if it is false they are meant to be included outside the bounds.
 
 .. code-block:: json
 
@@ -451,10 +427,28 @@ included within the bounds, and if it is false they are meant to be included out
 .. figure:: ./images/range_slider_param.png
 .. figure:: ./images/range_slider_param_complement.png
 
+
+Form dependencies
+-----------------
+
+"group" ``str``
+    Grouped ui elements will be rendered within a box labelled with the group name.
+"group_optional" ``bool``
+    If True, ui group is rendered with a checkbox that controls the enabled state of all of the groups members
+
+
+
 Dependencies on other parameters
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Use the **dependency** and **dependencyType** members to create dependencies. The parameter driving the dependency should set **optional** to true or be a :ref:`Boolean parameter'<bool_param>`. Below are a couple of examples. The first initializes the *favourite_package* parameter as disabled until the *python_interest* parameter is checked. The second shows the opposite when the **enabled** member is set to true.
+
+
+"dependency" ``str``
+    Name of parameter that controls the enabled or visible state of the ui element.
+"dependency_type" ``str``
+    Either ``enabled`` or ``visible``.
+    Controls whether the ui element is enabled or visible when the dependency is enabled if optional or True if a bool type.
 
 .. code-block:: json
 
@@ -508,3 +502,13 @@ The next example has a dependency on an optional parameter. The **enabled** memb
 
 .. figure:: ./images/dependency_ex2.png
 .. figure:: ./images/dependency_ex3.png
+
+
+"group_dependency" ``str``
+    Name of the group that controls the enabled or visible state of the ui group.
+"group_dependency_type" ``str``
+    Controls whether the ui group is enabled or visible when the group dependency is enabled if optional or True if a bool type.
+"placeholder_text" ``str``
+    Text displayed in ui element when no data has been provided.
+"visible" ``bool``
+    Whether the form is displayed

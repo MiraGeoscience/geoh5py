@@ -1,3 +1,4 @@
 # Shell scripts
 *.sh eol=lf
 *.gif filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
