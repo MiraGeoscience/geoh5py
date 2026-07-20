@@ -5,31 +5,6 @@ Forms
 
 The following sections describe the core options and various form types that can be used in the **ui.json** format.
 
-Base form
----------
-
-At a minimum, a form must have the following fields:
-
-"label" ``str``
-    Name of the form displayed in the UI.
-
-"value" ``varies``
-    The input value stored by the form. The form style determines the type of the value stored.
-
-.. code-block:: json
-
-   {
-        "input_form": {
-            "label": "Input",
-            "value": null
-       }
-   }
-
-Optional fields
-^^^^^^^^^^^^^^^
-
-The following optional fields can be used to customize the UI. These fields are available for all parameter types unless otherwise specified.
-
 .. figure:: ./images/example_form.png
     :width: 400
 
@@ -48,6 +23,24 @@ The following optional fields can be used to customize the UI. These fields are 
             "visible": true
        }
    }
+
+Base form
+---------
+
+At a minimum, a form must have the following fields:
+
+
+"label" ``str``
+    Name of the form displayed in the UI.
+
+"value" ``varies``
+    The input value stored by the form. The form style determines the type of the value stored.
+
+
+Optional fields
+^^^^^^^^^^^^^^^
+
+The following optional fields can be used to customize the UI. These fields are available for all parameter types unless otherwise specified.
 
 "main" ``bool``
     Boolean whether the parameter shows in the (**true**) ``General parameters`` or (**false**) ``Advanced parameters`` tabs. The default is false.
