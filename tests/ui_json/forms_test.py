@@ -56,14 +56,14 @@ from geoh5py.ui_json.forms import (
     all_subclasses,
     indicator_attributes,
 )
-from geoh5py.ui_json.ui_json import BaseUIJson
+from geoh5py.ui_json.ui_json import UIJson
 
 
 def setup_from_uijson(workspace, form):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: type(form)
 
-    uijson = MyBaseUIJson.model_construct(
+    uijson = MyUIJson.model_construct(
         version="blahblah",
         title="my title",
         geoh5=workspace.h5file,
@@ -73,7 +73,7 @@ def setup_from_uijson(workspace, form):
         my_param=form,
     )
     uijson.write(workspace.h5file.parent / "test.ui.json")
-    uijson = MyBaseUIJson.read(workspace.h5file.parent / "test.ui.json")
+    uijson = MyUIJson.read(workspace.h5file.parent / "test.ui.json")
     return uijson.my_param
 
 
