@@ -327,7 +327,7 @@ class UIJson(BaseModel):
 
         return uijson
 
-    def serialize(self, mode: Literal["json", "python", "str"] | str = "python"):
+    def serialize(self, mode: Literal["json", "python"] | str = "python") -> dict:
         """
         Return a demoted uijson dictionary representation the params data.
 
@@ -335,9 +335,6 @@ class UIJson(BaseModel):
 
         :return: Serialized uijson dictionary or string.
         """
-        if mode == "str":
-            return self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
-
         return self.model_dump(exclude_unset=True, by_alias=True, mode=mode)
 
     def to_file_data(
@@ -477,7 +474,7 @@ class UIJson(BaseModel):
 
         :return: Return path to the ui_json file or BytesIO object.
         """
-        data = self.serialize(mode="str")
+        data = self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
 
         if isinstance(path, Path | str):
             file_name = Path(path)
@@ -611,7 +608,7 @@ class UIJson(BaseModel):
     def __str__(self) -> str:
         """String level shows the full json representation."""
 
-        json_string = self.serialize(mode="str")
+        json_string = self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
         for field in type(self).model_fields.keys():
             value = getattr(self, field)
             if isinstance(value, BaseForm):
