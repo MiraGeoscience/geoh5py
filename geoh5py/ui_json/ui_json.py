@@ -329,7 +329,7 @@ class UIJson(BaseModel):
 
     def serialize(self, mode: Literal["json", "python"] | str = "python") -> dict:
         """
-        Return a demoted uijson dictionary representation the params data.
+        Return a demoted dictionary representation of the uijson data.
 
         :param mode: Define the schema used for serialization. Either 'json', 'python', 'str'
 
