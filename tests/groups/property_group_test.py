@@ -445,7 +445,7 @@ def test_property_group_depth_types(tmp_path, group_type):
         curve, _ = make_example(ws, add_str_column=True)
         bad_prop = curve.get_data("StrColumn")[0]
 
-        with pytest.raises(TypeError, match="must be FloatData of"):
+        with pytest.raises(TypeError, match="must be of type FloatData"):
             PropertyGroup(
                 parent=curve,
                 properties=[bad_prop],
