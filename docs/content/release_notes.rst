@@ -1,6 +1,132 @@
 Release Notes
 =============
 
+Release 0.13.0 (2026-07-04)
+---------------------------
+
+- GEOPY-2495: Better string conversion of UIJSon class used by print
+- GEOPY-2499: BaseUIJson crashes in to_params validation when skipping over disabled fields.
+- GEOPY-2488: UIJson should have a flatten method to retrieve value/property of all forms
+- GEOPY-2507: Support all data types in DataForm
+- GEOPY-2506: Support all data associations in DataForm
+- GEOPY-2581: Deprecation error accessing model_fields from pydantic class
+- GEOPY-2582: UIJson flatten method does not promote geoh5 to Workspace
+- GEOPY-2540: Copy from extent GeoImage takes forever.
+- GEOPY-2508: Add multi-select data form type
+- GEOPY-2525: Support placeholderText in uijson forms
+- GEOPY-2623: colour for Curve is not working the same way as other objects
+- GEOPY-2635: Remove code associated with the aborted Form/UIJson classes
+- GEOPY-2492: Support FloatRangeSlider as geoh5py form
+- GEOPY-2591: geoimage/grid2d conversion of non rectangular geoimage
+- GEOPY-2449: Create UI and Driver for the classification of EM anomalies
+- GEOPY-2363: geoh5py.data.visual_parameters.colour returns BGR not RGB
+- GEOPY-2654: DOCS: Add example on assigning parent to entities
+- GEOPY-2632: Simplify the BaseForm.infer method
+- GEOPY-2639: Documentation improvement
+- GEOPY-2662: Accept meshType and groupType as string name instead of UUID
+- GEOPY-2676: FileForm is out of date with current GA behaviour
+- GEOPY-2450: Implement Maxwell plate model
+- GEOPY-2697: Implement Airborne Apparent Conductivity survey type
+- GEOPY-2693: Group types in mapper do not match GA definitions
+- GEOPY-2700: Random failure of name incrementor test
+- GEOPY-2733: clean GeoApps-Error for concatenate groups if not the same association
+- GEOPY-2746: implement "Group Value" in BaseUIJSON
+- GEOPY-2702: Validate "geoh5" for existing path
+- GEOPY-2744: Migrate core utilities to geoapps-utils and geoh5py
+- GEOPY-2786: add a method to access the reshaped values in geoh5py for 2d grid and 3dgrid
+- GEOPY-2657: Allow UIJson forms to accept geoh5py.Entity
+- GEOPY-2762: Add mechanisms to update the UIJson class with values
+- GEOPY-2714: Refactor mask_by_extent utilities for surfaces
+- GEOPY-2739: Accept BaseUIJson in the start of driver
+- GEOPY-2798: merge main to develop branch (conflicts)
+- GEOPY-2793: Add conversion between Plate model from and to Maxwell plates
+- GEOPY-2816: data_map.entity_type.value_map can have map is None leading to error
+- GEOPY-2833: Regularization parameters of sub-drivers always over-written by joint parameters
+- GEOPY-2602: Validate grid size for clipping 2D grids for a given amount of RAM
+- GEOPY-2576: class attribute are forced to be unique if strings: subclass ReferenceValueMap
+- GEOPY-2854: restore catch str if Enum
+- GEOPY-2860: Accept form dependency type based on group_optional
+- GEOPY-1306: Add new attributes for value statistics
+- GEOPY-2815: address report of updated code linters
+- GEOPY-2873: Implement Texture 2D data type
+- GEOPY-2756: H5 flags to optimize performances
+- GEOPY-2456: Solve warning issues raised by RTD
+- GEOPY-2893: h5 compression level seems ignore (from mira-omf)
+
+
+Release 0.12.0 (2025-12-17)
+---------------------------
+
+- GEOPY-2232: Refactor components of inversion options
+- GEOPY-2256: bug for get_parent_reference function ion data_type if a property_group is in children
+- GEOPY-2258: running several times add_data_map + monitoring directory copy lead to error for inexisting data.
+- GEOPY-2188: single entry point to run any application
+- GEOPY-2292: Use scientific format with fixed number of decimals to store means
+- GEOPY-2091: Profile drillhole group read time and streamline reading process
+- GEOPY-2259: Implement VP mesh object
+- GEOPY-2272: geoh5py: when naming the files, the extra value (n) should come before the extension
+- DEVOPS-690: migrate to poetry 2
+- GEOPY-2121: add the name of the application when saving ui.json
+- GEOPY-2317: Expose filter basement visual parameters to the VPmesh object.
+- GEOPY-2301: The fxmean attached to a referenced data is getting always the same name
+- GEOPY-2375: Duplicated data map on re-run of domain mapper
+- GEOPY-2413: Error copying Geometric data on cell_objects
+- GEOPY-2418: Change the copy method of UIJsonGroup to also copy objects in the uijson
+- GEOPY-2429: Support copy_from_extent for DrapeModel objects
+- GEOPY-2459: Support directoryOnly field in FileForm.
+- GEOPY-2465: make uijson add_ui_json() return the file data
+- GEOPY-2440: add a copy group+object base in inputfile as it exists uin uijson group
+- GEOPY-2474: UIJson to_params method skips over disabled parameters
+- GEOPY-1875: UIJson class: Infer Form type on read of ui.json file
+- GEOPY-425: Crash on Zarr file shape for tiled inversions with disk storage
+- GEOPY-1667: Use raise instead of asserts inside all validations
+- GEOPY-2453: object stock on display after use of geoh5py
+- GEOPY-2246: Document uijson dependencyType: show or hide
+- GEOPY-2409: Support radial button option
+- GEOPY-2409: support infer
+- GEOPY-2527: copy function for InputFile
+- GEOPY-1261: Return None if path2workspace does not find a file
+- GEOPY-2548: Random failure of unit test for surface manipulation
+- GEOPY-2564: Basement added to the referenced value map not visible in GA
+- GEOPY-2575: Add data_map crashes on float values trying to rename
+- GEOPY-2629: warning with Pydantic >=2.12
+
+
+
+Release 0.11.0 (2025-06-18)
+---------------------------
+
+- GEOPY-1822: update The names of PropertyGroup if it already exists
+- GEOPY-1701: Add validation with mesh_type on ObjectForm
+- GEOPY-1836: return referenced values in table
+- GEOPY-1846: pass drillholes group in InputFile data
+- GEOPY-1820: Add a depth of investigation application
+- GEOPY-1776: accept "object" association for data in ui.json and "Filename" data
+- GEOPY-1878: Error creating value map from values
+- GEOPY-1813: Change typing for input PropertyGroup.properties to list[Data] | list[UUID] | list[str] instead list[Data | UUID | str]
+- GEOPY-1910: Throw warning if any of the common auto-saving drive is found in mode="r+"
+- GEOPY-1946: Octree mesh upside down
+- DEVOPS-635: build conda package faster with rattler-build
+- GEOPY-1932: Desurveying can produce a divide by zero warning with some paths
+- GEOPY-2033: Error copying reference data with GeometryDataValueMap
+- GEOPY-2003: Fixes to make simpeg-drivers uijson round-trip test pass
+- GEOPY-2025: Duplicated survey object when monitoring_directory is used
+- GEOPY-2025: Duplicated survey object when monitoring_directory is used
+- GEOPY-2040: geoh5py threshold slider widget is not returning all its values in uijson.data
+- GEOPY-1987: Error from cmd.exe printed if h5repack is not found
+- GEOPY-1950: Add docs describing the sorting/reshaping of BlockModel objects.
+- GEOPY-2065: Crash on monitoring directory copy with reference data
+- GEOPY-2039: Deal with data values vector of wrong length
+- GEOPY-2035: Preserve unknown (extra) fields in UIJson from ui.json file
+- GEOPY-2056: Handle extra fields and deprecations in UIJson version validation
+- GEOPY-2068: Clean up pydantic warnings
+- GEOPY-2079: petro-lingo composite bug when one of the association is selected
+- GEOPY-2096: ChoiceList parameters are converted to list when value is a string
+- GEOPY-2053: Support colour data type
+- GEOPY-1900: Implement Text Data object
+- GEOPY-2153: Increase length of possible string in value map
+
+
 Release 0.10.0 (2024-10-31)
 ---------------------------
 
