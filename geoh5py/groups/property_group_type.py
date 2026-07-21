@@ -64,8 +64,8 @@ class DepthType(PropertyGroupType):
             or not isinstance(children[0], FloatData)
         ):
             raise TypeError(
-                "First children of 'Depth table' property group type "
-                "must be a FloatData of 'Depth' association. "
+                "First child of 'Depth table' property group type "
+                "must be of type FloatData of 'Depth' association."
             )
 
 
@@ -79,7 +79,7 @@ class DipDirType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of 'Dip direction & dip' property group type "
-                "must be a list of 2 NumericData entities"
+                "must be a list of 2 NumericData entities."
             )
 
 
@@ -93,7 +93,7 @@ class IntervalType(PropertyGroupType):
         ):
             raise TypeError(
                 "First two children of 'Interval table' property group type "
-                "must be FloatData of 'Interval' association."
+                "must be of type FloatData of 'Interval' association."
             )
 
 
@@ -103,7 +103,7 @@ class MultiElementType(PropertyGroupType):
         if not all(isinstance(child, NumericData) for child in children):
             raise TypeError(
                 "Children of 'Multi-element' property group type "
-                "must be a list of NumericData entities"
+                "must be a list of NumericData entities."
             )
 
 
@@ -117,7 +117,21 @@ class StrikeDipType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of 'Strike & dip' property group type "
-                "must be a list of 2 NumericData entities"
+                "must be a list of 2 NumericData entities."
+            )
+
+
+class TrendPlungeType(PropertyGroupType):
+    no_modify = True
+
+    @classmethod
+    def verify(cls, children: list[Data]):
+        if len(children) != 2 or not all(
+            isinstance(child, NumericData) for child in children
+        ):
+            raise TypeError(
+                "Children of 'Trend & plunge' property group type "
+                "must be a list of 2 NumericData entities."
             )
 
 
@@ -131,7 +145,7 @@ class VectorType(PropertyGroupType):
         ):
             raise TypeError(
                 "Children of '3D vector' property group type "
-                "must be a list of 3 NumericData entities"
+                "must be a list of 3 NumericData entities."
             )
 
 
@@ -143,6 +157,7 @@ GROUP_TYPES = {
     "Simple": SimpleType,
     "Strike & dip": StrikeDipType,
     "3D vector": VectorType,
+    "Trend & plunge": TrendPlungeType,
 }
 
 
@@ -158,6 +173,7 @@ class GroupTypeEnum(StrEnum):
     SIMPLE = "Simple"
     STRIKEDIP = "Strike & dip"
     VECTOR = "3D vector"
+    TREND = "Trend & plunge"
 
     @classmethod
     def find_type(cls, data: list[Data]):
