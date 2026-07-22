@@ -205,7 +205,7 @@ class Geoh5Writer:
             # H5Writer.write_entity and H5Writer.write_to_parent.
             #
             # The same object can be reached through
-            # GEOSCIENCE/Objects/{uid}  or GEOSCEINEC/Root/Objects/{uid}
+            # GEOSCIENCE/Objects/{uid}  or GEOSCIENCE/Root/Objects/{uid}
             entity_group["Type"] = type_group
             parent_group.require_group(payload.collection)[uid] = entity_group
 
@@ -337,7 +337,7 @@ class Geoh5Writer:
         for name, value in datasets.items():
             if isinstance(value, np.ndarray):
                 self._write_array_dataset(group, name, value, compression)
-            elif isinstance(value, Mapping | BaseModel):
+            elif isinstance(value, (Mapping | BaseModel)):
                 self._write_json_dataset(group, name, value)
             elif isinstance(value, str):
                 group.create_dataset(
@@ -409,7 +409,7 @@ class Geoh5Writer:
                 for key, item in value.items()
             }
 
-        if isinstance(value, Sequence) and not isinstance(value, str | bytes):
+        if isinstance(value, Sequence) and not isinstance(value, (str | bytes)):
             # lists, tuples, sequences are converted to lists of json values
             return [cls._json_value(item) for item in value]
 
@@ -428,14 +428,14 @@ class Geoh5Writer:
     @classmethod
     def _text_sequence(cls, value: Any) -> list[str] | None:
         """Format UUID/string attribute sequences, notably Clipping IDs."""
-        if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+        if not isinstance(value, Sequence) or isinstance(value, (str | bytes)):
             return None
 
         values = list(value)
         if not values:
             return []
 
-        if not all(isinstance(item, str | UUID) for item in values):
+        if not all(isinstance(item, (str | UUID)) for item in values):
             return None
 
         return [

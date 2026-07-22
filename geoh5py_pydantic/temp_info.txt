@@ -3,7 +3,7 @@ Some current limitations I could think of for geoh5py_pydantic:
 - PointsModel is the only entity implemented so far
 - while there is a geoh5 writer, there's no .geoh5 reader
 - lazy loading loads the entire array - no support for chunks/slices/partial modification
-- writing requiries an already initialized .geoh5 file made by the existing Workspace.create()
+- writing requires an already initialized .geoh5 file made by the existing Workspace.create()
 - the writer only creates entities, it doesn't update, delete, rename, or move them
 - parent entities must already exist in the .geoh5 file before writing a child entity
 - payload validation doesn't enforce relationships such as Objects requiring Object types
@@ -22,6 +22,6 @@ Possible next steps:
 - add Groups to get parent-child relationships
 
 
-- would like to have a complete round trip functional
-that creates a .geoh5 file, writes a PointsModel entity, modify it, read the file back and close it.
-Right now it can do half of this only
+- would like to have a complete round trip functional that creates a .geoh5 file,
+writes a PointsModel entity, modifies it, reads the file back and closes it.
+Right now it can only do half of this

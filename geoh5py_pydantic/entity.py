@@ -87,7 +87,7 @@ class PydanticEntity(BaseModel):
         return self._dataset_map
 
     def geoh5_attributes(self) -> dict[str, Any]:
-        """Return the"""
+        """Return geoh5 scalar attributes mapped to geoh5 attribute names."""
         return self._dump_mapped_fields(self.attribute_map)
 
     def geoh5_datasets(self) -> dict[str, Any]:
