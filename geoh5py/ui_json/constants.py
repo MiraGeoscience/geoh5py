@@ -46,6 +46,7 @@ ui_validations = {
             "3D vector",
             "Dip direction & dip",
             "Strike & dip",
+            "Trend & plunge",
         ],
     },
     "dataType": {
