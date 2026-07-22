@@ -67,6 +67,27 @@ class PointsModel(PydanticEntity):
     supplied directly or as :class:`LazyArray` instances backed by an adapter.
     """
 
+    # The legacy writer derives these locations from isinstance(ObjectBase) and
+    # isinstance(ObjectType); declaring them on the model removes that coupling.
+    geoh5_collection: ClassVar[str] = "Objects"
+    geoh5_type_collection: ClassVar[str] = "Object types"
+
+    # Legacy ObjectType metadata can depend on the first entity written. A
+    # stable class-level name makes the file independent of entity write order.
+    geoh5_type_name: ClassVar[str] = "Points"
+    geoh5_type_description: ClassVar[str] = "Points"
+
+    # For attribute and dataset maps, copy base entity map and add object-specific attributes
+    _attribute_map: ClassVar[dict[str, str]] = {
+        **PydanticEntity._attribute_map,
+        "Last focus": "last_focus",
+    }
+
+    _dataset_map: ClassVar[dict[str, str]] = {
+        **PydanticEntity._dataset_map,
+        "Vertices": "vertices",
+    }
+
     type_uid: UUID = Field(
         default=POINTS_TYPE_UID,
         validation_alias=AliasChoices(
@@ -240,11 +261,18 @@ class PointsModel(PydanticEntity):
     def model_dump_geoh5_attributes(self) -> dict[str, Any]:
         """
         Dump the geoh5 attributes for this points object.
-
-        With every field carrying its own ``serialization_alias`` (and
-        ``vertices`` serialized in-chain via ``LazyArray.to_geoh5``, see
-        ``_serialize_vertices``), this is just ``model_dump(by_alias=True)``.
-        ``parent_uid``/``on_file`` are workspace/session bookkeeping fields
-        with no geoh5 attribute equivalent, so they are excluded.
         """
-        return self.model_dump(by_alias=True, exclude={"parent_uid", "on_file"})
+        return self.geoh5_attributes()
+
+    def model_dump_everything(self) -> dict[str, Any]:
+        """
+        Method just for example cases where being able to dump everything like a previous version
+        of the model_dump_geoh5_attributes method would be useful for notebook display
+
+        """
+        return {
+            "attributes": self.geoh5_attributes(),
+            "datasets": self.geoh5_datasets(),
+            "type_uid": self.type_uid,
+            "parent_uid": self.parent_uid,
+        }

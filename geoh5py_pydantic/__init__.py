@@ -22,6 +22,7 @@ from __future__ import annotations
 from .arrays import ArraySource, CallableArraySource, LazyArray
 from .entity import PydanticEntity
 from .points import POINTS_TYPE_UID, VERTICES_DTYPE, PointsModel
+from .serialization import Geoh5EntityPayload, Geoh5Writer
 
 
 __all__ = [
@@ -29,6 +30,8 @@ __all__ = [
     "VERTICES_DTYPE",
     "ArraySource",
     "CallableArraySource",
+    "Geoh5EntityPayload",
+    "Geoh5Writer",
     "LazyArray",
     "PointsModel",
     "PydanticEntity",

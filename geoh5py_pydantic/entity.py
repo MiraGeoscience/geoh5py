@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -34,6 +34,64 @@ class PydanticEntity(BaseModel):
     parent/child registration, and workspace mutation might live in adapters
     around this model rather than in the model itself.
     """
+
+    # These class-level values describe where a model belongs in a geoh5 file.
+    # Unlike the legacy Entity hierarchy, the generic writer does not use
+    # isinstance checks to decide whether something is an Object, Group, or Data, as that requires
+    # inheriting from e.g. ObjectBase, which needs workspace and such. This also helps the
+    # writer stay more generic and avoid having to do a bunch of isinstance checks there.
+    geoh5_collection: ClassVar[str | None] = None
+    geoh5_type_collection: ClassVar[str | None] = None
+    geoh5_type_name: ClassVar[str | None] = None
+    geoh5_type_description: ClassVar[str | None] = None
+
+    # Attribute map for serialization. Same use as the legacy Entity._attribute_map
+    _attribute_map: ClassVar[dict[str, str]] = {
+        "Allow delete": "allow_delete",
+        "Allow move": "allow_move",
+        "Allow rename": "allow_rename",
+        "Clipping IDs": "clipping_ids",
+        "ID": "uid",
+        "Name": "name",
+        "Partially hidden": "partially_hidden",
+        "Public": "public",
+        "Visible": "visible",
+    }
+
+    # this represents the role currently handled by methods like H5Writer.write_metadata()
+    _dataset_map: ClassVar[dict[str, str]] = {
+        "Metadata": "metadata",
+    }
+
+    def _dump_mapped_fields(self, field_map: dict[str, str]) -> dict[str, Any]:
+        """Helper to dump fields in the provided map."""
+        values = self.model_dump(  # ``model_dump`` runs Pydantic field serializers
+            include=set(field_map.values()),  # only vals in field_map will be dumped
+            exclude_none=True,
+        )
+
+        # Change the python names into geoh5 names, e.g. "uid": UUID("...") -> "ID": UUID("...")
+        return {
+            geoh5_name: values[field_name]
+            for geoh5_name, field_name in field_map.items()
+            if field_name in values
+        }
+
+    # Exposing these public methods for the serialization categories
+    @property
+    def attribute_map(self) -> dict[str, str]:
+        return self._attribute_map
+
+    @property
+    def dataset_map(self) -> dict[str, str]:
+        return self._dataset_map
+
+    def geoh5_attributes(self) -> dict[str, Any]:
+        """Return the"""
+        return self._dump_mapped_fields(self.attribute_map)
+
+    def geoh5_datasets(self) -> dict[str, Any]:
+        return self._dump_mapped_fields(self.dataset_map)
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
