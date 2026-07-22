@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -91,7 +91,7 @@ def test_create_survey_mt(tmp_path, caplog):
             AttributeError,
             match=(
                 "The 'channels' attribute of an EMSurvey class must be set before "
-                "the 'add_components_data' method can be used."
+                r"the 'add_components_data' method can be used\."
             ),
         ):
             mt_survey.add_components_data(123.0)
@@ -125,8 +125,8 @@ def test_create_survey_mt(tmp_path, caplog):
                 with pytest.raises(
                     TypeError,
                     match=(
-                        "Given value to data 5.0 should of type "
-                        "<class 'dict'> or attributes"
+                        r"Given value to data 5\.0 should of type "
+                        r"\<class 'dict'\> or attributes"
                     ),
                 ):
                     mt_survey.add_components_data(

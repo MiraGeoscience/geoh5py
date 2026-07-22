@@ -36,3 +36,16 @@ class AirborneMagnetics(Curve):
     _TYPE_UID = uuid.UUID(
         fields=(0x4B99204C, 0xD133, 0x4579, 0xA9, 0x16, 0xA9C8B98CFCCB)
     )
+    _default_name = "Survey Airborne Magnetics"
+
+
+class GroundMagnetics(Curve):
+    """
+    A ground magnetic survey object.
+
+    .. warning:: Partially implemented.
+
+    """
+
+    _TYPE_UID = uuid.UUID("{028e4905-cc97-4dab-b1bf-d76f58b501b5}")
+    _default_name = "Survey Ground Magnetics"

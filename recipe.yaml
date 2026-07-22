@@ -2,13 +2,14 @@ schema_version: 1
 
 context:
   name: "geoh5py"
-  version: "0.0.0.dev0"  # This will be replaced by the actual version in the build process
-  python_min: "3.10"
+  python_min: "3.12"
+  # Extract version from auto-generated _version.json
+  version: "${{ load_from_file('_version.json').version | trim }}"
   module_name: ${{ name|lower|replace("-", "_") }}
 
 package:
   name: ${{ name|lower }}
-  version: ${{ version }}
+  version: "${{ version }}"
 
 source:
   path: ../${{ name}}
@@ -16,24 +17,29 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      POETRY_DYNAMIC_VERSIONING_BYPASS: "${{ version }}"
+    content:
+      ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
+    - pip
     - poetry-core >=1.8.0
     - poetry-dynamic-versioning >=1.9, 1.*
-    - setuptools
-    - pip
   run:
     - python >=${{ python_min }}
-    - h5py >=3.2.1, 3.*
-    - numpy >=1.26.0, 1.26.*
-    - pillow >=10.3.0, 10.3.*
-    - pydantic 2.11.*
+    - h5py 3.15.*
+    - numpy 2.4.*
+    - pillow 12.2.*
+    - pydantic 2.12.*
+    - psutil >=7.2.2, 7.2.*
 
 tests:
   - python:
+      python_version: ${{ python_min }}.*
       imports:
         - ${{ module_name }}
         - ${{ module_name }}._version
@@ -42,7 +48,7 @@ tests:
     requirements:
       run:
         - pytest
-        - scipy >= 1.14.0, <1.15.dev
+        - scipy 1.17.*
     files:
       source:
         - tests/
@@ -70,4 +76,6 @@ about:
 extra:
   recipe-maintainers:
     - andrewg-mira
+    - domfournier
+    - RomFloreani
     - sebhmg

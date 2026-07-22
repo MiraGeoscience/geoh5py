@@ -30,6 +30,7 @@ from uuid import UUID
 
 import numpy as np
 
+from geoh5py import groups, objects
 from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
@@ -45,7 +46,18 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
     iterable,
 )
+from geoh5py.shared.utils import ClassIdentifierEnum, equalize_string, map_to_class
 from geoh5py.workspace import TYPE_UID_TO_CLASS, Workspace
+
+
+GA_NAME_TO_OBJECT: dict[str, type[ObjectBase]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
+}
+GA_NAME_TO_GROUP: dict[str, type[Group]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [groups]).items()
+}
 
 
 def to_path(value: list[str]) -> list[Path]:
@@ -68,13 +80,41 @@ def to_list(value: Any) -> list[Any]:
     return value
 
 
-def to_uuid(values):
-    """Promote strings to uuid and pass anything else."""
-    out = []
+def to_type_uid_or_class(
+    values: list[str | UUID | type[ObjectBase] | type[Group]],
+) -> list[UUID | type[ObjectBase] | type[Group]]:
+    """
+    Promote strings to uuid and pass anything else.
+
+    Strings can represent both uid(s) or names that represent geoh5py objects.
+    We first attempt to convert strings to uid(s) and then fall back on conversion
+    from name to class(es), and finally to type uid(s).  GA naming doesn't match
+    geoh5py naming, so we must map names to classes before type uid conversion.
+
+    :param values: List of strings representing either geoh5py type uids or class names.
+    :return: List of UUID or geoh5py objects/groups.
+    """
+
+    out: list[UUID | type[ObjectBase] | type[Group]] = []
     for val in values:
         if isinstance(val, str):
-            val = UUID(val)
-        out.append(val)
+            try:
+                out += [UUID(val)]
+            except ValueError:
+                val = equalize_string(val)
+                obj: type[ObjectBase] | type[Group] | None = GA_NAME_TO_OBJECT.get(
+                    val, None
+                ) or GA_NAME_TO_GROUP.get(val, None)
+                if obj is None:
+                    raise ValueError(
+                        f"Provided string {val!s} is not a recognized "
+                        f"geoh5py object or group type."
+                    ) from None
+
+                out += [obj]
+        else:
+            out += [val]
+
     return out
 
 
@@ -103,42 +143,6 @@ def to_class(
         elif issubclass(val, (ObjectBase, Group)):
             out.append(val)
     return out
-
-
-def empty_string_to_none(value):
-    """Promote empty string to uid, and pass all other values."""
-    if value == "":
-        return None
-    return value
-
-
-def none_to_empty_string(value):
-    """None transforms to empty string for serialization."""
-    if value is None:
-        return ""
-    return value
-
-
-def types_to_string(types: list) -> list[str] | str:
-    if len(types) > 1:
-        return [str(k.default_type_uid()) for k in types]
-    return str(types[0].default_type_uid())
-
-
-def uuid_to_string(value: UUID | None) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, UUID):
-        return str(value)
-    return value
-
-
-def uuid_to_string_or_numeric(value: UUID | float | int | None) -> str | float | int:
-    if value is None:
-        return ""
-    if isinstance(value, UUID):
-        return str(value)
-    return value
 
 
 class BaseValidator(ABC):

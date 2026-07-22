@@ -180,9 +180,11 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
             verified_values = []
             for val in to_list(value):
                 val = self.workspace.get_entity(str2uuid(val))[0]
+
                 if getattr(val, "_default_name", None) != "Slicer":
                     raise TypeError(msg)
-                verified_values.append(val.uid)
+
+                verified_values.append(val.uid)  # type: ignore
             value = verified_values
 
         self._clipping_ids = value
@@ -225,11 +227,12 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.metadata = {"Coordinate Reference System": coordinate_reference_system}
 
     @classmethod
-    def create(cls, workspace, **kwargs):
+    def create(cls, workspace, compression: int = 5, **kwargs):
         """
         Function to create an entity.
 
         :param workspace: Workspace to be added to.
+        :param compression: Compression to be applied to the entity.
         :param kwargs: List of keyword arguments defining the properties of a class.
 
         :return entity: Registered Entity to the workspace.
@@ -240,9 +243,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
             else {}
         )
         new_object = workspace.create_entity(
-            cls,
-            entity=kwargs,
-            entity_type=entity_type_kwargs,
+            cls, entity=kwargs, entity_type=entity_type_kwargs, compression=compression
         )
         return new_object
 

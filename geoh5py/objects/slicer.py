@@ -34,8 +34,8 @@ class Slicer(ObjectBase):
     to store the slicing VisualParameter information.
     """
 
+    _TYPE_UID = uuid.UUID("{238F961D-AE63-43DE-AB64-E1A079271CF5}")
+    _default_name = "Slicer"
     _attribute_map: dict = ObjectBase._attribute_map.copy()
     _attribute_map.pop("Clipping IDs")
     _attribute_map.pop("PropertyGroups")
-    _default_name = "Slicer"
-    _TYPE_UID = uuid.UUID("{238F961D-AE63-43DE-AB64-E1A079271CF5}")

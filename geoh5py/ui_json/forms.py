@@ -18,43 +18,37 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-from __future__ import annotations
-
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any, Self
 from uuid import UUID
 
 import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
-    PlainSerializer,
+    TypeAdapter,
+    ValidationError,
     field_serializer,
     field_validator,
     model_validator,
 )
-from pydantic.alias_generators import to_camel
-from pydantic.functional_validators import BeforeValidator
+from pydantic.alias_generators import to_camel, to_snake
 
-from geoh5py.groups import Group
-from geoh5py.objects import ObjectBase
-from geoh5py.shared.validators import (
-    empty_string_to_none,
-    to_class,
-    to_list,
-    to_path,
-    to_uuid,
-    types_to_string,
-    uuid_to_string,
-    uuid_to_string_or_numeric,
+from geoh5py.groups import GroupTypeEnum
+from geoh5py.ui_json.annotations import (
+    AssociationOptions,
+    DataTypeOptions,
+    GroupTypes,
+    MeshTypes,
+    OptionalUUID,
+    OptionalUUIDList,
+    OptionalValueList,
+    PathList,
 )
 
 
-# pylint: disable=too-many-return-statements
-
-
-class DependencyType(str, Enum):
+class DependencyType(StrEnum):
     ENABLED = "enabled"
     DISABLED = "disabled"
     SHOW = "show"
@@ -73,7 +67,7 @@ class BaseForm(BaseModel):
         be written to file as None.
     :param main: Controls whether ui element will render in the general
         parameters tab (True) or optional parameters (False).
-    :param tooltip: String rendered on hover over ui element.
+    :param tooltip: text box rendered on hover over ui element.
     :param group: Grouped ui elements will be rendered within a box labelled
         with the group name.
     :param group_optional: If True, ui group is rendered with a checkbox that
@@ -88,91 +82,102 @@ class BaseForm(BaseModel):
     :param group_dependency_type: Controls whether the ui group is
         enabled or visible when the group dependency is enabled if
         optional or True if a bool type.
-    :param verbose: Sets the level at which Geoscience Analyst will make
-        the parameter visible in a ui.json file.  Verbosity level is set
-        within Analyst menu.
+    :param placeholder_text: Text displayed in ui element when no data
+        has been provided.
     """
 
     model_config = ConfigDict(
         extra="allow",
-        frozen=True,
         populate_by_name=True,
         loc_by_alias=True,
         alias_generator=to_camel,
+        validate_assignment=True,
     )
+
+    __pydantic_extra__: dict[str, str | float | int]  # For autodoc
 
     label: str
     value: Any
     optional: bool = False
     enabled: bool = True
     main: bool = True
-    tooltip: str = ""
+    tooltip: str | list[str] = ""
     group: str = ""
     group_optional: bool = False
     dependency: str = ""
     dependency_type: DependencyType = DependencyType.ENABLED
     group_dependency: str = ""
     group_dependency_type: DependencyType = DependencyType.ENABLED
+    placeholder_text: str = ""
 
     @classmethod
-    def infer(cls, data: dict[str, Any]) -> type[BaseForm]:
+    def infer(
+        cls,
+        data: dict[str, Any],
+    ) -> type[Self]:
         """
         Infer and return the appropriate form.
 
-        :param data: Dictionary of form data.
-        """
-        data = {to_camel(k): v for k, v in data.items()}
-        if "choiceList" in data:
-            if data.get("multiSelect", False):
-                return MultiChoiceForm
-            return ChoiceForm
-        if "originalLabel" in data and "alternateLabel" in data:
-            return RadioLabelForm
-        if any(k in data for k in ["fileDescription", "fileType"]):
-            return FileForm
-        if "meshType" in data:
-            return ObjectForm
-        if "groupType" in data:
-            return GroupForm
-        if any(
-            k in data
-            for k in ["parent", "association", "dataType", "isValue", "property"]
-        ):
-            return DataForm
-        if isinstance(data.get("value"), str):
-            return StringForm
-        if isinstance(data.get("value"), bool):
-            return BoolForm
-        if isinstance(data.get("value"), int):
-            return IntegerForm
-        if isinstance(data.get("value"), float):
-            return FloatForm
+        The strategy involves first polling all the subclasses for indicator
+        attributes that match the form data.  An indicator attribute is one that
+        exists only on the subclass. If a single subclass contains the most
+        matching indicators, we instantly return that result.
 
-        raise ValueError(f"Could not infer form from data: {data}")
+        If there is more than one candidate we first check if the form is a base
+        class and lastly fall back on type checking the value field of the form.
+        The type checking is performed on subclasses without required indicator
+        fields to avoid false positives.
+
+        :param data: Form data.
+        """
+
+        data = {to_snake(k): v for k, v in data.items()}
+
+        candidates = filter_candidates_by_indicator_polling(data)
+
+        if len(candidates) == 1:
+            return candidates[0]
+
+        raise ValueError(f"Could not match data: {data} to any of the children.")
 
     @property
-    def json_string(self):
+    def json_string(self) -> str:
+        """Returns the form as a json string."""
         return self.model_dump_json(exclude_unset=True, by_alias=True)
 
     def flatten(self):
         """Returns the data for the form."""
         return self.value
 
-    def validate_data(self, params: dict[str, Any]):
-        """Validate the form data."""
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+        """
+        self.value = value
+
+    @property
+    def is_optional(self) -> bool:
+        """
+        Whether the field is optional or not.
+        """
+        return self.optional or self.group_optional or len(self.dependency) > 0
 
 
 class StringForm(BaseForm):
     """
     String valued uijson form.
+
+    Shares documented attributes with the BaseForm.
     """
 
-    value: str = ""
+    value: str
 
 
 class RadioLabelForm(StringForm):
     """
     Radio button for two-option strings.
+
+    Shares documented attributes with the BaseForm.
 
     The uijson dialogue will render two radio buttons with label choices.  Any
     form labels within the ui.json containing the string matching the original
@@ -189,17 +194,26 @@ class RadioLabelForm(StringForm):
 class BoolForm(BaseForm):
     """
     Boolean valued uijson form.
+
+    Shares documented attributes with the BaseForm.
     """
 
-    value: bool = True
+    value: bool
 
 
 class IntegerForm(BaseForm):
     """
     Integer valued uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param min: Minimum value accepted by the rendered form in
+        Geoscience ANALYST.
+    :param max: Maximum value accepted by the rendered form in
+        Geoscience ANALYST.
     """
 
-    value: int = 1
+    value: int
     min: float = -np.inf
     max: float = np.inf
 
@@ -207,9 +221,20 @@ class IntegerForm(BaseForm):
 class FloatForm(BaseForm):
     """
     Float valued uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param min: Minimum value accepted by the rendered form in
+        Geoscience ANALYST.
+    :param max: Maximum value accepted by the rendered form in
+        Geoscience ANALYST.
+    :param precision: Number of decimal places rendered in Geoscience
+        ANALYST.
+    :param line_edit: If True, Geoscience ANALYST will render a spin box
+        for adjusting the value by an increment controlled by the precision.
     """
 
-    value: float = 1.0
+    value: float
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
@@ -219,6 +244,12 @@ class FloatForm(BaseForm):
 class ChoiceForm(BaseForm):
     """
     Choice list uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param choice_list: List of valid choices for the form.  The choices
+        are rendered in Geoscience ANALYST as a dropdown menu.
+
     """
 
     value: str
@@ -233,7 +264,16 @@ class ChoiceForm(BaseForm):
 
 
 class MultiChoiceForm(BaseForm):
-    """Multi-choice list uijson form."""
+    """
+    Multi-choice list uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param choice_list: List of valid choices for the form.  The choices
+        are rendered in Geoscience ANALYST as a multi-selection dropdown
+        menu.
+    :param multi_select: Must be True for MultiChoiceForm.
+    """
 
     value: list[str]
     choice_list: list[str]
@@ -248,7 +288,7 @@ class MultiChoiceForm(BaseForm):
 
     @field_validator("value", mode="before")
     @classmethod
-    def to_list(cls, value):
+    def to_list(cls, value: str | list[str]) -> list[str]:
         if not isinstance(value, list):
             value = [value]
         return value
@@ -265,27 +305,55 @@ class MultiChoiceForm(BaseForm):
         return self
 
 
-PathList = Annotated[
-    list[Path],
-    BeforeValidator(to_path),
-    BeforeValidator(to_list),
-]
-
-
 class FileForm(BaseForm):
     """
-    File path uijson form
+    File path uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param file_description: List of file descriptions for each file type.
+    :param file_type: List of file extensions (without the dot) for each file type.
+    """
+
+    value: Path
+    file_description: list[str]
+    file_type: list[str]
+
+    @field_serializer("value", when_used="json")
+    def to_string(self, value: Path) -> str:
+        return str(value)
+
+    @model_validator(mode="after")
+    def value_file_type(self):
+        if self.value.suffix[1:] not in self.file_type:
+            raise ValueError(f"Provided file {self.value} has an invalid extension.")
+        return self
+
+
+class MultiFileForm(BaseForm):
+    """
+    Multi-file path uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param file_description: List of file descriptions for each file type.
+    :param file_type: List of file extensions (without the dot) for each file type.
+    :param file_multi: Indicates that multi-selection is enabled.
     """
 
     value: PathList
     file_description: list[str]
     file_type: list[str]
-    file_multi: bool = False
-    directory_only: bool = False
+    file_multi: bool = True
 
     @field_serializer("value", when_used="json")
-    def to_string(self, value):
+    def to_string(self, value: list[Path]) -> str:
         return ";".join([str(path) for path in value])
+
+    @field_validator("file_multi", mode="before")
+    @classmethod
+    def force_file_multi(cls, _):
+        return True
 
     @field_validator("value")
     @classmethod
@@ -308,141 +376,469 @@ class FileForm(BaseForm):
     def value_file_type(self):
         bad_paths = []
         for path in self.value:
-            if not self.directory_only and Path(path).suffix[1:] not in self.file_type:
+            if path.suffix[1:] not in self.file_type:
                 bad_paths.append(path)
         if any(bad_paths):
             raise ValueError(f"Provided paths {bad_paths} have invalid extensions.")
         return self
 
-    @model_validator(mode="before")
+
+class DirectoryForm(BaseForm):
+    """
+    Directory path uijson form.
+
+    Shares documented attributes with the BaseForm.
+    """
+
+    value: Path
+    file_type: list[str] = ["directory"]
+    file_description: list[str] = ["Directory"]
+    directory_only: bool = True
+
+    @field_serializer("value", when_used="json")
+    def to_string(self, value: Path) -> str:
+        return str(value)
+
+    @field_validator("value")
     @classmethod
-    def directory_file_type(cls, data):
-        if data.get("directoryOnly", False) and data["fileType"] != ["directory"]:
-            raise ValueError(
-                "File type must be ['directory'] if directory_only is True."
-            )
-        if data.get("directoryOnly", False) and data["fileDescription"] != [
-            "Directory"
-        ]:
-            raise ValueError(
-                "File description must be ['Directory'] if directory_only is True."
-            )
-        return data
+    def valid_directory(cls, value: Path) -> Path:
+        if not value.exists() or not value.is_dir():
+            raise ValueError(f"Provided path {value} is not a valid directory.")
+        return value
 
+    @field_validator("directory_only", mode="before")
+    @classmethod
+    def force_directory_only(cls, _):
+        return True
 
-MeshTypes = Annotated[
-    list[type[ObjectBase]],
-    BeforeValidator(to_class),
-    BeforeValidator(to_uuid),
-    BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
-]
+    @field_validator("file_type", mode="before")
+    @classmethod
+    def force_file_type(cls, _):
+        return ["directory"]
 
-OptionalUUID = Annotated[
-    UUID | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string),
-]
+    @field_validator("file_description")
+    @classmethod
+    def force_file_description(cls, _):
+        return ["Directory"]
 
 
 class ObjectForm(BaseForm):
     """
     Geoh5py object uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param mesh_type: List of object types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
     """
 
     value: OptionalUUID
     mesh_type: MeshTypes
 
 
-GroupTypes = Annotated[
-    list[type[Group]],
-    BeforeValidator(to_class),
-    BeforeValidator(to_uuid),
-    BeforeValidator(to_list),
-    PlainSerializer(types_to_string, when_used="json"),
-]
-
-
 class GroupForm(BaseForm):
     """
     Geoh5py group uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param group_type: List of group types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
     """
 
     value: OptionalUUID
     group_type: GroupTypes
 
 
-class Association(str, Enum):
+class DataFormMixin(BaseModel):
     """
-    Geoh5py object association types.
-    """
+    Mixin class to add common attributes a series of data classes.
 
-    VERTEX = "Vertex"
-    CELL = "Cell"
-    FACE = "Face"
+    Shares documented attributes with the BaseForm.
 
-
-class DataType(str, Enum):
-    """
-    Geoh5py data types.
-    """
-
-    INTEGER = "Integer"
-    FLOAT = "Float"
-    BOOLEAN = "Boolean"
-    REFERENCED = "Referenced"
-    VECTOR = "Vector"
-    DATETIME = "DateTime"
-    GEOMETRIC = "Geometric"
-    TEXT = "Text"
-
-
-UUIDOrNumber = Annotated[
-    UUID | float | int | None,  # pylint: disable=unsupported-binary-operation
-    BeforeValidator(empty_string_to_none),
-    PlainSerializer(uuid_to_string_or_numeric),
-]
-
-
-class DataForm(BaseForm):
-    """
-    Geoh5py data uijson form.
+    :param parent: The name of the parameter in the ui.json that contains
+        the data to select from.
+    :param association: The data association, eg: 'Cell', 'Face', 'Vertex'
+        of a grid object, that filters the options in the Geoscience ANALYST
+        ui.json dropdown.
+    :param data_type: The data type, eg: 'Integer', 'Float', that filters
+        the options in the Geoscience ANALYST ui.json dropdown.
     """
 
-    value: UUIDOrNumber
     parent: str
-    association: Association | list[Association]
-    data_type: DataType | list[DataType]
-    is_value: bool = False
-    property: OptionalUUID = None
+    association: AssociationOptions | list[AssociationOptions]
+    data_type: DataTypeOptions | list[DataTypeOptions]
+
+
+class DataForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson form for data associated with an object.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    When ``multiselect`` is ``True`` the value may be a list of UUIDs; otherwise
+    a single UUID or ``None`` is expected.
+    """
+
+    value: OptionalUUIDList
+
+
+class DataGroupForm(DataForm):
+    """
+    Geoh5py uijson form for grouped data associated with an object.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    :param data_group_type: The group type, eg: 'Multi-Element', '3d Vector'
+        that filters the groups available in the Geoscience ANALYST ui.json.
+    """
+
+    data_group_type: GroupTypeEnum | list[GroupTypeEnum]
+
+
+class GroupMultiDataForm(BaseForm):
+    """
+    Geoh5py uijson form for selecting (multi) data within a group.
+
+    Shares documented attributes with the BaseForm.
+
+    Note: For now, it seems to work only with DrillholesGroup,
+    but it could be extended to other groups types in the future
+    (just Geoscience ANALYST ui.json restriction).
+
+    :param group_value: The group containing the objects containing the data.
+    :param group_type: List of group types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
+    :param data_type: The data type, eg: 'Integer', 'Float', that filters the options
+        in the Geoscience ANALYST ui.json dropdown.
+    :param value: The list of data names stored across the objects.
+    :param multi_select: If True, the ui.json dropdown will allow for multi-selection.
+    """
+
+    group_type: GroupTypes
+    group_value: OptionalUUID
+
+    data_type: DataTypeOptions | list[DataTypeOptions]
+    value: str | list[str]
+    multi_select: bool = True
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def to_list(cls, value: str | list[str]) -> str | list[str]:
+        """
+        Validate that value is a list.
+
+        If the value is empty, return an empty string.
+
+        :raises TypeError: If value is not a list of strings.
+
+        :param value: The value to validate, which can be a string or a list of strings.
+
+        :return: A list of strings representing the value or an empty string.
+        """
+        if not value or value == [""]:
+            return ""
+        if not isinstance(value, list):
+            raise TypeError(f"'value' must be a list of strings; got '{type(value)}'")
+        return value
+
+    def flatten(self) -> dict:
+        """Returns the property, data and is_complement values for the form."""
+        return {
+            "group_value": self.group_value,
+            "value": self.value,
+        }
+
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+
+        :param value: The input value(s) for the form. Can be
+            - string or list of strings for the name of data selected, set to 'value'.
+            - UUID or None defining 'group_value' field.
+            - dict of values for the fields of the form.
+
+        """
+        if isinstance(value, dict):
+            for key, val in value.items():
+                setattr(self, key, val)
+
+        if isinstance(value, list | str):
+            self.value = value
+
+        if isinstance(value, UUID | None):
+            self.group_value = value
+
+
+class DataOrValueForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson data form that also accepts a single value.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    :param is_value: If True, the value field is used to provide a scalar value.
+    """
+
+    value: float | int
+    is_value: bool
+    property: OptionalUUID
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
 
     @model_validator(mode="after")
-    def value_if_is_value(self):
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and self.is_value
-        ):
-            if isinstance(self.value, UUID):
-                raise ValueError("Value must be numeric if is_value is True.")
-        return self
-
-    @model_validator(mode="after")
     def property_if_not_is_value(self):
         if (
             "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and "property" not in self.model_fields_set  # pylint: disable=unsupported-membership-test
+            and not self.is_value
+            and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
         ):
             raise ValueError("A property must be provided if is_value is used.")
+
         return self
 
-    def flatten(self):
+    def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-        ):
+        if "is_value" in self.model_fields_set and not self.is_value:
             return self.property
         return self.value
+
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+
+        :param value: Either a numeric (float/int) value or a UUID. When a UUID is
+            provided, it is assigned to the ``property`` field and ``is_value`` is set
+            to False. When None or a numeric value is provided, ``is_value`` is set
+            to True.
+
+        """
+        try:
+            self.value = value
+            self.is_value = True
+        except ValidationError:
+            if value is None:
+                self.is_value = True
+                self.property = value
+            else:
+                self.property = value
+                self.is_value = False
+
+
+class MultiSelectDataForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py uijson data form with multi-selection.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    :param multi_select: Must be True for MultiSelectDataForm.
+    """
+
+    value: OptionalUUIDList
+    multi_select: bool
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value: bool) -> bool:
+        """Validate that multi_select is True."""
+        if not value:
+            raise ValueError("MultiSelectForm must have multi_select: True.")
+        return value
+
+
+class DataRangeForm(DataFormMixin, BaseForm):
+    """
+    Geoh5py data range uijson form.
+
+    Shares documented attributes with the BaseForm and DataFormMixin.
+
+    :param allow_complement: If True, the complement option will be available
+        in Geoscience ANALYST as a checkbox.
+    :param is_complement: If True, the range slider in Geoscience ANALYST will
+        be inverted and the implied selection is outside of the range provided.
+    :param range_label: Label for the range.
+    :param property: The UUID of the property to which the range applies.
+    :param value: The value can be a single float or a list of two floats.
+        Geoscience ANALYST will estimate a range on load if a single float
+        is provided, but will always return a list.
+    """
+
+    allow_complement: bool = False
+    is_complement: bool = False
+    range_label: str
+    property: OptionalUUID
+    value: OptionalValueList
+
+    def flatten(self) -> dict:
+        """Returns the property, data and is_complement values for the form."""
+        return {
+            "is_complement": self.is_complement,
+            "property": self.property,
+            "value": self.value,
+        }
+
+    def set_value(self, value: Any):
+        """
+        Set the form value.
+
+        :param value: The input value(s) for the form. Can be
+            - list of two floats defining the lower and upper bounds of the 'value' field.
+            - UUID or None defining 'property' field.
+            - dict of values for the fields 'is_complement', 'property' and 'value'.
+        """
+        if isinstance(value, dict):
+            for key, val in value.items():
+                setattr(self, key, val)
+
+        if isinstance(value, list):
+            self.value = value
+
+        if isinstance(value, UUID | None):
+            self.property = value
+
+
+def all_subclasses(type_object: type[BaseForm]) -> list[type[BaseForm]]:
+    """Recursively find all subclasses of input type object."""
+    collection = []
+    subclasses = type_object.__subclasses__()
+    collection += subclasses
+    for subclass in subclasses:
+        collection += all_subclasses(subclass)
+    return collection
+
+
+def get_mandatory_attributes(to_inspect: type[BaseForm]) -> set[str]:
+    """
+    Isolate mandatory attributes for a class.
+
+    :param to_inspect: The pydantic class to check.
+
+    :return: The attributes with no default values.
+    """
+    return {
+        key for key, value in to_inspect.model_fields.items() if value.is_required()
+    }
+
+
+def indicator_attributes(
+    parent: type[BaseForm], children: list[type[BaseForm]]
+) -> tuple[list[set[str]], list[set[str]]]:
+    """
+    List all the mandatory attributes defined in a subclass.
+
+    The function return a list of 2 lists:
+        - The first contains the sets of attributes
+            that are different between the parent and each child class.
+        - The second contains the sets of mandatory attributes
+            that are different between the parent and each child class.
+
+    :param parent: The parent class to compare against.
+    :param children: The list of child classes to compare.
+
+    :return: A list of mandatory attributes defined in a subclass.
+    """
+    parent_mandatory_attributes = get_mandatory_attributes(parent)
+    parent_attributes = set(parent.model_fields)
+
+    full_differences = [
+        set(child.model_fields) - parent_attributes for child in children
+    ]
+
+    mandatory_differences = [
+        get_mandatory_attributes(child) - parent_mandatory_attributes
+        for child in children
+    ]
+
+    return full_differences, mandatory_differences
+
+
+def filter_candidates_by_indicator_polling(
+    data: dict[str, Any],
+) -> np.ndarray:
+    """
+    Return candidate subclass(es) with most matching indicators.
+
+    Polling will return a single correct candidate subclass if the
+    form data includes any unique indicators. It will also resolve
+    any ambiguity between non-unique indicators such as 'choice_list'
+    and 'multi_select'.
+
+    :param data: The form data to check for matching indicators.
+
+    :return: An array of candidate subclasses with the most matching indicators.
+    """
+    counts = count_indicators(INDICATORS, data)
+    candidates = np.array(FORM_TYPES)[counts == np.max(counts)]
+
+    if len(candidates) == len(FORM_TYPES):
+        candidates = np.array([StringForm, BoolForm, IntegerForm, FloatForm])
+    if len(candidates) > 1:
+        type_matches = filter_candidates_by_type_checking(candidates, data)
+        candidates = type_matches if len(type_matches) > 0 else candidates
+    if len(candidates) > 1:
+        candidates = baseclass_if_equal_indicators(candidates)
+
+    return candidates
+
+
+def count_indicators(
+    indicators: tuple[list[set[str]], list[set[str]]], data: dict[str, Any]
+) -> np.ndarray:
+    """
+    Count the number of matching indicators for each child class.
+
+    1. Count the number of indicators present in the form data for each subclass.
+        It allows to select the valid classes (higher is better).
+    2. Count the number of mandatory indicators absent
+        in the form data for each subclass (lower is better).
+    3. Return the difference between the two counts for each subclass.
+
+    :param indicators: A list of sets of indicator attributes for each subclass.
+    :param data: The form data to check for matching indicators.
+
+    :return: An array of counts of matching indicators for each subclass.
+    """
+    count_intersection = np.array([len(i.intersection(data)) for i in indicators[0]])
+    count_difference = np.array([len(i.difference(data)) for i in indicators[1]])
+    return count_intersection - count_difference
+
+
+def filter_candidates_by_type_checking(
+    candidates: np.ndarray, data: dict[str, Any]
+) -> np.ndarray:
+    """Check if the 'value' field passes validation for the annotated type."""
+
+    filtered_candidates = []
+    for candidate in candidates:
+        annotation = candidate.model_fields["value"].annotation
+        validation = TypeAdapter(annotation)
+        try:
+            value = data.get("value")
+            strict = isinstance(value, (int, float, bool))
+            validation.validate_python(value, strict=strict)
+            filtered_candidates.append(candidate)
+        except ValidationError:
+            #  Type checking failed so candidate is ignored
+            pass
+
+    return np.array(filtered_candidates)
+
+
+def baseclass_if_equal_indicators(candidates: np.ndarray) -> np.ndarray:
+    """
+    Choose the base class for overlapping indicators.
+
+    If multiple subclasses returned the same number of matching indicators,
+    this is because they form a hierarchy and the correct choice is the base
+    class.  Eg. If 'parent', 'association', and 'data_type' are indicators
+    for a particular form, then all forms will count three matching
+    indicators. However, the correct choice is the form with the least number
+    of attributes, (DataForm).
+    """
+    n_attributes = [len(k.model_fields) for k in candidates]
+    return candidates[n_attributes == np.min(n_attributes)]
+
+
+# Must remain at the end of the file to catch all subclasses.
+FORM_TYPES = all_subclasses(BaseForm)
+INDICATORS = indicator_attributes(BaseForm, FORM_TYPES)

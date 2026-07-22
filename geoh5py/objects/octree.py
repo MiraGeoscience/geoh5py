@@ -46,6 +46,7 @@ class Octree(GridObject):
     _TYPE_UID = uuid.UUID(
         fields=(0x4EA87376, 0x3ECE, 0x438B, 0xBF, 0x12, 0x3479733DED46)
     )
+    _default_name = "Octree Grid"
     __OCTREE_DTYPE = np.dtype(
         [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]
     )
@@ -207,6 +208,19 @@ class Octree(GridObject):
         Number of cells along the u, v and w-axis.
         """
         return self.u_count, self.v_count, self.w_count
+
+    @property
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+        return np.vstack(
+            [
+                np.sort([0, self.u_cell_size * self.u_count]),
+                np.sort([0, self.v_cell_size * self.v_count]),
+                np.sort([0, self.w_cell_size * self.w_count]),
+            ]
+        )
 
     @property
     def u_cell_size(self) -> float:

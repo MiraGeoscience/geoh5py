@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -23,10 +23,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from geoh5py.objects import DrapeModel, Grid2D
+from geoh5py.objects import Grid2D
 from geoh5py.workspace import Workspace
-
-from .drape_model_test import create_drape_parameters
 
 
 def test_copy_extent_grid_2d(tmp_path):
@@ -55,7 +53,7 @@ def test_copy_extent_grid_2d(tmp_path):
 
     data = grid.add_data({"rando": {"values": values.flatten()}})
 
-    with pytest.raises(TypeError, match="Expected a numpy array of extent values."):
+    with pytest.raises(TypeError, match=r"Expected a numpy array of extent values\."):
         grid.copy_from_extent(data)
 
     assert (

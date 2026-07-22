@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -20,6 +20,8 @@
 from __future__ import annotations
 
 import io
+import operator
+import os
 from pathlib import Path
 
 import numpy as np
@@ -49,6 +51,9 @@ def test_workspace_from_kwargs(tmp_path: Path):
         warning[0]
     )
 
+    with pytest.raises(ValueError, match="must have a 'geoh5' extension"):
+        Workspace(**attr).save_as(tmp_path / r"test.zip")
+
     workspace.close()
 
     workspace = Workspace(h5file_tmp)
@@ -58,14 +63,15 @@ def test_workspace_from_kwargs(tmp_path: Path):
                 f"Error changing value for attribute {key}."
             )
 
+    assert workspace.geoh5.libver == ("v110", "v114")
     workspace.close()
 
 
 def test_empty_workspace(tmp_path):
-    Workspace.create(
+    with Workspace.create(
         tmp_path / r"test.geoh5",
-    ).close()
-
+    ) as workspace:
+        assert workspace.geoh5.libver == ("v110", "v114")
     with File(tmp_path / r"test.geoh5", "r+") as file:
         del file["GEOSCIENCE"]["Groups"]
         del file["GEOSCIENCE"]["Data"]
@@ -105,16 +111,8 @@ def test_bad_extension(tmp_path):
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
 
 
-def test_file_not_found(tmp_path):
-    with pytest.warns(UserWarning, match="We will attempt to `save` the file for you"):
-        Workspace(
-            tmp_path / r"test.geoh5",
-        )
-
-
 def test_read_bytes(tmp_path):
-    with pytest.warns(UserWarning, match=""):
-        workspace = Workspace(tmp_path / r"test_warning.geoh5")
+    workspace = Workspace.create(tmp_path / r"test_warning.geoh5")
 
     assert workspace.h5file.is_file()  # type: ignore
 
@@ -134,7 +132,8 @@ def test_read_bytes(tmp_path):
 
 
 def test_reopening_mode(tmp_path):
-    with Workspace.create(tmp_path / r"test.geoh5") as workspace:
+    name = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(name) as workspace:
         pass
 
     with fetch_active_workspace(workspace, mode="r") as re_open:
@@ -147,6 +146,34 @@ def test_reopening_mode(tmp_path):
         with pytest.warns(UserWarning, match="Closing the workspace in mode 'r'"):
             with fetch_active_workspace(workspace, mode="r+"):
                 assert workspace.geoh5.mode == "r+"
+
+
+def test_downgrade_mode(tmp_path, monkeypatch):
+    """
+    Replicates another-application file lock causing OSError on r+ open.
+    Workspace should fall back to read-only mode.
+    """
+    name = tmp_path / f"{__name__}.geoh5"
+    # Create a valid empty geoh5 first so the path exists and open() goes through _open_h5
+    ws = Workspace.create(name)
+    ws.close()
+
+    class FakeFile(File):
+        def __init__(self, file, mode, **kwargs):
+            if mode == "r+":
+                raise OSError(
+                    "The process cannot access the file because it is being used by another process."
+                )
+            super().__init__(file, mode)
+
+    monkeypatch.setattr("h5py.File", FakeFile)
+
+    try:
+        ws._open_h5("r+")
+        assert ws.geoh5.mode == "r"
+
+    finally:
+        ws.close()
 
 
 def test_in_memory_to_disk():
@@ -165,8 +192,78 @@ def test_in_memory_to_disk():
     workspace.close()
 
 
+def test_disk_save_as(tmp_path):
+    workspace = Workspace.create(tmp_path / f"{__name__}.geoh5")
+    Points.create(workspace, vertices=np.random.randn(12, 3), name="Points_A")
+
+    new_path = tmp_path / f"{__name__}_copy.geoh5"
+    workspace.save_as(new_path)
+
+    assert workspace.h5file == new_path
+    workspace.close()
+
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws_a:
+        with Workspace(new_path) as ws_b:
+            assert ws_a.objects[0].uid == ws_b.objects[0].uid
+
+
+def test_create_bytesio():
+    with pytest.raises(TypeError, match="The 'h5file' attribute must be a str"):
+        Workspace.create(123)
+
+    workspace = Workspace.create()
+
+    assert isinstance(workspace.h5file, io.BytesIO)
+
+
 def test_network_drive_warning(tmp_path):
     network_drive = tmp_path / "Dropbox"
     network_drive.mkdir()
     with pytest.warns(match="Opening workspace with write access in a network drive"):
         _ = Workspace(network_drive / "test.geoh5")
+
+
+def test_page_size(tmp_path):
+
+    with pytest.raises(TypeError, match="Page size must be an integer"):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size="abc")
+
+    with pytest.raises(
+        ValueError, match="Page size must be an integer multiple of 2, and"
+    ):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=128)
+
+    with pytest.raises(
+        ValueError, match="Page size must be an integer multiple of 2, and"
+    ):
+        Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=601)
+
+    with Workspace.create(tmp_path / f"{__name__}.geoh5", page_size=512) as workspace:
+        assert workspace.page_size == 512
+
+
+@pytest.mark.parametrize(
+    "n_values, compressions, expected_opt",
+    [
+        (100, (1, 5), operator.eq),  # No compression since < page_size
+        (10000, (1, 5), operator.gt),
+    ],
+)
+def test_compression_below_page(
+    tmp_path, n_values: int, compressions: tuple, expected_opt
+):
+    vertices = np.c_[np.arange(n_values), np.arange(n_values), np.arange(n_values)]
+    values = np.arange(n_values)
+
+    with Workspace.create(tmp_path / "test_low.geoh5", page_size=512) as ws:
+        pt = Points.create(ws, vertices=vertices, compression=compressions[0])
+        pt.add_data({"values": {"values": values}}, compression=compressions[0])
+
+    with Workspace.create(tmp_path / "test_high.geoh5", page_size=512) as ws:
+        pt = Points.create(ws, vertices=vertices, compression=compressions[1])
+        pt.add_data({"values": {"values": values}}, compression=compressions[1])
+
+    size_low_comp = os.stat(tmp_path / "test_low.geoh5").st_size
+    size_med_comp = os.stat(tmp_path / "test_high.geoh5").st_size
+
+    assert expected_opt(size_low_comp, size_med_comp)

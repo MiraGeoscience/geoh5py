@@ -26,7 +26,7 @@ import json
 import re
 import uuid
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 import h5py
@@ -39,6 +39,7 @@ from ..data import (
     FilenameData,
     ReferencedData,
     ReferenceValueMap,
+    TextureData,
 )
 from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
@@ -75,15 +76,15 @@ class H5Writer:
         :return h5file: Pointer to a geoh5 file.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            project = h5file.create_group(workspace.name)
+            project = h5file.create_group(workspace.name, track_order=True)
             H5Writer.write_attributes(h5file, workspace)
-            project.create_group("Data")
-            project.create_group("Groups")
-            project.create_group("Objects")
-            types = project.create_group("Types")
-            types.create_group("Data types")
-            types.create_group("Group types")
-            types.create_group("Object types")
+            project.create_group("Data", track_order=True)
+            project.create_group("Groups", track_order=True)
+            project.create_group("Objects", track_order=True)
+            types = project.create_group("Types", track_order=True)
+            types.create_group("Data types", track_order=True)
+            types.create_group("Group types", track_order=True)
+            types.create_group("Object types", track_order=True)
 
     @staticmethod
     def create_dataset(entity_handle, dataset: np.ndarray, label: str) -> None:
@@ -199,14 +200,14 @@ class H5Writer:
                 if "Types" in base_handle:
                     base_handle = base_handle["Types"]
                 else:
-                    base_handle = base_handle.create_group("Types")
+                    base_handle = base_handle.create_group("Types", track_order=True)
 
             for key, value in hierarchy.items():
                 if isinstance(entity, key):
                     if value in base_handle:
                         base_handle = base_handle[value]
                     else:
-                        base_handle = base_handle.create_group(value)
+                        base_handle = base_handle.create_group(value, track_order=True)
 
             # Check if already in the project
             if as_str_if_uuid(uid) in base_handle:
@@ -274,7 +275,7 @@ class H5Writer:
 
             if attr_handle is None:
                 attr_handle = entity_handle["Concatenated Data"].create_group(
-                    attribute.capitalize()
+                    attribute.capitalize(), track_order=True
                 )
             name = channel.replace("/", "\u2044")
             if name in attr_handle:
@@ -328,6 +329,8 @@ class H5Writer:
                 H5Writer.write_group_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
+            elif attribute == "texture_image":
+                H5Writer.write_texture_image(h5file, entity)
             elif attribute in [
                 "values",
             ]:
@@ -351,7 +354,9 @@ class H5Writer:
                 "vertices",
                 "z_cell_delimiters",
             ]:
-                H5Writer.write_array_attribute(h5file, entity, attribute, **kwargs)
+                H5Writer.write_array_attribute(
+                    h5file, entity, attribute, compression=compression, **kwargs
+                )
             elif attribute == "property_groups":
                 H5Writer.write_property_groups(h5file, entity)
             elif attribute == "color_map":
@@ -393,6 +398,9 @@ class H5Writer:
 
                 value = as_str_if_uuid(value)
 
+                if key in entity_handle.attrs and value is None:
+                    del entity_handle.attrs[key]
+
                 if (
                     key
                     in [
@@ -412,20 +420,30 @@ class H5Writer:
                 if key == "Visible" and "Visible" in entity_handle:
                     del entity_handle["Visible"]
 
-                if isinstance(value, (np.int8, bool)):
-                    entity_handle.attrs.create(key, int(value), dtype="int8")
-                elif isinstance(value, str):
-                    entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
-                elif isinstance(value, BaseModel):
-                    entity_handle.attrs.create(
-                        key,
-                        value.model_dump_json(by_alias=True),
-                        dtype=H5Writer.str_type,
-                    )
-                else:
-                    entity_handle.attrs.create(
-                        key, value, dtype=np.asarray(value).dtype
-                    )
+                H5Writer.create_attribute(entity_handle, key, value)
+
+    @staticmethod
+    def create_attribute(entity_handle: h5py.Group, key: str, value: Any):
+        """
+        Format and add attributes to a hdf5 group.
+
+        :param entity_handle: Pointer to the hdf5 group
+        :param key: Name of the attribute
+        :param value: Value of the attribute to be written.
+            Supported types are: int8, bool, str, BaseModel and array-like.
+        """
+        if isinstance(value, (np.int8, bool)):
+            entity_handle.attrs.create(key, int(value), dtype="int8")
+        elif isinstance(value, str):
+            entity_handle.attrs.create(key, value, dtype=H5Writer.str_type)
+        elif isinstance(value, BaseModel):
+            entity_handle.attrs.create(
+                key,
+                value.model_dump_json(by_alias=True),
+                dtype=H5Writer.str_type,
+            )
+        else:
+            entity_handle.attrs.create(key, value, dtype=np.asarray(value).dtype)
 
     @staticmethod
     def write_color_map(
@@ -572,7 +590,12 @@ class H5Writer:
 
     @staticmethod
     def write_array_attribute(
-        file: str | h5py.File, entity, attribute, values=None, **kwargs
+        file: str | h5py.File,
+        entity,
+        attribute,
+        values=None,
+        compression: int = 9,
+        **kwargs,
     ) -> None:
         """
         Add :obj:`~geoh5py.objects.object_base.ObjectBase.surveys` of an object.
@@ -580,6 +603,8 @@ class H5Writer:
         :param file: Name or handle to a geoh5 file.
         :param entity: Target entity.
         :param attribute: Name of the attribute to be written to geoh5
+        :param values: Values to be written to geoh5
+        :param compression: Compression level `compression_opts` of the h5 file.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             entity_handle = H5Writer.fetch_handle(h5file, entity)
@@ -608,7 +633,7 @@ class H5Writer:
                     KEY_MAP[attribute],
                     data=values,
                     compression="gzip",
-                    compression_opts=9,
+                    compression_opts=compression,
                     **kwargs,
                 )
 
@@ -848,7 +873,7 @@ class H5Writer:
             uid = entity.uid
 
             if entity_type not in h5file[base]:
-                h5file[base].create_group(entity_type)
+                h5file[base].create_group(entity_type, track_order=True)
 
             # Check if already in the project
             if as_str_if_uuid(uid) in h5file[base][entity_type]:
@@ -856,19 +881,23 @@ class H5Writer:
 
                 return h5file[base][entity_type][as_str_if_uuid(uid)]
 
-            entity_handle = h5file[base][entity_type].create_group(as_str_if_uuid(uid))
+            entity_handle = h5file[base][entity_type].create_group(
+                as_str_if_uuid(uid), track_order=True
+            )
             if isinstance(entity, Concatenator):
-                concat_group = entity_handle.create_group("Concatenated Data")
-                entity_handle.create_group("Data")
-                concat_group.create_group("Index")
-                concat_group.create_group("Data")
-                entity_handle.create_group("Groups")
+                concat_group = entity_handle.create_group(
+                    "Concatenated Data", track_order=True
+                )
+                entity_handle.create_group("Data", track_order=True)
+                concat_group.create_group("Index", track_order=True)
+                concat_group.create_group("Data", track_order=True)
+                entity_handle.create_group("Groups", track_order=True)
             elif entity_type == "Groups":
-                entity_handle.create_group("Data")
-                entity_handle.create_group("Groups")
-                entity_handle.create_group("Objects")
+                entity_handle.create_group("Data", track_order=True)
+                entity_handle.create_group("Groups", track_order=True)
+                entity_handle.create_group("Objects", track_order=True)
             elif entity_type == "Objects":
-                entity_handle.create_group("Data")
+                entity_handle.create_group("Data", track_order=True)
 
             # Add the type
             new_type = H5Writer.write_entity_type(h5file, entity.entity_type)
@@ -905,11 +934,11 @@ class H5Writer:
             entity_type_str = str_from_subtype(entity_type)
 
             if "Types" not in h5file[base]:
-                h5file[base].create_group("Types")
+                h5file[base].create_group("Types", track_order=True)
 
             # Check if already in the project
             if entity_type_str not in h5file[base]["Types"]:
-                h5file[base]["Types"].create_group(entity_type_str)
+                h5file[base]["Types"].create_group(entity_type_str, track_order=True)
 
             if as_str_if_uuid(uid) in h5file[base]["Types"][entity_type_str]:
                 entity_type.on_file = True
@@ -917,7 +946,7 @@ class H5Writer:
                 return h5file[base]["Types"][entity_type_str][as_str_if_uuid(uid)]
 
             new_type = h5file[base]["Types"][entity_type_str].create_group(
-                as_str_if_uuid(uid)
+                as_str_if_uuid(uid), track_order=True
             )
             H5Writer.write_attributes(h5file, entity_type)
 
@@ -974,10 +1003,13 @@ class H5Writer:
         :param compression: Compression level for data.
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
-            H5Writer.update_field(h5file, entity, "attributes", compression)
-
+            H5Writer.write_attributes(h5file, entity)
+            attributes = list(entity.attribute_map.values())
             for attribute in KEY_MAP:
-                if getattr(entity, attribute, None) is not None:
+                if (
+                    getattr(entity, attribute, None) is not None
+                    and attribute not in attributes
+                ):
                     H5Writer.update_field(h5file, entity, attribute, compression)
 
     @staticmethod
@@ -1023,7 +1055,7 @@ class H5Writer:
                 return
 
             if "PropertyGroups" not in entity_handle:
-                entity_handle.create_group("PropertyGroups")
+                entity_handle.create_group("PropertyGroups", track_order=True)
 
             uid = as_str_if_uuid(property_group.uid)
             if uid in entity_handle["PropertyGroups"]:
@@ -1033,7 +1065,7 @@ class H5Writer:
             if remove:
                 return
 
-            entity_handle["PropertyGroups"].create_group(uid)
+            entity_handle["PropertyGroups"].create_group(uid, track_order=True)
             group_handle = entity_handle["PropertyGroups"][uid]
 
             for key, attr in property_group.attribute_map.items():
@@ -1089,7 +1121,7 @@ class H5Writer:
 
             # Check if child h5py.Group already exists
             if entity_type not in parent_handle:
-                parent_handle.create_group(entity_type)
+                parent_handle.create_group(entity_type, track_order=True)
 
             # Check if child uuid not already in h5
             if as_str_if_uuid(uid) not in parent_handle[entity_type]:
@@ -1099,3 +1131,30 @@ class H5Writer:
                 H5Writer.write_to_parent(
                     h5file, entity.parent, compression=compression, recursively=True
                 )
+
+    @staticmethod
+    def write_texture_image(file, entity: TextureData) -> None:
+        """
+        Write a dataset for texture stored as bytes.
+
+        :param file: Pointer to the geoh5 Group.
+        :param entity: Target :obj:`~geoh5py.data.texture_data.TextureData` entity.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if entity_handle is None:
+                return
+
+            if entity.texture_image is None:
+                raise AttributeError("Texture data required.")
+
+            if "TextureImage" in entity_handle:
+                del entity_handle["TextureImage"]
+                entity.workspace.repack = True
+
+            entity_handle.create_dataset(
+                "TextureImage",
+                data=np.asarray(np.void(entity.texture_image[:])),
+                shape=(1,),
+            )

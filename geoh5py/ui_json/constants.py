@@ -65,7 +65,7 @@ ui_validations = {
         "required": True,
         "types": [str, float, int, bool, type(None), Entity, UUID, PropertyGroup],
     },
-    "tooltip": {"types": [str, type(None)]},
+    "tooltip": {"types": [str, list[str], type(None)]},
 }
 base_validations = {
     "version": {"types": [str, type(None)]},

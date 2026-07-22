@@ -24,7 +24,7 @@ import uuid
 
 import numpy as np
 
-from ..shared.utils import xy_rotation_matrix
+from ..data import Data
 from .grid_object import GridObject
 
 
@@ -48,6 +48,7 @@ class BlockModel(GridObject):
     _TYPE_UID = uuid.UUID(
         fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
     )
+    _default_name = "Block Model"
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
 
@@ -90,18 +91,13 @@ class BlockModel(GridObject):
             ]
         """
         if getattr(self, "_centroids", None) is None:
-            cell_center_u = self.local_axis_centers("u")
-            cell_center_v = self.local_axis_centers("v")
-            cell_center_z = self.local_axis_centers("z")
-            angle = np.deg2rad(self.rotation)
-            rot = xy_rotation_matrix(angle)
             u_grid, v_grid, z_grid = np.meshgrid(
-                cell_center_u, cell_center_v, cell_center_z
+                self.local_axis_centers("u"),
+                self.local_axis_centers("v"),
+                self.local_axis_centers("z"),
             )
-            xyz = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
-            self._centroids = np.dot(rot, xyz.T).T
-
-            self._centroids += np.asarray(self._origin.tolist())[None, :]
+            uvw = np.c_[np.ravel(u_grid), np.ravel(v_grid), np.ravel(z_grid)]
+            self._centroids = self.uvw_to_xyz(uvw)
 
         return self._centroids
 
@@ -122,6 +118,43 @@ class BlockModel(GridObject):
         Number of cells along the u, v and z-axis
         """
         return self.u_cells.shape[0], self.v_cells.shape[0], self.z_cells.shape[0]
+
+    def shaped_data_values(
+        self, data: str | uuid.UUID | Data | np.ndarray
+    ) -> np.ndarray:
+        """
+        Get the values of a data entity as a 3D array with the same shape as the grid.
+
+        Data values are stored under the hood as a flatten array in Fortran order;
+        first, the values are reshaped to the grid shape with Fortran order,
+        then transposed to match the (n_v, n_u, n_z) shape.
+
+        :param data: The data to get the values from.
+
+        :return: The shaped values of the data entity.
+        """
+        values = (
+            data
+            if isinstance(data, np.ndarray)
+            else self._get_data_to_reshape(data).values
+        )
+
+        return values.reshape(
+            (self.shape[2], self.shape[0], self.shape[1]), order="F"
+        ).transpose(2, 1, 0)
+
+    @property
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+        return np.vstack(
+            [
+                [self.u_cell_delimiters.min(), self.u_cell_delimiters.max()],
+                [self.v_cell_delimiters.min(), self.v_cell_delimiters.max()],
+                [self.z_cell_delimiters.min(), self.z_cell_delimiters.max()],
+            ]
+        )
 
     @property
     def u_cell_delimiters(self) -> np.ndarray:

@@ -468,7 +468,7 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
 
         self._tx_id_property = value
 
-        if self.type == "Receivers":
+        if self.type_name == "Receivers":
             self.edit_em_metadata({"Tx ID property": getattr(value, "uid", None)})
         else:
             self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
@@ -498,8 +498,8 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
         if values is None:
             metadata = self.default_metadata
 
-            if self.type is not None:
-                metadata["EM Dataset"][self.type] = self.uid
+            if self.type_name is not None:
+                metadata["EM Dataset"][self.type_name] = self.uid
 
             values = metadata
 
@@ -593,7 +593,7 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
         Utility method to retrieve the transmitter ID property, either from
         metadata or from list of children Data.
         """
-        if self.type == "Receivers":
+        if self.type_name == "Receivers":
             uid = self.metadata["EM Dataset"].get("Tx ID property", None)
         else:
             uid = self.metadata["EM Dataset"].get("Tx ID tx property", None)
@@ -651,6 +651,7 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
     __INPUT_TYPE = ["Rx"]
     _TYPE_UID: uuid.UUID | None = None
+    _default_name: str | None = None
 
     @property
     def base_receiver_type(self):
@@ -684,6 +685,7 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
 
     __INPUT_TYPE = ["Tx and Rx"]
     _TYPE_UID: uuid.UUID | None = None
+    _default_name: str | None = None
 
     @property
     def base_receiver_type(self):
@@ -759,6 +761,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
         "yaw": "Yaw",
     }
     _TYPE_UID: uuid.UUID | None = None
+    _default_name: str | None = None
 
     @property
     def crossline_offset(self) -> float | uuid.UUID | None:

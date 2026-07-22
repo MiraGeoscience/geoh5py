@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2025-2026 Mira Geoscience Ltd.                                '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -89,6 +89,15 @@ class Plane(BaseModel):
         return cls(
             origin=np.asarray(origin, dtype=float), u_vector=u_vector, v_vector=v_vector
         )
+
+    @property
+    def dip_rotation_only(self) -> bool:
+        """
+        Check if the plane orientation can be explained by rotation and dip only.
+
+        :return: True if u_vector lies in the XY plane (has no Z component).
+        """
+        return abs(self.u_vector[2]) < 1e-6
 
     @property
     def normal(self) -> np.ndarray:

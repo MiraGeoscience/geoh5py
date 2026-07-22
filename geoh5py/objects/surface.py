@@ -35,14 +35,15 @@ class Surface(CellObject):
     _TYPE_UID = uuid.UUID(
         fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
     )
+    _default_name = "Surface"
     _minimum_vertices = 3
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
-        """
+        r"""
         Validate or generate cells made up of triplets of vertices making
             up triangles.
 
-        :param indices: Array of indices, shape(*, 3). If None provided, the
+        :param indices: Array of indices, shape(\*, 3). If None provided, the
             vertices are connected sequentially.
 
         :return: Array of indices defining connecting vertices.

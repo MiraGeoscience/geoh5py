@@ -40,6 +40,7 @@ class DrapeModel(ObjectBase):
     """
 
     _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
+    _default_name = "Draped Model"
     _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
     _PRISM_DTYPE = np.dtype(
         [
@@ -77,8 +78,8 @@ class DrapeModel(ObjectBase):
 
     @property
     def centroids(self) -> np.ndarray:
-        """
-        Cell center locations in world coordinates, shape(*, 3).
+        r"""
+        Cell center locations in world coordinates, shape(\*, 3).
 
         .. code-block:: python
 

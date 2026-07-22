@@ -31,7 +31,7 @@ class DrillholeGroup(Group):
     _TYPE_UID = uuid.UUID(
         fields=(0x825424FB, 0xC2C6, 0x4FEA, 0x9F, 0x2B, 0x6CD00023D393)
     )
-    _default_name = "Drillhole Group"
+    _default_name = "Drillholes"
 
 
 class IntegratorDrillholeGroup(DrillholeGroup):

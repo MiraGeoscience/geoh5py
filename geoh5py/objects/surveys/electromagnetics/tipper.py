@@ -40,8 +40,6 @@ class TipperSurvey(FEMSurvey):
     """
 
     __INPUT_TYPE = ["Rx and base stations"]
-    _base_stations = None
-    _receivers = None
 
     def __init__(
         self,
@@ -204,15 +202,15 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
     """
 
     _TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
+    _default_name = "Survey ZTEM Rx"
     __TYPE = "Receivers"
-    _default_name = "Tipper rx"
 
     @property
     def complement(self):
         return self.base_stations
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -223,8 +221,8 @@ class TipperBaseStations(TipperSurvey, Points):
     """
 
     _TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
+    _default_name = "Survey ZTEM Base Stations"
     __TYPE = "Base stations"
-    _default_name = "Tipper base"
     _minimum_vertices = 1
 
     @property
@@ -232,6 +230,6 @@ class TipperBaseStations(TipperSurvey, Points):
         return self.receivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -105,7 +105,7 @@ def test_create_survey_tipper(tmp_path):
         receivers.copy(out_workspace)
 
     with Workspace(tmp_path / r"test_Tipper_copy.geoh5") as new_workspace:
-        receivers_rec = new_workspace.get_entity("Tipper rx")[0]
+        receivers_rec = new_workspace.get_entity("Survey ZTEM Rx")[0]
         compare_entities(
             receivers, receivers_rec, ignore=["_receivers", "_base_stations", "_parent"]
         )

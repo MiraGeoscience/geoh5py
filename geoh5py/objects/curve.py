@@ -39,16 +39,17 @@ class Curve(CellObject):
     :param vertices: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
     """
 
+    _TYPE_UID: uuid.UUID | None = uuid.UUID(
+        fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
+    )
+    _default_name: str | None = "Curve"
     _attribute_map: dict = CellObject._attribute_map.copy()
     _attribute_map.update(
         {
             "Current line property ID": "current_line_id",
         }
     )
-    _default_name = "Curve"
-    _TYPE_UID: uuid.UUID | None = uuid.UUID(
-        fields=(0x6A057FDC, 0xB355, 0x11E3, 0x95, 0xBE, 0xFD84A7FFCB88)
-    )
+
     _minimum_vertices = 2
 
     def __init__(  # pylint: disable="too-many-arguments"
@@ -160,11 +161,11 @@ class Curve(CellObject):
         return np.unique(self.parts).tolist()
 
     def validate_cells(self, indices: list | tuple | np.ndarray | None) -> np.ndarray:
-        """
+        r"""
         Validate or generate cells made up of pairs of vertices making
             up line segments.
 
-        :param indices: Array of indices, shape(*, 2). If None provided, the
+        :param indices: Array of indices, shape(\*, 2). If None provided, the
             vertices are connected sequentially.
 
         :return: Array of indices defining connected vertices.
@@ -195,5 +196,33 @@ class Curve(CellObject):
 
         if len(indices) > 0 and np.max(indices) > (self.n_vertices - 1):
             raise ValueError("Found cell indices larger than the number of vertices.")
+
+        return indices
+
+    def get_segment_indices(self, index: int, distance: float = np.inf) -> np.ndarray:
+        """
+        Get indices of line segment for a given node index.
+
+        Optionally, a distance buffer can be provided to limit the extent of
+        returned indices.
+
+        :param index: Nearest vertex index.
+        :param distance: Distance buffer to include neighboring vertices.
+
+        :return: Indices of vertices within the specified distance on the same segment.
+        """
+        if not isinstance(index, int) or abs(index) >= self.n_vertices:
+            raise ValueError(
+                f"Input 'index' must be an integer with value "
+                f"in range [-{self.n_vertices - 1}, {self.n_vertices - 1}]."
+            )
+
+        line_mask = np.where(self.parts == self.parts[index])[0]
+        distances = np.linalg.norm(
+            self.vertices[index, :2] - self.vertices[line_mask, :2],
+            axis=1,
+        )
+        dist_mask = distances < distance
+        indices = line_mask[dist_mask]
 
         return indices

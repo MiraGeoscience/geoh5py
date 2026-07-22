@@ -51,11 +51,12 @@ class VPModel(GridObject, DrapeModel):
     :param weight_property_id: UUID or name of the weight property.
     """
 
+    _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
+    _default_name = "VP Model"
     _VALUE_MAP = {
         0: "Unknown",
         100000: "VP_basement",
     }
-    _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
     _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("J", "<i4"), ("Bottom elevation", "<f8")])
     _PRISM_DTYPE = np.dtype(
         [
@@ -300,8 +301,8 @@ class VPModel(GridObject, DrapeModel):
 
     @property
     def centroids(self) -> np.ndarray:
-        """
-        Cell center locations of each prism in world coordinates, shape(*, 3).
+        r"""
+        Cell center locations of each prism in world coordinates, shape(\*, 3).
 
         .. code-block:: python
 
@@ -317,18 +318,14 @@ class VPModel(GridObject, DrapeModel):
         """
         if getattr(self, "_centroids", None) is None:
             # Create a grid of u, v coordinates based on the cell sizes
-            rotation_matrix = xy_rotation_matrix(np.deg2rad(self.rotation))
             v_grid, u_grid = np.meshgrid(
                 np.cumsum(np.ones(self._v_count) * self.v_cell_size)
                 - self.v_cell_size / 2,
                 np.cumsum(np.ones(self._u_count) * self.u_cell_size)
                 - self.u_cell_size / 2,
             )
-            xyz = (
-                rotation_matrix
-                @ np.c_[np.ravel(u_grid), np.ravel(v_grid), self.prisms[:, 0]].T
-            ).T
-            xyz += np.asarray(self._origin.tolist())[None, :]
+            uvw = np.c_[np.ravel(u_grid), np.ravel(v_grid), self.prisms[:, 0]]
+            xyz = self.uvw_to_xyz(uvw)
 
             # Instantiate an array of centroids, one for each prism
             indices = (self.layers[:, 0] * self._v_count + self.layers[:, 1]).astype(
@@ -359,6 +356,16 @@ class VPModel(GridObject, DrapeModel):
         return self._centroids
 
     @property
+    def extent(self) -> np.ndarray:
+        """
+        Compute outer extent of mesh span in world coordinates.
+        """
+        extent = super().extent
+        extent[0, 2] = self.layers[:, 2].min()
+        extent[1, 2] = self.prisms[:, 0].max()
+        return extent
+
+    @property
     def n_cells(self) -> int:
         """
         Total number of cells
@@ -371,6 +378,19 @@ class VPModel(GridObject, DrapeModel):
         Shape of the drape model in terms of number of prisms and layers.
         """
         return np.array([self._u_count, self._v_count, self.layers.shape[0]])
+
+    @property
+    def span(self) -> np.ndarray:
+        """
+        Upper and lower limits along u, v and w directions.
+        """
+        return np.vstack(
+            [
+                np.sort([0, self.u_cell_size * self.u_count]),
+                np.sort([0, self.v_cell_size * self.v_count]),
+                [self.layers[:, 2].min(), self.prisms[:, 0].max()],
+            ]
+        )
 
     @property
     def u_cell_size(self) -> float:
@@ -393,6 +413,24 @@ class VPModel(GridObject, DrapeModel):
         Number of cells along the u-axis.
         """
         return self._u_count
+
+    def uvw_to_xyz(self, coordinates: np.ndarray) -> np.ndarray:
+        """
+        Apply rotation to the input coordinates.
+
+        Deal with clockwise rotation angle of VPMesh
+
+        :param coordinates: Array of coordinates along the axes, transformed to world coordinates.
+
+        :return: Array of coordinates along the axes, transformed to world coordinates.
+        """
+
+        rotation_matrix = xy_rotation_matrix(-np.deg2rad(getattr(self, "rotation", 0)))
+
+        xyz = (rotation_matrix @ coordinates.T).T
+        xyz += np.asarray(self._origin.tolist())[None, :]
+
+        return xyz
 
     @property
     def v_cell_size(self) -> float:

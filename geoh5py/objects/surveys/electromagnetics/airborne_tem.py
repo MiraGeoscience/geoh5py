@@ -84,15 +84,15 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
     """
 
     _TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
+    _default_name = "Survey Airborne TEM Rx"
     __TYPE = "Receivers"
-    _default_name = "Airborne TEM Rx"
 
     @property
     def complement(self):
         return self.transmitters
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -103,14 +103,14 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
     """
 
     _TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
+    _default_name = "Survey Airborne TEM Tx"
     __TYPE = "Transmitters"
-    _default_name = "Airborne TEM Tx"
 
     @property
     def complement(self):
         return self.receivers
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

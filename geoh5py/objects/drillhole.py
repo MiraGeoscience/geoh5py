@@ -60,6 +60,7 @@ class Drillhole(Points):
     _TYPE_UID = uuid.UUID(
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
+    _default_name = "Drillhole"
     __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
     __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()

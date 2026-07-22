@@ -38,6 +38,7 @@ from .numeric_data import NumericData
 from .reference_value_map import ReferenceValueMap
 from .referenced_data import ReferencedData
 from .text_data import CommentsData, MultiTextData, TextData
+from .texture_data import TextureData
 from .unknown_data import UnknownData
 from .visual_parameters import VisualParameters
 
@@ -58,6 +59,7 @@ class PrimitiveTypeEnum(Enum):
     MULTI_TEXT = MultiTextData
     REFERENCED = ReferencedData
     TEXT = TextData
+    TEXTURE = TextureData
     UNKNOWN = UnknownData
     VISUAL_PARAMETERS = VisualParameters
     VECTOR = type(None)
@@ -86,3 +88,18 @@ class DataTypeEnum(Enum):
         :return: The data type.
         """
         return DataTypeEnum[primitive_type.name].value
+
+    @classmethod
+    def _missing_(cls, value) -> DataTypeEnum:
+        """
+        Allows for case-insensitive matching of enum members.
+
+        For example, "Integer" will match "INTEGER".
+
+        :param value: The value to match against the enum members.
+        """
+        if isinstance(value, str):
+            normalized = value.upper()
+            if normalized in cls.__members__:
+                return cls[normalized]
+        return super()._missing_(value)

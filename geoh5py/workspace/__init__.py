@@ -21,5 +21,4 @@ from .workspace import (
     TYPE_UID_TO_CLASS,
     Workspace,
     active_workspace,
-    get_type_uid_classes,
 )

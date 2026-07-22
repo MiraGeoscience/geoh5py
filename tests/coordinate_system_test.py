@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -52,7 +52,7 @@ def test_coordinate_system(tmp_path):
 
     # create and save a tiff
     image = Image.fromarray(
-        np.random.randint(0, 255, (128, 128, 3)).astype("uint16"), "RGB"
+        np.random.randint(0, 255, (128, 128, 3)).astype("uint8"), "RGB"
     )
 
     for id_ in tag.items():

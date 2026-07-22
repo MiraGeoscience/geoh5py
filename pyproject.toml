@@ -13,7 +13,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [project]
 name = "geoh5py"
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.12,<3.15"
 
 
 description = "Python API for geoh5, an open file format for geoscientific data"
@@ -63,10 +63,11 @@ include = [
 version = "0.0.0.dev0"
 
 [tool.poetry.dependencies]
-h5py = "^3.2.1"
-numpy = "~1.26.0"
-Pillow = "~10.3.0"
-pydantic = "~2.11"
+h5py = "~3.15.0"
+numpy = "~2.4.0"
+Pillow = "~12.2.0"
+psutil = "~7.2.2"
+pydantic = "~2.12.0"
 
 [tool.poetry.group.dev.dependencies]
 lockfile = "^0.12.2"
@@ -76,11 +77,10 @@ pylint = "*"
 pytest = "*"
 pytest-cov = "*"
 pyyaml = '*'
-scipy = "~1.14.0"
+scipy = "~1.17.0"
 sphinx = "^3.0"
 sphinx-autodoc-typehints = "^1.10"
 sphinx-rtd-theme = "^0.4.3"
-h5py = "^3.14.0"
 
 [tool.poetry.requires-plugins]
 poetry-dynamic-versioning = { version = ">=1.9.1,<2.0.0", extras = ["plugin"] }
@@ -94,24 +94,26 @@ style = "pep440"
 vcs = "git"
 
 [tool.poetry-dynamic-versioning.substitution]
-files = ["geoh5py/_version.py", "recipe.yaml"]
+files = ["geoh5py/_version.py", "_version.json"]
 patterns = [
-    { value = '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''', mode = "str" },
-    { value = '''(^\s*version\s*(?::.*?)?:\s*['"])[^'"]*(['"])''', mode = "str" },
+    '''(^__version__\s*(?::.*?)?=\s*['"])[^'"]*(['"])''',
+    '''(^{\s*"version"\s*:\s*")[^"]*("\s*})''',
 ]
 
 [tool.poetry-dynamic-versioning.files."geoh5py/_version.py"]
 persistent-substitution = true
 initial-content = """
-  # Version placeholder that will be replaced during substitution
-  __version__ = "0.0.0"
+  __version__ = "0.0.0.dev0"
 """
 
-[tool.poetry-dynamic-versioning.files."recipe.yaml"]
+[tool.poetry-dynamic-versioning.files."_version.json"]
 persistent-substitution = true
+initial-content = """
+{ "version": "0.0.0.dev0" }
+"""
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 ignore = [
@@ -121,7 +123,6 @@ ignore = [
     "TID252", # TODO
     "RUF012", # TODO
     "UP031", # TODO
-    "UP038", # TODO
     "RUF001", # TODO
     "RUF003", # TODO
     "RUF005",  # collection-literal-concatenation - wrong suggestion with numpy arrays
@@ -168,7 +169,6 @@ show_column_numbers = true
 check_untyped_defs = true
 
 plugins = [
-#    "numpy.typing.mypy_plugin",
     "pydantic.mypy"
 ]
 

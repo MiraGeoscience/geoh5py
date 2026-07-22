@@ -22,7 +22,6 @@
 
 from __future__ import annotations
 
-import inspect
 import subprocess
 import tempfile
 import uuid
@@ -71,10 +70,13 @@ from geoh5py.shared.entity import Entity
 from geoh5py.shared.entity_type import EntityType
 from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import (
+    DEFAULT_PAGE_SIZE,
+    ClassIdentifierEnum,
     as_str_if_utf8_bytes,
     clear_array_attributes,
     dict_mapper,
     get_attributes,
+    map_to_class,
     str2uuid,
 )
 
@@ -91,21 +93,9 @@ NETWORK_DRIVES = [
     "iCloud",
 ]
 
-
-def get_type_uid_classes():
-    members = []
-    for _, member in inspect.getmembers(groups) + inspect.getmembers(objects):
-        if inspect.isclass(member) and hasattr(member, "default_type_uid"):
-            members.append(member)
-
-    return members
-
-
-TYPE_UID_TO_CLASS = {
-    k.default_type_uid(): k
-    for k in get_type_uid_classes()
-    if k.default_type_uid() is not None
-}
+TYPE_UID_TO_CLASS = map_to_class(
+    ClassIdentifierEnum.DEFAULT_TYPE_UID, [groups, objects]
+)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -125,6 +115,7 @@ class Workspace(AbstractContextManager):
     :param name: Name of the project.
     :param repack: Repack the *geoh5* file after closing.
     :param version: Version of the project.
+    :param page_size: Page size of the h5 file, in bytes.
     """
 
     _active_ref: ClassVar[ReferenceType[Workspace]] | type(None) = type(None)  # type: ignore
@@ -146,6 +137,7 @@ class Workspace(AbstractContextManager):
         name: str = "GEOSCIENCE",
         repack: bool = False,
         version: float = 2.1,
+        page_size: int = DEFAULT_PAGE_SIZE,
     ):
         self._root: RootGroup
         self._data: dict[uuid.UUID, ReferenceType[data.Data]] = {}
@@ -157,16 +149,15 @@ class Workspace(AbstractContextManager):
         self._geoh5: h5py.File | bool = False
         self._groups: dict[uuid.UUID, ReferenceType[Group]] = {}
         self._property_groups: dict[uuid.UUID, ReferenceType[PropertyGroup]] = {}
-        self._h5file: str | Path | BytesIO | None = None
-        self._mode: str = mode
         self._name: str = name
         self._objects: dict[uuid.UUID, ReferenceType[ObjectBase]] = {}
         self._repack: bool = repack
         self._types: dict[uuid.UUID, ReferenceType[EntityType]] = {}
         self._version: float = version
+        self._page_size: int = validate_page_size(page_size)
+        self._h5file = self.validate_h5file_input(h5file)
 
-        self.h5file = h5file
-        self.open()
+        self.open(mode=mode)
 
     def activate(self):
         """Makes this workspace the active one.
@@ -255,6 +246,9 @@ class Workspace(AbstractContextManager):
                 logger.error("%s\n%s", process_error.stdout, process_error.stderr)
 
             self.repack = False
+
+        if isinstance(self._h5file, BytesIO):
+            self._h5file.seek(0)
 
     @property
     def contributors(self) -> np.ndarray:
@@ -380,9 +374,23 @@ class Workspace(AbstractContextManager):
             entity.fetch_property_group(**property_group_kwargs)
 
     @classmethod
-    def create(cls, path: str | Path, **kwargs) -> Workspace:
-        """Create a named blank workspace and save to disk."""
-        return cls(**kwargs).save_as(path)
+    def create(cls, h5file: str | Path | BytesIO | None = None, **kwargs) -> Workspace:
+        """
+        Create a named blank workspace.
+
+        :param h5file: Path to the workspace file or None to create in-memory only.
+
+        :return: A workspace object.
+        """
+        if h5file is None:
+            h5file = BytesIO()
+
+        elif isinstance(h5file, str | Path) and Path(h5file).exists():
+            raise FileExistsError(
+                f"File '{h5file}' already exists. Please choose a different name or path."
+            )
+
+        return cls(h5file=h5file, **kwargs)
 
     def create_from_concatenation(self, attributes):
         if "Name" in attributes:
@@ -605,7 +613,7 @@ class Workspace(AbstractContextManager):
         """Get all active Data entities registered in the workspace."""
         return self._all_data()
 
-    def fetch_or_create_root(self):
+    def _fetch_or_create_root(self):
         """
         Fetch the root group or create a new one if it does not exist.
         """
@@ -1063,7 +1071,7 @@ class Workspace(AbstractContextManager):
         return self._geoh5
 
     @property
-    def h5file(self) -> str | Path | BytesIO | None:
+    def h5file(self) -> Path | BytesIO:
         """
         Target *geoh5* file name with path or BytesIO object representation.
 
@@ -1072,48 +1080,33 @@ class Workspace(AbstractContextManager):
         """
         return self._h5file
 
-    @h5file.setter
-    def h5file(self, file: str | Path | BytesIO | None):
-        if self._h5file is not None:
-            raise ValueError(
-                "The 'h5file' attribute cannot be changed once it has been set."
-            )
+    @staticmethod
+    def validate_h5file_input(h5file: str | Path | BytesIO | None) -> Path | BytesIO:
+        """
+        Validate the reference to a h5 file, either provided as path, an in-memory file
+        or a BytesIO object.
 
-        if not isinstance(file, (str, Path, BytesIO, type(None))):
-            raise ValueError(
-                "The 'h5file' attribute must be a str, "
-                "pathlib.Path to the target geoh5 file or BytesIO. "
-                f"Provided {file} of type({type(file)})"
-            )
+        :param h5file: Input h5 representation
 
-        if isinstance(file, type(None)) or (
-            isinstance(file, (str, Path)) and not Path(file).is_file()
-        ):
-            self._h5file = BytesIO()
-            self._geoh5 = h5py.File(self.h5file, "a")
+        :return: A valid Path or BytesIO object
+        """
+        if isinstance(h5file, BytesIO):
+            return h5file
 
-            with self._geoh5:
-                self._root = self.create_root()
-                H5Writer.init_geoh5(self.geoh5, self)
+        if isinstance(h5file, type(None)):
+            return BytesIO()
 
-        elif isinstance(file, BytesIO):
-            self._h5file = file
-
-        if isinstance(file, (str, Path)):
-            if Path(file).suffix != ".geoh5":
+        if isinstance(h5file, (str, Path)):
+            if Path(h5file).suffix != ".geoh5":
                 raise ValueError("Input 'h5file' file must have a 'geoh5' extension.")
 
-            if not Path(file).is_file():
-                warnings.warn(
-                    "From version 0.8.0, the 'h5file' attribute must be a string "
-                    "or path to an existing file, or user must call the 'create' "
-                    "method. We will attempt to `save` the file for you, but this "
-                    "behaviour will be removed in future releases.",
-                )
-                self.save_as(file)
-                self.close()
-            else:
-                self._h5file = Path(file)
+            return Path(h5file)
+
+        raise TypeError(
+            "The 'h5file' attribute must be a str, "
+            "pathlib.Path to the target geoh5 file or BytesIO. "
+            f"Provided {h5file} of type({type(h5file)})"
+        )
 
     @property
     def list_data_name(self) -> dict[uuid.UUID, str]:
@@ -1244,7 +1237,7 @@ class Workspace(AbstractContextManager):
         """Get all active Object entities registered in the workspace."""
         return self._all_objects()
 
-    def open(self, mode: str | None = None) -> Workspace:
+    def open(self, mode: str = "r+") -> Workspace:
         """
         Open a geoh5 file and load the tree structure.
 
@@ -1254,9 +1247,6 @@ class Workspace(AbstractContextManager):
         if isinstance(self._geoh5, h5py.File) and self._geoh5:
             warnings.warn(f"Workspace already opened in mode {self._geoh5.mode}.")
             return self
-
-        if mode is None:
-            mode = self._mode
 
         if (
             mode == "r+"
@@ -1269,25 +1259,73 @@ class Workspace(AbstractContextManager):
                 "Consider copying the file to static local drive."
             )
 
-        try:
-            self._geoh5 = h5py.File(self.h5file, mode)
-        except OSError:
-            self._geoh5 = h5py.File(self.h5file, "r")
-
+        # Reset arrays
         self._data = {}
         self._objects = {}
         self._groups = {}
         self._types = {}
         self._property_groups = {}
 
+        if (
+            isinstance(self.h5file, BytesIO) and self.h5file.getbuffer().nbytes == 0
+        ) or (isinstance(self.h5file, Path) and not self.h5file.exists()):
+            self._create_h5()
+        else:
+            self._open_h5(mode)
+
+        self._fetch_or_create_root()
+
+        return self
+
+    def _open_h5(self, mode) -> h5py.File:
+        """
+        Load geoh5 from a file or BytesIO.
+
+        If the file cannot be opened in read-write mode, it defaults back to read-only mode.
+
+        :param mode: Read mode
+        """
+        try:
+            self._geoh5 = h5py.File(self.h5file, mode)
+        except OSError:
+            self._geoh5 = h5py.File(self.h5file, "r")
+
         proj_attributes = self._io_call(H5Reader.fetch_project_attributes, mode="r")
 
         for key, attr in proj_attributes.items():
             setattr(self, self._attribute_map[key], attr)
 
-        self.fetch_or_create_root()
+        return self._geoh5
 
-        return self
+    def _create_h5(self) -> h5py.File:
+        """
+        Generate a new geoh5 file with core structure.
+
+        Default mode for ANALYST uses:
+            - Page size (fs_page_size) of 65536 bytes.
+            - Page buffer (page_buf_size) is able to hold 256 pages.
+            - Library version (libver) fixed with (lower, upper) bound.
+        """
+        self._geoh5 = h5py.File(
+            self.h5file,
+            "x",
+            fs_strategy="page",
+            page_buf_size=self._page_size * 256,
+            fs_page_size=self._page_size,
+            libver=("v110", "v114"),
+        )
+        H5Writer.init_geoh5(self._geoh5, self)
+
+        return self._geoh5
+
+    @property
+    def page_size(self) -> int:
+        """
+        HDF5 page size.
+
+        Must be a multiple of 2, greater than or equal 512.
+        """
+        return self._page_size
 
     def promote(self, value: Any) -> Any:
         """
@@ -1374,10 +1412,11 @@ class Workspace(AbstractContextManager):
     def save_as(self, filepath: str | Path) -> Workspace:
         """
         Save the workspace to disk.
-        """
-        if self._geoh5 is not None:
-            self.close()
 
+        :param filepath: The filepath to save the workspace to.
+
+        :return: New workspace instance loaded from disk.
+        """
         filepath = Path(filepath)
 
         if filepath.suffix == "":
@@ -1389,16 +1428,14 @@ class Workspace(AbstractContextManager):
         if filepath.exists():
             raise FileExistsError(f"File {filepath} already exists.")
 
+        self.close()
         if isinstance(self.h5file, BytesIO):
             with open(filepath, "wb") as file:
                 file.write(self.h5file.getbuffer())
-        elif self.h5file is None:
-            raise ValueError("Input 'h5file' file must be specified.")
         else:
-            move(self.h5file, filepath, copy)
+            copy(self.h5file, filepath)
 
         self._h5file = filepath
-
         self.open()
 
         return self
@@ -1585,3 +1622,20 @@ def active_workspace(workspace: Workspace):
     previous_active = previous_active_ref()
     if previous_active is not None:
         previous_active.activate()  # pylint: disable=no-member
+
+
+def validate_page_size(value: int) -> int:
+    """
+    Check if a page size is valid value. Raise an error if not valid,
+    else return the value as-is.
+
+    :param value: A positive integer multiple of 2, >=512.
+    :return: Page size value, same as :param value:
+    """
+    if not isinstance(value, int):
+        raise TypeError("Page size must be an integer.")
+
+    if value < 512 or value % 2 != 0:
+        raise ValueError("Page size must be an integer multiple of 2, and >=512.")
+
+    return value

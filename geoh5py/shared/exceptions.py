@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
+# pylint: disable=arguments-differ
 
 from __future__ import annotations
 
@@ -36,80 +36,49 @@ class Geoh5FileClosedError(ABC, Exception):
 
 
 class BaseValidationError(ABC, Exception):
-    """Base class for custom exceptions."""
+    """
+    Base class for custom exceptions.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(self.message(*args, **kwargs))
 
     @classmethod
     @abstractmethod
-    def message(cls, name, value, validation):
-        """Builds custom error message."""
-        raise NotImplementedError()
+    def message(cls, *args, **kwargs) -> str:
+        """
+        Builds custom error message.
+
+        Each subclass of BaseValidationError should implement the message class method.
+        """
 
 
-class JSONParameterValidationError(Exception):
+class JSONParameterValidationError(BaseValidationError):
     """Error on uuid validation."""
 
-    def __init__(self, name: str, err: str):
-        super().__init__(JSONParameterValidationError.message(name, err))
-
     @classmethod
-    def message(cls, name, err):
+    def message(cls, name: str, err: str) -> str:
         return f"Malformed ui.json dictionary for parameter '{name}'. {err}"
-
-
-class UIJsonFormatError(BaseValidationError):
-    def __init__(self, name, msg):
-        super().__init__(f"Invalid UIJson format for parameter '{name}'. {msg}")
-
-    @classmethod
-    def message(cls, name, value, validation):
-        pass
-
-
-class AggregateValidationError(BaseValidationError):
-    def __init__(
-        self,
-        name: str,
-        value: list[BaseValidationError],
-    ):
-        super().__init__(AggregateValidationError.message(name, value))
-
-    @classmethod
-    def message(cls, name, value, validation=None):
-        msg = f"\n\nValidation of '{name}' collected {len(value)} errors:\n"
-        for i, err in enumerate(value):
-            msg += f"\t{i}. {err!s}\n"
-        return msg
 
 
 class OptionalValidationError(BaseValidationError):
     """Error if None value provided to non-optional parameter."""
 
-    def __init__(
-        self,
-        name: str,
-        value: Any | None,
-        validation: bool,
-    ):
-        super().__init__(OptionalValidationError.message(name, value, validation))
-
     @classmethod
-    def message(cls, name, value, validation):
+    def message(cls, name: str, *_) -> str:
         return f"Cannot set a None value to non-optional parameter: {name}."
 
 
 class AssociationValidationError(BaseValidationError):
     """Error on association between child and parent entity validation."""
 
-    def __init__(
-        self,
+    @classmethod
+    def message(
+        cls,
         name: str,
         value: Entity | PropertyGroup | UUID,
         validation: Entity | Workspace,
-    ):
-        super().__init__(AssociationValidationError.message(name, value, validation))
-
-    @classmethod
-    def message(cls, name, value, validation):
+    ) -> str:
         return (
             f"Property '{name}' with value: '{value}' must be "
             f"a child entity of parent {validation}"
@@ -119,11 +88,8 @@ class AssociationValidationError(BaseValidationError):
 class PropertyGroupValidationError(BaseValidationError):
     """Error on property group validation."""
 
-    def __init__(self, name: str, value: PropertyGroup, validation: list[str]):
-        super().__init__(PropertyGroupValidationError.message(name, value, validation))
-
     @classmethod
-    def message(cls, name, value, validation):
+    def message(cls, name: str, value: PropertyGroup, validation: list[str]) -> str:
         return (
             f"Property group for '{name}' must be of type '{validation}'. "
             f"Provided '{value.name}' of type '{value.property_group_type}'"
@@ -131,93 +97,29 @@ class PropertyGroupValidationError(BaseValidationError):
 
 
 class AtLeastOneValidationError(BaseValidationError):
-    def __init__(self, name: str, value: list[str]):
-        super().__init__(AtLeastOneValidationError.message(name, value))
+    """Error on at least one validation."""
 
     @classmethod
-    def message(cls, name, value, validation=None):
+    def message(cls, name: str, value: list[str], *_) -> str:
         opts = "'" + "', '".join(str(k) for k in value) + "'"
         return f"Must provide at least one {name}.  Options are: {opts}"
 
 
-class TypeUIDValidationError(BaseValidationError):
-    """Error on type uid validation."""
-
-    def __init__(self, name: str, value, validation: list[str]):
-        super().__init__(
-            TypeUIDValidationError.message(
-                name, value.default_type_uid(), list(validation)
-            )
-        )
-
-    @classmethod
-    def message(cls, name, value, validation):
-        return (
-            f"Type uid '{value}' provided for '{name}' is invalid."
-            + iterable_message(validation)
-        )
-
-
 class RequiredValidationError(BaseValidationError):
-    def __init__(self, name: str):
-        super().__init__(RequiredValidationError.message(name))
+    """Error on required parameter validation."""
 
     @classmethod
-    def message(cls, name, value=None, validation=None):
+    def message(cls, name: str, *_) -> str:
         return f"Missing required parameter: '{name}'."
-
-
-class InCollectionValidationError(BaseValidationError):
-    collection = "Collection"
-    item = "data"
-
-    def __init__(self, name: str, value: list[str]):
-        super().__init__(self.message(name, value))
-
-    @classmethod
-    def message(cls, name, value, validation=None):
-        _ = validation
-        return f"{cls.collection}: '{name}' is missing required {cls.item}(s): {value}."
-
-
-class RequiredFormMemberValidationError(InCollectionValidationError):
-    collection = "Form"
-    item = "member"
-
-
-class RequiredUIJsonParameterValidationError(InCollectionValidationError):
-    collection = "UIJson"
-    item = "parameter"
-
-
-class RequiredWorkspaceObjectValidationError(InCollectionValidationError):
-    collection = "Workspace"
-    item = "object"
-
-
-class RequiredObjectDataValidationError(BaseValidationError):
-    def __init__(self, name: str, value: list[tuple[str, str]]):
-        super().__init__(self.message(name, value))
-
-    @classmethod
-    def message(cls, name, value, validation=None):
-        _ = validation
-        return (
-            f"Workspace: '{name}' object(s) {[k[0] for k in value]} "
-            f"are missing required children {[k[1] for k in value]}."
-        )
 
 
 class ShapeValidationError(BaseValidationError):
     """Error on shape validation."""
 
-    def __init__(
-        self, name: str, value: tuple[int, ...], validation: tuple[int, ...] | str
-    ):
-        super().__init__(ShapeValidationError.message(name, value, validation))
-
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(
+        cls, name: str, value: tuple[int, ...], validation: tuple[int, ...] | str
+    ) -> str:
         return (
             f"Parameter '{name}' with shape {value} was provided. "
             f"Expected {validation}."
@@ -227,11 +129,8 @@ class ShapeValidationError(BaseValidationError):
 class TypeValidationError(BaseValidationError):
     """Error on type validation."""
 
-    def __init__(self, name: str, value: str, validation: str | list[str]):
-        super().__init__(TypeValidationError.message(name, value, validation))
-
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(cls, name: str, value: str, validation: str | list[str]) -> str:
         return f"Type '{value}' provided for '{name}' is invalid." + iterable_message(
             validation
         )
@@ -240,38 +139,50 @@ class TypeValidationError(BaseValidationError):
 class UUIDValidationError(BaseValidationError):
     """Error on uuid string validation."""
 
-    def __init__(self, name: str, value: str):
-        super().__init__(UUIDValidationError.message(name, value))
-
-    @staticmethod
-    def message(name, value, validation=None):
+    @classmethod
+    def message(cls, name: str, value: str, *_) -> str:
         return f"Parameter '{name}' with value '{value}' is not a valid uuid string."
 
 
 class ValueValidationError(BaseValidationError):
     """Error on value validation."""
 
-    def __init__(self, name: str, value: Any, validation: list[Any]):
-        super().__init__(ValueValidationError.message(name, value, validation))
-
-    @staticmethod
-    def message(name, value, validation):
+    @classmethod
+    def message(cls, name: str, value: Any, validation: list[Any]) -> str:
         return f"Value '{value}' provided for '{name}' is invalid." + iterable_message(
             validation
         )
 
 
-def iterable_message(valid: list[Any] | None) -> str:
-    """Append possibly iterable valid: "Must be (one of): {valid}."."""
-    if valid is None:
-        msg = ""
-    elif iterable(valid, checklen=True):
-        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
-        msg = f" Must be one of: {vstr}."
-    else:
-        msg = f" Must be: '{valid[0]}'."
+class MemoryValidationError(BaseValidationError):
+    """Error on memory validation."""
 
-    return msg
+    @classmethod
+    def message(cls, name: str, value: Any, validation: float) -> str:
+        return (
+            f"Parameter '{name}' with value '{value}' "
+            f"exceeds memory limit of {validation / 1e6} MB."
+        )
+
+
+def iterable_message(valid: str | list[Any] | None) -> str:
+    """
+    Append possibly iterable valid: "Must be (one of): {valid}".
+
+    :param valid: Valid value(s) to include in message. Can be a string, list of values, or None.
+
+    :return: Message string indicating valid value(s).
+    """
+
+    if valid is None:
+        return ""
+    if isinstance(valid, str):
+        return f" Must be: '{valid}'."
+    if iterable(valid, checklen=True):
+        vstr = "'" + "', '".join(str(k) for k in valid) + "'"
+        return f" Must be one of: {vstr}."
+
+    return f" Must be: '{valid[0]}'."
 
 
 def iterable(value: Any, checklen: bool = False) -> bool:

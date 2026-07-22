@@ -125,7 +125,7 @@ class VisualParameters(TextData):
         byte_string.join(f"{255:02x}")  # alpha value
         value = int.from_bytes(bytes.fromhex(byte_string), "little")
 
-        self.set_tag("Colour", str(value))
+        self.set_tags(colour=str(value))
 
     @property
     def filter_basement(self) -> None | float:
@@ -149,7 +149,7 @@ class VisualParameters(TextData):
         if not isinstance(value, (int, float)):
             raise TypeError("Input 'filter_basement' must be a number.")
 
-        self.set_tag("Filterbasement", str(value))
+        self.set_tags(filterbasement=str(value))
 
     def get_tag(self, tag: str) -> None | ET.Element:
         """
@@ -160,26 +160,19 @@ class VisualParameters(TextData):
         :return: The xml element.
         """
         element = self.xml.find(tag)
-        return element  # type: ignore
+        return element
 
-    def set_tag(self, tag: str, value: str):
+    def set_tags(self, **values: str):
         """
-        Set the value for the tag.
+        Set values for the tags stored as xml Elements.
 
-        :param tag: The name of the tag.
-        :param value: the value to set.
+        :param values: Dictionary of tag names and values.
         """
+        for tag, value in values.items():
+            element = self.xml.find(tag.capitalize())
+            if element is None:
+                element = ET.SubElement(self.xml, tag.capitalize())
 
-        if not isinstance(value, str):
-            raise TypeError(
-                f"Input 'value' for VisualParameters.{tag} must be of type {str}."
-            )
+            element.text = str(value)
 
-        if self.xml.find(tag) is None:
-            ET.SubElement(self.xml, tag)
-
-        element = self.get_tag(tag)
-
-        if element is not None:
-            element.text = value
-            self.workspace.update_attribute(self, "values")
+        self.workspace.update_attribute(self, "values")

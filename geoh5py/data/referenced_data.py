@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import cast
 
 import numpy as np
@@ -190,17 +191,17 @@ class ReferencedData(IntegerData):
 
         :param name: The name of the data map to remove.
         """
-
-        if self.data_maps is None or name not in self.data_maps:
+        data_maps = copy.copy(self.data_maps)
+        if data_maps is None or name not in data_maps:
             return
 
-        child = self.data_maps[name]
+        child = data_maps[name]
         child.allow_delete = True
         self.workspace.remove_entity(child)
         self.workspace.remove_entity(child.entity_type)
 
-        del self.data_maps[name]
-        self.data_maps = self._data_maps
+        del data_maps[name]
+        self.data_maps = data_maps
 
     def add_data_map(self, name: str, values: np.ndarray | dict, public: bool = True):
         """
@@ -212,3 +213,10 @@ class ReferencedData(IntegerData):
         """
         data = self.parent.add_data_map(self, name, values, public)
         return data
+
+    @property
+    def nan_value(self):
+        """
+        Nan-Data-Value
+        """
+        return 0

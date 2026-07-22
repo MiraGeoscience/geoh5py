@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -26,14 +26,17 @@ import uuid
 import numpy as np
 import pytest
 
-from geoh5py import Workspace
+from geoh5py import Workspace, groups, objects
 from geoh5py.objects import Points
 from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
+    ClassIdentifierEnum,
     as_str_if_uuid,
     box_intersect,
     dict_to_json_str,
+    equalize_string,
     inf2str,
+    map_to_class,
     mask_by_extent,
     nan2str,
     uuid_from_values,
@@ -69,7 +72,7 @@ def test_iterable_message():
 def test_mask_by_extent():
     corners = [[-1, -2], [4, 5], [2, 3]]
     points = [-100, 100, 0]
-    with pytest.raises(ValueError, match="Input 'extent' must be a 2D array-like."):
+    with pytest.raises(ValueError, match=r"Input 'extent' must be a 2D array-like\b"):
         mask_by_extent(np.vstack([points]), 1.0)
 
     with pytest.raises(
@@ -181,3 +184,18 @@ def test_uuid_from_values():
     data["key5"] = "abc"
 
     assert uid_a != uuid_from_values(data)
+
+
+def test_equalize_string():
+    assert equalize_string("Draped Model") == "drapedmodel"
+    assert equalize_string("GIFToolsProject") == "giftoolsproject"
+    assert equalize_string("points") == "points"
+
+
+def test_map_to_class():
+    mapper = map_to_class(ClassIdentifierEnum.DEFAULT_TYPE_UID, [objects, groups])
+    assert mapper[objects.Points.default_type_uid()] == objects.Points
+    assert mapper[groups.ContainerGroup.default_type_uid()] == groups.ContainerGroup
+    mapper = map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects, groups])
+    assert mapper[objects.DrapeModel._default_name] == objects.DrapeModel
+    assert mapper[groups.GiftoolsGroup._default_name] == groups.GiftoolsGroup

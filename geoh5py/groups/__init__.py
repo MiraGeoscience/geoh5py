@@ -51,7 +51,7 @@ from .integrator import (
 )
 from .interpretation_section import InterpretationSection
 from .notype import NoTypeGroup
-from .property_group import PropertyGroup
+from .property_group import PropertyGroup, GroupTypeEnum
 from .root import RootGroup
 from .simpeg import SimPEGGroup
 from .survey import AirborneGeophysics

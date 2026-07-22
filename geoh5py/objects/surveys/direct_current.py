@@ -248,6 +248,7 @@ class PotentialElectrode(BaseElectrode):
     """
 
     _TYPE_UID = uuid.UUID("{275ecee9-9c24-4378-bf94-65f3c5fbe163}")
+    _default_name = "PotentialElectrode"
     __TYPE = "Receivers"
 
     @property
@@ -298,7 +299,7 @@ class PotentialElectrode(BaseElectrode):
         return self
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE
 
@@ -309,6 +310,7 @@ class CurrentElectrode(BaseElectrode):
     """
 
     _TYPE_UID = uuid.UUID("{9b08bb5a-300c-48fe-9007-d206f971ea92}")
+    _default_name = "CurrentElectrode"
     __TYPE = "Transmitters"
 
     def __init__(self, **kwargs):
@@ -397,6 +399,6 @@ class CurrentElectrode(BaseElectrode):
         self._ab_cell_id = ab_cell_id
 
     @property
-    def type(self):
+    def type_name(self):
         """Survey element type"""
         return self.__TYPE

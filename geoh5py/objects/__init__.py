@@ -30,6 +30,7 @@ from .geo_image import GeoImage
 from .grid2d import Grid2D
 from .integrator import IntegratorPoints, NeighbourhoodSurface
 from .label import Label
+from .maxwell_plate import MaxwellPlate
 from .notype_object import NoTypeObject
 from .object_base import ObjectBase
 from .object_type import ObjectType
@@ -38,6 +39,10 @@ from .points import Points
 from .slicer import Slicer
 from .surface import Surface
 from .surveys.direct_current import CurrentElectrode, PotentialElectrode
+from .surveys.electromagnetics.airborne_app_con import (
+    AirborneAppConReceivers,
+    AirborneAppConBaseStations,
+)
 from .surveys.electromagnetics.airborne_fem import (
     AirborneFEMReceivers,
     AirborneFEMTransmitters,
@@ -67,6 +72,7 @@ from .surveys.electromagnetics.ground_tem import (
 )
 from .surveys.electromagnetics.magnetotellurics import MTReceivers
 from .surveys.electromagnetics.tipper import TipperBaseStations, TipperReceivers
-from .surveys.magnetics import AirborneMagnetics
+from .surveys.gravity import AirborneGravity, GroundGravity
+from .surveys.magnetics import AirborneMagnetics, GroundMagnetics
 from .text import TextObject
 from .vp_model import VPModel

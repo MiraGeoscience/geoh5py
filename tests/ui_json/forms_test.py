@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -20,39 +20,49 @@
 
 from __future__ import annotations
 
+import json
 import uuid
+from typing import Any  # nopycln: import
 
 import numpy as np
 import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
-from geoh5py.groups import PropertyGroup
-from geoh5py.objects import Curve, Points, Surface
+from geoh5py.data import DataAssociationEnum, DataTypeEnum
+from geoh5py.groups import GroupTypeEnum, PropertyGroup
+from geoh5py.objects import Curve, DrapeModel, Points, Surface
 from geoh5py.ui_json.forms import (
-    Association,
     BaseForm,
     BoolForm,
     ChoiceForm,
     DataForm,
-    DataType,
+    DataGroupForm,
+    DataOrValueForm,
+    DataRangeForm,
+    DirectoryForm,
     FileForm,
     FloatForm,
     GroupForm,
+    GroupMultiDataForm,
     IntegerForm,
     MultiChoiceForm,
+    MultiFileForm,
+    MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
     StringForm,
+    all_subclasses,
+    indicator_attributes,
 )
 from geoh5py.ui_json.ui_json import BaseUIJson
 
 
 def setup_from_uijson(workspace, form):
-    class MyUIJson(BaseUIJson):
+    class MyBaseUIJson(BaseUIJson):
         my_param: type(form)
 
-    uijson = MyUIJson.model_construct(
+    uijson = MyBaseUIJson.model_construct(
         version="blahblah",
         title="my title",
         geoh5=workspace.h5file,
@@ -62,31 +72,35 @@ def setup_from_uijson(workspace, form):
         my_param=form,
     )
     uijson.write(workspace.h5file.parent / "test.ui.json")
-    uijson = MyUIJson.read(workspace.h5file.parent / "test.ui.json")
+    uijson = MyBaseUIJson.read(workspace.h5file.parent / "test.ui.json")
     return uijson.my_param
 
 
-def test_base_form():
-    form = BaseForm(label="name", value="test")
+@pytest.fixture
+def sample_form():
+    class MyForm(BaseForm):
+        @staticmethod
+        def type_check(form):
+            return False
+
+    return MyForm
+
+
+def test_base_form(sample_form):
+    form = sample_form(label="name", value="test")
     assert form.label == "name"
     assert form.value == "test"
     assert form.model_fields_set == {"label", "value"}
 
 
-def test_base_form_config_extra():
-    form = BaseForm(label="name", value="test", extra="stuff")
+def test_base_form_config_extra(sample_form):
+    form = sample_form(label="name", value="test", extra="stuff")
     assert form.extra == "stuff"
     assert form.model_extra == {"extra": "stuff"}
 
 
-def test_base_form_config_frozen():
-    form = BaseForm(label="name", value="test")
-    with pytest.raises(ValidationError, match="Instance is frozen"):
-        form.label = "new"
-
-
-def test_base_form_config_alias():
-    form = BaseForm(
+def test_base_form_config_alias(sample_form):
+    form = sample_form(
         label="name",
         value="test",
         dependency="my_param",
@@ -98,13 +112,13 @@ def test_base_form_config_alias():
     assert not hasattr(form, "dependencyType")
 
     with pytest.raises(ValidationError, match="dependencyType"):
-        form = BaseForm(
+        _ = sample_form(
             label="name", value="test", dependency="my_param", dependencyType=1
         )
 
 
-def test_dependency_type_enum():
-    form = BaseForm(
+def test_dependency_type_enum(sample_form):
+    form = sample_form(
         label="name", value="test", dependency="my_param", dependency_type="enabled"
     )
     assert form.dependency_type == "enabled"
@@ -112,27 +126,18 @@ def test_dependency_type_enum():
     with pytest.raises(
         ValidationError, match="Input should be 'enabled', 'disabled', 'show' or 'hide'"
     ):
-        _ = BaseForm(
+        _ = sample_form(
             label="name", value="test", dependency="my_param", dependency_type="invalid"
         )
 
 
-def test_base_form_serieralization():
-    form = BaseForm(label="name", value="test", extra="stuff")
+def test_base_form_serieralization(sample_form):
+    form = sample_form(label="name", value="test", extra="stuff")
     json = form.json_string
     assert all(k in json for k in ["label", "value", "extra"])
-    form = BaseForm(label="name", value="test", dependency_type="disabled")
+    form = sample_form(label="name", value="test", dependency_type="disabled")
     json = form.json_string
     assert "dependencyType" in json
-
-
-def test_hide_dependency_type(tmp_path):
-    with Workspace.create(tmp_path / "test.geoh5") as ws:
-        form = StringForm(
-            label="name", value="test", dependency="my_param", dependency_type="show"
-        )
-        form = setup_from_uijson(ws, form)
-        assert form.dependency_type == "show"
 
 
 def test_string_form():
@@ -211,7 +216,7 @@ def test_multi_choice_form():
     assert form.value == ["test"]
     assert '"value":["test"]' in form.json_string
 
-    with pytest.raises(ValidationError, match="multi_select: True."):
+    with pytest.raises(ValidationError, match=r"multi_select: True\."):
         _ = MultiChoiceForm(
             label="names",
             value="test",
@@ -222,12 +227,12 @@ def test_multi_choice_form():
 
 def test_file_form(tmp_path):
     with Workspace.create(tmp_path / "test.geoh5") as geoh5:
-        paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
-        _ = [p.touch() for p in paths]
+        filepath = tmp_path / "my_file.ext"
+        filepath.touch()
 
         file_form = FileForm(
             label="file",
-            value=paths[0],
+            value=filepath,
             file_description=["something"],
             file_type=["ext"],
         )
@@ -235,91 +240,101 @@ def test_file_form(tmp_path):
         file_form = setup_from_uijson(geoh5, file_form)
 
         assert file_form.label == "file"
-        assert file_form.value == [paths[0]]
+        assert file_form.value == filepath
         assert file_form.file_description == ["something"]
         assert file_form.file_type == ["ext"]
-        assert not file_form.file_multi
         assert 'my_file.ext",' in file_form.json_string
 
-        file_form = FileForm(
+    with pytest.raises(ValidationError, match="has an invalid extension"):
+        _ = FileForm(
             label="file",
-            value=";".join([str(p) for p in paths]),
+            value=tmp_path / "my_file.ext",
+            file_description=["something"],
+            file_type=["wrong_ext"],
+        )
+
+
+def test_multi_file_form(tmp_path):
+    with Workspace.create(tmp_path / "test.geoh5") as geoh5:
+        paths = [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"]
+        _ = [p.touch() for p in paths]
+
+        multi_file_form = MultiFileForm(
+            label="Files",
+            value=[str(p) for p in paths],
+            file_description=["something"],
+            file_type=["ext"],
+            file_multi=None,
+        )
+
+        multi_file_form = setup_from_uijson(geoh5, multi_file_form)
+
+        assert multi_file_form.label == "Files"
+        assert multi_file_form.value == paths
+        assert multi_file_form.file_description == ["something"]
+        assert multi_file_form.file_type == ["ext"]
+        assert multi_file_form.file_multi
+        assert (
+            "my_file.ext;C:" in multi_file_form.json_string
+            or "my_file.ext;/tmp" in multi_file_form.json_string
+        )
+
+    with pytest.raises(ValidationError, match="does not exist"):
+        _ = MultiFileForm(
+            label="Files",
+            value=[str(tmp_path / "non_existent.ext")],
             file_description=["something"],
             file_type=["ext"],
             file_multi=True,
         )
-        file_form = setup_from_uijson(geoh5, file_form)
 
-        assert file_form.label == "file"
-        assert file_form.value == paths
-        assert file_form.file_description == ["something"]
-        assert file_form.file_type == ["ext"]
-        assert file_form.file_multi
+    with pytest.raises(ValidationError, match="must be the same length"):
+        _ = MultiFileForm(
+            label="Files",
+            value=[str(p) for p in paths],
+            file_description=["something"],
+            file_type=["ext", "extra"],
+            file_multi=True,
+        )
 
-        msg = "does not exist"
-        with pytest.raises(ValidationError, match=msg):
-            form = FileForm.model_construct(
-                label="file",
-                value=str(tmp_path / "not_a_file.ext"),
-                file_description=["something"],
-                file_type=["ext"],
-            )
-            setup_from_uijson(geoh5, form)
-
-        msg = "File description and type lists must be the same length"
-        with pytest.raises(ValidationError, match=msg):
-            form = FileForm.model_construct(
-                label="file",
-                value=[paths[0]],
-                file_description=["something", "else"],
-                file_type=["ext"],
-            )
-            setup_from_uijson(geoh5, form)
-
-        msg = "have invalid extensions"
-        with pytest.raises(ValidationError, match=msg):
-            form = FileForm.model_construct(
-                label="file",
-                value=[paths[0]],
-                file_description=["something"],
-                file_type=["doc"],
-            )
-            setup_from_uijson(geoh5, form)
+    with pytest.raises(ValidationError, match="have invalid extensions"):
+        _ = MultiFileForm(
+            label="Files",
+            value=[str(p) for p in paths],
+            file_description=["something"],
+            file_type=["wrong_ext"],
+            file_multi=True,
+        )
 
 
 def test_directory_form(tmp_path):
-    file_form = FileForm(
-        label="working directory",
-        file_description=["Directory"],
-        file_type=["directory"],
-        directory_only=True,
-        value=str(tmp_path),
-    )
     with Workspace.create(tmp_path / "test.geoh5") as geoh5:
+        file_form = DirectoryForm(
+            label="working directory",
+            file_description=["anything"],
+            file_type=["clueless"],
+            directory_only=False,
+            value=str(tmp_path),
+        )
         file_form = setup_from_uijson(geoh5, file_form)
-        assert file_form.value[0] == tmp_path
+        assert file_form.value == tmp_path
+        assert file_form.file_type == ["directory"]
+        assert file_form.file_description == ["Directory"]
+        assert file_form.directory_only
 
-        with pytest.raises(ValidationError, match="File type must be"):
-            file_form = FileForm.model_construct(
-                label="working directory",
-                file_description=["Directory"],
-                file_type=["ext"],
-                directory_only=True,
-                value=[str(tmp_path)],
-            )
-            file_form = setup_from_uijson(geoh5, file_form)
-            assert True
+    with pytest.raises(ValidationError, match="is not a valid directory"):
+        filepath = tmp_path / "my_file.ext"
+        filepath.touch()
+        _ = DirectoryForm(
+            label="working directory",
+            value=tmp_path / "my_file.ext",
+        )
 
-        with pytest.raises(ValidationError, match="File description must be"):
-            file_form = FileForm(
-                label="working directory",
-                file_description=["something else"],
-                file_type=["directory"],
-                directory_only=True,
-                value=[str(tmp_path)],
-            )
-            file_form = setup_from_uijson(geoh5, file_form)
-            assert True
+    with pytest.raises(ValidationError, match="is not a valid directory"):
+        _ = DirectoryForm(
+            label="working directory",
+            value=tmp_path / "non_existent_dir",
+        )
 
 
 def test_object_form():
@@ -366,6 +381,28 @@ def test_object_form_mesh_type():
     )
     assert form.mesh_type == [Points, Curve]
 
+    form = ObjectForm(label="name", value=obj_uid, mesh_type="Points")
+    assert form.mesh_type == [Points]
+
+    form = ObjectForm(label="name", value=obj_uid, mesh_type=["Points", "Curve"])
+    assert form.mesh_type == [Points, Curve]
+
+    form = ObjectForm(
+        label="name",
+        value=obj_uid,
+        mesh_type=[
+            "Draped Model",
+            "Draped model",
+            "draped Model",
+            "DrapedModel",
+            "drapedmodel",
+        ],
+    )
+    assert form.mesh_type == [DrapeModel] * 5
+
+    with pytest.raises(ValidationError, match="not a recognized geoh5py object"):
+        _ = ObjectForm(label="name", value=obj_uid, mesh_type="DrapeModel")
+
 
 def test_object_form_mesh_type_as_classes(tmp_path):
     ws = Workspace(tmp_path / "test.geoh5")
@@ -378,6 +415,10 @@ def test_object_form_mesh_type_as_classes(tmp_path):
     )
 
     assert isinstance(ws.get_entity(form.value)[0], tuple(form.mesh_type))
+
+    form_entity = ObjectForm(label="name", value=points, mesh_type=[Points])
+
+    assert form.value == form_entity.value
 
 
 def test_object_form_empty_string_handling():
@@ -397,8 +438,8 @@ def test_data_form():
     assert form.label == "name"
     assert form.value == uuid.UUID(data_uid)
     assert form.parent == "my_param"
-    assert form.association == "Vertex"
-    assert form.data_type == "Float"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
 
     form = DataForm(
         label="name",
@@ -407,35 +448,226 @@ def test_data_form():
         association=["Vertex", "Cell"],
         data_type=["Float", "Integer"],
     )
-    assert form.association == [Association.VERTEX, Association.CELL]
-    assert form.data_type == [DataType.FLOAT, DataType.INTEGER]
+    assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
+    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
 
-    with pytest.raises(
-        ValidationError, match="Value must be numeric if is_value is True."
-    ):
-        _ = DataForm(
-            label="name",
-            value=data_uid,
-            parent="my_param",
-            association="Vertex",
-            data_type="Float",
-            is_value=True,
-        )
+    data_uid_2 = str(uuid.uuid4())
+    form = DataForm(
+        label="name",
+        value=[data_uid, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+    )
+    assert form.value == [uuid.UUID(data_uid), uuid.UUID(data_uid_2)]
+
+
+def test_data_group_form():
+    group_uid = str(uuid.uuid4())
+    form = DataGroupForm(
+        label="name",
+        value=group_uid,
+        data_group_type="Strike & dip",
+        parent="Da-da",
+        association=["Vertex", "Cell"],
+        data_type=["Float", "Integer"],
+    )
+    assert form.label == "name"
+    assert form.value == uuid.UUID(group_uid)
+    assert form.data_group_type == GroupTypeEnum.STRIKEDIP
+    assert form.parent == "Da-da"
+    assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
+    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
+
+
+def test_data_or_value_form():
+    data_uid = str(uuid.uuid4())
+    form = DataOrValueForm(
+        label="name",
+        value=0.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        is_value=False,
+        property=data_uid,
+    )
+    assert form.label == "name"
+    assert form.value == 0.0
+    assert form.parent == "my_param"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
+    assert not form.is_value
+    assert form.property == uuid.UUID(data_uid)
+
     with pytest.raises(
         ValidationError, match="A property must be provided if is_value is used"
     ):
-        _ = DataForm(
+        _ = DataOrValueForm(
             label="name",
             value=1.0,
             parent="my_param",
             association="Vertex",
             data_type="Float",
             is_value=False,
+            property="",
         )
 
+    form.set_value(None)
+    assert form.is_value
 
-def test_flatten():
-    param = BaseForm(label="my_param", value=2)
+    optional_form = DataOrValueForm(
+        label="name",
+        value=1.0,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        is_value=True,
+        property="",
+        optional=True,
+    )
+    assert optional_form.enabled
+    optional_form.set_value(None)
+    assert optional_form.is_value
+
+    optional_form.set_value(data_uid)
+    assert not optional_form.is_value
+    assert optional_form.property == uuid.UUID(data_uid)
+
+    form.set_value(2)
+    assert form.value == 2
+
+
+def test_multichoice_data_form():
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_uid_1,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+    assert form.label == "name"
+    assert form.value == uuid.UUID(data_uid_1)
+    assert form.parent == "my_param"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+    assert form.value == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
+
+    ws = Workspace()
+    obj = Points.create(ws, vertices=np.random.randn(100, 3))
+    data_list = obj.add_data(
+        {f"data{i}": {"values": np.random.randn(100)} for i in range(5)}
+    )
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_list,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+
+    assert len(data_list) == len(form.value)
+    assert all(
+        data.uid == val for data, val in zip(data_list, form.value, strict=False)
+    )
+
+
+def test_multichoice_data_form_serialization():
+    data_uid_1 = f"{{{uuid.uuid4()!s}}}"
+    data_uid_2 = f"{{{uuid.uuid4()!s}}}"
+    form = MultiSelectDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+    data = json.loads(form.model_dump_json())
+    assert data["value"] == [data_uid_1, data_uid_2]
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=data_uid_1,
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+    data = form.model_dump()
+    assert data["value"] == uuid.UUID(data_uid_1)
+
+    form = MultiSelectDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        multi_select=True,
+    )
+    data = form.model_dump()
+    assert data["value"] == [uuid.UUID(data_uid_1), uuid.UUID(data_uid_2)]
+
+
+def test_data_range_form():
+    data_uid = str(uuid.uuid4())
+    form = DataRangeForm(
+        label="name",
+        property=data_uid,
+        value=[0.0, 1.0],
+        parent="my_param",
+        association="Vertex",
+        data_type="Float",
+        range_label="value range",
+    )
+    assert form.label == "name"
+    assert form.property == uuid.UUID(data_uid)
+    assert form.value == [0.0, 1.0]
+    assert form.parent == "my_param"
+    assert form.association.name == "VERTEX"
+    assert form.data_type.name == "FLOAT"
+    assert form.range_label == "value range"
+
+    assert isinstance(form.flatten(), dict)
+    assert (
+        set(form.flatten()).difference({"is_complement", "property", "value"}) == set()
+    )
+
+    # Set only the range
+    form.set_value([0.5, 1.5])
+    assert form.value == [0.5, 1.5]
+
+    # Set only the property
+    form.set_value(None)
+    assert form.property is None
+
+    # Set value as coming from form.flatten()
+    values = {
+        "is_complement": False,
+        "property": uuid.uuid4(),
+        "value": [0.0, 1.0],
+    }
+    form.set_value(values)
+
+    assert all(val == getattr(form, key) for key, val in values.items())
+
+
+def test_flatten(sample_form):
+    param = sample_form(label="my_param", value=2)
     assert param.flatten() == 2
 
     data_uid = str(uuid.uuid4())
@@ -448,18 +680,18 @@ def test_flatten():
     )
     assert str(form.flatten()) == data_uid
 
-    form = DataForm(
+    form = DataOrValueForm(
         label="name",
         value=0.0,
         parent="my_param",
         association="Vertex",
         data_type="Float",
-        property="",
+        property=uuid.uuid4(),
         is_value=True,
     )
     assert form.flatten() == 0.0
 
-    form = DataForm(
+    form = DataOrValueForm(
         label="name",
         value=0.0,
         parent="my_param",
@@ -475,46 +707,23 @@ def test_flatten():
 def test_base_form_infer(tmp_path):
     form = BaseForm.infer({"label": "test", "value": "test"})
     assert form == StringForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": "test",
+            "original_label": "test",
+            "alternate_label": "test",
+        }
+    )
+    assert form == RadioLabelForm
+    form = BaseForm.infer({"label": "test", "value": True})
+    assert form == BoolForm
     form = BaseForm.infer({"label": "test", "value": 1})
     assert form == IntegerForm
     form = BaseForm.infer({"label": "test", "value": 1.0})
     assert form == FloatForm
-    form = BaseForm.infer({"label": "test", "value": True})
-    assert form == BoolForm
     form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]}
-    )
-    assert form == ObjectForm
-    form = BaseForm.infer(
-        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points}
-    )
-    assert form == ObjectForm
-    form = BaseForm.infer(
-        {
-            "label": "test",
-            "value": str(uuid.uuid4()),
-            "parent": "my_param",
-            "association": "Vertex",
-            "dataType": "Float",
-        }
-    )
-    assert form == DataForm
-    form = BaseForm.infer(
-        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())}
-    )
-    assert form == GroupForm
-    form = BaseForm.infer(
-        {
-            "label": "test",
-            "value": tmp_path,
-            "directoryOnly": True,
-            "fileType": ["ext"],
-            "fileDescription": ["something"],
-        }
-    )
-    assert form == FileForm
-    form = BaseForm.infer(
-        {"label": "test", "value": "test", "choiceList": ["test", "other"]}
+        {"label": "test", "value": "test", "choiceList": ["test", "other"]},
     )
     assert form == ChoiceForm
     form = BaseForm.infer(
@@ -523,6 +732,209 @@ def test_base_form_infer(tmp_path):
             "multiSelect": True,
             "value": ["test", "other"],
             "choice_list": ["test", "other", "another"],
-        }
+        },
     )
     assert form == MultiChoiceForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": tmp_path / "my_file.ext",
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
+        }
+    )
+    assert form == FileForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": [tmp_path / "my_file.ext", tmp_path / "my_other_file.ext"],
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
+            "fileMulti": True,
+        }
+    )
+    assert form == MultiFileForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": tmp_path,
+            "directoryOnly": True,
+            "fileType": ["ext"],
+            "fileDescription": ["something"],
+        },
+    )
+    assert form == DirectoryForm
+    form = BaseForm.infer(
+        {"label": "test", "value": str(uuid.uuid4()), "meshType": [Points]},
+    )
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {"label": "test", "value": str(uuid.uuid4()), "mesh_type": Points},
+    )
+    assert form == ObjectForm
+    form = BaseForm.infer(
+        {"label": "test", "groupType": PropertyGroup, "value": str(uuid.uuid4())},
+    )
+    assert form == GroupForm
+    form = BaseForm.infer(
+        {
+            "group": "Output preferences",
+            "label": "UIJson group",
+            "value": "",  # value is null as enabled is false
+            "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+            "visible": True,
+            "optional": True,
+            "enabled": False,
+        }
+    )
+    assert form == GroupForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+        },
+    )
+    assert form == DataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "dataGroupType": "Strike & dip",
+        }
+    )
+    assert form == DataGroupForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": "bidon",
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "groupType": [PropertyGroup],
+            "groupValue": str(uuid.uuid4()),
+            "multiSelect": False,
+        }
+    )
+    assert form == GroupMultiDataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "multiselect": True,
+            "groupType": PropertyGroup,
+            "groupValue": str(uuid.uuid4()),
+            "dataType": "Float",
+            "value": ["bidon"],
+        }
+    )
+    assert form == GroupMultiDataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": str(uuid.uuid4()),
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "isValue": True,
+            "property": str(uuid.uuid4()),
+        },
+    )
+    assert form == DataOrValueForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "value": [str(uuid.uuid4()), str(uuid.uuid4())],
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "multiSelect": True,
+        },
+    )
+    assert form == MultiSelectDataForm
+    form = BaseForm.infer(
+        {
+            "label": "test",
+            "property": str(uuid.uuid4()),
+            "value": [0.0, 1.0],
+            "parent": "my_param",
+            "association": "Vertex",
+            "dataType": "Float",
+            "rangeLabel": "value range",
+        },
+    )
+    assert form == DataRangeForm
+
+
+def test_indicator_attributes():
+    # IntegerForm adds 'min' and 'max' compared to BaseForm, both with defaults
+    full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [IntegerForm])
+    assert full_diffs[0] == {"min", "max"}
+    assert mandatory_diffs[0] == set()
+
+    # DataForm adds 'parent', 'association', 'data_type' via DataFormMixin
+    full_diffs, mandatory_diffs = indicator_attributes(BaseForm, [DataForm])
+    assert full_diffs[0] == mandatory_diffs[0] == {"parent", "association", "data_type"}
+
+    # Multiple children: result lists have one entry per child
+    full_diffs, mandatory_diffs = indicator_attributes(
+        BaseForm, [IntegerForm, DataForm]
+    )
+    assert full_diffs[0] == {"min", "max"}
+    assert full_diffs[1] == {"parent", "association", "data_type"}
+    assert len(mandatory_diffs) == 2
+
+
+def test_all_subclasses():
+    class TestOne:
+        pass
+
+    class TestTwo(TestOne):
+        pass
+
+    class TestThree(TestTwo):
+        pass
+
+    class TestFour(TestOne):
+        pass
+
+    assert len(all_subclasses(TestOne)) == 3
+    assert all(k in all_subclasses(TestOne) for k in [TestTwo, TestThree, TestFour])
+    assert len(all_subclasses(TestTwo)) == 1
+    assert all_subclasses(TestTwo)[0] == TestThree
+    assert all_subclasses(TestThree) == []
+    assert all_subclasses(TestFour) == []
+
+
+def test_multi_data_group_form():
+    group_uid = str(uuid.uuid4())
+    data_uid_1 = str(uuid.uuid4())
+    data_uid_2 = str(uuid.uuid4())
+    form = GroupMultiDataForm(
+        label="name",
+        value=[data_uid_1, data_uid_2],
+        group_type=PropertyGroup,
+        data_type=["Float", "Integer"],
+        group_value=group_uid,
+        multi_select=True,
+        tooltip=["some ", "tooltip ", "text"],
+    )
+    assert form.label == "name"
+    assert form.value == [data_uid_1, data_uid_2]
+    assert form.group_value == uuid.UUID(group_uid)
+    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
+    assert form.multi_select
+    assert form.tooltip == ["some ", "tooltip ", "text"]
+
+    with pytest.raises(TypeError, match="'value' must be a list"):
+        _ = GroupMultiDataForm(
+            label="name",
+            value=data_uid_1,
+            group_type=PropertyGroup,
+            data_type="Float",
+            group_value=group_uid,
+        )
