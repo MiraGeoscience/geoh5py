@@ -219,10 +219,12 @@ class PointsModel(PydanticEntity):
         """
         Build a PointsModel with vertices loaded lazily from an array source.
         """
-        return cls(
-            uid=uid,
-            vertices=LazyArray(source, uid, key, validator=[]),
-            **attributes,
+        return cls.model_validate(
+            {
+                **attributes,
+                "uid": uid,
+                "vertices": LazyArray(source, uid, key, validator=[]),
+            }
         )
 
     @classmethod
