@@ -61,11 +61,23 @@ def _merge_model_input(
         values.update(supplied.model_dump())
         return
 
+    consumed = set()
     for field_name, field in model_type.model_fields.items():
         for input_name in _field_input_names(field_name, field):
             if input_name in supplied:
                 values[field_name] = supplied[input_name]
+                consumed.add(input_name)
                 break
+
+    # Preserve unknown nested keys so ``extra="forbid"`` reports them instead
+    # of silently dropping values that cannot be written.
+    values.update(
+        {
+            input_name: input_value
+            for input_name, input_value in supplied.items()
+            if input_name not in consumed
+        }
+    )
 
 
 def _pop_model_input(
@@ -180,7 +192,7 @@ class PydanticEntity(BaseModel):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        extra="allow",
+        extra="forbid",
         populate_by_name=True,
         validate_assignment=True,
     )
@@ -216,7 +228,7 @@ class PydanticEntity(BaseModel):
             Attributes,
         )
         nested_attributes = values.get("attributes")
-        if isinstance(nested_attributes, Attributes | Mapping):
+        if isinstance(nested_attributes, (Attributes | Mapping)):
             _merge_model_input(
                 attribute_values,
                 nested_attributes,
@@ -229,14 +241,14 @@ class PydanticEntity(BaseModel):
         supplied_type_uid = _pop_type_uid(values)
         supplied_entity_type = values.get("entity_type")
         if supplied_type_uid is not None or isinstance(
-            supplied_entity_type, EntityType | Mapping
+            supplied_entity_type, (EntityType | Mapping)
         ):
             type_values, default_entity_type = _default_model_values(
                 cls,
                 "entity_type",
                 EntityType,
             )
-            if isinstance(supplied_entity_type, EntityType | Mapping):
+            if isinstance(supplied_entity_type, (EntityType | Mapping)):
                 entity_type_model = (
                     type(default_entity_type)
                     if isinstance(default_entity_type, EntityType)

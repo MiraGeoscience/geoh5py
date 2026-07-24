@@ -26,6 +26,7 @@ from uuid import uuid4
 import h5py
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
@@ -107,6 +108,40 @@ def test_points_model_owns_attributes_and_entity_type():
     assert explicitly_nested.allow_move is False
     assert explicitly_nested.entity_type.name == "Custom points"
     assert explicitly_nested.entity_type.description == "Custom type description"
+
+
+@pytest.mark.parametrize(
+    ("extra_input", "expected_location"),
+    [
+        ({"unknown_entity_field": 1}, ("unknown_entity_field",)),
+        (
+            {"attributes": {"Unknown attribute": 1}},
+            ("attributes", "Unknown attribute"),
+        ),
+        (
+            {"entity_type": {"Unknown type field": 1}},
+            ("entity_type", "Unknown type field"),
+        ),
+    ],
+)
+def test_points_model_rejects_unserialized_extra_fields(
+    extra_input,
+    expected_location,
+):
+    """Unknown values must fail validation rather than disappear on write."""
+    with pytest.raises(ValidationError) as error:
+        PointsModel.model_validate(
+            {
+                "vertices": [[1.0, 2.0, 3.0]],
+                **extra_input,
+            }
+        )
+
+    assert expected_location in {
+        tuple(validation_error["loc"])
+        for validation_error in error.value.errors()
+        if validation_error["type"] == "extra_forbidden"
+    }
 
 
 def test_write_points_model(tmp_path):

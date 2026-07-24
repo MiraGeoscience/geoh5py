@@ -28,7 +28,11 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 class NamedIdentity(BaseModel):
     """Common aliased identity fields for entities and entity types."""
 
-    model_config = ConfigDict(populate_by_name=True, validate_assignment=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        validate_assignment=True,
+    )
 
     uid: UUID = Field(
         default_factory=uuid4,
