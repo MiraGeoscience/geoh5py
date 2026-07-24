@@ -27,11 +27,24 @@ import numpy as np
 from pydantic import AliasChoices, Field, field_serializer, field_validator
 
 from .arrays import ArraySource, LazyArray
-from .entity import PydanticEntity
+from .entity import Attributes, PydanticEntity
+from .entity_type import ObjectType
 
 
 POINTS_TYPE_UID = UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
+
+
+def _default_points_attributes() -> Attributes:
+    return Attributes(name="Points")
+
+
+def _default_points_type() -> ObjectType:
+    return ObjectType(
+        uid=POINTS_TYPE_UID,
+        name="Points",
+        description="Points",
+    )
 
 
 def _coerce_vertices_dtype(value: Any) -> Any:
@@ -67,44 +80,13 @@ class PointsModel(PydanticEntity):
     supplied directly or as :class:`LazyArray` instances backed by an adapter.
     """
 
-    # The legacy writer derives these locations from isinstance(ObjectBase) and
-    # isinstance(ObjectType); declaring them on the model removes that coupling.
-    geoh5_collection: ClassVar[str] = "Objects"
-    geoh5_type_collection: ClassVar[str] = "Object types"
-
-    # Legacy ObjectType metadata can depend on the first entity written. A
-    # stable class-level name makes the file independent of entity write order.
-    geoh5_type_name: ClassVar[str] = "Points"
-    geoh5_type_description: ClassVar[str] = "Points"
-
-    # For attribute and dataset maps, copy base entity map and add object-specific attributes
-    _attribute_map: ClassVar[dict[str, str]] = {
-        **PydanticEntity._attribute_map,
-        "Last focus": "last_focus",
-    }
-
     _dataset_map: ClassVar[dict[str, str]] = {
         **PydanticEntity._dataset_map,
         "Vertices": "vertices",
     }
 
-    type_uid: UUID = Field(
-        default=POINTS_TYPE_UID,
-        validation_alias=AliasChoices(
-            "type_uid", "Type ID", "Object Type ID", "Data Type ID"
-        ),
-        serialization_alias="Object Type ID",
-    )
-    name: str = Field(
-        default="Points",
-        validation_alias=AliasChoices("name", "Name"),
-        serialization_alias="Name",
-    )
-    last_focus: str = Field(
-        default="None",
-        validation_alias=AliasChoices("last_focus", "Last focus"),
-        serialization_alias="Last focus",
-    )
+    attributes: Attributes = Field(default_factory=_default_points_attributes)
+    entity_type: ObjectType = Field(default_factory=_default_points_type)
     vertices: LazyArray = Field(
         default=None,
         validate_default=True,
@@ -258,21 +240,19 @@ class PointsModel(PydanticEntity):
             **overrides,
         )
 
-    def model_dump_geoh5_attributes(self) -> dict[str, Any]:
-        """
-        Dump the geoh5 attributes for this points object.
-        """
-        return self.geoh5_attributes()
-
     def model_dump_everything(self) -> dict[str, Any]:
         """
-        Method just for example cases where being able to dump everything like a previous version
-        of the model_dump_geoh5_attributes method would be useful for notebook display
-
+        Return the three serialization categories for notebook inspection.
         """
         return {
-            "attributes": self.geoh5_attributes(),
-            "datasets": self.geoh5_datasets(),
-            "type_uid": self.type_uid,
+            "attributes": self._attributes_value().model_dump(
+                by_alias=True,
+                exclude_none=True,
+            ),
+            "datasets": self.h5_datasets(),
+            "entity_type": self._entity_type_value().model_dump(
+                by_alias=True,
+                exclude_none=True,
+            ),
             "parent_uid": self.parent_uid,
         }

@@ -85,44 +85,33 @@ class Geoh5EntityPayload:
     @classmethod
     def from_model(cls, model: PydanticEntity) -> Geoh5EntityPayload:
         """Build a format-facing payload from a workspace-free model."""
-        # read the model's placement declarations, raise error if one isn't provided.
-        collection = model.geoh5_collection
-        type_collection = model.geoh5_type_collection
-        type_name = model.geoh5_type_name
+        # The entity type owns both its HDF5 placement and shared attributes.
+        entity_type = model.entity_type
+        collection = entity_type.h5_collection
+        type_collection = entity_type.h5_type_collection
 
         if collection is None:
-            raise ValueError(f"{type(model).__name__} must declare 'geoh5_collection'.")
+            raise ValueError(
+                f"{type(entity_type).__name__} must declare 'h5_collection'."
+            )
 
         if type_collection is None:
             raise ValueError(
-                f"{type(model).__name__} must declare 'geoh5_type_collection'."
+                f"{type(entity_type).__name__} must declare 'h5_type_collection'."
             )
-
-        if model.type_uid is None:
-            raise ValueError(
-                f"{type(model).__name__} must have a type_uid to be saved."
-            )
-
-        if type_name is None:
-            raise ValueError(f"{type(model).__name__} must declare 'geoh5_type_name'.")
-
-        # EntityType uses Description, ID, and Name in the legacy writer. Have to supply
-        # these here because no workspace-owned ObjectType exists.
-        type_attributes = {
-            "Description": model.geoh5_type_description or type_name,
-            "ID": model.type_uid,
-            "Name": type_name,
-        }
 
         return cls(
             collection=collection,
             type_collection=type_collection,
             uid=model.uid,
-            type_uid=model.type_uid,
+            type_uid=entity_type.uid,
             parent_uid=model.parent_uid,
-            attributes=model.geoh5_attributes(),
-            datasets=model.geoh5_datasets(),  # model field serialization occurs here
-            type_attributes=type_attributes,
+            attributes=model.attributes.model_dump(
+                by_alias=True,
+                exclude_none=True,
+            ),
+            datasets=model.h5_datasets(),
+            type_attributes=entity_type.h5_attributes(),
         )
 
 

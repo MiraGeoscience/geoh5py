@@ -32,9 +32,11 @@ from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 from geoh5py_pydantic import (
     VERTICES_DTYPE,
+    Attributes,
     CallableArraySource,
     Geoh5EntityPayload,
     Geoh5Writer,
+    ObjectType,
     PointsModel,
 )
 
@@ -51,6 +53,60 @@ def _initialize_geoh5_file(path: Path, *, with_parent: bool = False):
 
 def _as_text(value):
     return value.decode("utf-8") if isinstance(value, bytes) else value
+
+
+def test_points_model_owns_attributes_and_entity_type():
+    """Nested models own HDF5 fields without losing the flat Points API."""
+    uid = uuid4()
+    type_uid = uuid4()
+    model = PointsModel.model_validate(
+        {
+            "ID": uid,
+            "Name": "Nested points",
+            "Object Type ID": type_uid,
+            "Allow move": False,
+            "Last focus": "Camera 1",
+            "vertices": [[1.0, 2.0, 3.0]],
+        }
+    )
+
+    assert isinstance(model.attributes, Attributes)
+    assert isinstance(model.entity_type, ObjectType)
+    assert model.uid == model.attributes.uid == uid
+    assert model.name == model.attributes.name == "Nested points"
+    assert model.type_uid == model.entity_type.uid == type_uid
+    assert model.entity_type.h5_collection == "Objects"
+    assert model.entity_type.h5_type_collection == "Object types"
+
+    h5_attributes = model.attributes.model_dump(
+        by_alias=True,
+        exclude_none=True,
+    )
+    assert h5_attributes["Allow move"] is False
+    assert h5_attributes["Last focus"] == "Camera 1"
+
+    # Direct assignment remains available and is validated by Attributes.
+    model.name = "Renamed points"
+    assert model.attributes.name == "Renamed points"
+
+    payload = Geoh5EntityPayload.from_model(model)
+    assert payload.attributes["Name"] == "Renamed points"
+    assert payload.type_uid == model.entity_type.uid
+    assert payload.type_attributes == model.entity_type.h5_attributes()
+
+    explicitly_nested = PointsModel(
+        attributes={"Name": "Explicit attributes", "Allow move": False},
+        entity_type={
+            "ID": type_uid,
+            "Name": "Custom points",
+            "Description": "Custom type description",
+        },
+        vertices=[[1.0, 2.0, 3.0]],
+    )
+    assert explicitly_nested.name == "Explicit attributes"
+    assert explicitly_nested.allow_move is False
+    assert explicitly_nested.entity_type.name == "Custom points"
+    assert explicitly_nested.entity_type.description == "Custom type description"
 
 
 def test_write_points_model(tmp_path):
