@@ -1,3 +1,5 @@
+.. _uijson_format:
+
 UI.JSON Format
 ==============
 

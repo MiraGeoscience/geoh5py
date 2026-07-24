@@ -3,12 +3,18 @@
 Forms
 =====
 
-The following sections describe the core options and various form types that can be used in the **ui.json** format.
+As described in the :ref:`ui json <uijson_format>` section, a UI is typically made up of several forms that capture choices made by users and delivered to a Python program. The following sections describe the various form types that are currently available.
 
-.. figure:: ./images/example_form.png
-    :width: 400
+Base form
+---------
 
-    Example of an :ref:`Integer form <integer_form>` with optional fields.
+At a minimum, a form must have the following fields:
+
+"label" ``str``
+    Name of the form displayed in the UI.
+
+"value" ``varies``
+    The input value stored by the form. The form style determines the type of the value stored. The example shown below is an :ref:`Integer form <integer_form>` with several :ref:`optional fields <optional_fields>` used.
 
 .. code-block:: json
 
@@ -24,18 +30,10 @@ The following sections describe the core options and various form types that can
        }
    }
 
-Base form
----------
+.. figure:: ./images/example_form.png
+    :width: 400
 
-At a minimum, a form must have the following fields:
-
-
-"label" ``str``
-    Name of the form displayed in the UI.
-
-"value" ``varies``
-    The input value stored by the form. The form style determines the type of the value stored.
-
+.. _optional_fields:
 
 Optional fields
 ^^^^^^^^^^^^^^^
@@ -51,7 +49,7 @@ The following optional fields can be used to customize the UI. These fields are 
 "optional" ``bool``
     Boolean whether the parameter is optional (**true**) or required (**false**). The default is false. A checkbox is displayed in the UI to allow the user to select whether to use the parameter or not.
 "visible" ``bool``
-    Whether the form is displayed
+    Boolean whether the form is displayed. This option is generally used for advanced parameters that are enabled by the Python program itself. The default is true.
 
 See the `Form dependencies`_ section for additional inter-form customization.
 
