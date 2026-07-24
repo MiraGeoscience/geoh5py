@@ -160,7 +160,7 @@ For a simple string parameter, use an empty ``str`` value to have an empty strin
 Label form
 ----------
 
-A ``Label form`` is a text label that can be used to display information to the user. Contrairy to other form types, the ``value`` field must be set to ``null``. Optional fields include
+A ``Label form`` is a text label that can be used to display information to the user. Contrary to other form types, the ``value`` field must be set to ``null``. Optional fields include
 
 "icon" ``str``
     A string that describes the icon to display next to the label. The default is no icon. The following icons are available: ``warning``, ``information``, ``critical``, ``question``.
@@ -491,13 +491,14 @@ Additional customization of the UI can be achieved by creating dependencies betw
 Form dependencies
 -----------------
 
-Forms can be enabled or disabled based on the value of another parameter. The parameter driving the dependency must contain an **optional** field or be a :ref:`Boolean parameter'<bool_param>`.
+Forms can be enabled or disabled based on the value of another parameter. The parameter driving the dependency must contain an **optional** field or be a :ref:`Boolean form <bool_param>`.
 
 "dependency" ``str``
     Name of parameter that controls the enabled or visible state of the ui element.
-"dependency_type" ``str``
-    Either ``enabled`` or ``visible``.
-    Controls whether the ui element is enabled or visible when the dependency is enabled if optional or True if a bool type.
+
+"dependencyType" ``str``
+     One of ``enabled``, ``disabled``, ``show`` or ``hide``.
+     Controls whether the form is enabled/disabled or shown/hidden based on the dependency.
 
 .. code-block:: json
 
