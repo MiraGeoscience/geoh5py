@@ -41,7 +41,7 @@ Release 0.13.0 (2026-07-04)
 - Merge main to develop branch (conflicts)
 - Add conversion between Plate model from and to Maxwell plates
 - Data_map.entity_type.value_map can have map is None leading to error
-- Regularization parameters of sub-drivers always over-written by joint parameters
+- Regularization parameters of sub-drivers always overwritten by joint parameters
 - Validate grid size for clipping 2D grids for a given amount of RAM
 - Class attribute are forced to be unique if strings subclass ReferenceValueMap
 - Restore catch str if Enum
