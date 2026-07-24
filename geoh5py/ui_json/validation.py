@@ -48,7 +48,7 @@ from geoh5py.ui_json.utils import requires_value
 
 
 if TYPE_CHECKING:
-    from geoh5py.ui_json.ui_json import BaseUIJson
+    from geoh5py.ui_json.ui_json import UIJson
 
 Validation = dict[str, Any]
 
@@ -364,7 +364,7 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(name: str, ui_json: BaseUIJson):
+def dependency_type_validation(name: str, ui_json: UIJson):
     """
     Validate that the form depending on is optional, group_optional or bool type.
 
@@ -394,7 +394,7 @@ def get_validations(form: list[str]) -> list[Callable]:
     return [VALIDATIONS_MAP[k] for k in form if k in VALIDATIONS_MAP]
 
 
-def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+def mesh_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that value is one of the provided mesh types.
 
@@ -414,7 +414,7 @@ def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
 
 
-def group_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+def group_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that value is one of the provided group types.
 
@@ -434,7 +434,7 @@ def group_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
         raise UIJsonError(f"Group's group type must be one of {group_types}.")
 
 
-def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+def parent_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that the data is a child of the parent object.
 

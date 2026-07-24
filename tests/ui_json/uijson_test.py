@@ -46,7 +46,7 @@ from geoh5py.ui_json.forms import (
     RadioLabelForm,
     StringForm,
 )
-from geoh5py.ui_json.ui_json import BaseUIJson
+from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.ui_json.validation import UIJsonError
 
 
@@ -147,7 +147,7 @@ def sample_uijson(tmp_path):
 
 
 def test_uijson(sample_uijson):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
         my_integer_parameter: IntegerForm
 
@@ -158,9 +158,9 @@ def test_uijson(sample_uijson):
         my_multi_select_data_parameter: MultiSelectDataForm
         my_faulty_data_parameter: DataForm
         my_absent_uid_parameter: ObjectForm
-        my_radio_button_parameter: RadioLabelForm
+        my_radio_label_parameter: RadioLabelForm
 
-    uijson = MyBaseUIJson.read(sample_uijson)
+    uijson = MyUIJson.read(sample_uijson)
     with pytest.raises(UIJsonError) as err:
         with Workspace(uijson.geoh5, mode="r+") as workspace:
             _ = uijson.to_params(workspace=workspace)
@@ -185,7 +185,7 @@ def generate_test_uijson(workspace: Workspace, uijson, data: dict):
 def test_allow_extra(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     kwargs = {
@@ -193,7 +193,7 @@ def test_allow_extra(tmp_path):
         "my_extra_form_parameter": {"label": "this is extra", "value": "extra"},
         "my_extra_parameter": "this is also extra",
     }
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     assert "my_extra_parameter" in uijson.model_extra
     assert "my_extra_form_parameter" in uijson.model_extra
     dump = uijson.model_dump()
@@ -209,7 +209,7 @@ def test_data_disabled(tmp_path):
 
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         parent: ObjectForm
         parameter: DataOrValueForm
 
@@ -227,7 +227,7 @@ def test_data_disabled(tmp_path):
             "enabled": False,
         },
     }
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     options = uijson.to_params()
     assert "parameter" not in options
 
@@ -238,7 +238,7 @@ def test_multiple_validations(tmp_path):
     other_pts = pts.copy(name="other test")
     data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
@@ -265,7 +265,7 @@ def test_multiple_validations(tmp_path):
         },
     }
 
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     with pytest.raises(UIJsonError) as err:
         _ = uijson.to_params()
@@ -283,7 +283,7 @@ def test_validate_dependency_type_validation(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     # BoolForm dependency is valid
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: BoolForm
         my_dependent_parameter: StringForm
 
@@ -298,19 +298,19 @@ def test_validate_dependency_type_validation(tmp_path):
             "dependency": "my_parameter",
         },
     }
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     params = uijson.to_params()
     assert params["my_dependent_parameter"] == "test"
 
     # Optional non-bool dependency is valid
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: StringForm
         my_dependent_parameter: StringForm
 
     kwargs["my_parameter"]["value"] = "not a bool"
     kwargs["my_parameter"]["optional"] = True
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     params = uijson.to_params()
     assert params["my_dependent_parameter"] == "test"
 
@@ -318,7 +318,7 @@ def test_validate_dependency_type_validation(tmp_path):
     kwargs["my_parameter"].pop("optional")
     msg = "Dependency form 'my_parameter' must be either optional, group_optional or of boolean type"
     with pytest.raises(UIJsonError, match=msg):
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
 
 
@@ -328,7 +328,7 @@ def test_parent_child_validation(tmp_path):
     data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
     other_pts = pts.copy(name="other test")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
         my_data_parameter: DataForm
 
@@ -347,7 +347,7 @@ def test_parent_child_validation(tmp_path):
         },
     }
 
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     params = uijson.to_params()
 
     assert params["geoh5"] == params["my_object_parameter"].workspace
@@ -357,7 +357,7 @@ def test_parent_child_validation(tmp_path):
     kwargs["my_object_parameter"]["value"] = other_pts.uid
     msg = "my_data_parameter data is not a child of my_object_parameter"
     with pytest.raises(UIJsonError, match=msg):
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
 
 
@@ -365,7 +365,7 @@ def test_mesh_type_validation(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
 
     kwargs = {
@@ -376,7 +376,7 @@ def test_mesh_type_validation(tmp_path):
         },
     }
 
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     params = uijson.to_params()
     assert params["my_object_parameter"].uid == pts.uid
 
@@ -384,7 +384,7 @@ def test_mesh_type_validation(tmp_path):
     kwargs["my_object_parameter"]["mesh_type"] = [Curve]
     msg = "Object's mesh type must be one of"
     with pytest.raises(UIJsonError, match=msg):
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
 
 
@@ -392,7 +392,7 @@ def test_group_type_validation(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     group = ContainerGroup.create(ws, name="test")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_group_parameter: GroupForm
 
     kwargs = {
@@ -403,7 +403,7 @@ def test_group_type_validation(tmp_path):
         },
     }
 
-    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     params = uijson.to_params()
     assert params["my_group_parameter"].uid == group.uid
 
@@ -411,18 +411,18 @@ def test_group_type_validation(tmp_path):
     kwargs["my_group_parameter"]["group_type"] = UIJsonGroup
     msg = "Group's group type must be one of"
     with pytest.raises(UIJsonError, match=msg):
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
 
 
 def test_deprecated_annotation(tmp_path, caplog):
     geoh5 = Workspace(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: Deprecated
 
     with caplog.at_level(logging.WARNING):
-        _ = MyBaseUIJson(
+        _ = MyUIJson(
             version="0.1.0",
             title="my application",
             geoh5=geoh5.h5file,
@@ -436,7 +436,7 @@ def test_deprecated_annotation(tmp_path, caplog):
 
 
 def test_grouped_forms(tmp_path):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: IntegerForm
         my_grouped_param: FloatForm
         my_other_grouped_param: FloatForm
@@ -461,7 +461,7 @@ def test_grouped_forms(tmp_path):
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     dependencies = uijson._group_dependencies
     assert dependencies.get("my_group") == uijson.my_param
@@ -473,7 +473,7 @@ def test_grouped_forms(tmp_path):
 
 
 def test_disabled_forms(tmp_path):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: IntegerForm
         my_other_param: IntegerForm
 
@@ -490,7 +490,7 @@ def test_disabled_forms(tmp_path):
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     assert uijson.is_enabled("my_param")
     assert not uijson.is_enabled("my_other_param")
@@ -501,7 +501,7 @@ def test_disabled_forms(tmp_path):
 
 
 def test_disabled_group_optional_forms(tmp_path):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         group_leader: FloatForm
         dependent: FloatForm
         other_dependent: FloatForm
@@ -531,7 +531,7 @@ def test_disabled_group_optional_forms(tmp_path):
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     assert not uijson.is_enabled("group_leader")
     assert not uijson.is_enabled("dependent")
@@ -559,7 +559,7 @@ def test_disabled_group_optional_forms(tmp_path):
     ],
 )
 def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         leader: FloatForm
         dependent: FloatForm
 
@@ -582,7 +582,7 @@ def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     assert uijson.is_enabled("dependent") == outcome
 
@@ -604,7 +604,7 @@ def test_disabled_dependency_forms(tmp_path, dtype, lead_state, outcome):
     ],
 )
 def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         group_leader: FloatForm
         dependent: FloatForm
         sub_dependent: FloatForm
@@ -636,7 +636,7 @@ def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
     }
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
-        uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+        uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
 
     assert uijson.is_enabled("sub_dependent") == outcome
 
@@ -653,7 +653,7 @@ def test_double_dependency_state(tmp_path, lead_state, dep_state, outcome):
 
 
 def test_unknown_uijson(tmp_path, sample_uijson):
-    uijson = BaseUIJson.read(sample_uijson)
+    uijson = UIJson.read(sample_uijson)
     uijson.write(tmp_path / "test_copy.ui.json")
 
     assert isinstance(uijson.my_string_parameter, StringForm)
@@ -678,7 +678,7 @@ def test_unknown_uijson(tmp_path, sample_uijson):
         assert "my_group_optional_parameter" not in params
         assert "my_grouped_parameter" not in params
 
-    re_loaded = BaseUIJson.read(tmp_path / "test_copy.ui.json")
+    re_loaded = UIJson.read(tmp_path / "test_copy.ui.json")
 
     for name in uijson.model_fields_set:
         assert getattr(re_loaded, name) == getattr(uijson, name)
@@ -687,10 +687,10 @@ def test_unknown_uijson(tmp_path, sample_uijson):
 def test_str_and_repr(tmp_path):
     Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         param: StringForm
 
-    uijson = MyBaseUIJson(
+    uijson = MyUIJson(
         version="0.1.0",
         title="my application",
         geoh5=str(tmp_path / f"{__name__}.geoh5"),
@@ -712,7 +712,7 @@ def test_geoh5_validate_extension(tmp_path):
     h5file.touch()
 
     with pytest.raises(ValidationError, match=r"must have a '.geoh5' file extension\."):
-        _ = BaseUIJson(
+        _ = UIJson(
             version="0.1.0",
             title="my application",
             geoh5=str(h5file),
@@ -727,7 +727,7 @@ def test_label_form(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
     # BoolForm dependency is valid
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_parameter: StringForm
         my_label: LabelForm
 
@@ -741,10 +741,10 @@ def test_label_form(tmp_path):
         },
     }
 
-    uijson = generate_test_uijson(workspace=ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson = generate_test_uijson(workspace=ws, uijson=MyUIJson, data=kwargs)
     uijson.write(tmp_path / "test_label.ui.json")
 
-    new_json = BaseUIJson.read(tmp_path / "test_label.ui.json")
+    new_json = UIJson.read(tmp_path / "test_label.ui.json")
 
     assert uijson.my_label == new_json.my_label
 
@@ -757,13 +757,13 @@ def test_label_form(tmp_path):
 def test_fill_in_place(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
         my_int_parameter: IntegerForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={
             "my_string_parameter": {"label": "a", "value": "original"},
             "my_int_parameter": {"label": "b", "value": 1},
@@ -779,12 +779,12 @@ def test_fill_in_place(tmp_path):
 def test_fill_copy(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "original"}},
     )
     copy = uijson.set_values(copy=True, my_string_parameter="updated", title="ok")
@@ -803,12 +803,12 @@ def test_copy_relatives(tmp_path, caplog):
 
     pts = Points.create(ws, name="pts", vertices=np.random.random((10, 3)))
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={
             "my_object_parameter": {
                 "label": "obj",
@@ -836,12 +836,12 @@ def test_fill_truthy_value_leaves_updates_empty(tmp_path):
     """A form with a truthy value not in kwargs produces no updates."""
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: FloatForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={"my_param": {"label": "a", "value": 3.14}},
     )
     original_enabled = uijson.my_param.enabled
@@ -854,12 +854,12 @@ def test_fill_truthy_value_leaves_updates_empty(tmp_path):
 def test_fill_kwargs_re_enables_form(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_param: FloatForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={
             "my_param": {"label": "a", "value": 0.0, "enabled": False, "optional": True}
         },
@@ -875,12 +875,12 @@ def test_fill_with_uuid_value(tmp_path):
     pts = Points.create(ws, name="pts", vertices=np.random.random((10, 3)))
     pts2 = Points.create(ws, name="pts2", vertices=np.random.random((10, 3)))
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_object_parameter: ObjectForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={
             "my_object_parameter": {
                 "label": "obj",
@@ -902,12 +902,12 @@ def test_fill_with_uuid_value(tmp_path):
 def test_to_ui_json_group_creates_group(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "test"}},
     )
     group = uijson.to_ui_json_group(workspace=ws)
@@ -915,16 +915,18 @@ def test_to_ui_json_group_creates_group(tmp_path):
     assert isinstance(group, UIJsonGroup)
     assert ws.get_entity(group.uid)[0] is not None
 
+    assert group.options.get("out_group", None) is not None
+
 
 def test_to_ui_json_group_default_name(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "test"}},
     )
     group = uijson.to_ui_json_group(workspace=ws)
@@ -935,12 +937,12 @@ def test_to_ui_json_group_default_name(tmp_path):
 def test_to_ui_json_group_custom_name(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "test"}},
     )
     group = uijson.to_ui_json_group(workspace=ws, name="custom name")
@@ -951,12 +953,12 @@ def test_to_ui_json_group_custom_name(tmp_path):
 def test_to_ui_json_group_out_group_properties(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
     uijson = generate_test_uijson(
         ws,
-        uijson=MyBaseUIJson,
+        uijson=MyUIJson,
         data={"my_string_parameter": {"label": "a", "value": "test"}},
     )
     group = uijson.to_ui_json_group(workspace=ws)
@@ -969,10 +971,10 @@ def test_to_ui_json_group_without_workspace(tmp_path):
     geoh5_path = tmp_path / f"{__name__}.geoh5"
     Workspace.create(geoh5_path)
 
-    class MyBaseUIJson(BaseUIJson):
+    class MyUIJson(UIJson):
         my_string_parameter: StringForm
 
-    uijson = MyBaseUIJson(
+    uijson = MyUIJson(
         version="0.1.0",
         title="my application",
         geoh5=str(geoh5_path),
