@@ -34,7 +34,7 @@ A ui.json file contains customizable :ref:`Forms <form_types>` that encodes UI e
 
     See the :ref:`Object form <object_form>` section for more details on this type of selection form.
 
-To be valid file, the **ui.json** must contain at least the following fields:
+To be a valid file, the **ui.json** must contain at least the following fields:
 
 - **title** ``str``
     Title of user interface window
@@ -51,14 +51,14 @@ Execution
 
 When a **ui.json** is run within Geoscience ANALYST Pro (either ``OK`` or ``Apply``), the following steps occur:
 
-- The **value** and **enabled** fields of every forms are updated to reflect the current state of the UI. For example, the **value** field of the ``grid_object`` is set to the selected object ``UUID``.
+- The **value** and **enabled** fields of every form are updated to reflect the current state of the UI. For example, the **value** field of the ``grid_object`` is set to the selected object ``UUID``.
 - A ``ui.json`` file is written to disk in a temporary directory, along with a geoh5 file containing all the objects within the parameters of the **ui.json**.
 - ANALYST activates the specified **conda_environment** (if provided)
 - ANALYST executes the Python script specified in the **run_command** field of the **ui.json** file,
 
     .. code-block::
 
-        python -m run_me.py my_file.ui.json
+        python -m run_me my_file.ui.json
 
 
 - If included in the Python script, the results can be written back to the monitored directory, which will update the objects in the geoh5 file and refresh the ANALYST Pro viewport.
