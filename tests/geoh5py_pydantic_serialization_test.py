@@ -56,6 +56,10 @@ def _as_text(value):
     return value.decode("utf-8") if isinstance(value, bytes) else value
 
 
+def test_writer_uses_legacy_variable_length_string_dtype():
+    assert Geoh5Writer.string_dtype == h5py.special_dtype(vlen=str)
+
+
 def test_points_model_owns_attributes_and_entity_type():
     """Nested models own HDF5 fields without losing the flat Points API."""
     uid = uuid4()
@@ -267,3 +271,36 @@ def test_write_generic_group_payload(tmp_path):
         assert (
             group["Type"].id == writer.project["Types"]["Group types"][type_uid_text].id
         )
+
+
+def test_failed_dataset_write_does_not_create_entity_type(tmp_path):
+    """Entity encoding failures must not leave a new shared type behind."""
+    path = tmp_path / "failed_group.geoh5"
+    _initialize_geoh5_file(path)
+    uid = uuid4()
+    type_uid = uuid4()
+    payload = Geoh5EntityPayload(
+        collection="Groups",
+        type_collection="Group types",
+        uid=uid,
+        type_uid=type_uid,
+        parent_uid=None,
+        attributes={"ID": uid, "Name": "Invalid payload group"},
+        datasets={"Unsupported": 1},
+        type_attributes={
+            "Description": "Unused group type",
+            "ID": type_uid,
+            "Name": "Unused group type",
+        },
+    )
+
+    with h5py.File(path, "r+") as h5file:
+        writer = Geoh5Writer(h5file)
+        uid_text = writer.format_uuid(uid)
+        type_uid_text = writer.format_uuid(type_uid)
+
+        with pytest.raises(TypeError, match="unsupported value type"):
+            writer.write_payload(payload)
+
+        assert uid_text not in writer.project["Groups"]
+        assert type_uid_text not in writer.project["Types"]["Group types"]

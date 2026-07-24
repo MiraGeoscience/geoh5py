@@ -123,7 +123,8 @@ class Geoh5Writer:
     retain a reference on the model.
     """
 
-    string_dtype = h5py.string_dtype()
+    # Match the variable-length UTF-8 string dtype used by the legacy writer.
+    string_dtype = h5py.special_dtype(vlen=str)
 
     def __init__(self, h5file: h5py.File):
         if not isinstance(h5file, h5py.File):
@@ -172,9 +173,8 @@ class Geoh5Writer:
                 f"Entity {payload.uid} already exists in {payload.collection}."
             )
 
-        # Resolve the parent and type before creating the entity
+        # Resolve the parent before creating the entity.
         parent_group = self._find_parent(payload.parent_uid)
-        type_group = self._ensure_type(payload)
 
         # Create the entity group under its collection
         # e.g. for Points, that becomes "/GEOSCIENCE/Objects/{points_uid}"
@@ -189,6 +189,9 @@ class Geoh5Writer:
 
             self._write_attributes(entity_group, payload.attributes)
             self._write_datasets(entity_group, payload.datasets, compression)
+
+            # Defer shared type creation until entity value encoding succeeds.
+            type_group = self._ensure_type(payload)
 
             # Both assignments create HDF5 hard links. Match
             # H5Writer.write_entity and H5Writer.write_to_parent.
