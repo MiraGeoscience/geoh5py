@@ -241,14 +241,14 @@ class PydanticEntity(BaseModel):
         supplied_type_uid = _pop_type_uid(values)
         supplied_entity_type = values.get("entity_type")
         if supplied_type_uid is not None or isinstance(
-            supplied_entity_type, (EntityType | Mapping)
+            supplied_entity_type, (EntityType, Mapping)
         ):
             type_values, default_entity_type = _default_model_values(
                 cls,
                 "entity_type",
                 EntityType,
             )
-            if isinstance(supplied_entity_type, (EntityType | Mapping)):
+            if isinstance(supplied_entity_type, (EntityType, Mapping)):
                 entity_type_model = (
                     type(default_entity_type)
                     if isinstance(default_entity_type, EntityType)
