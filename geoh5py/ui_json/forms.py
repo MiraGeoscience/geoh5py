@@ -810,7 +810,7 @@ def filter_candidates_by_type_checking(
         validation = TypeAdapter(annotation)
         try:
             value = data.get("value")
-            strict = isinstance(value, (int, float, bool))
+            strict = isinstance(value, (int, float, bool, str))
             validation.validate_python(value, strict=strict)
             filtered_candidates.append(candidate)
         except ValidationError:
