@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, ClassVar, Self, cast
+from typing import Annotated, Any, ClassVar, Self
 from uuid import UUID
 
 import numpy as np
@@ -197,8 +197,8 @@ class PydanticEntity(BaseModel):
         validate_assignment=True,
     )
 
-    attributes: Attributes = Field(default_factory=Attributes)
-    entity_type: EntityType = Field(default_factory=EntityType)
+    attributes: Annotated[Attributes, Field(default_factory=Attributes)]
+    entity_type: Annotated[EntityType, Field(default_factory=EntityType)]
     parent_uid: UUID | None = None
     metadata: dict[str, Any] | None = Field(
         default=None,
@@ -265,14 +265,6 @@ class PydanticEntity(BaseModel):
 
         return values
 
-    def _attributes_value(self) -> Attributes:
-        """Return the nested model with its runtime Pydantic type restored."""
-        return cast(Attributes, self.attributes)
-
-    def _entity_type_value(self) -> EntityType:
-        """Return the nested type model with its runtime type restored."""
-        return cast(EntityType, self.entity_type)
-
     @property
     def dataset_map(self) -> dict[str, str]:
         return self._dataset_map
@@ -312,91 +304,83 @@ class PydanticEntity(BaseModel):
 
     @property
     def uid(self) -> UUID:
-        return self._attributes_value().uid
+        return self.attributes.uid
 
     @uid.setter
     def uid(self, value: UUID) -> None:
-        self._attributes_value().uid = value
+        self.attributes.uid = value
 
     @property
     def name(self) -> str:
-        return self._attributes_value().name
+        return self.attributes.name
 
     @name.setter
     def name(self, value: str) -> None:
-        self._attributes_value().name = value
-
-    @property
-    def type_uid(self) -> UUID:
-        return self._entity_type_value().uid
-
-    @type_uid.setter
-    def type_uid(self, value: UUID) -> None:
-        self._entity_type_value().uid = value
+        self.attributes.name = value
 
     @property
     def allow_delete(self) -> bool:
-        return self._attributes_value().allow_delete
+        return self.attributes.allow_delete
 
     @allow_delete.setter
     def allow_delete(self, value: bool) -> None:
-        self._attributes_value().allow_delete = value
+        self.attributes.allow_delete = value
 
     @property
     def allow_move(self) -> bool:
-        return self._attributes_value().allow_move
+        return self.attributes.allow_move
 
     @allow_move.setter
     def allow_move(self, value: bool) -> None:
-        self._attributes_value().allow_move = value
+        self.attributes.allow_move = value
 
     @property
     def allow_rename(self) -> bool:
-        return self._attributes_value().allow_rename
+        return self.attributes.allow_rename
 
     @allow_rename.setter
     def allow_rename(self, value: bool) -> None:
-        self._attributes_value().allow_rename = value
+        self.attributes.allow_rename = value
 
     @property
     def clipping_ids(self) -> list[UUID] | None:
-        return self._attributes_value().clipping_ids
+        return self.attributes.clipping_ids
 
     @clipping_ids.setter
     def clipping_ids(self, value: list[UUID] | None) -> None:
-        self._attributes_value().clipping_ids = value
+        self.attributes.clipping_ids = value
 
     @property
     def last_focus(self) -> str:
-        return self._attributes_value().last_focus
+        return self.attributes.last_focus
 
     @last_focus.setter
     def last_focus(self, value: str) -> None:
-        self._attributes_value().last_focus = value
+        self.attributes.last_focus = value
 
     @property
     def partially_hidden(self) -> bool:
-        return self._attributes_value().partially_hidden
+        return self.attributes.partially_hidden
 
     @partially_hidden.setter
     def partially_hidden(self, value: bool) -> None:
-        self._attributes_value().partially_hidden = value
+        self.attributes.partially_hidden = value
 
     @property
     def public(self) -> bool:
-        return self._attributes_value().public
+        return self.attributes.public
 
     @public.setter
     def public(self, value: bool) -> None:
-        self._attributes_value().public = value
+        self.attributes.public = value
 
     @property
     def visible(self) -> bool:
-        return self._attributes_value().visible
+        return self.attributes.visible
 
     @visible.setter
     def visible(self, value: bool) -> None:
-        self._attributes_value().visible = value
+        self.attributes.visible = value
 
     @classmethod
     def from_legacy_entity(cls, entity: Any, **overrides) -> Self:
