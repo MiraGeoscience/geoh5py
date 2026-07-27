@@ -123,6 +123,7 @@ def _pop_type_uid(values: dict[str, Any]) -> Any:
 
     return supplied_type_uid
 
+
 class Attributes(NamedIdentity):
     """
     Core HDF5 attributes for objects and groups.
@@ -176,8 +177,9 @@ class Attributes(NamedIdentity):
 AttributesField = Field(
     default_factory=Attributes,
     validation_alias=AliasChoices("attributes", "attrs"),
-    serialization_alias="attrs"
+    serialization_alias="attrs",
 )
+
 
 class PydanticEntity(BaseModel):
     """
@@ -202,12 +204,14 @@ class PydanticEntity(BaseModel):
         validate_assignment=True,
     )
 
-    attributes: Annotated[
-        Attributes,
-        CORE_ATTRIBUTE_FIELD
-    ]
+    attributes: Annotated[Attributes, CORE_ATTRIBUTE_FIELD]
     entity_type: Annotated[EntityType, Field(default_factory=EntityType)]
-    parent_uid: UUID | None = Field(validation_alias=AliasChoices("parent_uid", "parentUid"), serialization_alias="parentUid"),
+    parent_uid: UUID | None = (
+        Field(
+            validation_alias=AliasChoices("parent_uid", "parentUid"),
+            serialization_alias="parentUid",
+        ),
+    )
     metadata: dict[str, Any] = Field(
         default=None,
         validation_alias=AliasChoices("metadata", "Metadata"),
@@ -341,8 +345,7 @@ class PydanticEntity(BaseModel):
                 "allow_move": getattr(entity, "allow_move", True),
                 "allow_rename": getattr(entity, "allow_rename", True),
                 "clipping_ids": getattr(entity, "clipping_ids", None),
-            }
-
+            },
         }
         attrs = {key: value for key, value in attrs.items() if value is not None}
         attrs.update(overrides)
