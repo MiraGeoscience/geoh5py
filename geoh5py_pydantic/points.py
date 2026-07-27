@@ -20,24 +20,22 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, ClassVar, Self
+from typing import Annotated, Any, ClassVar, Self
 from uuid import UUID
 
 import numpy as np
 from pydantic import AliasChoices, Field, field_serializer, field_validator
 
 from .arrays import ArraySource, LazyArray
-from .entity import Attributes, PydanticEntity
+from .entity import Attributes, AttributesField, PydanticEntity
 from .entity_type import ObjectType
 
 
 POINTS_TYPE_UID = UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
 
-
 def _default_points_attributes() -> Attributes:
     return Attributes(name="Points")
-
 
 def _default_points_type() -> ObjectType:
     return ObjectType(
@@ -85,7 +83,12 @@ class PointsModel(PydanticEntity):
         "Vertices": "vertices",
     }
 
-    attributes: Attributes = Field(default_factory=_default_points_attributes)
+    attributes: Attributes = Field(
+            default_factory=Attributes,
+            validation_alias=AliasChoices("attributes", "attrs"),
+            serialization_alias="attrs"
+        )
+
     entity_type: ObjectType = Field(default_factory=_default_points_type)
     vertices: LazyArray = Field(
         default=None,

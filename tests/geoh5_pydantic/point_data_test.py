@@ -33,7 +33,7 @@ def test_create_point_data(tmp_path):
     values = np.random.randn(12, 3)
 
     with Workspace.create(tmp_path / f"{__name__}.geoh5") as ws:
-        points = Points.create(ws, vertices=values, names=new_name)
+        points = Points.create(ws, vertices=values, name=new_name)
 
         new_points = PointsModel.from_legacy_points(points)
 

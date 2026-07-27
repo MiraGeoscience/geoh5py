@@ -123,7 +123,6 @@ def _pop_type_uid(values: dict[str, Any]) -> Any:
 
     return supplied_type_uid
 
-
 class Attributes(NamedIdentity):
     """
     Core HDF5 attributes for objects and groups.
@@ -174,6 +173,12 @@ class Attributes(NamedIdentity):
     )
 
 
+AttributesField = Field(
+    default_factory=Attributes,
+    validation_alias=AliasChoices("attributes", "attrs"),
+    serialization_alias="attrs"
+)
+
 class PydanticEntity(BaseModel):
     """
     Workspace-free entity with nested attributes and shared type information.
@@ -197,10 +202,13 @@ class PydanticEntity(BaseModel):
         validate_assignment=True,
     )
 
-    attributes: Annotated[Attributes, Field(default_factory=Attributes)]
+    attributes: Annotated[
+        Attributes,
+        CORE_ATTRIBUTE_FIELD
+    ]
     entity_type: Annotated[EntityType, Field(default_factory=EntityType)]
-    parent_uid: UUID | None = None
-    metadata: dict[str, Any] | None = Field(
+    parent_uid: UUID | None = Field(validation_alias=AliasChoices("parent_uid", "parentUid"), serialization_alias="parentUid"),
+    metadata: dict[str, Any] = Field(
         default=None,
         validation_alias=AliasChoices("metadata", "Metadata"),
         serialization_alias="Metadata",
@@ -302,86 +310,6 @@ class PydanticEntity(BaseModel):
 
         return value
 
-    @property
-    def uid(self) -> UUID:
-        return self.attributes.uid
-
-    @uid.setter
-    def uid(self, value: UUID) -> None:
-        self.attributes.uid = value
-
-    @property
-    def name(self) -> str:
-        return self.attributes.name
-
-    @name.setter
-    def name(self, value: str) -> None:
-        self.attributes.name = value
-
-    @property
-    def allow_delete(self) -> bool:
-        return self.attributes.allow_delete
-
-    @allow_delete.setter
-    def allow_delete(self, value: bool) -> None:
-        self.attributes.allow_delete = value
-
-    @property
-    def allow_move(self) -> bool:
-        return self.attributes.allow_move
-
-    @allow_move.setter
-    def allow_move(self, value: bool) -> None:
-        self.attributes.allow_move = value
-
-    @property
-    def allow_rename(self) -> bool:
-        return self.attributes.allow_rename
-
-    @allow_rename.setter
-    def allow_rename(self, value: bool) -> None:
-        self.attributes.allow_rename = value
-
-    @property
-    def clipping_ids(self) -> list[UUID] | None:
-        return self.attributes.clipping_ids
-
-    @clipping_ids.setter
-    def clipping_ids(self, value: list[UUID] | None) -> None:
-        self.attributes.clipping_ids = value
-
-    @property
-    def last_focus(self) -> str:
-        return self.attributes.last_focus
-
-    @last_focus.setter
-    def last_focus(self, value: str) -> None:
-        self.attributes.last_focus = value
-
-    @property
-    def partially_hidden(self) -> bool:
-        return self.attributes.partially_hidden
-
-    @partially_hidden.setter
-    def partially_hidden(self, value: bool) -> None:
-        self.attributes.partially_hidden = value
-
-    @property
-    def public(self) -> bool:
-        return self.attributes.public
-
-    @public.setter
-    def public(self, value: bool) -> None:
-        self.attributes.public = value
-
-    @property
-    def visible(self) -> bool:
-        return self.attributes.visible
-
-    @visible.setter
-    def visible(self, value: bool) -> None:
-        self.attributes.visible = value
-
     @classmethod
     def from_legacy_entity(cls, entity: Any, **overrides) -> Self:
         """
@@ -397,23 +325,54 @@ class PydanticEntity(BaseModel):
             "description": getattr(legacy_type, "description", None),
         }
         attrs = {
-            "uid": getattr(entity, "uid", None),
-            "name": getattr(entity, "name", None),
             "entity_type": {
                 key: value for key, value in type_values.items() if value is not None
             },
             "parent_uid": getattr(parent, "uid", None),
-            "allow_delete": getattr(entity, "allow_delete", True),
-            "allow_move": getattr(entity, "allow_move", True),
-            "allow_rename": getattr(entity, "allow_rename", True),
-            "clipping_ids": getattr(entity, "clipping_ids", None),
             "metadata": getattr(entity, "metadata", None),
             "on_file": getattr(entity, "on_file", False),
-            "partially_hidden": getattr(entity, "partially_hidden", False),
-            "public": getattr(entity, "public", True),
-            "visible": getattr(entity, "visible", True),
+            "attributes": {
+                "uid": getattr(entity, "uid", None),
+                "name": getattr(entity, "name", None),
+                "partially_hidden": getattr(entity, "partially_hidden", False),
+                "public": getattr(entity, "public", True),
+                "visible": getattr(entity, "visible", True),
+                "allow_delete": getattr(entity, "allow_delete", True),
+                "allow_move": getattr(entity, "allow_move", True),
+                "allow_rename": getattr(entity, "allow_rename", True),
+                "clipping_ids": getattr(entity, "clipping_ids", None),
+            }
+
         }
         attrs = {key: value for key, value in attrs.items() if value is not None}
         attrs.update(overrides)
 
         return cls.model_validate(attrs)
+
+    def __setattr__(self, key, value):
+        """
+        Overload setattr method to deal with attributes.
+
+        :param key:
+        :param value:
+        :return:
+        """
+
+        if key in self.attributes.model_fields:
+            setattr(self.attributes, key, value)
+        else:
+            super().__setattr__(key, value)
+
+    def __getattr__(self, key):
+        """
+        Overload getattr method to deal with attributes.
+
+        :param key:
+        :param value:
+        :return:
+        """
+
+        if key in self.attributes.model_fields:
+            return getattr(self.attributes, key)
+
+        return super().__getattr__(key)
