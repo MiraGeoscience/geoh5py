@@ -105,7 +105,7 @@ OptionalUUIDList = Annotated[
 ]
 
 OptionalValueList = Annotated[
-    float | list[float] | None,
+    float | int | list[float] | list[int] | None,
     BeforeValidator(optional_uuid_mapper),
 ]
 
