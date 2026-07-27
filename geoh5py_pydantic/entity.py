@@ -19,109 +19,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Annotated, Any, ClassVar, Self
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import numpy as np
-from pydantic import (
-    AliasChoices,
-    BaseModel,
-    ConfigDict,
-    Field,
-    field_validator,
-    model_validator,
-)
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from .entity_type import EntityType, NamedIdentity
-
-
-def _field_input_names(field_name: str, field: Any) -> list[str]:
-    """Return the Python name and accepted string validation aliases."""
-    input_names = [field_name]
-    if isinstance(field.validation_alias, AliasChoices):
-        input_names.extend(
-            choice
-            for choice in field.validation_alias.choices
-            if isinstance(choice, str)
-        )
-    elif isinstance(field.validation_alias, str):
-        input_names.append(field.validation_alias)
-
-    return input_names
-
-
-def _merge_model_input(
-    values: dict[str, Any],
-    supplied: BaseModel | Mapping[str, Any],
-    model_type: type[BaseModel],
-) -> None:
-    """Merge only explicitly supplied fields, normalized to Python names."""
-    if isinstance(supplied, BaseModel):
-        values.update(supplied.model_dump())
-        return
-
-    consumed = set()
-    for field_name, field in model_type.model_fields.items():
-        for input_name in _field_input_names(field_name, field):
-            if input_name in supplied:
-                values[field_name] = supplied[input_name]
-                consumed.add(input_name)
-                break
-
-    # Preserve unknown nested keys so ``extra="forbid"`` reports them instead
-    # of silently dropping values that cannot be written.
-    values.update(
-        {
-            input_name: input_value
-            for input_name, input_value in supplied.items()
-            if input_name not in consumed
-        }
-    )
-
-
-def _pop_model_input(
-    values: dict[str, Any],
-    supplied: dict[str, Any],
-    model_type: type[BaseModel],
-) -> None:
-    """Move recognized model inputs out of a larger flat input dictionary."""
-    for field_name, field in model_type.model_fields.items():
-        for input_name in _field_input_names(field_name, field):
-            if input_name in supplied:
-                values[field_name] = supplied.pop(input_name)
-                break
-
-
-def _default_model_values(
-    model_type: type[BaseModel],
-    field_name: str,
-    expected_type: type[BaseModel],
-) -> tuple[dict[str, Any], BaseModel | None]:
-    """Create the configured field default without confusing static linters."""
-    model_fields = model_type.model_fields
-    default = model_fields[field_name].get_default(call_default_factory=True)
-    if isinstance(default, expected_type):
-        return default.model_dump(), default
-
-    return {}, None
-
-
-def _pop_type_uid(values: dict[str, Any]) -> Any:
-    """Remove legacy flat type UID aliases and return the first supplied value."""
-    supplied_type_uid = None
-    for input_name in (
-        "type_uid",
-        "Type ID",
-        "Object Type ID",
-        "Data Type ID",
-    ):
-        if input_name in values:
-            candidate = values.pop(input_name)
-            if supplied_type_uid is None:
-                supplied_type_uid = candidate
-
-    return supplied_type_uid
 
 
 class Attributes(NamedIdentity):
@@ -152,10 +56,14 @@ class Attributes(NamedIdentity):
         validation_alias=AliasChoices("clipping_ids", "Clipping IDs"),
         serialization_alias="Clipping IDs",
     )
-    last_focus: str = Field(
-        default="None",
+    last_focus: str | None = Field(
         validation_alias=AliasChoices("last_focus", "Last focus"),
         serialization_alias="Last focus",
+    )
+    name: str = Field(
+        default="Entity",
+        validation_alias=AliasChoices("name", "Name"),
+        serialization_alias="Name",
     )
     partially_hidden: bool = Field(
         default=False,
@@ -167,18 +75,16 @@ class Attributes(NamedIdentity):
         validation_alias=AliasChoices("public", "Public"),
         serialization_alias="Public",
     )
+    uid: UUID = Field(
+        default=uuid4(),
+        validation_alias=AliasChoices("uid", "ID"),
+        serialization_alias="ID",
+    )
     visible: bool = Field(
         default=True,
         validation_alias=AliasChoices("visible", "Visible"),
         serialization_alias="Visible",
     )
-
-
-AttributesField = Field(
-    default_factory=Attributes,
-    validation_alias=AliasChoices("attributes", "attrs"),
-    serialization_alias="attrs",
-)
 
 
 class PydanticEntity(BaseModel):
@@ -204,78 +110,22 @@ class PydanticEntity(BaseModel):
         validate_assignment=True,
     )
 
-    attributes: Annotated[Attributes, CORE_ATTRIBUTE_FIELD]
-    entity_type: Annotated[EntityType, Field(default_factory=EntityType)]
-    parent_uid: UUID | None = (
+    attributes: Annotated[
+        Attributes,
         Field(
-            validation_alias=AliasChoices("parent_uid", "parentUid"),
-            serialization_alias="parentUid",
+            default_factory=Attributes,
+            validation_alias=AliasChoices("attributes", "attrs"),
+            serialization_alias="attrs",
         ),
-    )
-    metadata: dict[str, Any] = Field(
+    ]
+    entity_type: Annotated[EntityType, Field(default_factory=EntityType)]
+    parent_uid: UUID | None = None
+    metadata: dict[str, Any] | None = Field(
         default=None,
         validation_alias=AliasChoices("metadata", "Metadata"),
         serialization_alias="Metadata",
     )
     on_file: bool = False
-
-    @model_validator(mode="before")
-    @classmethod
-    def collect_flat_attributes(cls, value: Any) -> Any:
-        """
-        Accept the original flat constructor while storing values in models.
-
-        This keeps ``PointsModel(name=..., allow_move=...)`` ergonomic and also
-        accepts the explicit nested ``attributes=...`` and ``entity_type=...``
-        forms introduced by the refactor.
-        """
-        if not isinstance(value, Mapping):
-            return value
-
-        values = dict(value)
-
-        attribute_values, _ = _default_model_values(
-            cls,
-            "attributes",
-            Attributes,
-        )
-        nested_attributes = values.get("attributes")
-        if isinstance(nested_attributes, (Attributes | Mapping)):
-            _merge_model_input(
-                attribute_values,
-                nested_attributes,
-                cls.attributes_model,
-            )
-
-        _pop_model_input(attribute_values, values, cls.attributes_model)
-        values["attributes"] = attribute_values
-
-        supplied_type_uid = _pop_type_uid(values)
-        supplied_entity_type = values.get("entity_type")
-        if supplied_type_uid is not None or isinstance(
-            supplied_entity_type, (EntityType, Mapping)
-        ):
-            type_values, default_entity_type = _default_model_values(
-                cls,
-                "entity_type",
-                EntityType,
-            )
-            if isinstance(supplied_entity_type, (EntityType, Mapping)):
-                entity_type_model = (
-                    type(default_entity_type)
-                    if isinstance(default_entity_type, EntityType)
-                    else EntityType
-                )
-                _merge_model_input(
-                    type_values,
-                    supplied_entity_type,
-                    entity_type_model,
-                )
-            if supplied_type_uid is not None:
-                type_values["uid"] = supplied_type_uid
-            values["entity_type"] = type_values
-
-        return values
 
     @property
     def dataset_map(self) -> dict[str, str]:
@@ -336,15 +186,9 @@ class PydanticEntity(BaseModel):
             "metadata": getattr(entity, "metadata", None),
             "on_file": getattr(entity, "on_file", False),
             "attributes": {
-                "uid": getattr(entity, "uid", None),
-                "name": getattr(entity, "name", None),
-                "partially_hidden": getattr(entity, "partially_hidden", False),
-                "public": getattr(entity, "public", True),
-                "visible": getattr(entity, "visible", True),
-                "allow_delete": getattr(entity, "allow_delete", True),
-                "allow_move": getattr(entity, "allow_move", True),
-                "allow_rename": getattr(entity, "allow_rename", True),
-                "clipping_ids": getattr(entity, "clipping_ids", None),
+                key: getattr(entity, key, None)
+                for key in Attributes.model_fields.keys()
+                if getattr(entity, "uid", None) is not None
             },
         }
         attrs = {key: value for key, value in attrs.items() if value is not None}
@@ -355,27 +199,18 @@ class PydanticEntity(BaseModel):
     def __setattr__(self, key, value):
         """
         Overload setattr method to deal with attributes.
-
-        :param key:
-        :param value:
-        :return:
         """
 
         if key in self.attributes.model_fields:
             setattr(self.attributes, key, value)
         else:
-            super().__setattr__(key, value)
+            setattr(self, key, value)
 
     def __getattr__(self, key):
         """
-        Overload getattr method to deal with attributes.
-
-        :param key:
-        :param value:
-        :return:
+        Overload getattr method to deal with nested models.
         """
-
         if key in self.attributes.model_fields:
             return getattr(self.attributes, key)
 
-        return super().__getattr__(key)
+        return getattr(self, key)

@@ -20,14 +20,14 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, ClassVar, Self
+from typing import Annotated, Any, ClassVar, Self
 from uuid import UUID
 
 import numpy as np
 from pydantic import AliasChoices, Field, field_serializer, field_validator
 
 from .arrays import ArraySource, LazyArray
-from .entity import Attributes, AttributesField, PydanticEntity
+from .entity import Attributes, PydanticEntity
 from .entity_type import ObjectType
 
 
@@ -36,7 +36,7 @@ VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
 
 
 def _default_points_attributes() -> Attributes:
-    return Attributes(name="Points")
+    return Attributes(name="Points", last_focus="None")
 
 
 def _default_points_type() -> ObjectType:
@@ -85,12 +85,14 @@ class PointsModel(PydanticEntity):
         "Vertices": "vertices",
     }
 
-    attributes: Attributes = Field(
-        default_factory=Attributes,
-        validation_alias=AliasChoices("attributes", "attrs"),
-        serialization_alias="attrs",
-    )
-
+    attributes: Annotated[
+        Attributes,
+        Field(
+            default_factory=_default_points_attributes,
+            validation_alias=AliasChoices("attributes", "attrs"),
+            serialization_alias="attrs",
+        ),
+    ]
     entity_type: ObjectType = Field(default_factory=_default_points_type)
     vertices: LazyArray = Field(
         default=None,
@@ -240,12 +242,9 @@ class PointsModel(PydanticEntity):
         This adapter is eager for now. A later geoh5 file adapter should provide
         true lazy loading without going through ``Workspace.load_entity``.
         """
-        return cls.from_legacy_entity(
-            points,
-            vertices=getattr(points, "vertices", None),
-            last_focus=getattr(points, "last_focus", "None"),
-            **overrides,
-        )
+        overrides.update({"vertices": getattr(points, "vertices", None)})
+
+        return cls.from_legacy_entity(points, **overrides)
 
     def model_dump_everything(self) -> dict[str, Any]:
         """
