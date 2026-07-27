@@ -57,6 +57,7 @@ class Attributes(NamedIdentity):
         serialization_alias="Clipping IDs",
     )
     last_focus: str | None = Field(
+        default=None,
         validation_alias=AliasChoices("last_focus", "Last focus"),
         serialization_alias="Last focus",
     )
