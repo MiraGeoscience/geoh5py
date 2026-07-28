@@ -59,15 +59,16 @@ class UIJson(BaseModel):
     Base class for storing ui.json data on disk.
 
     :param version: Version of the application.
-    :params title: Title of the application.
-    :params geoh5: Path to the geoh5 file.
-    :params run_command: Command to run the application.
-    :params monitoring_directory: Directory to monitor for changes.
-    :params conda_environment: Conda environment to run the application.
-    :params workspace_geoh5: Path to the workspace geoh5 file.
-    :params out_group: Optional group form to hold the UIJson group.
+    :param icon: Name of the icon to be displayed.
+    :param title: Title of the application.
+    :param geoh5: Path to the geoh5 file.
+    :param run_command: Command to run the application.
+    :param monitoring_directory: Directory to monitor for changes.
+    :param conda_environment: Conda environment to run the application.
+    :param workspace_geoh5: Path to the workspace geoh5 file.
+    :param out_group: Optional group form to hold the UIJson group.
 
-    :params _form_dependencies: Nested dictionaries describing the dependencies between forms,
+    :param _form_dependencies: Nested dictionaries describing the dependencies between forms,
         where the key is the name of the form, and the value is a dictionary of
         forms name and respective mirroring enabled state behaviour
         (True: reflects, False: reverses).
@@ -79,13 +80,14 @@ class UIJson(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True, extra="allow", validate_assignment=True
     )
-    __pydantic_extra__: dict[str, str | float | int | dict]  # For autodoc
+    __pydantic_extra__: dict[str, str | float | int | dict | None | list]  # For autodoc
     version: str | None = "0.0.0"
     title: str
     geoh5: OptionalPath
     run_command: str | None
     monitoring_directory: OptionalPath = None
     conda_environment: str | None
+    icon: str | None = None
     workspace_geoh5: OptionalPath = None
 
     out_group: GroupForm | OptionalString = None
@@ -186,11 +188,8 @@ class UIJson(BaseModel):
             if isinstance(value, dict):
                 form_type = BaseForm.infer(value)
                 fields[name] = (form_type, ...)
-            else:
-                if isinstance(value, str | None):
-                    fields[name] = (OptionalString, ...)
-                else:
-                    fields[name] = (type(value), ...)
+            # else:
+            #     fields[name] = (AnyJsonType, ...)
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
