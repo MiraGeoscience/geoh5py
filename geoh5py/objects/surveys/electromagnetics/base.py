@@ -474,7 +474,7 @@ class BaseEMSurvey(BaseSurvey, ABC):  # pylint: disable=too-many-public-methods
             self.edit_em_metadata({"Tx ID tx property": getattr(value, "uid", None)})
 
     @property
-    def unit(self) -> float | None:
+    def unit(self) -> str | None:
         """
         Default channel units for time or frequency defined on the child class.
         """
