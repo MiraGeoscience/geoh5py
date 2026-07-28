@@ -478,7 +478,7 @@ class UIJson(BaseModel):
         if isinstance(path, Path | str):
             file_name = Path(path)
 
-            if file_name.suffixes != [".ui", ".json"]:
+            if len(set(file_name.suffixes).intersection({".ui", ".json"})) != 2:
                 file_name = file_name.with_suffix(".ui.json")
 
             with open(file_name, "w", encoding="utf-8") as file:
