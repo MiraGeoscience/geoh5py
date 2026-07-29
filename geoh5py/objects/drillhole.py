@@ -68,6 +68,8 @@ class Drillhole(Points):
         {
             "Cost": "cost",
             "Collar": "collar",
+            "Collar azimuth": "collar_azimuth",
+            "Collar dip": "collar_dip",
             "Planning": "planning",
             "End of hole": "end_of_hole",
         }
@@ -78,6 +80,8 @@ class Drillhole(Points):
         *,
         collar: np.ndarray | list | None = None,
         cost: float = 0.0,
+        collar_azimuth: float | None = None,
+        collar_dip: float | None = None,
         end_of_hole: float | None = None,
         planning: str = "Default",
         surveys: np.ndarray | list | tuple | None = None,
@@ -86,11 +90,12 @@ class Drillhole(Points):
         **kwargs,
     ):
         self._cells: np.ndarray | None = None
+        self._collar_azimuth: float | None = collar_azimuth
+        self._collar_dip: float | None = collar_dip
         self._depths: FloatData | None = None
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
-        self._surveys: np.ndarray | None = None
         self._intervals: dict | None = None
 
         super().__init__(
@@ -105,9 +110,7 @@ class Drillhole(Points):
         self.default_collocation_distance = default_collocation_distance
         self.end_of_hole = end_of_hole
         self.planning = planning
-
-        if surveys is not None:
-            self.surveys = surveys
+        self.surveys = surveys
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -166,6 +169,20 @@ class Drillhole(Points):
                 self._trace_depth = None
                 self.workspace.update_attribute(self, "trace")
                 self.workspace.update_attribute(self, "trace_depth")
+
+    @property
+    def collar_azimuth(self) -> float | None:
+        """
+        Azimuth of the drillhole at the collar, in degrees.
+        """
+        return self._collar_azimuth
+
+    @property
+    def collar_dip(self) -> float | None:
+        """
+        Dip of the drillhole at the collar, in degrees.
+        """
+        return self._collar_dip
 
     @property
     def cost(self) -> float:
@@ -290,25 +307,21 @@ class Drillhole(Points):
         """
         Coordinates of the surveys.
         """
-        if self._surveys is None and self.on_file:
-            self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
-
-        if self._surveys is None:
-            surveys = np.c_[0, 0, -90]
-
-        else:
-            surveys = np.vstack(
-                [
-                    self._surveys["Depth"],
-                    self._surveys["Azimuth"],
-                    self._surveys["Dip"],
-                ]
-            ).T
+        surveys = np.vstack(
+            [
+                self._surveys["Depth"],
+                self._surveys["Azimuth"],
+                self._surveys["Dip"],
+            ]
+        ).T
 
         return surveys.astype(float)
 
     @surveys.setter
-    def surveys(self, array: np.ndarray | list | tuple):
+    def surveys(self, array: np.ndarray | list | tuple | None):
+        if array is None:
+            array = np.c_[0, self._collar_azimuth or 0.0, self._collar_dip or -90.0]
+
         if not isinstance(array, (np.ndarray, list, tuple)):
             raise TypeError(
                 "Input 'surveys' must be of type 'numpy.ndarray' or 'list'."
