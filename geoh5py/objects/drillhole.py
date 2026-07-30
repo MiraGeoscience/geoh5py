@@ -28,6 +28,7 @@ import warnings
 from numbers import Real
 
 import numpy as np
+from h5py import string_dtype
 
 from ..data import Data, FloatData, NumericData
 from ..shared.utils import (
@@ -42,6 +43,13 @@ from .points import Points
 INFINITE_RADIUS = 99999.9
 MINIMUM_DEPTH_INTERVAL = 1.0
 MAXIMUM_DEPTH_INTERVAL = 50.0
+
+SURVEYS_FIELDS = [
+    ("Depth", "<f4"),
+    ("Azimuth", "<f4"),
+    ("Dip", "<f4"),
+    ("Info", string_dtype(encoding="utf-8", length=12)),
+]
 
 
 class Drillhole(Points):
@@ -61,7 +69,6 @@ class Drillhole(Points):
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
     _default_name = "Drillhole"
-    __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
     __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()
     _attribute_map.update(
@@ -340,27 +347,41 @@ class Drillhole(Points):
         self._locations = None
         self._intervals = None
 
-    def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
+    def format_survey_values(
+        self, values: list | np.ndarray, dtype=np.dtype(SURVEYS_FIELDS[:3])
+    ) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
+
+        :param values: Survey values of 'Depth', 'Azimuth', 'Dip' and optional 'Info'
+        :param dtype: Desired dtype for the structured array.
+
+        :return: Reformatted survey values.
         """
         if isinstance(values, (list, tuple)):
             values = np.array(values, ndmin=2)
 
+        # Already a recarray with proper type
+        if values.dtype.names == dtype.names:
+            return values
+
         if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 3:
-                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
-
-            array_values = np.asarray(
-                np.rec.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
-            )
+            n_fields = values.shape[1]
         else:
-            array_values = values
+            n_fields = len(values.dtype.names)
 
-        if array_values.dtype.descr[:3] != self.__SURVEY_DTYPE.descr:
-            raise ValueError(
-                f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
-            )
+        if n_fields not in [3, 4]:
+            raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
+
+        values = values.T.tolist()
+
+        if n_fields == 3 and len(dtype) == 4:
+            values += [np.array([b""] * len(values[0]), dtype=dtype[-1])]
+        elif n_fields == 4 and len(dtype) == 3:
+            values = values[:-1]
+
+        array_values = np.rec.fromarrays(values, dtype=dtype)
+
         return array_values
 
     @property

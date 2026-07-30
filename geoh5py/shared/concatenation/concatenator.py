@@ -348,13 +348,16 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 for attr, val in self.get_concatenated_attributes(key).items()
                 if "Property" not in attr
             }
+            attrs["surveys"] = self.fetch_values(uuid.UUID(attrs.get("ID")), "surveys")
             attrs["parent"] = self
             attr_dict[key] = self.workspace.create_from_concatenation(attrs)
 
         return attr_dict
 
     def fetch_index(
-        self, entity: ConcatenatedObject | ConcatenatedData | EntityType, field: str
+        self,
+        entity: ConcatenatedObject | ConcatenatedData | EntityType | uuid.UUID,
+        field: str,
     ) -> int | None:
         """
         Fetch the array index for specific concatenated object and data field.
@@ -367,7 +370,10 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         if field not in self.index:
             return None
 
-        uid = as_str_if_uuid(entity.uid).encode()
+        if isinstance(entity, uuid.UUID):
+            uid = as_str_if_uuid(entity).encode()
+        else:
+            uid = as_str_if_uuid(entity.uid).encode()
 
         if isinstance(entity, ConcatenatedData):
             ind = np.where(self.index[field]["Data ID"] == uid)[0]

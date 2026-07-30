@@ -23,10 +23,9 @@
 from __future__ import annotations
 
 import numpy as np
-from h5py import special_dtype
 
 from ...data import Data
-from ...objects import Drillhole
+from ...objects.drillhole import SURVEYS_FIELDS, Drillhole
 from .object import ConcatenatedObject
 from .property_group import ConcatenatedPropertyGroup
 
@@ -385,32 +384,22 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
     def post_processing(self):
         """Bypass sort_depths from previous version."""
 
-    def format_survey_values(self, values: list | np.ndarray) -> np.recarray:
+    def format_survey_values(
+        self, values: list | np.ndarray, dtype=np.dtype(SURVEYS_FIELDS[:3])
+    ) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
+
+        Overloaded from base Drillhole class to take into account the
+        concatenated 'Surveys' data type.
+
+        :param values: Survey values of 'Depth', 'Azimuth', 'Dip' and optional 'Info'
+        :param dtype: Desired dtype for the structured array.
+
+        :return: Reformatted survey values.
         """
-        if isinstance(values, (list, tuple)):
-            values = np.array(values, ndmin=2)
-
-        if isinstance(values, np.ndarray):
-            values = values.T.tolist()
-
-        dtype = [("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")]
-
-        if (
-            "Surveys" in self.concatenator.data
-            and len(self.concatenator.data["Surveys"].dtype) == 4
-        ):
+        # Check if 'Info' is in the survey array
+        if "Surveys" in self.concatenator.data:
             dtype = self.concatenator.data["Surveys"].dtype
 
-        if len(values) not in [3, 4]:
-            raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
-
-        if len(values) == 3 and len(dtype) == 4:
-            values += [np.array([b""] * len(values[0]), dtype=special_dtype(vlen=str))]
-        elif len(values) == 4 and len(dtype) == 3:
-            values = values[:-1]
-
-        array_values = np.rec.fromarrays(values, dtype=dtype)
-
-        return array_values
+        return super().format_survey_values(values, dtype=dtype)
