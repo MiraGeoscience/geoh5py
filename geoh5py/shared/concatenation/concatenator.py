@@ -409,7 +409,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
         return start
 
     def fetch_values(
-        self, entity: ConcatenatedObject | ConcatenatedData | EntityType, field: str
+        self,
+        entity: ConcatenatedObject | ConcatenatedData | EntityType | uuid.UUID,
+        field: str,
     ) -> np.ndarray | None:
         """
         Get an array of values from concatenated data.
