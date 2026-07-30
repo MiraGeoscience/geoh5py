@@ -29,11 +29,12 @@ import string
 
 import numpy as np
 import pytest
-from h5py import string_dtype
+from h5py import special_dtype
 
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
-from geoh5py.objects import Drillhole, ObjectBase
+from geoh5py.objects import ObjectBase
+from geoh5py.objects.drillhole import SURVEYS_FIELDS, Drillhole
 from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
@@ -1119,12 +1120,15 @@ def test_surveys_info(tmp_path):
 
     surveys = dh_group.data["Surveys"].view("<f4").reshape((-1, 3))
 
-    new_dtype = [
-        ("Depth", "<f4"),
-        ("Azimuth", "<f4"),
-        ("Dip", "<f4"),
-        ("Info", string_dtype(encoding="utf-8", length=12)),
-    ]
+    new_dtype = np.dtype(
+        [
+            ("Depth", "<f4"),
+            ("Azimuth", "<f4"),
+            ("Dip", "<f4"),
+            ("Info", special_dtype(vlen=str)),
+        ],
+        align=True,
+    )
     values = []
 
     for val in surveys:
@@ -1152,7 +1156,7 @@ def test_surveys_info(tmp_path):
         )
 
     assert len(dh.parent.data["Surveys"]) == 35
-    # assert "Info" in dh.parent.data["Surveys"].dtype.names
+    assert "Info" in dh.parent.data["Surveys"].dtype.names
 
     with workspace.open():
         dh = workspace.get_entity("Info Drillhole")[0]

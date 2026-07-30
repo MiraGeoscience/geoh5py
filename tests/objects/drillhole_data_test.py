@@ -27,7 +27,7 @@ import string
 
 import numpy as np
 import pytest
-from h5py import special_dtype
+from h5py import special_dtype, string_dtype
 
 from geoh5py.data import BooleanData, FloatData, ReferencedData
 from geoh5py.objects.drillhole import SURVEYS_FIELDS, Drillhole
@@ -337,7 +337,7 @@ def test_survey_with_info(tmp_path):
             ("Depth", "<f4"),
             ("Azimuth", "<f4"),
             ("Dip", "<f4"),
-            ("Info", special_dtype(vlen=str)),
+            ("Info", string_dtype(encoding="utf-8", length=12)),
         ],
     )
 
@@ -351,7 +351,7 @@ def test_survey_with_info(tmp_path):
 
         surveys_array = np.core.records.fromarrays(
             surveys,
-            dtype=np.dtype(SURVEYS_FIELDS),
+            dtype=np.dtype(SURVEYS_FIELDS, align=True),
         )
         Drillhole.create(
             workspace, name="Han Solo", collar=collar, surveys=surveys_array

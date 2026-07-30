@@ -695,14 +695,16 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
                 ]
             )
             if alias in self.index:
-                indices = np.hstack([self.index[alias], indices]).astype(
-                    self.index[alias].dtype
+                indices = np.hstack(
+                    [self.index[alias], indices], dtype=self.index[alias].dtype
                 )
 
             self.index[alias] = indices
 
             if alias in self.data:
-                values = np.hstack([self.data[alias], values])
+                values = np.hstack(
+                    [self.data[alias], values], dtype=self.data[alias].dtype
+                )
 
             self.data[alias] = values
 
