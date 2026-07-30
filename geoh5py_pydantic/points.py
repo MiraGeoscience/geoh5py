@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Annotated, Any, ClassVar, Self
+from typing import Annotated, Any, ClassVar, Self, cast
 from uuid import UUID
 
 import numpy as np
@@ -250,13 +250,16 @@ class PointsModel(PydanticEntity):
         """
         Return the three serialization categories for notebook inspection.
         """
+        attributes = cast(Attributes, self.attributes)
+        entity_type = cast(ObjectType, self.entity_type)
+
         return {
-            "attributes": self._attributes_value().model_dump(
+            "attributes": attributes.model_dump(
                 by_alias=True,
                 exclude_none=True,
             ),
             "datasets": self.h5_datasets(),
-            "entity_type": self._entity_type_value().model_dump(
+            "entity_type": entity_type.model_dump(  # pylint: disable=no-member
                 by_alias=True,
                 exclude_none=True,
             ),
