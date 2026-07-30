@@ -30,7 +30,7 @@ import pytest
 from h5py import special_dtype
 
 from geoh5py.data import BooleanData, FloatData, ReferencedData
-from geoh5py.objects import Drillhole
+from geoh5py.objects.drillhole import SURVEYS_FIELDS, Drillhole
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -331,7 +331,7 @@ def test_survey_with_info(tmp_path):
     dip = np.random.randn(3) * 180.0
     surveys = np.c_[dist, azm, dip].T.tolist()
     surveys += [["A", "B", "C"]]
-    surveys = np.core.records.fromarrays(
+    surveys_array = np.core.records.fromarrays(
         surveys,
         dtype=[
             ("Depth", "<f4"),
@@ -344,7 +344,18 @@ def test_survey_with_info(tmp_path):
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
-        Drillhole.create(workspace, name="Han Solo", collar=collar, surveys=surveys)
+        with pytest.raises(TypeError, match="type of survey array must be"):
+            Drillhole.create(
+                workspace, name="Han Solo", collar=collar, surveys=surveys_array
+            )
+
+        surveys_array = np.core.records.fromarrays(
+            surveys,
+            dtype=np.dtype(SURVEYS_FIELDS),
+        )
+        Drillhole.create(
+            workspace, name="Han Solo", collar=collar, surveys=surveys_array
+        )
 
     with Workspace(h5file_path) as workspace:
         well = workspace.get_entity("Han Solo")[0]

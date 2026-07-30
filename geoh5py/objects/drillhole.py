@@ -361,14 +361,17 @@ class Drillhole(Points):
         if isinstance(values, (list, tuple)):
             values = np.array(values, ndmin=2)
 
-        # Already a recarray with proper type
-        if values.dtype.names == dtype.names:
-            return values
-
         if np.issubdtype(values.dtype, np.number):
             n_fields = values.shape[1]
         else:
             n_fields = len(values.dtype.names)
+            dtype = np.dtype(SURVEYS_FIELDS[:n_fields])
+            if values.dtype.descr != dtype.descr:
+                raise TypeError(f"The type of survey array must be numeric or {dtype}")
+
+        # Already a recarray with proper type
+        if values.dtype.names == dtype.names:
+            return values
 
         if n_fields not in [3, 4]:
             raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
@@ -378,7 +381,7 @@ class Drillhole(Points):
         if n_fields == 3 and len(dtype) == 4:
             values += [np.array([b""] * len(values[0]), dtype=dtype[-1])]
         elif n_fields == 4 and len(dtype) == 3:
-            values = values[:-1]
+            values = [val[:-1] for val in values]
 
         array_values = np.rec.fromarrays(values, dtype=dtype)
 
