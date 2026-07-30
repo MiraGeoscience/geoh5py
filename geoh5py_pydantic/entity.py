@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, ClassVar, Self, cast
+from typing import Annotated, Any, ClassVar, Self, cast
 from uuid import UUID
 
 import numpy as np
@@ -36,92 +36,100 @@ from pydantic import (
 from .entity_type import EntityType, NamedIdentity
 
 
+# used to distinguish "not supplied" from "explicitly supplied as None" for certain fields where
+# None is valid
+_MISSING = object()
+
+_TYPE_UID_INPUT_NAMES = (
+    "type_uid",
+    "Type ID",
+    "Object Type ID",
+    "Data Type ID",
+)
+
+
 def _field_input_names(field_name: str, field: Any) -> list[str]:
-    """Return the Python name and accepted string validation aliases."""
+    """Return a field's Python name and accepted string aliases."""
     input_names = [field_name]
-    if isinstance(field.validation_alias, AliasChoices):
+    validation_alias = field.validation_alias
+
+    # Add the validation alias(es) to the list of input names
+    if isinstance(validation_alias, AliasChoices):
         input_names.extend(
-            choice
-            for choice in field.validation_alias.choices
-            if isinstance(choice, str)
+            alias for alias in validation_alias.choices if isinstance(alias, str)
         )
-    elif isinstance(field.validation_alias, str):
-        input_names.append(field.validation_alias)
+    elif isinstance(validation_alias, str):
+        input_names.append(validation_alias)
 
     return input_names
 
 
-def _merge_model_input(
-    values: dict[str, Any],
+def _model_field_names(model_type: type[BaseModel]) -> list[str]:
+    """
+    Return model field names behind a Pydantic-aware type boundary.
+    Mainly used as a type boundary for Pylint, which may otherwise report Pydantic's
+    model_fields as non-iterable
+    """
+    return list(model_type.model_fields)
+
+
+def _default_nested_values(
+    model_type: type[BaseModel],
+    field_name: str,
+    expected_type: type[BaseModel],
+) -> dict[str, Any]:
+    """Return a nested model's configured defaults as ordinary values."""
+    field = model_type.model_fields.get(field_name)
+    if field is None:
+        return {}
+
+    default = field.get_default(call_default_factory=True)
+    if isinstance(default, expected_type):
+        return default.model_dump()
+
+    return {}
+
+
+def _normalize_nested_input(
     supplied: BaseModel | Mapping[str, Any],
     model_type: type[BaseModel],
-) -> None:
-    """Merge only explicitly supplied fields, normalized to Python names."""
+) -> dict[str, Any]:
+    """Normalize known aliases while preserving unknown keys for validation."""
     if isinstance(supplied, BaseModel):
-        values.update(supplied.model_dump())
-        return
+        return supplied.model_dump()
 
-    consumed = set()
+    normalized: dict[str, Any] = {}
+    consumed: set[str] = set()
     for field_name, field in model_type.model_fields.items():
         for input_name in _field_input_names(field_name, field):
             if input_name in supplied:
-                values[field_name] = supplied[input_name]
+                normalized[field_name] = supplied[input_name]
                 consumed.add(input_name)
                 break
 
-    # Preserve unknown nested keys so ``extra="forbid"`` reports them instead
-    # of silently dropping values that cannot be written.
-    values.update(
+    normalized.update(
         {
             input_name: input_value
             for input_name, input_value in supplied.items()
             if input_name not in consumed
         }
     )
+    return normalized
 
 
-def _pop_model_input(
+def _pop_flat_model_input(
     values: dict[str, Any],
-    supplied: dict[str, Any],
     model_type: type[BaseModel],
-) -> None:
-    """Move recognized model inputs out of a larger flat input dictionary."""
+) -> dict[str, Any]:
+    """Move fields accepted by a nested model out of a flat input mapping."""
+    nested_values = {}
     for field_name, field in model_type.model_fields.items():
         for input_name in _field_input_names(field_name, field):
-            if input_name in supplied:
-                values[field_name] = supplied.pop(input_name)
+            if input_name in values:
+                nested_values[field_name] = values.pop(input_name)
                 break
 
-
-def _default_model_values(
-    model_type: type[BaseModel],
-    field_name: str,
-    expected_type: type[BaseModel],
-) -> tuple[dict[str, Any], BaseModel | None]:
-    """Create the configured field default without confusing static linters."""
-    model_fields = model_type.model_fields
-    default = model_fields[field_name].get_default(call_default_factory=True)
-    if isinstance(default, expected_type):
-        return default.model_dump(), default
-
-    return {}, None
-
-
-def _pop_type_uid(values: dict[str, Any]) -> Any:
-    """Remove legacy flat type UID aliases and return the first supplied value."""
-    supplied_type_uid = None
-    for input_name in (
-        "type_uid",
-        "Type ID",
-        "Object Type ID",
-        "Data Type ID",
-    ):
-        if input_name in values:
-            candidate = values.pop(input_name)
-            if supplied_type_uid is None:
-                supplied_type_uid = candidate
-
-    return supplied_type_uid
+    return nested_values
 
 
 class Attributes(NamedIdentity):
@@ -152,8 +160,8 @@ class Attributes(NamedIdentity):
         validation_alias=AliasChoices("clipping_ids", "Clipping IDs"),
         serialization_alias="Clipping IDs",
     )
-    last_focus: str = Field(
-        default="None",
+    last_focus: str | None = Field(
+        default=None,
         validation_alias=AliasChoices("last_focus", "Last focus"),
         serialization_alias="Last focus",
     )
@@ -192,13 +200,20 @@ class PydanticEntity(BaseModel):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        extra="forbid",
-        populate_by_name=True,
-        validate_assignment=True,
+        extra="forbid",  # prevent unwritable values from being silently discarded
+        populate_by_name=True,  # permit Python field names alongside aliases
+        validate_assignment=True,  # validate changes after creation
     )
 
-    attributes: Attributes = Field(default_factory=Attributes)
-    entity_type: EntityType = Field(default_factory=EntityType)
+    attributes: Annotated[
+        Attributes,
+        Field(
+            default_factory=Attributes,
+            validation_alias=AliasChoices("attributes", "attrs"),
+            serialization_alias="attrs",
+        ),
+    ]
+    entity_type: Annotated[EntityType, Field(default_factory=EntityType)]
     parent_uid: UUID | None = None
     metadata: dict[str, Any] | None = Field(
         default=None,
@@ -207,71 +222,111 @@ class PydanticEntity(BaseModel):
     )
     on_file: bool = False
 
+    @classmethod
+    def _collect_attribute_input(cls, values: dict[str, Any]) -> None:
+        """Route flat and nested inputs into the attributes model."""
+        nested_attributes = _MISSING
+        if "attributes" in values:
+            nested_attributes = values.pop("attributes")
+        elif "attrs" in values:
+            nested_attributes = values.pop("attrs")
+
+        flat_attribute_values = _pop_flat_model_input(
+            values,
+            cls.attributes_model,
+        )
+        valid_nested_attributes = isinstance(
+            nested_attributes,
+            (BaseModel, Mapping),
+        )
+        if (
+            isinstance(nested_attributes, cls.attributes_model)
+            and not flat_attribute_values
+        ):
+            # Assignment validation supplies existing fields to this validator.
+            # Keep an already-valid model intact when another field is changing.
+            values["attributes"] = nested_attributes
+        elif nested_attributes is _MISSING or valid_nested_attributes:
+            attribute_values = _default_nested_values(
+                cls,
+                "attributes",
+                cls.attributes_model,
+            )
+            if valid_nested_attributes:
+                attribute_values.update(
+                    _normalize_nested_input(
+                        cast(
+                            BaseModel | Mapping[str, Any],
+                            nested_attributes,
+                        ),
+                        cls.attributes_model,
+                    )
+                )
+            attribute_values.update(flat_attribute_values)
+            values["attributes"] = attribute_values
+        else:
+            # Preserve invalid input so Pydantic reports it at ``attributes``.
+            values["attributes"] = nested_attributes
+
+    @classmethod
+    def _collect_entity_type_input(cls, values: dict[str, Any]) -> None:
+        """Route a nested type and flat type UID into the entity type model."""
+        supplied_entity_type = values.pop("entity_type", _MISSING)
+        supplied_type_uid = _MISSING
+        for input_name in _TYPE_UID_INPUT_NAMES:
+            if input_name in values:
+                supplied_type_uid = values.pop(input_name)
+                break
+
+        if (
+            isinstance(supplied_entity_type, EntityType)
+            and supplied_type_uid is _MISSING
+        ):
+            # As above, avoid replacing an untouched model during assignment.
+            values["entity_type"] = supplied_entity_type
+        elif supplied_entity_type is not _MISSING or supplied_type_uid is not _MISSING:
+            type_values = _default_nested_values(
+                cls,
+                "entity_type",
+                EntityType,
+            )
+            valid_entity_type = isinstance(
+                supplied_entity_type,
+                (BaseModel, Mapping),
+            )
+            if valid_entity_type:
+                type_values.update(
+                    _normalize_nested_input(
+                        supplied_entity_type,
+                        EntityType,
+                    )
+                )
+            elif supplied_entity_type is not _MISSING:
+                values["entity_type"] = supplied_entity_type
+
+            if supplied_entity_type is _MISSING or valid_entity_type:
+                if supplied_type_uid is not _MISSING:
+                    type_values["uid"] = supplied_type_uid
+                values["entity_type"] = type_values
+
     @model_validator(mode="before")
     @classmethod
-    def collect_flat_attributes(cls, value: Any) -> Any:
+    def collect_flat_model_fields(cls, value: Any) -> Any:
         """
-        Accept the original flat constructor while storing values in models.
+        Route convenient flat inputs into the nested models that own them.
 
-        This keeps ``PointsModel(name=..., allow_move=...)`` ergonomic and also
-        accepts the explicit nested ``attributes=...`` and ``entity_type=...``
-        forms introduced by the refactor.
+        The instance-level forwarding methods apply only after construction.
+        This adapter lets ``PointsModel(name=...)`` and geoh5 aliases such as
+        ``Name`` retain that same flat API during Pydantic validation.
         """
         if not isinstance(value, Mapping):
             return value
 
         values = dict(value)
-
-        attribute_values, _ = _default_model_values(
-            cls,
-            "attributes",
-            Attributes,
-        )
-        nested_attributes = values.get("attributes")
-        if isinstance(nested_attributes, (Attributes | Mapping)):
-            _merge_model_input(
-                attribute_values,
-                nested_attributes,
-                cls.attributes_model,
-            )
-
-        _pop_model_input(attribute_values, values, cls.attributes_model)
-        values["attributes"] = attribute_values
-
-        supplied_type_uid = _pop_type_uid(values)
-        supplied_entity_type = values.get("entity_type")
-        if supplied_type_uid is not None or isinstance(
-            supplied_entity_type, (EntityType, Mapping)
-        ):
-            type_values, default_entity_type = _default_model_values(
-                cls,
-                "entity_type",
-                EntityType,
-            )
-            if isinstance(supplied_entity_type, (EntityType, Mapping)):
-                entity_type_model = (
-                    type(default_entity_type)
-                    if isinstance(default_entity_type, EntityType)
-                    else EntityType
-                )
-                _merge_model_input(
-                    type_values,
-                    supplied_entity_type,
-                    entity_type_model,
-                )
-            if supplied_type_uid is not None:
-                type_values["uid"] = supplied_type_uid
-            values["entity_type"] = type_values
+        cls._collect_attribute_input(values)
+        cls._collect_entity_type_input(values)
 
         return values
-
-    def _attributes_value(self) -> Attributes:
-        """Return the nested model with its runtime Pydantic type restored."""
-        return cast(Attributes, self.attributes)
-
-    def _entity_type_value(self) -> EntityType:
-        """Return the nested type model with its runtime type restored."""
-        return cast(EntityType, self.entity_type)
 
     @property
     def dataset_map(self) -> dict[str, str]:
@@ -310,94 +365,6 @@ class PydanticEntity(BaseModel):
 
         return value
 
-    @property
-    def uid(self) -> UUID:
-        return self._attributes_value().uid
-
-    @uid.setter
-    def uid(self, value: UUID) -> None:
-        self._attributes_value().uid = value
-
-    @property
-    def name(self) -> str:
-        return self._attributes_value().name
-
-    @name.setter
-    def name(self, value: str) -> None:
-        self._attributes_value().name = value
-
-    @property
-    def type_uid(self) -> UUID:
-        return self._entity_type_value().uid
-
-    @type_uid.setter
-    def type_uid(self, value: UUID) -> None:
-        self._entity_type_value().uid = value
-
-    @property
-    def allow_delete(self) -> bool:
-        return self._attributes_value().allow_delete
-
-    @allow_delete.setter
-    def allow_delete(self, value: bool) -> None:
-        self._attributes_value().allow_delete = value
-
-    @property
-    def allow_move(self) -> bool:
-        return self._attributes_value().allow_move
-
-    @allow_move.setter
-    def allow_move(self, value: bool) -> None:
-        self._attributes_value().allow_move = value
-
-    @property
-    def allow_rename(self) -> bool:
-        return self._attributes_value().allow_rename
-
-    @allow_rename.setter
-    def allow_rename(self, value: bool) -> None:
-        self._attributes_value().allow_rename = value
-
-    @property
-    def clipping_ids(self) -> list[UUID] | None:
-        return self._attributes_value().clipping_ids
-
-    @clipping_ids.setter
-    def clipping_ids(self, value: list[UUID] | None) -> None:
-        self._attributes_value().clipping_ids = value
-
-    @property
-    def last_focus(self) -> str:
-        return self._attributes_value().last_focus
-
-    @last_focus.setter
-    def last_focus(self, value: str) -> None:
-        self._attributes_value().last_focus = value
-
-    @property
-    def partially_hidden(self) -> bool:
-        return self._attributes_value().partially_hidden
-
-    @partially_hidden.setter
-    def partially_hidden(self, value: bool) -> None:
-        self._attributes_value().partially_hidden = value
-
-    @property
-    def public(self) -> bool:
-        return self._attributes_value().public
-
-    @public.setter
-    def public(self, value: bool) -> None:
-        self._attributes_value().public = value
-
-    @property
-    def visible(self) -> bool:
-        return self._attributes_value().visible
-
-    @visible.setter
-    def visible(self, value: bool) -> None:
-        self._attributes_value().visible = value
-
     @classmethod
     def from_legacy_entity(cls, entity: Any, **overrides) -> Self:
         """
@@ -412,24 +379,49 @@ class PydanticEntity(BaseModel):
             "name": getattr(legacy_type, "name", None),
             "description": getattr(legacy_type, "description", None),
         }
+        attribute_values = {}
+        for field_name in _model_field_names(cls.attributes_model):
+            field_value = getattr(entity, field_name, _MISSING)
+            if field_value is not _MISSING:
+                attribute_values[field_name] = field_value
+
         attrs = {
-            "uid": getattr(entity, "uid", None),
-            "name": getattr(entity, "name", None),
             "entity_type": {
                 key: value for key, value in type_values.items() if value is not None
             },
             "parent_uid": getattr(parent, "uid", None),
-            "allow_delete": getattr(entity, "allow_delete", True),
-            "allow_move": getattr(entity, "allow_move", True),
-            "allow_rename": getattr(entity, "allow_rename", True),
-            "clipping_ids": getattr(entity, "clipping_ids", None),
             "metadata": getattr(entity, "metadata", None),
             "on_file": getattr(entity, "on_file", False),
-            "partially_hidden": getattr(entity, "partially_hidden", False),
-            "public": getattr(entity, "public", True),
-            "visible": getattr(entity, "visible", True),
+            "attributes": attribute_values,
         }
         attrs = {key: value for key, value in attrs.items() if value is not None}
         attrs.update(overrides)
 
         return cls.model_validate(attrs)
+
+    @property
+    def type_uid(self) -> UUID:
+        """UID of the shared entity type."""
+        return self.entity_type.uid
+
+    @type_uid.setter
+    def type_uid(self, value: UUID) -> None:
+        self.entity_type.uid = value
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        """Forward core attribute assignment to the nested attributes model."""
+        attributes = self.__dict__.get("attributes")
+        if isinstance(attributes, BaseModel) and key in type(attributes).model_fields:
+            setattr(attributes, key, value)
+            return
+
+        super().__setattr__(key, value)
+
+    def __getattr__(self, key: str) -> Any:
+        """Forward core attribute access to the nested attributes model."""
+        attributes = self.__dict__.get("attributes")
+        if isinstance(attributes, BaseModel) and key in type(attributes).model_fields:
+            return getattr(attributes, key)
+
+        # Pydantic defines BaseModel.__getattr__ only at runtime.
+        return super().__getattr__(key)  # type: ignore[misc]

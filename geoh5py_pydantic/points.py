@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, ClassVar, Self
+from typing import Annotated, Any, ClassVar, Self, cast
 from uuid import UUID
 
 import numpy as np
@@ -36,7 +36,7 @@ VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
 
 
 def _default_points_attributes() -> Attributes:
-    return Attributes(name="Points")
+    return Attributes(name="Points", last_focus="None")
 
 
 def _default_points_type() -> ObjectType:
@@ -85,7 +85,14 @@ class PointsModel(PydanticEntity):
         "Vertices": "vertices",
     }
 
-    attributes: Attributes = Field(default_factory=_default_points_attributes)
+    attributes: Annotated[
+        Attributes,
+        Field(
+            default_factory=_default_points_attributes,
+            validation_alias=AliasChoices("attributes", "attrs"),
+            serialization_alias="attrs",
+        ),
+    ]
     entity_type: ObjectType = Field(default_factory=_default_points_type)
     vertices: LazyArray = Field(
         default=None,
@@ -235,24 +242,24 @@ class PointsModel(PydanticEntity):
         This adapter is eager for now. A later geoh5 file adapter should provide
         true lazy loading without going through ``Workspace.load_entity``.
         """
-        return cls.from_legacy_entity(
-            points,
-            vertices=getattr(points, "vertices", None),
-            last_focus=getattr(points, "last_focus", "None"),
-            **overrides,
-        )
+        overrides.update({"vertices": getattr(points, "vertices", None)})
+
+        return cls.from_legacy_entity(points, **overrides)
 
     def model_dump_everything(self) -> dict[str, Any]:
         """
         Return the three serialization categories for notebook inspection.
         """
+        attributes = cast(Attributes, self.attributes)
+        entity_type = cast(ObjectType, self.entity_type)
+
         return {
-            "attributes": self._attributes_value().model_dump(
+            "attributes": attributes.model_dump(
                 by_alias=True,
                 exclude_none=True,
             ),
             "datasets": self.h5_datasets(),
-            "entity_type": self._entity_type_value().model_dump(
+            "entity_type": entity_type.model_dump(  # pylint: disable=no-member
                 by_alias=True,
                 exclude_none=True,
             ),
