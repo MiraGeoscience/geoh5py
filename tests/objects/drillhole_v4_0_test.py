@@ -33,8 +33,7 @@ from h5py import special_dtype
 
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
-from geoh5py.objects import ObjectBase
-from geoh5py.objects.drillhole import SURVEYS_FIELDS, Drillhole
+from geoh5py.objects import Drillhole, ObjectBase
 from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
