@@ -22,7 +22,7 @@ from __future__ import annotations
 from .arrays import ArraySource, CallableArraySource, LazyArray
 from .entity import Attributes, PydanticEntity
 from .entity_type import DataType, EntityType, GroupType, ObjectType
-from .points import POINTS_TYPE_UID, VERTICES_DTYPE, PointsModel
+from .points import VERTICES_DTYPE, PointsModel
 from .serialization import Geoh5EntityPayload, Geoh5Writer
 
 

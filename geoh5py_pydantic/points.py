@@ -31,7 +31,6 @@ from .entity import Attributes, PydanticEntity
 from .entity_type import ObjectType
 
 
-POINTS_TYPE_UID = UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}")
 VERTICES_DTYPE = np.dtype([("x", "<f8"), ("y", "<f8"), ("z", "<f8")])
 
 
@@ -39,11 +38,28 @@ def _default_points_attributes() -> Attributes:
     return Attributes(name="Points", last_focus="None")
 
 
-def _default_points_type() -> ObjectType:
-    return ObjectType(
-        uid=POINTS_TYPE_UID,
-        name="Points",
-        description="Points",
+class PointsType(ObjectType):
+    """
+    Specific Points type
+
+    :param NamedIdentity:
+    :return:
+    """
+
+    uid: UUID = Field(
+        UUID("{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"),
+        validation_alias=AliasChoices("uid", "ID"),
+        serialization_alias="ID",
+    )
+    name: str = Field(
+        "Points",
+        validation_alias=AliasChoices("name", "Name"),
+        serialization_alias="Name",
+    )
+    description: str | None = Field(
+        "Points",
+        validation_alias=AliasChoices("description", "Description"),
+        serialization_alias="Description",
     )
 
 
@@ -93,7 +109,7 @@ class PointsModel(PydanticEntity):
             serialization_alias="attrs",
         ),
     ]
-    entity_type: ObjectType = Field(default_factory=_default_points_type)
+    entity_type: ObjectType = PointsType()
     vertices: LazyArray = Field(
         default=None,
         validate_default=True,

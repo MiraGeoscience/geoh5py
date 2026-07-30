@@ -68,7 +68,6 @@ def test_points_model_owns_attributes_and_entity_type():
         {
             "ID": uid,
             "Name": "Nested points",
-            "Object Type ID": type_uid,
             "Allow move": False,
             "Last focus": "Camera 1",
             "vertices": [[1.0, 2.0, 3.0]],
@@ -79,7 +78,7 @@ def test_points_model_owns_attributes_and_entity_type():
     assert isinstance(model.entity_type, ObjectType)
     assert model.uid == model.attributes.uid == uid
     assert model.name == model.attributes.name == "Nested points"
-    assert model.type_uid == model.entity_type.uid == type_uid
+    assert model.type_uid == model.entity_type.uid == Points.default_type_uid()
     assert model.entity_type.h5_collection == "Objects"
     assert model.entity_type.h5_type_collection == "Object types"
 
