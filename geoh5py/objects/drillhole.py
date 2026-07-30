@@ -28,7 +28,7 @@ import warnings
 from numbers import Real
 
 import numpy as np
-from h5py import special_dtype, string_dtype
+from h5py import special_dtype
 
 from ..data import Data, FloatData, NumericData
 from ..shared.utils import (
@@ -48,7 +48,7 @@ SURVEYS_FIELDS = [
     ("Depth", "<f4"),
     ("Azimuth", "<f4"),
     ("Dip", "<f4"),
-    ("Info", special_dtype(vlen=str)),  # string_dtype(encoding="utf-8", length=12)),
+    ("Info", special_dtype(vlen=str)),
 ]
 
 
