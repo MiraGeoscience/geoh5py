@@ -106,6 +106,9 @@ class PointsModel(PydanticEntity):
     @field_validator("vertices", mode="before")
     @classmethod
     def validate_vertices_field(cls, value: Any) -> LazyArray:
+        if value is None:
+            value = cls.validate_vertices(value)
+
         if isinstance(value, LazyArray):
             return (
                 value.with_validator(_coerce_vertices_dtype)
