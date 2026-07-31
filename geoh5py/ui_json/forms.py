@@ -461,7 +461,7 @@ class MultiObjectForm(BaseForm):
     def only_multi_select(cls, value: bool) -> bool:
         """Validate that multi_select is True."""
         if not value:
-            raise ValueError("MultiSelectForm must have multi_select: True.")
+            raise ValueError("MultiObjectForm must have multi_select: True.")
         return value
 
 
