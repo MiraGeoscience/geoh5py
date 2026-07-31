@@ -32,6 +32,7 @@ from pydantic import ValidationError
 from geoh5py import Workspace
 from geoh5py.groups import ContainerGroup, UIJsonGroup
 from geoh5py.objects import Curve, Points
+from geoh5py.ui_json import UIJson
 from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
     BoolForm,
@@ -47,7 +48,6 @@ from geoh5py.ui_json.forms import (
     RadioLabelForm,
     StringForm,
 )
-from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.ui_json.validation import UIJsonError
 
 
@@ -367,6 +367,44 @@ def test_parent_child_validation(tmp_path):
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
+
+
+def test_data_type_validation(tmp_path):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+
+    pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+    data = pts.add_data(
+        {
+            "floats": {"values": np.random.randn(10)},
+            "ints": {"values": np.random.randn(10).astype(int)},
+        }
+    )
+
+    class MyUIJson(UIJson):
+        parent: ObjectForm
+        parameter: MultiSelectDataForm
+
+    kwargs = {
+        "parent": {"label": "parent", "value": pts.uid, "mesh_type": [Points]},
+        "parameter": {
+            "label": "some parameter",
+            "value": data[0].uid,
+            "parent": "parent",
+            "association": "Vertex",
+            "data_type": "Integer",
+            "multi_select": True,
+            "enabled": True,
+        },
+    }
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+
+    with pytest.raises(UIJsonError, match=r"Data type must be one of"):
+        uijson.to_params()
+
+    uijson.set_values(parameter=data[1])
+    values = uijson.to_params()
+
+    assert values["parameter"].uid == data[1].uid
 
 
 def test_mesh_type_validation(tmp_path):
