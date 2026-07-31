@@ -260,6 +260,28 @@ def test_create_drillhole_data(tmp_path):
         )
 
 
+def test_survey_variations(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace(version=1.0).save_as(h5file_path) as workspace:
+        # Create a workspace
+        well = Drillhole.create(
+            workspace,
+            collar=[0.0, 10.0, 10],
+        )
+
+        with pytest.raises(
+            TypeError, match=r"must be of type 'numpy.ndarray' or 'list'"
+        ):
+            well.surveys = "abc"
+
+        with pytest.raises(ValueError, match="'surveys' requires an ndarray of shape"):
+            well.surveys = np.arange(6).tolist()
+
+        well.surveys = [[0, 45, -45, "info 1"], [10, 45, -90, "info 2"]]
+
+        assert well._surveys.dtype == np.dtype(SURVEYS_FIELDS, align=True)
+
+
 def test_no_survey(tmp_path):
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / f"{__name__}.geoh5"
