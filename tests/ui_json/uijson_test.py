@@ -41,6 +41,7 @@ from geoh5py.ui_json.forms import (
     GroupForm,
     IntegerForm,
     LabelForm,
+    MultiObjectForm,
     MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
@@ -72,6 +73,12 @@ SAMPLE = {
         "label": "My object parameter",
         "mesh_type": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"],
         "value": "",
+    },
+    "my_multi_object_parameter": {
+        "label": "My object parameter",
+        "mesh_type": ["{202C5DB1-A56D-4004-9CAD-BAAFD8899406}"],
+        "value": "",
+        "multi_select": True,
     },
     "my_other_object_parameter": {
         "label": "My other object parameter",
@@ -152,6 +159,7 @@ def test_uijson(sample_uijson):
         my_integer_parameter: IntegerForm
 
         my_object_parameter: ObjectForm
+        my_multi_object_parameter: MultiObjectForm
         my_other_object_parameter: ObjectForm
         my_data_parameter: DataForm
         my_data_or_value_parameter: DataOrValueForm
@@ -663,7 +671,7 @@ def test_unknown_uijson(tmp_path, sample_uijson):
     assert isinstance(uijson.my_data_parameter, DataForm)
     assert isinstance(uijson.my_data_or_value_parameter, DataOrValueForm)
     assert isinstance(uijson.my_multi_select_data_parameter, MultiSelectDataForm)
-
+    assert isinstance(uijson.my_multi_object_parameter, MultiObjectForm)
     params = uijson.to_params(validate=False)
 
     with Workspace(tmp_path / f"{__name__}.geoh5") as ws:

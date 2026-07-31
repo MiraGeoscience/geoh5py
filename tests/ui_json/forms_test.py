@@ -29,7 +29,7 @@ import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
-from geoh5py.data import DataAssociationEnum, DataTypeEnum
+from geoh5py.data import DataAssociationEnum, PrimitiveTypeEnum
 from geoh5py.groups import DrillholeGroup, GroupTypeEnum, UIJsonGroup
 from geoh5py.objects import Curve, DrapeModel, Points, Surface
 from geoh5py.ui_json.forms import (
@@ -49,6 +49,7 @@ from geoh5py.ui_json.forms import (
     LabelForm,
     MultiChoiceForm,
     MultiFileForm,
+    MultiObjectForm,
     MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
@@ -359,6 +360,30 @@ def test_object_form():
         _ = ObjectForm(label="name", value=obj_uid, mesh_type=[Points, bad_uid_string])
 
 
+def test_multi_object_form():
+    obj_uid = str(uuid.uuid4())
+    form = MultiObjectForm(label="name", value=[obj_uid], mesh_type=[Points, Surface])
+    assert form.value == [uuid.UUID(obj_uid)]
+    assert form.mesh_type == [Points, Surface]
+
+    with pytest.raises(ValidationError, match="Input should be a valid UUID"):
+        _ = MultiObjectForm(
+            label="name",
+            value=["not a uuid"],
+            mesh_type=[Points, Surface],
+        )
+
+    bad_uid_string = str(uuid.uuid4())
+    msg = (
+        f"Provided type_uid string {bad_uid_string} is not a recognized geoh5py "
+        f"object or group type uid"
+    )
+    with pytest.raises(ValidationError, match=msg):
+        _ = MultiObjectForm(
+            label="name", value=obj_uid, mesh_type=[Points, bad_uid_string]
+        )
+
+
 def test_object_form_mesh_type():
     obj_uid = str(uuid.uuid4())
     form = ObjectForm(label="name", value=obj_uid, mesh_type=Points)
@@ -450,7 +475,7 @@ def test_data_form():
         data_type=["Float", "Integer"],
     )
     assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
-    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
+    assert form.data_type == [PrimitiveTypeEnum.FLOAT, PrimitiveTypeEnum.INTEGER]
 
     data_uid_2 = str(uuid.uuid4())
     form = DataForm(
@@ -478,7 +503,7 @@ def test_data_group_form():
     assert form.data_group_type == GroupTypeEnum.STRIKEDIP
     assert form.parent == "Da-da"
     assert form.association == [DataAssociationEnum.VERTEX, DataAssociationEnum.CELL]
-    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
+    assert form.data_type == [PrimitiveTypeEnum.FLOAT, PrimitiveTypeEnum.INTEGER]
 
 
 def test_data_or_value_form():
@@ -962,7 +987,7 @@ def test_multi_data_group_form():
     assert form.label == "name"
     assert form.value == [data_uid_1, data_uid_2]
     assert form.group_value == uuid.UUID(group_uid)
-    assert form.data_type == [DataTypeEnum.FLOAT, DataTypeEnum.INTEGER]
+    assert form.data_type == [PrimitiveTypeEnum.FLOAT, PrimitiveTypeEnum.INTEGER]
     assert form.multi_select
     assert form.tooltip == ["some ", "tooltip ", "text"]
 

@@ -394,6 +394,49 @@ def get_validations(form: list[str]) -> list[Callable]:
     return [VALIDATIONS_MAP[k] for k in form if k in VALIDATIONS_MAP]
 
 
+def is_of_typed_value(values: Entity | list[Entity], types: type | list[type]) -> bool:
+    """
+    Common function to test typed values.
+
+    :param values: Entity or list of values to test
+    :param types: Types to test against
+
+    :return: Logic whether the type(s) is respected
+    """
+    if not isinstance(types, list):
+        types = [types]
+
+    if not isinstance(values, list):
+        values = [values]
+
+    for val in values:
+        if not isinstance(val, tuple(types)):
+            return False
+
+    return True
+
+
+def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
+    """
+    Validate that value is one of the provided data types.
+
+    :param name: Name of the form
+    :param data: Input data with known validations.
+    :param ui_json: A UIJson object.
+    """
+
+    form = getattr(ui_json, name)
+    data_types = form.data_type
+
+    if not isinstance(data_types, list):
+        data_types = [data_types]
+
+    data_types = [elem.value for elem in data_types]
+
+    if not is_of_typed_value(data[name], data_types):
+        raise UIJsonError(f"Data type must be one of {data_types}.")
+
+
 def mesh_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that value is one of the provided mesh types.
@@ -406,11 +449,7 @@ def mesh_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     form = getattr(ui_json, name)
     mesh_types = form.mesh_type
 
-    if not isinstance(mesh_types, list):
-        mesh_types = [mesh_types]
-
-    obj = data[name]
-    if not isinstance(obj, tuple(mesh_types)):
+    if not is_of_typed_value(data[name], mesh_types):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
 
 
@@ -426,11 +465,7 @@ def group_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     form = getattr(ui_json, name)
     group_types = form.group_type
 
-    if not isinstance(group_types, list):
-        group_types = [group_types]
-
-    obj = data[name]
-    if not isinstance(obj, tuple(group_types)):
+    if not is_of_typed_value(data[name], group_types):
         raise UIJsonError(f"Group's group type must be one of {group_types}.")
 
 
@@ -495,6 +530,7 @@ def promote_or_catch(
 
 
 VALIDATIONS_MAP = {
+    "data_type": data_type_validation,
     "mesh_type": mesh_type_validation,
     "group_type": group_type_validation,
     "parent": parent_validation,
