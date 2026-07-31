@@ -327,7 +327,11 @@ class Drillhole(Points):
     @surveys.setter
     def surveys(self, array: np.ndarray | list | tuple | None):
         if array is None:
-            array = np.c_[0, self._collar_azimuth or 0.0, self._collar_dip or -90.0]
+            array = np.c_[
+                0,
+                self._collar_azimuth if self._collar_azimuth is not None else 0.0,
+                self._collar_dip if self._collar_dip is not None else -90.0,
+            ]
 
         if not isinstance(array, (np.ndarray, list, tuple)):
             raise TypeError(
