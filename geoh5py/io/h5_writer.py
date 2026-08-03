@@ -169,7 +169,7 @@ class H5Writer:
         file: str | h5py.File,
         entity,
         return_parent: bool = False,
-    ) -> None | h5py.Group:
+    ) -> h5py.Group | None:
         """
         Get a pointer to an :obj:`~geoh5py.shared.entity.Entity` in geoh5.
 
