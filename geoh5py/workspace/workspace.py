@@ -42,7 +42,7 @@ import h5py
 import numpy as np
 
 from geoh5py import data, groups, objects
-from geoh5py.data import CommentsData, Data, PrimitiveTypeEnum
+from geoh5py.data import CommentsData, Data, PrimitiveTypeEnum, ReferencedData
 from geoh5py.data.data_type import DataType
 from geoh5py.data.text_data import TextData
 from geoh5py.data.visual_parameters import VisualParameters
@@ -755,6 +755,21 @@ class Workspace(AbstractContextManager):
             entity.uid,
             entity_type,
             key,
+            mode="r",
+        )
+
+    def fetch_data_maps(self, entity: ReferencedData) -> dict[str, np.ndarray]:
+        """
+        Fetch all 'Value maps' associated with a reference data.
+
+        :param entity: Unique identifier of target entity.
+        :param key: Field array name
+
+        :return: Structured array.
+        """
+        return self._io_call(
+            H5Reader.fetch_data_maps,
+            entity.entity_type.uid,
             mode="r",
         )
 
