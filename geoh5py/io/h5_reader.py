@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 import json
-import re
 import uuid
 from typing import Any
 
@@ -170,34 +169,6 @@ class H5Reader:
                 return values
             except KeyError:
                 return None
-
-    @classmethod
-    def fetch_data_maps(
-        cls, file: str | h5py.File, uid: uuid.UUID
-    ) -> dict[str, np.ndarray]:
-        """
-        Read the value maps of reference data.
-
-        :param file: Name or handle to a geoh5 file
-        :param data: Target referenced data with value map
-        """
-        with fetch_h5_handle(file, mode="r+") as h5file:
-            name = list(h5file)[0]
-            entity_handle = h5file[name]["Types"]["Data types"].get(
-                as_str_if_uuid(uid), None
-            )
-
-            if entity_handle is None:
-                raise ValueError(f"Entity with uuid {uid} not found")
-
-            data_maps = {}
-            for name in entity_handle:
-                if re.match("Value map [0-9]", name):
-                    data_maps[entity_handle[name].attrs["Name"]] = entity_handle[name][
-                        :
-                    ]
-
-            return data_maps
 
     @classmethod
     def fetch_children(
