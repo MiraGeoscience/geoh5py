@@ -295,14 +295,24 @@ def test_no_survey(tmp_path):
         np.testing.assert_array_almost_equal(locations, solution, decimal=1)
 
 
-def test_collar_azimuth_dip(tmp_path):
+@pytest.mark.parametrize(
+    "azimuth, dip, expected",
+    (
+        (90, -45, (70.711, 10, -70.711)),
+        (90, 0, (100, 10, 0)),
+        (0, 0, (0, 110, 0)),
+        (0, -90, (0, 10, -100)),
+        (270, -45, (-70.711, 10, -70.711)),
+    ),
+)
+def test_collar_azimuth_dip(tmp_path, azimuth, dip, expected):
     collar = np.r_[0.0, 10.0, 0.0]
     h5file_path = tmp_path / f"{__name__}.geoh5"
     max_depth = 100.0
     n_data = 10
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         well = Drillhole.create(
-            workspace, collar=collar, collar_azimuth=90.0, collar_dip=-45.0
+            workspace, collar=collar, collar_azimuth=azimuth, collar_dip=dip
         )
         well.add_data(
             {
@@ -313,9 +323,7 @@ def test_collar_azimuth_dip(tmp_path):
             }
         )
         locations = well.desurvey(100)
-        np.testing.assert_array_almost_equal(
-            locations, np.c_[70.711, 10, -70.711], decimal=1
-        )
+        np.testing.assert_array_almost_equal(locations, np.c_[expected], decimal=1)
 
 
 def test_single_survey(tmp_path):
