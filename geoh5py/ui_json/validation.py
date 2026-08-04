@@ -426,6 +426,11 @@ def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
 
     form = getattr(ui_json, name)
+
+    # For is_value case
+    if getattr(form, "is_value", False):
+        return
+
     data_types = form.data_type
 
     if not isinstance(data_types, list):
@@ -434,6 +439,7 @@ def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     data_types = [elem.value for elem in data_types]
 
     values = data[name]
+
     if isinstance(values, PropertyGroup):
         values = [values.parent.get_data(data)[0] for data in values.properties]
 
