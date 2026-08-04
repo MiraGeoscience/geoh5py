@@ -64,6 +64,21 @@ class PrimitiveTypeEnum(Enum):
     VISUAL_PARAMETERS = VisualParameters
     VECTOR = type(None)
 
+    @classmethod
+    def _missing_(cls, value) -> PrimitiveTypeEnum:
+        """
+        Allows for case-insensitive matching of enum members.
+
+        For example, "Integer" will match "INTEGER".
+
+        :param value: The value to match against the enum members.
+        """
+        if isinstance(value, str):
+            normalized = value.upper()
+            if normalized in cls.__members__:
+                return cls[normalized]
+        return super()._missing_(value)
+
 
 class DataTypeEnum(Enum):
     INVALID = type(None)
@@ -88,18 +103,3 @@ class DataTypeEnum(Enum):
         :return: The data type.
         """
         return DataTypeEnum[primitive_type.name].value
-
-    @classmethod
-    def _missing_(cls, value) -> DataTypeEnum:
-        """
-        Allows for case-insensitive matching of enum members.
-
-        For example, "Integer" will match "INTEGER".
-
-        :param value: The value to match against the enum members.
-        """
-        if isinstance(value, str):
-            normalized = value.upper()
-            if normalized in cls.__members__:
-                return cls[normalized]
-        return super()._missing_(value)

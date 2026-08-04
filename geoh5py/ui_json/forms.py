@@ -442,6 +442,30 @@ class ObjectForm(BaseForm):
     mesh_type: MeshTypes
 
 
+class MultiObjectForm(BaseForm):
+    """
+    Geoh5py object uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param mesh_type: List of object types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
+    """
+
+    value: OptionalUUIDList
+    mesh_type: MeshTypes
+    multi_select: bool = True
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value: bool) -> bool:
+        """Validate that multi_select is True."""
+        if not value:
+            raise ValueError("MultiObjectForm must have multi_select: True.")
+
+        return value
+
+
 class GroupForm(BaseForm):
     """
     Geoh5py group uijson form.

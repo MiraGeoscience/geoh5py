@@ -24,7 +24,7 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field, PlainSerializer
 
-from geoh5py.data import DataAssociationEnum, DataTypeEnum
+from geoh5py.data import DataAssociationEnum, PrimitiveTypeEnum
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.utils import (
@@ -63,7 +63,7 @@ AssociationOptions = Annotated[
 ]
 
 DataTypeOptions = Annotated[
-    DataTypeEnum,
+    PrimitiveTypeEnum,
     PlainSerializer(enum_name_to_str, when_used="json"),
 ]
 
