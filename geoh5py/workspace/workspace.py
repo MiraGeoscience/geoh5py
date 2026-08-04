@@ -763,7 +763,6 @@ class Workspace(AbstractContextManager):
         Fetch all 'Value maps' associated with a reference data.
 
         :param entity: Unique identifier of target entity.
-        :param key: Field array name
 
         :return: Dictionary of named data maps
         """
