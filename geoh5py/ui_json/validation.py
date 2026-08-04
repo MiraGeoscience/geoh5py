@@ -433,7 +433,11 @@ def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
 
     data_types = [elem.value for elem in data_types]
 
-    if not is_of_typed_value(data[name], data_types):
+    values = data[name]
+    if isinstance(values, PropertyGroup):
+        values = [values.parent.get_data(data)[0] for data in values.properties]
+
+    if not is_of_typed_value(values, data_types):
         raise UIJsonError(f"Data type must be one of {data_types}.")
 
 
