@@ -765,7 +765,7 @@ class Workspace(AbstractContextManager):
         :param entity: Unique identifier of target entity.
         :param key: Field array name
 
-        :return: Structured array.
+        :return: Dictionary of named data maps
         """
         return self._io_call(
             H5Reader.fetch_data_maps,

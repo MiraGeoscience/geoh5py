@@ -179,7 +179,7 @@ class H5Reader:
         Read the value maps of reference data.
 
         :param file: Name or handle to a geoh5 file
-        :param data: Target referenced data with value map
+        :param uid: Target referenced data with value map
         """
         with fetch_h5_handle(file, mode="r+") as h5file:
             name = list(h5file)[0]
