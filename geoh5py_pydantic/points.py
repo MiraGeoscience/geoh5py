@@ -159,7 +159,7 @@ class PointsModel(PydanticEntity):
             )
             value = (0.0, 0.0, 0.0)
 
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, (list | tuple)):
             value = np.array(value, ndmin=2)
 
         if not isinstance(value, np.ndarray):

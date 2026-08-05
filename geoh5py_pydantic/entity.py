@@ -25,7 +25,6 @@ from typing import (  # type: ignore[attr-defined]
     Annotated,
     Any,
     ClassVar,
-    GenericAlias,
     Self,
 )
 from uuid import UUID
@@ -117,10 +116,8 @@ def collect_input_from_dict(
             if isinstance(update.get(field, None), BaseModel):
                 continue
 
-            if (
-                isinstance(info.annotation, type)
-                and not isinstance(info.annotation, GenericAlias)
-                and issubclass(info.annotation, BaseModel)
+            if isinstance(info.annotation, type) and issubclass(
+                info.annotation, BaseModel
             ):
                 # Nest and deal with aliases
                 update = collect_input_from_dict(info.annotation, update)

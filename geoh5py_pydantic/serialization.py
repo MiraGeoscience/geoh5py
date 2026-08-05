@@ -301,7 +301,7 @@ class Geoh5Writer:
         if isinstance(value, UUID):
             value = self.format_uuid(value)
 
-        if isinstance(value, (bool, np.bool_)):
+        if isinstance(value, (bool | np.bool_)):
             group.attrs.create(name, int(value), dtype="int8")
             return
 
@@ -346,7 +346,7 @@ class Geoh5Writer:
         for name, value in datasets.items():
             if isinstance(value, np.ndarray):
                 self._write_array_dataset(group, name, value, compression)
-            elif isinstance(value, (Mapping, BaseModel)):
+            elif isinstance(value, (Mapping | BaseModel)):
                 self._write_json_dataset(group, name, value)
             elif isinstance(value, str):
                 group.create_dataset(
@@ -418,7 +418,7 @@ class Geoh5Writer:
                 for key, item in value.items()
             }
 
-        if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        if isinstance(value, Sequence) and not isinstance(value, (str | bytes)):
             # lists, tuples, sequences are converted to lists of json values
             return [cls._json_value(item) for item in value]
 
@@ -437,7 +437,7 @@ class Geoh5Writer:
     @classmethod
     def _text_sequence(cls, value: Any) -> list[str] | None:
         """Format UUID/string attribute sequences, notably Clipping IDs."""
-        if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        if not isinstance(value, Sequence) or isinstance(value, (str | bytes)):
             return None
 
         values = list(value)
