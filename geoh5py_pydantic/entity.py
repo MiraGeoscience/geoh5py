@@ -47,13 +47,6 @@ from .entity_type import EntityType, NamedIdentity
 # None is valid
 _MISSING = object()
 
-_TYPE_UID_INPUT_NAMES = (
-    "type_uid",
-    "Type ID",
-    "Object Type ID",
-    "Data Type ID",
-)
-
 
 class Attributes(NamedIdentity):
     """
