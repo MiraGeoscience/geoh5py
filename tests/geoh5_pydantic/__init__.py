@@ -1,5 +1,5 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#  Copyright (c) 2026 Mira Geoscience Ltd.                                     '
+#  Copyright (c) 2020-2026 Mira Geoscience Ltd.                                '
 #                                                                              '
 #  This file is part of geoh5py.                                               '
 #                                                                              '
@@ -16,28 +16,3 @@
 #  You should have received a copy of the GNU Lesser General Public License    '
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-from __future__ import annotations
-
-from .arrays import ArraySource, CallableArraySource, LazyArray
-from .entity import Attributes, PydanticEntity
-from .entity_type import DataType, EntityType, GroupType, ObjectType
-from .points import VERTICES_DTYPE, PointsModel
-from .serialization import Geoh5EntityPayload, Geoh5Writer
-
-
-__all__ = [
-    "VERTICES_DTYPE",
-    "ArraySource",
-    "Attributes",
-    "CallableArraySource",
-    "DataType",
-    "EntityType",
-    "Geoh5EntityPayload",
-    "Geoh5Writer",
-    "GroupType",
-    "LazyArray",
-    "ObjectType",
-    "PointsModel",
-    "PydanticEntity",
-]
