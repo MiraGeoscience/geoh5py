@@ -62,6 +62,8 @@ INV_KEY_MAP = {
     "Cells": "cells",
     "Clipping IDs": "clipping_ids: list | None",
     "Collar": "collar",
+    "Collar azimuth": "collar_azimuth",
+    "Collar dip": "collar_dip",
     "Color map": "color_map",
     "Colour": "COLOUR",
     "Complement filter": "complement_filter",

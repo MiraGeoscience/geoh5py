@@ -27,16 +27,16 @@ import string
 
 import numpy as np
 import pytest
-from h5py import special_dtype
+from h5py import special_dtype, string_dtype
 
 from geoh5py.data import BooleanData, FloatData, ReferencedData
-from geoh5py.objects import Drillhole
+from geoh5py.objects.drillhole import SURVEYS_FIELDS, Drillhole
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
 
 def test_create_drillhole_data(tmp_path):
-    h5file_path = tmp_path / r"testCurve.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     well_name = "bullseye"
     n_data = 10
 
@@ -260,9 +260,31 @@ def test_create_drillhole_data(tmp_path):
         )
 
 
+def test_survey_variations(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace(version=1.0).save_as(h5file_path) as workspace:
+        # Create a workspace
+        well = Drillhole.create(
+            workspace,
+            collar=[0.0, 10.0, 10],
+        )
+
+        with pytest.raises(
+            TypeError, match=r"must be of type 'numpy.ndarray' or 'list'"
+        ):
+            well.surveys = "abc"
+
+        with pytest.raises(ValueError, match="'surveys' requires an ndarray of shape"):
+            well.surveys = np.arange(6).tolist()
+
+        well.surveys = [[0, 45, -45, "info 1"], [10, 45, -90, "info 2"]]
+
+        assert well._surveys.dtype == np.dtype(SURVEYS_FIELDS, align=True)
+
+
 def test_no_survey(tmp_path):
     collar = np.r_[0.0, 10.0, 10.0]
-    h5file_path = tmp_path / r"testCurve.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar)
         depths = [0.0, 1.0, 1000.0]
@@ -273,6 +295,37 @@ def test_no_survey(tmp_path):
         np.testing.assert_array_almost_equal(locations, solution, decimal=1)
 
 
+@pytest.mark.parametrize(
+    "azimuth, dip, expected",
+    (
+        (90, -45, (70.711, 10, -70.711)),
+        (90, 0, (100, 10, 0)),
+        (0, 0, (0, 110, 0)),
+        (0, -90, (0, 10, -100)),
+        (270, -45, (-70.711, 10, -70.711)),
+    ),
+)
+def test_collar_azimuth_dip(tmp_path, azimuth, dip, expected):
+    collar = np.r_[0.0, 10.0, 0.0]
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    max_depth = 100.0
+    n_data = 10
+    with Workspace(version=1.0).save_as(h5file_path) as workspace:
+        well = Drillhole.create(
+            workspace, collar=collar, collar_azimuth=azimuth, collar_dip=dip
+        )
+        well.add_data(
+            {
+                "log_values": {
+                    "depth": np.linspace(0.0, max_depth, n_data),
+                    "values": np.random.randint(1, high=8, size=n_data),
+                }
+            }
+        )
+        locations = well.desurvey(100)
+        np.testing.assert_array_almost_equal(locations, np.c_[expected], decimal=1)
+
+
 def test_single_survey(tmp_path):
     # Create a simple well
     dist = np.random.rand(1) * 100.0
@@ -280,7 +333,7 @@ def test_single_survey(tmp_path):
     dip = np.random.randn(1) * 180.0
 
     collar = np.r_[0.0, 10.0, 10.0]
-    h5file_path = tmp_path / r"testCurve.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
         depths = [0.0, 1.0, 1000.0]
@@ -308,20 +361,31 @@ def test_survey_with_info(tmp_path):
     dip = np.random.randn(3) * 180.0
     surveys = np.c_[dist, azm, dip].T.tolist()
     surveys += [["A", "B", "C"]]
-    surveys = np.core.records.fromarrays(
+    surveys_array = np.core.records.fromarrays(
         surveys,
         dtype=[
             ("Depth", "<f4"),
             ("Azimuth", "<f4"),
             ("Dip", "<f4"),
-            ("Info", special_dtype(vlen=str)),
+            ("Info", string_dtype(encoding="utf-8", length=12)),
         ],
     )
 
     collar = np.r_[0.0, 10.0, 10.0]
     h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
-        Drillhole.create(workspace, name="Han Solo", collar=collar, surveys=surveys)
+        with pytest.raises(TypeError, match="type of survey array must be"):
+            Drillhole.create(
+                workspace, name="Han Solo", collar=collar, surveys=surveys_array
+            )
+
+        surveys_array = np.core.records.fromarrays(
+            surveys,
+            dtype=np.dtype(SURVEYS_FIELDS, align=True),
+        )
+        Drillhole.create(
+            workspace, name="Han Solo", collar=collar, surveys=surveys_array
+        )
 
     with Workspace(h5file_path) as workspace:
         well = workspace.get_entity("Han Solo")[0]
@@ -335,7 +399,7 @@ def test_outside_survey(tmp_path):
     dip = [np.random.randn(1) * 180.0] * 2
 
     collar = np.r_[0.0, 10.0, 10.0]
-    h5file_path = tmp_path / r"testCurve.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         well = Drillhole.create(workspace, collar=collar, surveys=np.c_[dist, azm, dip])
         depths = [0.0, 1000.0]
@@ -360,7 +424,7 @@ def test_insert_drillhole_data(tmp_path):
     well_name = "bullseye"
     n_data = 10
     collocation = 1e-5
-    h5file_path = tmp_path / r"testCurve.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
 
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         max_depth = 100
@@ -415,7 +479,7 @@ def test_insert_drillhole_data(tmp_path):
 
 
 def test_mask_drillhole_data(tmp_path):
-    h5file_path = tmp_path / r"testCurve.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
 
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         well = Drillhole.create(

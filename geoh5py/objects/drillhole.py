@@ -28,6 +28,7 @@ import warnings
 from numbers import Real
 
 import numpy as np
+from h5py import special_dtype
 
 from ..data import Data, FloatData, NumericData
 from ..shared.utils import (
@@ -42,6 +43,13 @@ from .points import Points
 INFINITE_RADIUS = 99999.9
 MINIMUM_DEPTH_INTERVAL = 1.0
 MAXIMUM_DEPTH_INTERVAL = 50.0
+
+SURVEYS_FIELDS = [
+    ("Depth", "<f4"),
+    ("Azimuth", "<f4"),
+    ("Dip", "<f4"),
+    ("Info", special_dtype(vlen=str)),
+]
 
 
 class Drillhole(Points):
@@ -61,13 +69,14 @@ class Drillhole(Points):
         fields=(0x7CAEBF0E, 0xD16E, 0x11E3, 0xBC, 0x69, 0xE4632694AA37)
     )
     _default_name = "Drillhole"
-    __SURVEY_DTYPE = np.dtype([("Depth", "<f4"), ("Azimuth", "<f4"), ("Dip", "<f4")])
     __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()
     _attribute_map.update(
         {
             "Cost": "cost",
             "Collar": "collar",
+            "Collar azimuth": "collar_azimuth",
+            "Collar dip": "collar_dip",
             "Planning": "planning",
             "End of hole": "end_of_hole",
         }
@@ -78,6 +87,8 @@ class Drillhole(Points):
         *,
         collar: np.ndarray | list | None = None,
         cost: float = 0.0,
+        collar_azimuth: float | None = None,
+        collar_dip: float | None = None,
         end_of_hole: float | None = None,
         planning: str = "Default",
         surveys: np.ndarray | list | tuple | None = None,
@@ -86,11 +97,12 @@ class Drillhole(Points):
         **kwargs,
     ):
         self._cells: np.ndarray | None = None
+        self._collar_azimuth: float | None = collar_azimuth
+        self._collar_dip: float | None = collar_dip
         self._depths: FloatData | None = None
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
         self._locations = None
-        self._surveys: np.ndarray | None = None
         self._intervals: dict | None = None
 
         super().__init__(
@@ -105,9 +117,7 @@ class Drillhole(Points):
         self.default_collocation_distance = default_collocation_distance
         self.end_of_hole = end_of_hole
         self.planning = planning
-
-        if surveys is not None:
-            self.surveys = surveys
+        self.surveys = surveys
 
     @property
     def cells(self) -> np.ndarray | None:
@@ -166,6 +176,20 @@ class Drillhole(Points):
                 self._trace_depth = None
                 self.workspace.update_attribute(self, "trace")
                 self.workspace.update_attribute(self, "trace_depth")
+
+    @property
+    def collar_azimuth(self) -> float | None:
+        """
+        Azimuth of the drillhole at the collar, in degrees.
+        """
+        return self._collar_azimuth
+
+    @property
+    def collar_dip(self) -> float | None:
+        """
+        Dip of the drillhole at the collar, in degrees.
+        """
+        return self._collar_dip
 
     @property
     def cost(self) -> float:
@@ -290,25 +314,25 @@ class Drillhole(Points):
         """
         Coordinates of the surveys.
         """
-        if self._surveys is None and self.on_file:
-            self._surveys = self.workspace.fetch_array_attribute(self, "surveys")
-
-        if self._surveys is None:
-            surveys = np.c_[0, 0, -90]
-
-        else:
-            surveys = np.vstack(
-                [
-                    self._surveys["Depth"],
-                    self._surveys["Azimuth"],
-                    self._surveys["Dip"],
-                ]
-            ).T
+        surveys = np.vstack(
+            [
+                self._surveys["Depth"],
+                self._surveys["Azimuth"],
+                self._surveys["Dip"],
+            ]
+        ).T
 
         return surveys.astype(float)
 
     @surveys.setter
-    def surveys(self, array: np.ndarray | list | tuple):
+    def surveys(self, array: np.ndarray | list | tuple | None):
+        if array is None:
+            array = np.c_[
+                0,
+                self._collar_azimuth if self._collar_azimuth is not None else 0.0,
+                self._collar_dip if self._collar_dip is not None else -90.0,
+            ]
+
         if not isinstance(array, (np.ndarray, list, tuple)):
             raise TypeError(
                 "Input 'surveys' must be of type 'numpy.ndarray' or 'list'."
@@ -327,27 +351,44 @@ class Drillhole(Points):
         self._locations = None
         self._intervals = None
 
-    def format_survey_values(self, values: list | tuple | np.ndarray) -> np.ndarray:
+    def format_survey_values(
+        self, values: list | np.ndarray, dtype=np.dtype(SURVEYS_FIELDS[:3], align=True)
+    ) -> np.recarray:
         """
         Reformat the survey values as structured array with the right shape.
+
+        :param values: Survey values of 'Depth', 'Azimuth', 'Dip' and optional 'Info'
+        :param dtype: Desired dtype for the structured array.
+
+        :return: Reformatted survey values.
         """
         if isinstance(values, (list, tuple)):
             values = np.array(values, ndmin=2)
 
-        if np.issubdtype(values.dtype, np.number):
-            if values.shape[1] != 3:
-                raise ValueError("'surveys' requires an ndarray of shape (*, 3)")
-
-            array_values = np.asarray(
-                np.rec.fromarrays(values.T, dtype=self.__SURVEY_DTYPE)
-            )
+        if np.issubdtype(values.dtype, np.number) or not values.dtype.names:
+            n_fields = values.shape[1]
         else:
-            array_values = values
+            n_fields = len(values.dtype.names)
+            dtype = np.dtype(SURVEYS_FIELDS[:n_fields], align=True)
+            if values.dtype.descr != dtype.descr:
+                raise TypeError(f"The type of survey array must be numeric or {dtype}")
 
-        if array_values.dtype.descr[:3] != self.__SURVEY_DTYPE.descr:
-            raise ValueError(
-                f"Array of 'survey' must be of dtype = {self.__SURVEY_DTYPE}"
-            )
+        # Already a recarray with proper type
+        if values.dtype.names == dtype.names:
+            return values
+
+        if n_fields not in [3, 4]:
+            raise ValueError("'surveys' requires an ndarray of shape (*, 3) or (*, 4)")
+
+        values = values.T.tolist()
+
+        if n_fields == 3 and len(dtype) == 4:
+            values += [np.array([b""] * len(values[0]))]
+        elif n_fields == 4 and len(dtype) == 3:
+            dtype = np.dtype(SURVEYS_FIELDS, align=True)
+
+        array_values = np.rec.fromarrays(values, dtype=dtype)
+
         return array_values
 
     @property

@@ -1119,12 +1119,15 @@ def test_surveys_info(tmp_path):
 
     surveys = dh_group.data["Surveys"].view("<f4").reshape((-1, 3))
 
-    new_dtype = [
-        ("Depth", "<f4"),
-        ("Azimuth", "<f4"),
-        ("Dip", "<f4"),
-        ("Info", special_dtype(vlen=str)),
-    ]
+    new_dtype = np.dtype(
+        [
+            ("Depth", "<f4"),
+            ("Azimuth", "<f4"),
+            ("Dip", "<f4"),
+            ("Info", special_dtype(vlen=str)),
+        ],
+        align=True,
+    )
     values = []
 
     for val in surveys:
