@@ -27,7 +27,6 @@ from .serialization import Geoh5EntityPayload, Geoh5Writer
 
 
 __all__ = [
-    "POINTS_TYPE_UID",
     "VERTICES_DTYPE",
     "ArraySource",
     "Attributes",

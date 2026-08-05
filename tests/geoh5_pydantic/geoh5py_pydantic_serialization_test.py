@@ -303,3 +303,71 @@ def test_failed_dataset_write_does_not_create_entity_type(tmp_path):
 
         assert uid_text not in writer.project["Groups"]
         assert type_uid_text not in writer.project["Types"]["Group types"]
+
+
+def test_failed_type_write_removes_entity_and_new_type(tmp_path):
+    """Type encoding failures must roll back both newly created groups."""
+    path = tmp_path / "failed_type.geoh5"
+    _initialize_geoh5_file(path)
+    uid = uuid4()
+    type_uid = uuid4()
+    payload = Geoh5EntityPayload(
+        collection="Groups",
+        type_collection="Group types",
+        uid=uid,
+        type_uid=type_uid,
+        parent_uid=None,
+        attributes={"ID": uid, "Name": "Invalid type payload group"},
+        datasets={},
+        type_attributes={
+            "ID": type_uid,
+            "Name": "Invalid group type",
+            "Unsupported": object(),
+        },
+    )
+
+    with h5py.File(path, "r+") as h5file:
+        writer = Geoh5Writer(h5file)
+        uid_text = writer.format_uuid(uid)
+        type_uid_text = writer.format_uuid(type_uid)
+
+        with pytest.raises(TypeError, match="unsupported value type"):
+            writer.write_payload(payload)
+
+        assert uid_text not in writer.project["Groups"]
+        assert type_uid_text not in writer.project["Types"]["Group types"]
+
+
+def test_failed_parent_link_removes_entity_and_new_type(tmp_path):
+    """Failures after type creation must still remove the new shared type."""
+    path = tmp_path / "failed_parent_link.geoh5"
+    _initialize_geoh5_file(path)
+    uid = uuid4()
+    type_uid = uuid4()
+    payload = Geoh5EntityPayload(
+        collection="Groups",
+        type_collection="Group types",
+        uid=uid,
+        type_uid=type_uid,
+        parent_uid=None,
+        attributes={"ID": uid, "Name": "Conflicting child"},
+        datasets={},
+        type_attributes={
+            "ID": type_uid,
+            "Name": "Temporary group type",
+        },
+    )
+
+    with h5py.File(path, "r+") as h5file:
+        writer = Geoh5Writer(h5file)
+        uid_text = writer.format_uuid(uid)
+        type_uid_text = writer.format_uuid(type_uid)
+        root_groups = writer.project["Root"].require_group("Groups")
+        root_groups.create_group(uid_text)
+
+        with pytest.raises(OSError, match="name already exists"):
+            writer.write_payload(payload)
+
+        assert uid_text not in writer.project["Groups"]
+        assert type_uid_text not in writer.project["Types"]["Group types"]
+        assert uid_text in root_groups

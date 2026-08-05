@@ -180,6 +180,10 @@ class Geoh5Writer:
         # e.g. for Points, that becomes "/GEOSCIENCE/Objects/{points_uid}"
         entity_group = collection_group.create_group(uid, track_order=True)
 
+        # Use this to track if a new type is created. If an error occurs, we want to delete a newly
+        # created type but not an existing shared type.
+        type_created = False
+
         try:
             # Create child collection groups, write scalar attributes, write datasets,
             # link the entity to its type, link the entity from its parent
@@ -191,7 +195,7 @@ class Geoh5Writer:
             self._write_datasets(entity_group, payload.datasets, compression)
 
             # Defer shared type creation until entity value encoding succeeds.
-            type_group = self._ensure_type(payload)
+            type_group, type_created = self._ensure_type(payload)
 
             # Both assignments create HDF5 hard links. Match
             # H5Writer.write_entity and H5Writer.write_to_parent.
@@ -202,8 +206,13 @@ class Geoh5Writer:
             parent_group.require_group(payload.collection)[uid] = entity_group
 
         except Exception:
-            # Don't leave a partially written canonical entity behind.
+            # Don't leave a partially written entity or newly created type behind.
             del collection_group[uid]
+            if type_created:
+                types = self.project["Types"][payload.type_collection]
+                type_uid = self.format_uuid(payload.type_uid)
+                if type_uid in types:
+                    del types[type_uid]
             raise
 
         return entity_group
@@ -239,20 +248,28 @@ class Geoh5Writer:
         if not 0 <= compression <= 9:
             raise ValueError("Compression must be between 0 and 9.")
 
-    def _ensure_type(self, payload: Geoh5EntityPayload) -> h5py.Group:
+    def _ensure_type(self, payload: Geoh5EntityPayload) -> tuple[h5py.Group, bool]:
         """
-        Create or reuse the shared EntityType group for this model.
+        Return the shared EntityType group and whether this call created it.
+
+        A newly created type is removed immediately if writing its attributes
+        fails. The caller uses the boolean to roll it back if a later entity
+        linking step fails.
         """
         types = self.project["Types"][payload.type_collection]
         type_uid = self.format_uuid(payload.type_uid)
 
-        #
         if type_uid in types:
-            return types[type_uid]
+            return types[type_uid], False
 
         type_group = types.create_group(type_uid, track_order=True)
-        self._write_attributes(type_group, payload.type_attributes)
-        return type_group
+        try:
+            self._write_attributes(type_group, payload.type_attributes)
+        except Exception:
+            del types[type_uid]
+            raise
+
+        return type_group, True
 
     def _find_parent(self, parent_uid: UUID | None) -> h5py.Group:
         """Resolve a parent UID from the file, defaulting to the project Root."""
@@ -329,7 +346,7 @@ class Geoh5Writer:
         for name, value in datasets.items():
             if isinstance(value, np.ndarray):
                 self._write_array_dataset(group, name, value, compression)
-            elif isinstance(value, (Mapping | BaseModel)):
+            elif isinstance(value, (Mapping, BaseModel)):
                 self._write_json_dataset(group, name, value)
             elif isinstance(value, str):
                 group.create_dataset(
@@ -401,7 +418,7 @@ class Geoh5Writer:
                 for key, item in value.items()
             }
 
-        if isinstance(value, Sequence) and not isinstance(value, (str | bytes)):
+        if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
             # lists, tuples, sequences are converted to lists of json values
             return [cls._json_value(item) for item in value]
 
@@ -420,7 +437,7 @@ class Geoh5Writer:
     @classmethod
     def _text_sequence(cls, value: Any) -> list[str] | None:
         """Format UUID/string attribute sequences, notably Clipping IDs."""
-        if not isinstance(value, Sequence) or isinstance(value, (str | bytes)):
+        if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
             return None
 
         values = list(value)
