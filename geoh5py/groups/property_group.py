@@ -68,20 +68,19 @@ class PropertyGroup:
         *,
         association: str | DataAssociationEnum | None = None,
         allow_delete: bool = True,
-        name: str = "Data Group",
+        name: str = "Property Group",
         on_file: bool = False,
         uid: UUID | None = None,
-        property_group_type: GroupTypeEnum | str = GroupTypeEnum.MULTI,
+        property_group_type: GroupTypeEnum | str = GroupTypeEnum.SIMPLE,
         properties: Sequence[UUID | Data | str] | None = None,
         **_,
     ):
         self._parent: ObjectBase = self._validate_parent(parent)
         self._property_group_type = self._validate_group_type(property_group_type)
-        self._on_file = False
 
         self.allow_delete = allow_delete
         self.name = name
-
+        self.on_file = on_file
         self.uid = uid or uuid4()
 
         properties_list = self._initialize_properties(properties)
@@ -90,7 +89,6 @@ class PropertyGroup:
         self._properties = self._validate_properties(properties_list)
 
         self.parent.add_children([self])
-        self.on_file = on_file
         self.parent.workspace.register(self)
 
     def _initialize_properties(
@@ -308,9 +306,6 @@ class PropertyGroup:
                 )
 
         self._name = new_name
-
-        if self.on_file:
-            self.parent.workspace.add_or_update_property_group(self)
 
     @property
     def on_file(self):
