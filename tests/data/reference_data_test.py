@@ -29,6 +29,7 @@ import pytest
 from geoh5py.data import GeometricDataConstants, ReferenceValueMap
 from geoh5py.data.data_type import ReferencedValueMapType
 from geoh5py.groups import PropertyGroup
+from geoh5py.io.h5_writer import H5Writer
 from geoh5py.objects import Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
@@ -217,6 +218,49 @@ def test_add_data_map(tmp_path):
         assert np.array_equal(
             np.asarray(list(geo_data.entity_type.value_map().values()), dtype=float),
             np.asarray(list(geo_data_2.entity_type.value_map().values()), dtype=float),
+        )
+
+
+def test_data_map_ordering(tmp_path):
+    h5file_path = tmp_path / (__name__ + ".geoh5")
+
+    with Workspace.create(h5file_path) as workspace:
+        _, data, _ = generate_value_map(workspace, unique_name=True)
+
+        # create a property group to test GEOPY-2256 bug
+        parent = data.parent
+        _ = PropertyGroup(parent, properties=[data])
+
+        data_map_a = np.c_[
+            data.entity_type.value_map.map["Key"],
+            np.random.randn(len(data.entity_type.value_map.map["Key"])),
+        ]
+        data_a = data.add_data_map("data_map_a", data_map_a)
+        data_map_b = np.c_[
+            data.entity_type.value_map.map["Key"],
+            np.random.randn(len(data.entity_type.value_map.map["Key"])),
+        ]
+        data.add_data_map("data_map_b", data_map_b)
+
+        # Manually change the order of value maps
+        entity_type_handle = H5Writer.fetch_handle(workspace.geoh5, data.entity_type)
+        del entity_type_handle["Value map 1"]
+
+        H5Writer.write_value_map(
+            workspace.geoh5,
+            data.entity_type,
+            "Value map 3",
+            data_a.entity_type.value_map,
+        )
+
+    with Workspace(h5file_path) as new_workspace:
+        data = new_workspace.get_entity("DataValues")[0]
+        np.testing.assert_array_almost_equal(
+            np.asarray(
+                data.data_maps["data_map_a"].entity_type.value_map.map["Value"],
+                dtype=float,
+            ),
+            data_map_a[:, 1],
         )
 
 
