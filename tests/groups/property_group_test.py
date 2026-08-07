@@ -27,7 +27,7 @@ from geoh5py.data import Data, DataAssociationEnum
 from geoh5py.groups import PropertyGroup
 from geoh5py.groups.property_group import GroupTypeEnum
 from geoh5py.groups.property_group_table import PropertyGroupTable
-from geoh5py.objects import Curve, Drillhole, ObjectBase
+from geoh5py.objects import Curve, Drillhole
 from geoh5py.workspace import Workspace
 
 
