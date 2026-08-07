@@ -29,8 +29,8 @@ from time import time
 from typing import Any
 
 from geoh5py import Workspace
-from geoh5py.groups import ContainerGroup, Group
-from geoh5py.objects import ObjectBase
+from geoh5py.groups import ContainerGroup
+from geoh5py.shared.entity_container import EntityContainer
 from geoh5py.shared.utils import (
     dict_mapper,
     entity2uuid,
@@ -508,18 +508,20 @@ def container_group2name(value: Any) -> Any:
 
 
 def monitored_directory_copy(
-    directory: str, entity: ObjectBase | Group, copy_children: bool = True
+    directory: str,
+    entities: EntityContainer | list[EntityContainer],
+    copy_children: bool = True,
 ) -> str:
     """
-    Create a temporary geoh5 file in the monitoring folder and export entity for update.
+    Create a temporary geoh5 file in the monitoring folder and export entities for update.
 
     Creates a temporary workspace in the specified monitoring directory and copies
-    the given entity to it. This is useful for monitoring and updating entities
+    the given entities to it. This is useful for monitoring and updating entities
     in a separate workspace environment.
 
     :param directory: Path to the monitoring directory where the temporary file will be created.
-    :param entity: Entity (ObjectBase or Group) to be copied for monitoring.
-    :param copy_children: Whether to copy children entities along with the main entity.
+    :param entities: Entity (ObjectBase or Group) to be copied for monitoring.
+    :param copy_children: Whether to copy children entities along with the main entities.
 
     :return: Full path to the created temporary geoh5 file.
     """
@@ -529,9 +531,13 @@ def monitored_directory_copy(
 
     temp_geoh5 = f"temp{time():.3f}.geoh5"
 
-    with fetch_active_workspace(entity.workspace, mode="r"):
+    if not isinstance(entities, list | tuple):
+        entities = [entities]
+
+    with fetch_active_workspace(entities[0].workspace, mode="r"):
         with Workspace.create(working_path / temp_geoh5) as w_s:
-            entity.copy(parent=w_s, copy_children=copy_children)
+            for entity in entities:
+                entity.copy(parent=w_s, copy_children=copy_children)
 
     move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
 
