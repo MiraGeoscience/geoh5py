@@ -302,6 +302,21 @@ def test_property_group_same_name(tmp_path):
         ]
 
 
+def test_property_group_name_change(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        curve, _ = make_example(workspace)
+
+        curve.property_groups[0].name = "Name changed"
+
+    with Workspace(h5file_path) as workspace:
+        # error here if a property group has the same name
+        curve = workspace.get_entity(curve.uid)[0]
+
+        assert sorted([pg.name for pg in curve.property_groups]) == ["Name changed"]
+
+
 def test_clean_out_empty(tmp_path):
     h5file_path = tmp_path / r"prop_group_clean.geoh5"
 
