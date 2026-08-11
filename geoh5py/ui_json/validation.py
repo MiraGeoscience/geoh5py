@@ -441,13 +441,16 @@ def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     values = data[name]
 
     if isinstance(values, PropertyGroup):
+        if values.properties is None:
+            return
         values = [values.parent.get_data(data)[0] for data in values.properties]
 
     elif isinstance(values, dict):
         if "property" in values:
             values = values["property"]
         elif "value" in values:
-            # Don't validate for GroupMultiData (DrillholeGroup)
+            # Don't validate for DrillholeGroupDataForm as selected
+            # data *name* is not of Data type
             if "group_value" in values:
                 return
 
