@@ -38,9 +38,10 @@ from geoh5py.ui_json.forms import (
     BoolForm,
     DataForm,
     DataOrValueForm,
+    DataRangeForm,
+    DrillholeGroupDataForm,
     FloatForm,
     GroupForm,
-    GroupMultiDataForm,
     IntegerForm,
     LabelForm,
     MultiObjectForm,
@@ -239,6 +240,32 @@ def test_data_disabled(tmp_path):
     uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
     options = uijson.to_params()
     assert "parameter" not in options
+
+
+def test_data_range(tmp_path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as ws:
+        pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+        data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
+
+        class MyUIJson(UIJson):
+            parent: ObjectForm
+            parameter: DataRangeForm
+
+        kwargs = {
+            "parent": {"value": pts.uid, "label": "parent", "mesh_type": [Points]},
+            "parameter": {
+                "property": data.uid,
+                "value": [-1.0, 1],
+                "label": "data",
+                "parent": "parent",
+                "association": "Vertex",
+                "range_label": "range",
+                "data_type": "Float",
+            },
+        }
+        uijson = generate_test_uijson(ws, MyUIJson, kwargs)
+        data = uijson.to_params(ws)
+        assert uijson
 
 
 def test_multiple_validations(tmp_path):
@@ -479,7 +506,7 @@ def test_group_multi_data_validation(tmp_path):
         )
 
     class MyUIJson(UIJson):
-        my_group_parameter: GroupMultiDataForm
+        my_group_parameter: DrillholeGroupDataForm
 
     kwargs = {
         "my_group_parameter": {
