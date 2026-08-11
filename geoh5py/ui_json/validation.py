@@ -443,6 +443,16 @@ def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     if isinstance(values, PropertyGroup):
         values = [values.parent.get_data(data)[0] for data in values.properties]
 
+    elif isinstance(values, dict):
+        if "property" in values:
+            values = list(values["property"])
+        elif "value" in values:
+            # Don't validate for GroupMultiData (DrillholeGroup)
+            if "group_value" in values:
+                return
+
+            values = list(values["value"])
+
     if not is_of_typed_value(values, data_types):
         raise UIJsonError(f"Data type must be one of {data_types}.")
 
@@ -475,7 +485,12 @@ def group_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     form = getattr(ui_json, name)
     group_types = form.group_type
 
-    if not is_of_typed_value(data[name], group_types):
+    values = data[name]
+
+    if isinstance(values, dict):
+        values = [values["group_value"]]
+
+    if not is_of_typed_value(values, group_types):
         raise UIJsonError(f"Group's group type must be one of {group_types}.")
 
 
