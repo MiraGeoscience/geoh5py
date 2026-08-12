@@ -97,8 +97,12 @@ class Drillhole(Points):
         **kwargs,
     ):
         self._cells: np.ndarray | None = None
-        self._collar_azimuth: float | None = collar_azimuth
-        self._collar_dip: float | None = collar_dip
+        self._collar_azimuth: float | None = (
+            float(collar_azimuth) if collar_azimuth is not None else None
+        )
+        self._collar_dip: float | None = (
+            float(collar_dip) if collar_dip is not None else None
+        )
         self._depths: FloatData | None = None
         self._trace: np.ndarray | None = None
         self._trace_depth: np.ndarray | None = None
