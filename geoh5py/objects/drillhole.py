@@ -332,7 +332,7 @@ class Drillhole(Points):
     def surveys(self, array: np.ndarray | list | tuple | None):
         if array is None:
             array = np.c_[
-                0,
+                self._end_of_hole if self._end_of_hole is not None else 0.0,
                 self._collar_azimuth if self._collar_azimuth is not None else 0.0,
                 self._collar_dip if self._collar_dip is not None else -90.0,
             ]
