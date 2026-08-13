@@ -318,6 +318,8 @@ def test_collar_azimuth_dip(tmp_path, azimuth, dip, expected):
             collar_dip=dip,
             end_of_hole=100.0,
         )
+        assert well.end_of_hole == 100.0
+        assert well.surveys[0, 0] == 100.0
         well.add_data(
             {
                 "log_values": {
