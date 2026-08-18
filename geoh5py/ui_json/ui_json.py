@@ -421,6 +421,9 @@ class UIJson(BaseModel):
                 copy=True, **{"geoh5": geoh5, "out_group": out_group}
             )
             options = uijson_copy.serialize("json")
+            options = {
+                key: (item if item is not None else "") for key, item in options.items()
+            }
 
             if not kwargs:
                 kwargs = {}
