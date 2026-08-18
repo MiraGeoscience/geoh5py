@@ -526,15 +526,11 @@ class DataGroupForm(DataForm):
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
 
 
-class GroupMultiDataForm(BaseForm):
+class DrillholeGroupDataForm(BaseForm):
     """
-    Uijson form for selecting (multi) data within a group.
+    Uijson form for selecting (multi) data within a DrillholeGroup.
 
     Shares documented attributes with the BaseForm.
-
-    Note: For now, it seems to work only with DrillholesGroup,
-    but it could be extended to other groups types in the future
-    (just Geoscience ANALYST ui.json restriction).
 
     :param group_value: The group containing the objects containing the data.
     :param group_type: List of group types that restricts the options in the

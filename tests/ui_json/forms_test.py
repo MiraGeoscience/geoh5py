@@ -41,10 +41,10 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     DataRangeForm,
     DirectoryForm,
+    DrillholeGroupDataForm,
     FileForm,
     FloatForm,
     GroupForm,
-    GroupMultiDataForm,
     IntegerForm,
     LabelForm,
     MultiChoiceForm,
@@ -836,7 +836,7 @@ def test_base_form_infer(tmp_path):
             "multiSelect": False,
         }
     )
-    assert form == GroupMultiDataForm
+    assert form == DrillholeGroupDataForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -847,7 +847,7 @@ def test_base_form_infer(tmp_path):
             "value": ["bidon"],
         }
     )
-    assert form == GroupMultiDataForm
+    assert form == DrillholeGroupDataForm
     form = BaseForm.infer(
         {
             "label": "test",
@@ -974,7 +974,7 @@ def test_multi_data_group_form():
     group_uid = str(uuid.uuid4())
     data_uid_1 = str(uuid.uuid4())
     data_uid_2 = str(uuid.uuid4())
-    form = GroupMultiDataForm(
+    form = DrillholeGroupDataForm(
         label="name",
         value=[data_uid_1, data_uid_2],
         group_type=DrillholeGroup,
@@ -992,7 +992,7 @@ def test_multi_data_group_form():
     assert form.tooltip == ["some ", "tooltip ", "text"]
 
     with pytest.raises(TypeError, match="'value' must be a list"):
-        _ = GroupMultiDataForm(
+        _ = DrillholeGroupDataForm(
             label="name",
             value=data_uid_1,
             group_type=DrillholeGroup,

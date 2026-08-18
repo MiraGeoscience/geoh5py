@@ -30,14 +30,16 @@ import pytest
 from pydantic import ValidationError
 
 from geoh5py import Workspace
-from geoh5py.groups import ContainerGroup, UIJsonGroup
-from geoh5py.objects import Curve, Points
+from geoh5py.groups import ContainerGroup, DrillholeGroup, UIJsonGroup
+from geoh5py.objects import Curve, Drillhole, Points
 from geoh5py.ui_json import UIJson
 from geoh5py.ui_json.annotations import Deprecated
 from geoh5py.ui_json.forms import (
     BoolForm,
     DataForm,
     DataOrValueForm,
+    DataRangeForm,
+    DrillholeGroupDataForm,
     FloatForm,
     GroupForm,
     IntegerForm,
@@ -240,6 +242,32 @@ def test_data_disabled(tmp_path):
     assert "parameter" not in options
 
 
+def test_data_range(tmp_path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as ws:
+        pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+        data = pts.add_data({"my_data": {"values": np.random.randn(10)}})
+
+        class MyUIJson(UIJson):
+            parent: ObjectForm
+            parameter: DataRangeForm
+
+        kwargs = {
+            "parent": {"value": pts.uid, "label": "parent", "mesh_type": [Points]},
+            "parameter": {
+                "property": data.uid,
+                "value": [-1.0, 1],
+                "label": "data",
+                "parent": "parent",
+                "association": "Vertex",
+                "range_label": "range",
+                "data_type": "Float",
+            },
+        }
+        uijson = generate_test_uijson(ws, MyUIJson, kwargs)
+        data = uijson.to_params(ws)
+        assert uijson
+
+
 def test_multiple_validations(tmp_path):
     ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
     pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
@@ -435,8 +463,8 @@ def test_mesh_type_validation(tmp_path):
 
 
 def test_group_type_validation(tmp_path):
-    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
-    group = ContainerGroup.create(ws, name="test")
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as ws:
+        group = ContainerGroup.create(ws, name="test")
 
     class MyUIJson(UIJson):
         my_group_parameter: GroupForm
@@ -459,6 +487,42 @@ def test_group_type_validation(tmp_path):
     with pytest.raises(UIJsonError, match=msg):
         uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
         _ = uijson.to_params()
+
+
+def test_group_multi_data_validation(tmp_path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as ws:
+        group = DrillholeGroup.create(ws, name="test")
+
+        well = Drillhole.create(
+            ws, collar=[0, 0, 0], collar_azimuth=45.0, collar_dip=-30.0, parent=group
+        )
+        data = well.add_data(
+            {
+                "log_values": {
+                    "depth": np.linspace(0.0, 100, 10),
+                    "values": np.random.randint(1, high=8, size=10),
+                }
+            }
+        )
+
+    class MyUIJson(UIJson):
+        my_group_parameter: DrillholeGroupDataForm
+
+    kwargs = {
+        "my_group_parameter": {
+            "label": "test",
+            "group_type": DrillholeGroup,
+            "data_type": "Integer",
+            "group_value": group.uid,
+            "value": [data.name],
+        },
+    }
+
+    uijson = generate_test_uijson(ws, uijson=MyUIJson, data=kwargs)
+    params = uijson.to_params()
+    assert isinstance(params["my_group_parameter"], dict)
+    assert params["my_group_parameter"]["group_value"].uid == group.uid
+    assert params["my_group_parameter"]["value"][0] == data.name
 
 
 def test_deprecated_annotation(tmp_path, caplog):
