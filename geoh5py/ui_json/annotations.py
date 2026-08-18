@@ -92,6 +92,12 @@ OptionalString = Annotated[
     PlainSerializer(none2str, when_used="json"),
 ]
 
+OptionalInteger = Annotated[
+    int | None,
+    BeforeValidator(str2none),
+    PlainSerializer(none2str, when_used="json"),
+]
+
 OptionalUUID = Annotated[
     UUID | None,
     BeforeValidator(optional_uuid_mapper),
