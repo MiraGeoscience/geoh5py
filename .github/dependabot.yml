@@ -7,6 +7,7 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     cooldown:
@@ -21,12 +22,11 @@ updates:
           - MiraGeoscience/CI-tools/.github/workflows/*
   - package-ecosystem: "pre-commit"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     cooldown:
       default-days: 4
-    #ignore:
-    #  - dependency-name: "https://github.com/pre-commit/#mirrors-mypy"
     groups:
       pre-commit-hooks:
         patterns:

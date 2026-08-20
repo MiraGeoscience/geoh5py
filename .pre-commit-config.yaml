@@ -7,7 +7,7 @@ fail_fast: false
 
 ci:
     skip: [pylint]
-    autoupdate_branch: develop
+    autoupdate_branch: _
     autoupdate_schedule: quarterly
 
 repos:
