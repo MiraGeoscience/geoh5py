@@ -52,14 +52,12 @@ class ConcatenatedObject(Concatenated, ObjectBase):
 
     def create_property_group(
         self,
-        name=None,
         property_group_type: GroupTypeEnum | str = GroupTypeEnum.INTERVAL,
         **kwargs,
     ) -> ConcatenatedPropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
-        :param name: Name of the property group.
         :param property_group_type: Type of property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
@@ -67,7 +65,7 @@ class ConcatenatedObject(Concatenated, ObjectBase):
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
         prop_group = ConcatenatedPropertyGroup(
-            self, name=name, property_group_type=property_group_type, **kwargs
+            self, property_group_type=property_group_type, **kwargs
         )
 
         return prop_group

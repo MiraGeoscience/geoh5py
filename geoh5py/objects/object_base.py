@@ -433,23 +433,17 @@ class ObjectBase(EntityContainer):
 
     def create_property_group(
         self,
-        name=None,
-        property_group_type: GroupTypeEnum | str = GroupTypeEnum.MULTI,
         **kwargs,
     ) -> PropertyGroup:
         """
         Create a new :obj:`~geoh5py.groups.property_group.PropertyGroup`.
 
-        :param name: Name of the new property group.
-        :param property_group_type: Type of property group.
         :param kwargs: Any arguments taken by the
             :obj:`~geoh5py.groups.property_group.PropertyGroup` class.
 
         :return: A new :obj:`~geoh5py.groups.property_group.PropertyGroup`
         """
-        prop_group = PropertyGroup(
-            self, name=name, property_group_type=property_group_type, **kwargs
-        )
+        prop_group = PropertyGroup(self, **kwargs)
 
         return prop_group
 
