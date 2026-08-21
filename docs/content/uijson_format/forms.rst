@@ -563,7 +563,7 @@ Forms can be grouped together to create a more organized UI. If set optional, th
 Group dependencies
 ------------------
 
-A group of UI elements can be enabled or disabled based on the state of a parameter outside the group. The parameter driving the dependency must contain an **optional** field or be a :ref:`Boolean parameter'<bool_param>`.
+A group of UI elements can be enabled or disabled based on the state of a parameter outside the group. The parameter driving the dependency must contain an **optional** field or be a :ref:`Boolean form <bool_param>`.
 
 "groupDependency" ``str``
     Name of the form that controls the enabled or visible state of the ui group.
