@@ -330,8 +330,7 @@ class UIJson(BaseModel):
         """
         Return a demoted dictionary representation of the uijson data.
 
-        :param mode: Define the schema used for serialization. Either 'json', 'python', 'str'
-
+:param mode: Define the serialization mode: either 'json' or 'python'.
         :return: Serialized uijson dictionary or string.
         """
         return self.model_dump(exclude_unset=True, by_alias=True, mode=mode)
@@ -481,7 +480,7 @@ class UIJson(BaseModel):
         if isinstance(path, Path | str):
             file_name = Path(path)
 
-            if len(set(file_name.suffixes).intersection({".ui", ".json"})) != 2:
+if file_name.suffixes[-2:] != [".ui", ".json"]:
                 file_name = file_name.with_suffix(".ui.json")
 
             with open(file_name, "w", encoding="utf-8") as file:

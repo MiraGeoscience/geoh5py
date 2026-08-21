@@ -4,7 +4,7 @@ Release Notes
 Release 0.13.0 (2026-07-04)
 ---------------------------
 
-- Better string conversion of UIJSon class used by print
+- Better string conversion of UIJson class used by print
 - BaseUIJson crashes in to_params validation when skipping over disabled fields
 - UIJson should have a flatten method to retrieve value/property of all forms
 - Support all data types in DataForm
