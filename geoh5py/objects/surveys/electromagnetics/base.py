@@ -885,7 +885,7 @@ class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
 
 
 class FEMSurvey(BaseEMSurvey, ABC):
-    __UNITS = __UNITS = [
+    __UNITS = [
         "Hertz (Hz)",
         "KiloHertz (kHz)",
         "MegaHertz (MHz)",
