@@ -132,6 +132,19 @@ SAMPLE = {
 }
 
 
+def generate_test_uijson(workspace: Workspace, uijson, data: dict):
+    return uijson(
+        version="0.1.0",
+        title="my application",
+        geoh5=str(workspace.h5file),
+        run_command="python -m my_module",
+        monitoring_directory="my_monitoring_directory",
+        conda_environment="my_conda_environment",
+        workspace_geoh5=str(workspace.h5file),
+        **data,
+    )
+
+
 @pytest.fixture
 def sample_uijson(tmp_path):
     uijson_path = tmp_path / "test.ui.json"
@@ -178,18 +191,58 @@ def test_uijson(sample_uijson):
     assert "my_absent_uid_parameter" in str(err.value)
     assert "my_faulty_data_parameter" in str(err.value)
 
+    json_dict = uijson.serialize()
 
-def generate_test_uijson(workspace: Workspace, uijson, data: dict):
-    return uijson(
-        version="0.1.0",
-        title="my application",
-        geoh5=str(workspace.h5file),
-        run_command="python -m my_module",
-        monitoring_directory="my_monitoring_directory",
-        conda_environment="my_conda_environment",
-        workspace_geoh5=str(workspace.h5file),
-        **data,
-    )
+    assert isinstance(json_dict, dict)
+
+    json_dict["geoh5"] = "bogus.geoh5"
+
+    with pytest.raises(
+        FileNotFoundError, match=r"geoh5 path bogus\.geoh5 does not exist"
+    ):
+        MyUIJson.from_dict(json_dict)
+
+
+def test_uijson_io():
+
+    uijson = UIJson.from_dict(SAMPLE, validate=False)
+
+    assert isinstance(uijson, UIJson)
+    assert isinstance(uijson.my_string_parameter, dict)
+
+    bytes_io = uijson.write()
+
+    kwargs = UIJson.load(bytes_io)
+    re_loaded = UIJson.from_dict(kwargs, validate=False)
+
+    assert all(getattr(uijson, key) == getattr(re_loaded, key) for key in SAMPLE.keys())
+
+
+def test_uijson_to_file_data(tmp_path):
+
+    class MyUIJson(UIJson):
+        my_string_parameter: StringForm
+
+    kwargs = {
+        "geoh5": "",
+        "my_string_parameter": {"label": "some string", "value": "test"},
+        "title": "File Data",
+        "run_command": "python -m my_module",
+        "conda_environment": "",
+    }
+    uijson = MyUIJson.from_dict(kwargs)
+    uijson.set_values(**{"my_string_parameter": "hello world"})
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        pts = Points.create(workspace, name="test", vertices=np.random.random((10, 3)))
+        uijson.to_file_data(pts)
+
+        assert len(pts.children) == 1
+        assert pts.children[0].name == "File Data.ui.json"
+
+        json_string = pts.children[0].file_bytes.decode(encoding="utf-8")
+        data = json.loads(json_string)
+
+        assert data["my_string_parameter"]["value"] == "hello world"
 
 
 def test_allow_extra(tmp_path):
@@ -788,7 +841,7 @@ def test_unknown_uijson(tmp_path, sample_uijson):
         assert "my_group_optional_parameter" not in params
         assert "my_grouped_parameter" not in params
 
-    re_loaded = UIJson.read(tmp_path / "test_copy.ui.json")
+    re_loaded = UIJson.read(str(tmp_path / "test_copy.ui.json"))
 
     for name in uijson.model_fields_set:
         assert getattr(re_loaded, name) == getattr(uijson, name)
