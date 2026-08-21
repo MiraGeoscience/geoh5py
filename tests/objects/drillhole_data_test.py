@@ -312,8 +312,14 @@ def test_collar_azimuth_dip(tmp_path, azimuth, dip, expected):
     n_data = 10
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         well = Drillhole.create(
-            workspace, collar=collar, collar_azimuth=azimuth, collar_dip=dip
+            workspace,
+            collar=collar,
+            collar_azimuth=azimuth,
+            collar_dip=dip,
+            end_of_hole=100.0,
         )
+        assert well.end_of_hole == 100.0
+        assert well.surveys[0, 0] == 100.0
         well.add_data(
             {
                 "log_values": {
