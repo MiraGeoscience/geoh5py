@@ -264,7 +264,7 @@ def test_data_range(tmp_path):
             },
         }
         uijson = generate_test_uijson(ws, MyUIJson, kwargs)
-        data = uijson.to_params(ws)
+        uijson.to_params(ws)
         assert uijson
 
 
