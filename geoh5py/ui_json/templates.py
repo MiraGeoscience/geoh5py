@@ -339,8 +339,8 @@ def data_parameter(
         '3D vector',
         'Dip direction & dip',
         'Strike & dip',
+        'Trend & plunge',
         or 'Multi-element'.
-    :param multi_select: Option to select multiple choices.
     :param parent: Parameter name corresponding to the parent object.
     :param optional: Make optional if not None. Initial state provided by not None
         value.  Can be either 'enabled' or 'disabled'.
@@ -361,6 +361,7 @@ def data_parameter(
         "Dip direction & dip",
         "Strike & dip",
         "Multi-element",
+        "Trend & plunge",
     ]:
         form["dataGroupType"] = data_group_type
 
@@ -394,6 +395,7 @@ def data_value_parameter(
         '3D vector',
         'Dip direction & dip',
         'Strike & dip',
+        'Trend & plunge',
         or 'Multi-element'.
     :param parent: Parameter name corresponding to the parent object.
     :param is_value: Display the input box or dropdown menu.

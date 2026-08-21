@@ -59,7 +59,8 @@ class BaseForm(BaseModel):
     """
     Base class for uijson forms
 
-    :param label: Label for ui element.
+    :param label: Label(s) for ui element.
+        A list of labels is rendered as a single space separated string.
     :param value: The parameter's value.
     :param optional: If True, ui element is rendered with a checkbox to
         control the enabled state.
@@ -96,7 +97,7 @@ class BaseForm(BaseModel):
 
     __pydantic_extra__: dict[str, str | float | int]  # For autodoc
 
-    label: str
+    label: str | list[str]
     value: Any
     optional: bool = False
     enabled: bool = True
@@ -161,6 +162,16 @@ class BaseForm(BaseModel):
         Whether the field is optional or not.
         """
         return self.optional or self.group_optional or len(self.dependency) > 0
+
+
+class LabelForm(BaseForm):
+    """
+    Label uijson form.
+
+    Shares documented attributes with the BaseForm.
+    """
+
+    value: None = None
 
 
 class StringForm(BaseForm):
@@ -399,13 +410,6 @@ class DirectoryForm(BaseForm):
     def to_string(self, value: Path) -> str:
         return str(value)
 
-    @field_validator("value")
-    @classmethod
-    def valid_directory(cls, value: Path) -> Path:
-        if not value.exists() or not value.is_dir():
-            raise ValueError(f"Provided path {value} is not a valid directory.")
-        return value
-
     @field_validator("directory_only", mode="before")
     @classmethod
     def force_directory_only(cls, _):
@@ -472,7 +476,7 @@ class DataFormMixin(BaseModel):
 
 class DataForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson form for data associated with an object.
+    Uijson form for data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -485,7 +489,7 @@ class DataForm(DataFormMixin, BaseForm):
 
 class DataGroupForm(DataForm):
     """
-    Geoh5py uijson form for grouped data associated with an object.
+    Uijson form for grouped data associated with an object.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -498,7 +502,7 @@ class DataGroupForm(DataForm):
 
 class GroupMultiDataForm(BaseForm):
     """
-    Geoh5py uijson form for selecting (multi) data within a group.
+    Uijson form for selecting (multi) data within a group.
 
     Shares documented attributes with the BaseForm.
 
@@ -572,7 +576,7 @@ class GroupMultiDataForm(BaseForm):
 
 class DataOrValueForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson data form that also accepts a single value.
+    Uijson data form that also accepts a single value.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 
@@ -585,17 +589,6 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     min: float = -np.inf
     max: float = np.inf
     precision: int = 2
-
-    @model_validator(mode="after")
-    def property_if_not_is_value(self):
-        if (
-            "is_value" in self.model_fields_set  # pylint: disable=unsupported-membership-test
-            and not self.is_value
-            and not isinstance(self.property, UUID)  # pylint: disable=unsupported-membership-test
-        ):
-            raise ValueError("A property must be provided if is_value is used.")
-
-        return self
 
     def flatten(self) -> UUID | float | int | None:
         """Returns the data for the form."""
@@ -627,7 +620,7 @@ class DataOrValueForm(DataFormMixin, BaseForm):
 
 class MultiSelectDataForm(DataFormMixin, BaseForm):
     """
-    Geoh5py uijson data form with multi-selection.
+    Uijson data form with multi-selection.
 
     Shares documented attributes with the BaseForm and DataFormMixin.
 

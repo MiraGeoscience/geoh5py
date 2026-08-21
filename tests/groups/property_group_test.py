@@ -416,41 +416,38 @@ def test_property_group_table_error(tmp_path):
             prop_group.remove_properties(curve)
 
 
-def test_group_type_enum(tmp_path):
-    workspace = Workspace(tmp_path / "test.geoh5")
-    curve = Curve.create(
-        workspace,
-        vertices=np.c_[np.linspace(0, 2 * np.pi, 12), np.zeros(12), np.zeros(12)],
-    )
-    data = curve.add_data(
-        {"test": {"values": np.random.rand(12), "association": "VERTEX"}},
-        property_group="myGroup",
-    )
+@pytest.mark.parametrize(
+    "group_type",
+    [
+        "Dip direction & dip",
+        "Multi-element",
+        "Strike & dip",
+        "3D vector",
+        "Trend & plunge",
+    ],
+)
+def test_group_type_enum(tmp_path, group_type):
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
+        curve, _ = make_example(ws, add_str_column=True)
+        props = [child for child in curve.children if isinstance(child, Data)]
 
-    data_text = curve.add_data(
-        {
-            "text": {
-                "values": np.array(["i" for i in range(12)]),
-                "association": "VERTEX",
-            }
-        },
-        property_group="myGroup2",
-    )
+        with pytest.raises(TypeError, match=f"Children of '{group_type}'"):
+            PropertyGroup(
+                parent=curve,
+                properties=props * 4,
+                property_group_type=group_type,
+            )
 
-    with pytest.raises(TypeError, match="First children of 'Depth table'"):
-        GroupTypeEnum("Depth table").verify([data])
 
-    with pytest.raises(TypeError, match="Children of 'Dip direction & dip'"):
-        GroupTypeEnum("Dip direction & dip").verify([data])
+@pytest.mark.parametrize("group_type", ["Depth table", "Interval table"])
+def test_property_group_depth_types(tmp_path, group_type):
+    with Workspace(tmp_path / f"{__name__}.geoh5") as ws:
+        curve, _ = make_example(ws, add_str_column=True)
+        bad_prop = curve.get_data("StrColumn")[0]
 
-    with pytest.raises(TypeError, match="First two children of 'Interval table'"):
-        GroupTypeEnum("Interval table").verify([data])
-
-    with pytest.raises(TypeError, match="Children of 'Multi-element'"):
-        GroupTypeEnum("Multi-element").verify([data_text])
-
-    with pytest.raises(TypeError, match="Children of 'Strike & dip'"):
-        GroupTypeEnum("Strike & dip").verify([data])
-
-    with pytest.raises(TypeError, match="Children of '3D vector'"):
-        GroupTypeEnum("3D vector").verify([data])
+        with pytest.raises(TypeError, match="must be of type FloatData"):
+            PropertyGroup(
+                parent=curve,
+                properties=[bad_prop],
+                property_group_type=group_type,
+            )

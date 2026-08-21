@@ -39,6 +39,7 @@ from geoh5py.ui_json.forms import (
     DataOrValueForm,
     FloatForm,
     IntegerForm,
+    LabelForm,
     MultiSelectDataForm,
     ObjectForm,
     RadioLabelForm,
@@ -200,6 +201,34 @@ def test_allow_extra(tmp_path):
         "label": "this is extra",
         "value": "extra",
     }
+
+
+def test_data_disabled(tmp_path):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+
+    pts = Points.create(ws, name="test", vertices=np.random.random((10, 3)))
+
+    class MyBaseUIJson(BaseUIJson):
+        parent: ObjectForm
+        parameter: DataOrValueForm
+
+    kwargs = {
+        "parent": {"label": "parent", "value": pts.uid, "mesh_type": [Points]},
+        "parameter": {
+            "label": "some parameter",
+            "value": 1.0,
+            "is_value": False,
+            "optional": True,
+            "parent": "parent",
+            "association": "Vertex",
+            "property": "",
+            "data_type": "Float",
+            "enabled": False,
+        },
+    }
+    uijson = generate_test_uijson(ws, uijson=MyBaseUIJson, data=kwargs)
+    options = uijson.to_params()
+    assert "parameter" not in options
 
 
 def test_multiple_validations(tmp_path):
@@ -664,6 +693,32 @@ def test_geoh5_validate_extension(tmp_path):
             conda_environment="test",
             workspace_geoh5=None,
         )
+
+
+def test_label_form(tmp_path):
+    ws = Workspace.create(tmp_path / f"{__name__}.geoh5")
+
+    # BoolForm dependency is valid
+    class MyBaseUIJson(BaseUIJson):
+        my_parameter: StringForm
+        my_label: LabelForm
+
+    kwargs = {
+        "my_parameter": {"label": "test", "value": "string", "main": True},
+        "my_label": {
+            "label": "Label with hyperlinks",
+            "value": None,
+            "icon": "information",
+            "main": True,
+        },
+    }
+
+    uijson = generate_test_uijson(workspace=ws, uijson=MyBaseUIJson, data=kwargs)
+    uijson.write(tmp_path / "test_label.ui.json")
+
+    new_json = BaseUIJson.read(tmp_path / "test_label.ui.json")
+
+    assert uijson.my_label == new_json.my_label
 
 
 # ---------------------------------------------------------------------------

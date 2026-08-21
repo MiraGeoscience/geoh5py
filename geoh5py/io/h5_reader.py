@@ -33,6 +33,7 @@ from ..shared.exceptions import MemoryValidationError
 from ..shared.utils import (
     INV_KEY_MAP,
     KEY_MAP,
+    PROPERTY_KWARGS,
     as_str_if_utf8_bytes,
     as_str_if_uuid,
     str2uuid,
@@ -235,7 +236,9 @@ class H5Reader:
         with fetch_h5_handle(file) as h5file:
             name = list(h5file)[0]
             entity_type = cls.format_type_string(entity_type)
-            label = KEY_MAP.get(label, label)
+
+            if label in PROPERTY_KWARGS:
+                label = KEY_MAP.get(label, label)
 
             try:
                 group = h5file[name][entity_type][as_str_if_uuid(uid)][
