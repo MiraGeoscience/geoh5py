@@ -44,7 +44,7 @@ def test_add_file(tmp_path: Path):
     file_name = "numpy_array.txt"
     for obj in [curve, group]:
         with pytest.raises(TypeError, match="Input file must be a path or"):
-            file_data = obj.add_file(123)
+            obj.add_file(123)
 
         file_data = obj.add_file(tmp_path / file_name)
         assert file_data.values == file_name, "File_name not properly set."
