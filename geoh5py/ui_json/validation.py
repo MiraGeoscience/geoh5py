@@ -48,7 +48,7 @@ from geoh5py.ui_json.utils import requires_value
 
 
 if TYPE_CHECKING:
-    from geoh5py.ui_json.ui_json import BaseUIJson
+    from geoh5py.ui_json.ui_json import UIJson
 
 Validation = dict[str, Any]
 
@@ -364,7 +364,7 @@ class ErrorPool:  # pylint: disable=too-few-public-methods
             raise UIJsonError(message)
 
 
-def dependency_type_validation(name: str, ui_json: BaseUIJson):
+def dependency_type_validation(name: str, ui_json: UIJson):
     """
     Validate that the form depending on is optional, group_optional or bool type.
 
@@ -394,7 +394,73 @@ def get_validations(form: list[str]) -> list[Callable]:
     return [VALIDATIONS_MAP[k] for k in form if k in VALIDATIONS_MAP]
 
 
-def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+def is_of_typed_value(values: Entity | list[Entity], types: type | list[type]) -> bool:
+    """
+    Common function to test typed values.
+
+    :param values: Entity or list of values to test
+    :param types: Types to test against
+
+    :return: Logic whether the type(s) is respected
+    """
+    if not isinstance(types, list):
+        types = [types]
+
+    if not isinstance(values, list):
+        values = [values]
+
+    for val in values:
+        if not isinstance(val, tuple(types)):
+            return False
+
+    return True
+
+
+def data_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
+    """
+    Validate that value is one of the provided data types.
+
+    :param name: Name of the form
+    :param data: Input data with known validations.
+    :param ui_json: A UIJson object.
+    """
+
+    form = getattr(ui_json, name)
+
+    # For is_value case
+    if getattr(form, "is_value", False):
+        return
+
+    data_types = form.data_type
+
+    if not isinstance(data_types, list):
+        data_types = [data_types]
+
+    data_types = [elem.value for elem in data_types]
+
+    values = data[name]
+
+    if isinstance(values, PropertyGroup):
+        if values.properties is None:
+            return
+        values = [values.parent.get_data(data)[0] for data in values.properties]
+
+    elif isinstance(values, dict):
+        if "property" in values:
+            values = values["property"]
+        elif "value" in values:
+            # Don't validate for DrillholeGroupDataForm as selected
+            # data *name* is not of Data type
+            if "group_value" in values:
+                return
+
+            values = values["value"]
+
+    if not is_of_typed_value(values, data_types):
+        raise UIJsonError(f"Data type must be one of {data_types}.")
+
+
+def mesh_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that value is one of the provided mesh types.
 
@@ -406,15 +472,11 @@ def mesh_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     form = getattr(ui_json, name)
     mesh_types = form.mesh_type
 
-    if not isinstance(mesh_types, list):
-        mesh_types = [mesh_types]
-
-    obj = data[name]
-    if not isinstance(obj, tuple(mesh_types)):
+    if not is_of_typed_value(data[name], mesh_types):
         raise UIJsonError(f"Object's mesh type must be one of {mesh_types}.")
 
 
-def group_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+def group_type_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that value is one of the provided group types.
 
@@ -426,15 +488,16 @@ def group_type_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
     form = getattr(ui_json, name)
     group_types = form.group_type
 
-    if not isinstance(group_types, list):
-        group_types = [group_types]
+    values = data[name]
 
-    obj = data[name]
-    if not isinstance(obj, tuple(group_types)):
+    if isinstance(values, dict):
+        values = [values["group_value"]]
+
+    if not is_of_typed_value(values, group_types):
         raise UIJsonError(f"Group's group type must be one of {group_types}.")
 
 
-def parent_validation(name: str, data: dict[str, Any], ui_json: BaseUIJson):
+def parent_validation(name: str, data: dict[str, Any], ui_json: UIJson):
     """
     Validate that the data is a child of the parent object.
 
@@ -495,6 +558,7 @@ def promote_or_catch(
 
 
 VALIDATIONS_MAP = {
+    "data_type": data_type_validation,
     "mesh_type": mesh_type_validation,
     "group_type": group_type_validation,
     "parent": parent_validation,

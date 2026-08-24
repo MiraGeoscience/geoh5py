@@ -43,6 +43,9 @@ def test_add_file(tmp_path: Path):
     np.savetxt(tmp_path / r"numpy_array.txt", xyz)
     file_name = "numpy_array.txt"
     for obj in [curve, group]:
+        with pytest.raises(TypeError, match="Input file must be a path or"):
+            obj.add_file(123)
+
         file_data = obj.add_file(tmp_path / file_name)
         assert file_data.values == file_name, "File_name not properly set."
         assert file_data.n_values == 1, "Object association should have 1 value."

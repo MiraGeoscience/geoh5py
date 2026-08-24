@@ -442,6 +442,30 @@ class ObjectForm(BaseForm):
     mesh_type: MeshTypes
 
 
+class MultiObjectForm(BaseForm):
+    """
+    Geoh5py object uijson form.
+
+    Shares documented attributes with the BaseForm.
+
+    :param mesh_type: List of object types that restricts the options in the
+        Geoscience ANALYST ui.json dropdown.
+    """
+
+    value: OptionalUUIDList
+    mesh_type: MeshTypes
+    multi_select: bool = True
+
+    @field_validator("multi_select", mode="before")
+    @classmethod
+    def only_multi_select(cls, value: bool) -> bool:
+        """Validate that multi_select is True."""
+        if not value:
+            raise ValueError("MultiObjectForm must have multi_select: True.")
+
+        return value
+
+
 class GroupForm(BaseForm):
     """
     Geoh5py group uijson form.
@@ -502,15 +526,11 @@ class DataGroupForm(DataForm):
     data_group_type: GroupTypeEnum | list[GroupTypeEnum]
 
 
-class GroupMultiDataForm(BaseForm):
+class DrillholeGroupDataForm(BaseForm):
     """
-    Uijson form for selecting (multi) data within a group.
+    Uijson form for selecting (multi) data within a DrillholeGroup.
 
     Shares documented attributes with the BaseForm.
-
-    Note: For now, it seems to work only with DrillholesGroup,
-    but it could be extended to other groups types in the future
-    (just Geoscience ANALYST ui.json restriction).
 
     :param group_value: The group containing the objects containing the data.
     :param group_type: List of group types that restricts the options in the
@@ -810,7 +830,7 @@ def filter_candidates_by_type_checking(
         validation = TypeAdapter(annotation)
         try:
             value = data.get("value")
-            strict = isinstance(value, (int, float, bool))
+            strict = isinstance(value, (int, float, bool, str))
             validation.validate_python(value, strict=strict)
             filtered_candidates.append(candidate)
         except ValidationError:

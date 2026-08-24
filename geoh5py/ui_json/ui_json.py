@@ -22,8 +22,10 @@ from __future__ import annotations
 
 import json
 import logging
+from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar, Literal, Self
+from uuid import UUID, uuid4
 
 from pydantic import (
     BaseModel,
@@ -34,13 +36,10 @@ from pydantic import (
 )
 
 from geoh5py import Workspace
+from geoh5py.data import FilenameData
 from geoh5py.groups import UIJsonGroup
-from geoh5py.shared.utils import (
-    copy_dict_relatives,
-    dict_mapper,
-    entity2uuid,
-    fetch_active_workspace,
-)
+from geoh5py.shared.entity_container import EntityContainer
+from geoh5py.shared.utils import copy_dict_relatives, fetch_active_workspace, stringify
 from geoh5py.ui_json.annotations import OptionalPath, OptionalString
 from geoh5py.ui_json.forms import BaseForm, DependencyType, GroupForm
 from geoh5py.ui_json.validation import (
@@ -55,20 +54,21 @@ from geoh5py.ui_json.validation import (
 logger = logging.getLogger(__name__)
 
 
-class BaseUIJson(BaseModel):
+class UIJson(BaseModel):
     """
     Base class for storing ui.json data on disk.
 
     :param version: Version of the application.
-    :params title: Title of the application.
-    :params geoh5: Path to the geoh5 file.
-    :params run_command: Command to run the application.
-    :params monitoring_directory: Directory to monitor for changes.
-    :params conda_environment: Conda environment to run the application.
-    :params workspace_geoh5: Path to the workspace geoh5 file.
-    :params out_group: Optional group form to hold the UIJson group.
+    :param icon: Name of the icon to be displayed.
+    :param title: Title of the application.
+    :param geoh5: Path to the geoh5 file.
+    :param run_command: Command to run the application.
+    :param monitoring_directory: Directory to monitor for changes.
+    :param conda_environment: Conda environment to run the application.
+    :param workspace_geoh5: Path to the workspace geoh5 file.
+    :param out_group: Optional group form to hold the UIJson group.
 
-    :params _form_dependencies: Nested dictionaries describing the dependencies between forms,
+    :param _form_dependencies: Nested dictionaries describing the dependencies between forms,
         where the key is the name of the form, and the value is a dictionary of
         forms name and respective mirroring enabled state behaviour
         (True: reflects, False: reverses).
@@ -80,19 +80,21 @@ class BaseUIJson(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True, extra="allow", validate_assignment=True
     )
-    __pydantic_extra__: dict[str, str | float | int | dict]  # For autodoc
+    __pydantic_extra__: dict[str, str | float | int | dict | None | list]  # For autodoc
     version: str | None = "0.0.0"
     title: str
     geoh5: OptionalPath
     run_command: str | None
     monitoring_directory: OptionalPath = None
     conda_environment: str | None
+    icon: str | None = None
     workspace_geoh5: OptionalPath = None
 
     out_group: GroupForm | OptionalString = None
 
     _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
     _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)
+    _out_group_class: ClassVar[type[UIJsonGroup]] = UIJsonGroup
 
     def copy_relatives(self, parent: Workspace, clear_cache: bool = False):
         """
@@ -118,8 +120,7 @@ class BaseUIJson(BaseModel):
         """
         Flatten the UIJson data to dictionary of key/value pairs.
 
-        Chooses between value/property in data forms depending on the is_value
-        field.
+        Relies on individual BaseForm.flatten method when possible.
 
         :param skip_disabled: If True, skips fields with 'enabled' set to False.
         :param active_only: If True, skips fields that have not been explicitly set.
@@ -141,11 +142,13 @@ class BaseUIJson(BaseModel):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> BaseUIJson:
+    def from_dict(cls, data: dict, validate: bool = True) -> Self:
         """
         Create a UIJson instance from a dictionary.
 
         :param data: Dictionary representing the ui json object.
+        :param validate: Indicate whether to validate the ui json object.
+            Pydantic class is instantiated with 'model_construct' if False.
 
         :returns: UIJson object.
         """
@@ -153,15 +156,18 @@ class BaseUIJson(BaseModel):
 
         ui_json_class = cls.infer(**kwargs)
 
-        return ui_json_class(**kwargs)
+        if validate:
+            return ui_json_class(**kwargs)
+
+        return ui_json_class.model_construct(**kwargs)  # type: ignore[return-value, arg-type]
 
     @property
     def form_dependencies(self) -> dict[str, dict[str, bool]]:
         """Stashed inter-form dependencies."""
         return self._form_dependencies
 
-    @staticmethod
-    def infer(title="UnknownUIJson", **kwargs) -> type[BaseUIJson]:
+    @classmethod
+    def infer(cls, title="UnknownUIJson", **kwargs) -> type[Self]:
         """
         Create a UIJson subclass dynamically based on inferred form types.
 
@@ -175,19 +181,19 @@ class BaseUIJson(BaseModel):
 
         :return: A new :class:`UIJson` subclass whose extra fields match the inferred types.
         """
-        fields = {}
+        fields: dict[str, tuple] = {}
         for name, value in kwargs.items():
-            if name in BaseUIJson.model_fields.keys():
+            if name in UIJson.model_fields.keys():
                 continue
             if isinstance(value, dict):
                 form_type = BaseForm.infer(value)
                 fields[name] = (form_type, ...)
-            else:
-                fields[name] = (type(value), ...)
+            # else:
+            #     fields[name] = (AnyJsonType, ...)
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
-            __base__=BaseUIJson,
+            __base__=cls,
             **fields,
         )
         return model
@@ -235,7 +241,7 @@ class BaseUIJson(BaseModel):
         self._group_dependencies, self._form_dependencies = self._get_dependency_links()
 
     @classmethod
-    def read(cls, path: str | Path) -> BaseUIJson:
+    def read(cls, path: str | Path | BytesIO, validate: bool = True) -> Self:
         """
         Create a UIJson instance from ui.json file.
 
@@ -247,14 +253,16 @@ class BaseUIJson(BaseModel):
         if you want to handle validation errors yourself.
 
         :param path: Path to the .ui.json file.
+        :param validate: Indicate whether to validate the ui json object.
+            Pydantic class is instantiated with 'model_construct' if False.
 
         :returns: UIJson object.
         """
-        kwargs = cls._load(path)
+        kwargs = cls.load(path)
 
-        return cls.from_dict(kwargs)
+        return cls.from_dict(kwargs, validate=validate)
 
-    def set_enabled(self, copy: bool = False, **states) -> BaseUIJson:
+    def set_enabled(self, copy: bool = False, **states) -> UIJson:
         """
         Set the enabled state of fields, and handle the state of dependencies.
 
@@ -291,7 +299,7 @@ class BaseUIJson(BaseModel):
 
         return uijson
 
-    def set_values(self, copy: bool = False, **kwargs) -> BaseUIJson:
+    def set_values(self, copy: bool = False, **kwargs) -> UIJson:
         """
         Fill the UIJson with new values.
 
@@ -314,15 +322,40 @@ class BaseUIJson(BaseModel):
 
                 uijson.set_enabled(copy=False, **{field: value is not None})
             else:
-                setattr(uijson, field, dict_mapper(value, [entity2uuid]))
+                setattr(uijson, field, stringify(value))
 
         return uijson
+
+    def serialize(self, mode: Literal["json", "python"] | str = "python") -> dict:
+        """
+                Return a demoted dictionary representation of the uijson data.
+
+        :param mode: Define the serialization mode: either 'json' or 'python'.
+
+                :return: Serialized uijson dictionary or string.
+        """
+        return self.model_dump(exclude_unset=True, by_alias=True, mode=mode)
+
+    def to_file_data(
+        self, entity: EntityContainer, name: str | None = None
+    ) -> FilenameData:
+        """
+        Add ui.json as FileData to entity.
+
+        :param entity: Object to add ui.json file to.
+        """
+        file = self.write()
+
+        if name is None:
+            name = self.title + ".ui.json"
+
+        return entity.add_file(file, name=name)
 
     def to_params(
         self, workspace: Workspace | None = None, validate=True
     ) -> dict[str, Any]:
         """
-        Promote, flatten and validate parameter/values dictionary.
+        Flatten, promote and validate parameter/values dictionary.
 
         :param workspace: Workspace to fetch entities from.  Used for passing active
             workspaces to avoid closing and flushing data.
@@ -364,30 +397,48 @@ class BaseUIJson(BaseModel):
         self, workspace: Workspace | None = None, **kwargs
     ) -> UIJsonGroup:
         """
-        Convert the UIJson to a UIJsonGroup.
+        Convert the UIJson class to a UIJsonGroup.
 
-        :param workspace: Workspace to fetch entities from.  Used for passing active
-            workspaces to avoid closing and flushing data.
-        :param kwargs: Additional keyword arguments to update the UIJson data before
+        :param workspace: The workspace to use for storage.
+        :param kwargs: Extra arguments to pass to the UIJsonGroup class creation.
 
-        :return: A UIJsonGroup representing the application.
+        :return: UIJsonGroup with options mirroring the current state.
         """
         with fetch_active_workspace(workspace or Workspace(self.geoh5)) as geoh5:
-            if geoh5 is None:
-                raise ValueError("Workspace cannot be None.")
+            # Add the form if not available
+            out_group: UUID | GroupForm = uuid4()
+            if self.out_group is None:
+                out_group = GroupForm(
+                    label="UIJson Group",
+                    group_type=UIJsonGroup,
+                    optional=True,
+                    enabled=True,
+                    main=False,
+                    value=uuid4(),
+                )
 
-            ui_json_group = UIJsonGroup.create(
+            uijson_copy = self.set_values(
+                copy=True, **{"geoh5": geoh5, "out_group": out_group}
+            )
+            options = uijson_copy.serialize("json")
+            options = {
+                key: (item if item is not None else "") for key, item in options.items()
+            }
+
+            if not kwargs:
+                kwargs = {}
+
+            kwargs["options"] = options
+
+            if "name" not in kwargs:
+                kwargs["name"] = self.title
+
+            ui_json_group = self._out_group_class.create(
                 workspace=geoh5,
-                options=self.model_dump(mode="json", exclude_unset=True, by_alias=True),
-                name=kwargs.pop("name", self.title),
                 **kwargs,
             )
-            options = ui_json_group.options
-            options["out_group"]["value"] = ui_json_group.uid
-            options["out_group"]["enabled"] = True
-            ui_json_group.options = options
 
-            return ui_json_group
+        return ui_json_group
 
     @field_validator("geoh5", mode="after")
     @classmethod
@@ -417,19 +468,28 @@ class BaseUIJson(BaseModel):
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
-    def write(self, path: Path) -> Path:
+    def write(self, path: Path | str | None = None) -> Path | BytesIO:
         """
         Write the UIJson object to file.
 
         :param path: Path to write the .ui.json file.
 
-        :return: Return path to the ui_json file.
+        :return: Return path to the ui_json file or BytesIO object.
         """
-        with open(path, "w", encoding="utf-8") as file:
-            data = self.model_dump_json(indent=4, exclude_unset=True, by_alias=True)
-            file.write(data)
+        data = self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
 
-        return path
+        if isinstance(path, Path | str):
+            file_name = Path(path)
+
+            if file_name.suffixes[-2:] != [".ui", ".json"]:
+                file_name = file_name.with_suffix(".ui.json")
+
+            with open(file_name, "w", encoding="utf-8") as file:
+                file.write(data)
+
+            return file_name
+
+        return BytesIO(data.encode("utf-8"))
 
     def _cross_validations(
         self, params: dict[str, Any], errors: dict[str, Any] | None = None
@@ -483,7 +543,7 @@ class BaseUIJson(BaseModel):
             if name not in form_dependencies:
                 form_dependencies[name] = {}
 
-            form = getattr(self, name)
+            form = getattr(self, name, None)
 
             if not isinstance(form, BaseForm):
                 continue
@@ -516,7 +576,7 @@ class BaseUIJson(BaseModel):
         return group_dependencies, form_dependencies
 
     @staticmethod
-    def _load(path: str | Path) -> dict:
+    def load(path: str | Path | BytesIO) -> dict:
         """
         Load data and generate a UIJson class from file.
 
@@ -524,6 +584,9 @@ class BaseUIJson(BaseModel):
 
         :return: UIJson class and dictionary representing the ui json object.
         """
+        if isinstance(path, BytesIO):
+            return json.loads(path.getvalue().decode())
+
         if isinstance(path, str):
             path = Path(path)
 
@@ -547,7 +610,7 @@ class BaseUIJson(BaseModel):
     def __str__(self) -> str:
         """String level shows the full json representation."""
 
-        json_string = self.model_dump_json(indent=4, exclude_unset=True)
+        json_string = self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
         for field in type(self).model_fields.keys():
             value = getattr(self, field)
             if isinstance(value, BaseForm):

@@ -96,10 +96,13 @@ class UIJsonGroup(Group):
         """
         options["geoh5"] = str(self.workspace.h5file)
 
-        out_group = options.get("out_group", {}) or {}
-        out_group["value"] = str(self.uid)
-        out_group["label"] = out_group.get("label", self.name)
-        out_group["groupType"] = str(self.default_type_uid())
+        out_group = options.get("out_group", None)
+
+        if isinstance(out_group, dict):
+            out_group["value"] = str(self.uid)
+        else:
+            out_group = str(self.uid)
+
         options["out_group"] = out_group
 
         return options
