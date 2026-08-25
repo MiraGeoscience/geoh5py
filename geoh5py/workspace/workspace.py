@@ -1057,7 +1057,7 @@ class Workspace(AbstractContextManager):
         if not list_entity_uid:
             return [None]
 
-        entity_list: list[Entity | None | PropertyGroup] = []
+        entity_list: list[Entity | PropertyGroup | None] = []
         for uid in list_entity_uid:
             entity_list.append(self.find_entity(uid))
 
