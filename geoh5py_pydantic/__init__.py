@@ -22,11 +22,17 @@ from __future__ import annotations
 from .arrays import ArraySource, CallableArraySource, LazyArray
 from .entity import Attributes, PydanticEntity
 from .entity_type import DataType, EntityType, GroupType, ObjectType
+from .file import create_geoh5
 from .points import VERTICES_DTYPE, PointsModel
+from .project import DEFAULT_PAGE_SIZE, Geoh5Project
+from .root import ROOT_TYPE_UID, RootAttributes, RootModel, RootType
 from .serialization import Geoh5EntityPayload, Geoh5Writer
 
 
+# Allow callers to write "from geoh5py_pydantic import xyz" instead of importing from submodules.
 __all__ = [
+    "DEFAULT_PAGE_SIZE",
+    "ROOT_TYPE_UID",
     "VERTICES_DTYPE",
     "ArraySource",
     "Attributes",
@@ -34,10 +40,15 @@ __all__ = [
     "DataType",
     "EntityType",
     "Geoh5EntityPayload",
+    "Geoh5Project",
     "Geoh5Writer",
     "GroupType",
     "LazyArray",
     "ObjectType",
     "PointsModel",
     "PydanticEntity",
+    "RootAttributes",
+    "RootModel",
+    "RootType",
+    "create_geoh5",
 ]

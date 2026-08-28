@@ -39,13 +39,16 @@ from geoh5py_pydantic import (
     Geoh5Writer,
     ObjectType,
     PointsModel,
+    create_geoh5,
 )
 
 
 def _initialize_geoh5_file(path: Path, *, with_parent: bool = False):
-    """Use legacy code to supply the project/root structure for this spike."""
-    with Workspace.create(path) as workspace:
-        if with_parent:
+    """Create the project/root structure through geoh5py_pydantic."""
+    create_geoh5(path)
+
+    if with_parent:
+        with Workspace(path) as workspace:
             parent = ContainerGroup.create(workspace, name="Direct writer parent")
             return parent.uid
 
