@@ -29,14 +29,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ensure this run was triggered from a tag
-        if: ${{ github.event_name == 'workflow_dispatch' && github.ref_type != 'tag' }}
+      - name: Ensure this run was triggered from a valid release tag
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          echo "::error::This run was not triggered from a tag (ref_type=$REF_TYPE, ref_name=$REF_NAME). Re-run this workflow selecting the release tag under 'Use workflow from'."
-          exit 1
+          if [ "$EVENT_NAME" = "release" ]; then
+            echo "::notice::Triggered by published release '$RELEASE_TAG_NAME'."
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$REF_TYPE" != "tag" ]; then
+              echo "::error::This run was not triggered from a tag (ref_type=$REF_TYPE, ref_name=$REF_NAME). Re-run this workflow selecting the release tag under 'Use workflow from'."
+              exit 1
+            fi
+            if [[ "$REF_NAME" != v* ]]; then
+              echo "::error::Tag '$REF_NAME' does not look like a release tag (release tags must start with 'v'). Re-run this workflow selecting a valid release tag."
+              exit 1
+            fi
+            echo "::notice::Release tag '$REF_NAME' validated successfully."
+          fi
   call-workflow-conda-release:
     name: Publish production Conda package on JFrog Artifactory
     needs: validate-release-tag
