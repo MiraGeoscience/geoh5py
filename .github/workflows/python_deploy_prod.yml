@@ -5,9 +5,6 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
-      release-tag:
-        description: 'Tag for the existing (draft) release to publish assets from'
-        required: true
       publish-conda:
         description: 'Publish Conda package'
         required: false
@@ -22,24 +19,52 @@ on:
 permissions: {}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.release.tag_name || github.event.inputs.release-tag || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event.release.tag_name || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
+  # Fail-fast guard, so it fails here rather than in the downstream jobs.
+  validate-release-tag:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ensure this run was triggered from a valid release tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT_NAME" = "release" ]; then
+            echo "::notice::Triggered by published release '$RELEASE_TAG_NAME'."
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$REF_TYPE" != "tag" ]; then
+              echo "::error::This run was not triggered from a tag (ref_type=$REF_TYPE, ref_name=$REF_NAME). Re-run this workflow selecting the release tag under 'Use workflow from'."
+              exit 1
+            fi
+            if [[ "$REF_NAME" != v* ]]; then
+              echo "::error::Tag '$REF_NAME' does not look like a release tag (release tags must start with 'v'). Re-run this workflow selecting a valid release tag."
+              exit 1
+            fi
+            echo "::notice::Release tag '$REF_NAME' validated successfully."
+          fi
   call-workflow-conda-release:
     name: Publish production Conda package on JFrog Artifactory
+    needs: validate-release-tag
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-conda == 'true' }}
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@v3
     permissions:
       contents: write
     with:
       virtual-repo-names: '["public-noremote-conda-prod"]'
-      release-tag: ${{ github.event.release.tag_name || github.event.inputs.release-tag }}
+      release-tag: ${{ github.event.release.tag_name || github.ref_name }}
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
   call-workflow-pypi-release:
     name: Publish production PyPI package (JFrog Artifactory, PyPI)
+    needs: validate-release-tag
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-pypi == 'true' }}
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@v3
     permissions:
@@ -47,7 +72,7 @@ jobs:
     with:
       package-name: 'geoh5py'
       virtual-repo-names: '["public-pypi-prod", "pypi"]'
-      release-tag: ${{ github.event.release.tag_name || github.event.inputs.release-tag }}
+      release-tag: ${{ github.event.release.tag_name || github.ref_name }}
     secrets:
       JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
       JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
