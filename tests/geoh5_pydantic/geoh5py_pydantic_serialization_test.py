@@ -30,7 +30,7 @@ from pydantic import ValidationError
 
 from geoh5py.groups import ContainerGroup
 from geoh5py.objects import Points
-from geoh5py.workspace import Workspace
+from geoh5py.workspace import Workspace as LegacyWorkspace
 from geoh5py_pydantic import (
     VERTICES_DTYPE,
     Attributes,
@@ -39,13 +39,16 @@ from geoh5py_pydantic import (
     Geoh5Writer,
     ObjectType,
     PointsModel,
+    Workspace,
 )
 
 
 def _initialize_geoh5_file(path: Path, *, with_parent: bool = False):
-    """Use legacy code to supply the project/root structure for this spike."""
-    with Workspace.create(path) as workspace:
-        if with_parent:
+    """Create the project/root structure through geoh5py_pydantic."""
+    Workspace.create(path).close()
+
+    if with_parent:
+        with LegacyWorkspace(path) as workspace:
             parent = ContainerGroup.create(workspace, name="Direct writer parent")
             return parent.uid
 
@@ -159,9 +162,9 @@ def test_write_points_model(tmp_path):
         allow_move=False,
     )
 
-    with h5py.File(path, "r+") as h5file:
-        writer = Geoh5Writer(h5file)
-        object_group = writer.write(model, compression=3)
+    with Workspace(path=path) as workspace:
+        writer = workspace.writer
+        object_group = workspace.write(model, compression=3)
         project = writer.project
         uid = writer.format_uuid(model.uid)
         type_uid = writer.format_uuid(model.type_uid)
@@ -189,7 +192,7 @@ def test_write_points_model(tmp_path):
             writer.write(model)
 
     # use existing geoh5py to check things were written properly.
-    with Workspace(path) as workspace:
+    with LegacyWorkspace(path) as workspace:
         recovered = workspace.get_entity(model.uid)[0]
         assert isinstance(recovered, Points)
         assert recovered.name == model.name

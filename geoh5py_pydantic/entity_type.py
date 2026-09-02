@@ -76,10 +76,29 @@ class DataType(EntityType):
 
 
 class GroupType(EntityType):
-    """HDF5 placement shared by future group type models."""
+    """HDF5 placement and common attributes for group type models."""
 
     h5_collection: ClassVar[str] = "Groups"
     h5_type_collection: ClassVar[str] = "Group types"
+
+    # These attributes are specific to legacy GroupType and are stored on
+    # every shared group type, including the type used by the project Root.
+    allow_move_content: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "allow_move_content",
+            "Allow move contents",
+        ),
+        serialization_alias="Allow move contents",
+    )
+    allow_delete_content: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "allow_delete_content",
+            "Allow delete contents",
+        ),
+        serialization_alias="Allow delete contents",
+    )
 
 
 class ObjectType(EntityType):
