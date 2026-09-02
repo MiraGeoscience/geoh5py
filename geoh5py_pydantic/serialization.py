@@ -17,20 +17,13 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-"""
-A lot of this should probably be separated out into dedicated writer/utils files.
-
-Serialize workspace-free Pydantic entities into an initialized geoh5 file.
+"""Serialize workspace-free Pydantic entities into geoh5 files.
 
 The legacy H5Writer receives live entities and discovers their storage
 location through inheritance and ``isinstance`` checks. This module instead
-uses an explicit payload at least for now. The model owns validation and field serialization;
-the writer owns only geoh5/HDF5 layout and encoding rules.
-
-To make things easier, file initialization is intentionally outside this first writer.
-A caller opens
-an existing geoh5 file with h5py and retains ownership of that file handle.
-
+uses an explicit payload. The model owns validation and field serialization;
+the writer owns geoh5/HDF5 layout and encoding rules. File-handle lifecycle
+remains outside the writer so a Workspace can decide when to open and close it.
 
 serialization has two main stages:
 
@@ -116,19 +109,83 @@ class Geoh5EntityPayload:
 
 
 class Geoh5Writer:
-    """Write Pydantic entity payloads.
-
-    For now, the supplied h5py file must already contain the core geoh5 project and Root
-    structure. The writer does not register entities, mutate ``on_file``, or
-    retain a reference on the model.
-    """
+    """Initialize geoh5 projects and write Pydantic entity payloads."""
 
     # Match the variable-length UTF-8 string dtype used by the legacy writer.
     string_dtype = h5py.special_dtype(vlen=str)
 
+    @classmethod
+    def initialize_project(
+        cls,
+        h5file: h5py.File,
+        *,
+        name: str,
+        attributes: Mapping[str, Any],
+        root: PydanticEntity,
+        compression: int = 5,
+    ) -> Geoh5Writer:
+        """Write the core collections and mandatory Root into an empty file."""
+        if not isinstance(h5file, h5py.File):
+            raise TypeError("Geoh5Writer requires an open h5py.File.")
+
+        if list(h5file):
+            raise ValueError("A new geoh5 file must be empty before initialization.")
+
+        if not name or "/" in name:
+            raise ValueError(
+                "The project name must be non-empty and cannot contain '/'."
+            )
+
+        # Validate Root placement before changing the HDF5 file.
+        root_payload = Geoh5EntityPayload.from_model(root)
+        if root_payload.collection != "Groups":
+            raise ValueError("The geoh5 Root must belong to the Groups collection.")
+
+        project_group = h5file.create_group(name, track_order=True)
+        try:
+            # These are the canonical collections for Data, Group, and Object entities.
+            for collection in CHILD_COLLECTIONS:
+                project_group.create_group(collection, track_order=True)
+
+            # Entity types are stored once under their corresponding type collection.
+            type_root = project_group.create_group("Types", track_order=True)
+            for collection in TYPE_COLLECTIONS:
+                type_root.create_group(collection, track_order=True)
+
+            # Root lives canonically under Groups and owns child entity collections.
+            root_uid = cls.format_uuid(root_payload.uid)
+            root_group = project_group["Groups"].create_group(
+                root_uid,
+                track_order=True,
+            )
+            for collection in CHILD_COLLECTIONS["Groups"]:
+                root_group.create_group(collection, track_order=True)
+
+            # /Root is a hard link to /Groups/{root_uid}, not a duplicate group.
+            project_group["Root"] = root_group
+
+            writer = cls(h5file)
+            writer._validate_payload(root_payload, compression)
+            writer._write_attributes(project_group, attributes)
+            writer._write_attributes(root_group, root_payload.attributes)
+            writer._write_datasets(
+                root_group,
+                root_payload.datasets,
+                compression,
+            )
+
+            type_group, _ = writer._ensure_type(root_payload)
+            root_group["Type"] = type_group
+        except Exception:
+            # Direct callers should not be left with a partially initialized project.
+            del h5file[name]
+            raise
+
+        return writer
+
     def __init__(self, h5file: h5py.File):
         if not isinstance(h5file, h5py.File):
-            raise TypeError("Geoh5Writer requires an open h5py.File right now.")
+            raise TypeError("Geoh5Writer requires an open h5py.File.")
 
         project_names = list(h5file)  # probably "GEOSCIENCE"
         if len(project_names) != 1:
@@ -138,8 +195,6 @@ class Geoh5Writer:
 
         self.h5file = h5file
         self.project = h5file[project_names[0]]
-        # can't create a blank .geoh5 from scratch. validate the existing one contains
-        # everything we expect e.g. Data, Groups, Objects, Root, Types, etc
         self._validate_project_structure()
 
     def write(

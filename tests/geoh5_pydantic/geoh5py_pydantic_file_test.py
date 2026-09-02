@@ -19,30 +19,31 @@
 
 from __future__ import annotations
 
+import pickle
+
 import h5py
 import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from geoh5py.workspace import Workspace
+from geoh5py.workspace import Workspace as LegacyWorkspace
 from geoh5py_pydantic import (
     ROOT_TYPE_UID,
-    Geoh5Project,
     Geoh5Writer,
-    RootModel,
-    create_geoh5,
+    ProjectAttributes,
+    Root,
+    Workspace,
 )
 
 
-def test_project_model_separates_attributes_from_creation_options():
-    """Project fields serialize either to group attributes or HDF5 options."""
-    project = Geoh5Project.model_validate(
+def test_project_attributes_use_geoh5_aliases():
+    """Project attributes accept and emit the names used in HDF5."""
+    project = ProjectAttributes.model_validate(
         {
             "Contributors": ["First", "Second"],
             "Distance unit": "feet",
             "GA Version": "2",
             "Version": 2.2,
-            "page_size": 1024,
         }
     )
 
@@ -52,7 +53,12 @@ def test_project_model_separates_attributes_from_creation_options():
         "GA Version": "2",
         "Version": 2.2,
     }
-    assert project.h5_creation_options() == {
+
+
+def test_workspace_owns_hdf5_creation_options():
+    workspace = Workspace(page_size=1024)
+
+    assert workspace.h5_creation_options() == {
         "fs_strategy": "page",
         "page_buf_size": 1024 * 256,
         "fs_page_size": 1024,
@@ -61,14 +67,26 @@ def test_project_model_separates_attributes_from_creation_options():
 
 
 @pytest.mark.parametrize("page_size", [511, 513, "1024", True])
-def test_project_model_rejects_invalid_page_sizes(page_size):
+def test_workspace_rejects_invalid_page_sizes(page_size):
     with pytest.raises(ValidationError):
-        Geoh5Project(page_size=page_size)
+        Workspace(page_size=page_size)
 
 
-def test_root_model_owns_root_and_group_type_defaults():
+def test_workspace_uses_independent_default_models():
+    """Default factories prevent mutable project and Root models being shared."""
+    first = Workspace()
+    second = Workspace()
+
+    assert first.project is not second.project
+    assert first.root is not second.root
+
+    first.root.name = "First workspace"
+    assert second.root.name == "Workspace"
+
+
+def test_root_owns_root_and_group_type_defaults():
     """Root defaults mirror legacy RootGroup without requiring a Workspace."""
-    root = RootModel()
+    root = Root()
 
     assert root.name == "Workspace"
     assert root.allow_delete is False
@@ -80,13 +98,17 @@ def test_root_model_owns_root_and_group_type_defaults():
     assert root.entity_type.allow_delete_content is True
 
 
-def test_create_geoh5_writes_core_structure_and_root(tmp_path):
+def test_workspace_create_writes_core_structure_and_root(tmp_path):
     """The Pydantic creation path produces the required geoh5 hard-link layout."""
     path = tmp_path / "pydantic_created.geoh5"
-    project_model = Geoh5Project(contributors=("Test contributor",))
-    root_model = RootModel(name="Pydantic workspace")
+    project_model = ProjectAttributes(contributors=("Test contributor",))
+    root_model = Root(name="Pydantic workspace")
 
-    assert create_geoh5(path, project=project_model, root=root_model) == path
+    workspace = Workspace.create(path, project=project_model, root=root_model)
+    assert workspace.path == path
+    assert workspace.is_open
+    workspace.close()
+    assert not workspace.is_open
 
     with h5py.File(path, "r") as h5file:
         assert list(h5file) == ["GEOSCIENCE"]
@@ -118,17 +140,47 @@ def test_create_geoh5_writes_core_structure_and_root(tmp_path):
 
     # Opening through the existing reader verifies semantic compatibility with
     # the current geoh5 implementation, rather than HDF5 byte-for-byte equality.
-    with Workspace(path) as workspace:
+    with LegacyWorkspace(path) as workspace:
         assert workspace.root.uid == root_model.uid
         assert workspace.root.name == root_model.name
         assert workspace.root.entity_type.uid == ROOT_TYPE_UID
 
 
-def test_create_geoh5_does_not_replace_existing_file(tmp_path):
+def test_workspace_create_does_not_replace_existing_file(tmp_path):
     path = tmp_path / "existing.geoh5"
     path.write_text("existing content", encoding="utf-8")
 
     with pytest.raises(FileExistsError):
-        create_geoh5(path)
+        Workspace.create(path)
 
     assert path.read_text(encoding="utf-8") == "existing content"
+
+
+def test_workspace_context_manager_reopens_and_closes_file(tmp_path):
+    path = tmp_path / "reopen.geoh5"
+    workspace = Workspace.create(path)
+    workspace.close()
+
+    with workspace:
+        assert workspace.is_open
+        assert list(workspace.h5file) == ["GEOSCIENCE"]
+
+    assert not workspace.is_open
+
+
+def test_open_workspace_is_picklable_without_file_handle(tmp_path):
+    path = tmp_path / "pickled.geoh5"
+    workspace = Workspace.create(path)
+
+    restored = pickle.loads(pickle.dumps(workspace))
+    workspace.close()
+
+    assert restored.path == path
+    assert restored.project == workspace.project
+    assert restored.root == workspace.root
+    assert not restored.is_open
+
+    with restored.open("r"):
+        assert restored.is_open
+
+    assert not restored.is_open

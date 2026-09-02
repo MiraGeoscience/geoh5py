@@ -90,7 +90,7 @@ class RootType(GroupType):
         return value
 
 
-class RootModel(PydanticEntity):
+class Root(PydanticEntity):
     """Workspace-free representation of the mandatory geoh5 Root group."""
 
     attributes_model: ClassVar[type[Attributes]] = RootAttributes
