@@ -22,7 +22,7 @@ repos:
     -   id: pycln
         args: [--config=pyproject.toml]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.15
+    rev: v0.16.4
     hooks:
     -   id: ruff-check
         args:
@@ -31,7 +31,7 @@ repos:
 #        -   --unsafe-fixes
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v2.3.1
     hooks:
     -   id: mypy
         additional_dependencies: [
@@ -58,7 +58,7 @@ repos:
                 geoh5py/ui_json/validation.py
             )$
 -   repo: https://github.com/codingjoe/relint
-    rev: 3.3.1
+    rev: 3.5.0
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings
@@ -81,7 +81,7 @@ repos:
         types_or: [python, pyi]
         exclude: ^(devtools|docs|geoh5py/interfaces|geoh5py/handlers)/
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
     -   id: codespell
         exclude: (\.lock|\.ipynb|^THIRD_PARTY_SOFTWARE\.rst)$
@@ -115,7 +115,7 @@ repos:
         exclude_types: [jupyter]
         exclude: ^docs/(.*/)?images/
 -   repo: https://github.com/rstcheck/rstcheck
-    rev: v6.2.5
+    rev: v6.3.0
     hooks:
     -   id: rstcheck
         exclude: ^THIRD_PARTY_SOFTWARE.rst$

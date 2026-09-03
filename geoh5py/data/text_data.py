@@ -29,7 +29,7 @@ from ..shared.utils import as_str_if_uuid, dict_mapper
 from .data import Data
 
 
-def text_formating(values: None | np.ndarray | str) -> ndarray | None:
+def text_formating(values: np.ndarray | str | None) -> ndarray | None:
     """
     Format text values to utf-8.
 
