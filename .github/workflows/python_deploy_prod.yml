@@ -53,7 +53,7 @@ jobs:
     name: Publish production Conda package on JFrog Artifactory
     needs: validate-release-tag
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-conda == 'true' }}
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@7241532854727d993872b67fc761139b8438615b # v3.12.0
     permissions:
       contents: write
     with:
@@ -66,7 +66,7 @@ jobs:
     name: Publish production PyPI package (JFrog Artifactory, PyPI)
     needs: validate-release-tag
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-pypi == 'true' }}
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@7241532854727d993872b67fc761139b8438615b # v3.12.0
     permissions:
       contents: write
     with:
