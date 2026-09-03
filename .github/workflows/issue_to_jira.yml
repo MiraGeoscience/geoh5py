@@ -8,7 +8,7 @@ permissions: {}
 
 jobs:
   call-workflow-create-jira-issue:
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml@7241532854727d993872b67fc761139b8438615b # v3.12.0
     permissions:
       contents: read
       issues: write
