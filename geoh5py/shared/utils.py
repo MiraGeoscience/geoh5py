@@ -1020,7 +1020,7 @@ def min_max_scaler(
     values: np.ndarray,
     min_scaler: float = 0.0,
     max_scaler: float = 1.0,
-    axis: None | int = None,
+    axis: int | None = None,
 ) -> np.ndarray:
     """
     Min-Max scale an array.
