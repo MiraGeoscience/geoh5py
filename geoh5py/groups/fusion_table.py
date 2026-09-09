@@ -79,6 +79,8 @@ class FusionTableGroup(Group):
 
     @can_add_group.setter
     def can_add_group(self, value: bool):
+        if not isinstance(value, bool | np.integer) or value not in (0, 1):
+            raise TypeError("Attribute 'can_add_group' must be a boolean value.")
         self._can_add_group = bool(value)
 
         if self.on_file:
