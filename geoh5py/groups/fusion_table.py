@@ -53,6 +53,7 @@ class FusionTableGroup(Group):
         self,
         *,
         mesh: uuid.UUID | None = None,
+        can_add_group: bool = True,
         feature_list: list[dict] | None = None,
         negative_index: int = 1,
         positive_index: int = 2,
@@ -61,7 +62,7 @@ class FusionTableGroup(Group):
         **kwargs,
     ):
         super().__init__(**kwargs)
-
+        self.can_add_group = can_add_group
         self.mesh = mesh
         self.reference_data = reference_data
         self._feature_list = self._validate_feature_list(feature_list)
