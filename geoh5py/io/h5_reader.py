@@ -118,7 +118,13 @@ class H5Reader:
 
             if entity_type != "Data":
                 for key, value in entity.items():
-                    if key.lower() in ["metadata", "options", "parameters", "giftools"]:
+                    if key.lower() in [
+                        "metadata",
+                        "options",
+                        "parameters",
+                        "giftools",
+                        "featurelist",
+                    ]:
                         attributes[INV_KEY_MAP[key]] = cls.fetch_metadata(
                             file, uid, entity_type, key
                         )
