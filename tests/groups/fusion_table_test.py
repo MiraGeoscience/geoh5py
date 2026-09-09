@@ -114,3 +114,7 @@ def test_create_group(tmp_path):
 
         assert rec_obj.mesh == obj.uid
         assert rec_obj.reference_data == reference.uid
+        assert any(
+            elem["id"] == target.uid and elem["isChecked"] is False
+            for elem in rec_obj.feature_list
+        )
