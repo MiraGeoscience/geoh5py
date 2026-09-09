@@ -99,8 +99,12 @@ def test_create_group(tmp_path):
             group.reference_data = uuid4()
 
         # Testing set_active
-        group.set_active(False, obj.children[0])
-
+        target = obj.children[0]
+        group.set_active(False, target)
+        assert any(
+            elem["id"] == target.uid and elem["isChecked"] is False
+            for elem in group.feature_list
+        )
         with pytest.raises(TypeError, match="must be a NumericData object"):
             group.set_active(True, "abc")
 
