@@ -37,7 +37,7 @@ class FusionTableGroup(Group):
     _TYPE_UID = uuid.UUID("{d9576a5e-07e9-42ee-8b83-6b4b1cd992d4}")
     _default_name = "Data Fusion Table"
 
-    _attribute_map = Entity._attribute_map.copy()
+    _attribute_map = Entity._attribute_map.copy()  # pylint: disable=protected-access
     _attribute_map.update(
         {
             "Can add group": "can_add_group",
@@ -52,6 +52,7 @@ class FusionTableGroup(Group):
     def __init__(
         self,
         mesh: uuid.UUID,
+        *,
         feature_list: list[dict] | None = None,
         negative_index: int = 1,
         positive_index: int = 2,
