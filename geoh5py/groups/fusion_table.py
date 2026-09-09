@@ -51,8 +51,8 @@ class FusionTableGroup(Group):
 
     def __init__(
         self,
-        mesh: uuid.UUID,
         *,
+        mesh: uuid.UUID | None = None,
         feature_list: list[dict] | None = None,
         negative_index: int = 1,
         positive_index: int = 2,
@@ -109,24 +109,24 @@ class FusionTableGroup(Group):
         return value
 
     @property
-    def mesh(self) -> uuid.UUID:
+    def mesh(self) -> uuid.UUID | None:
         """
         ID of the object containing the data for the fusion table.
         """
         return self._mesh
 
     @mesh.setter
-    def mesh(self, value: uuid.UUID | Entity | str):
+    def mesh(self, value: uuid.UUID | Entity | str | None):
 
         if isinstance(value, Entity):
             value = value.uid
         elif isinstance(value, str | uuid.UUID):
             value = str2uuid(value)
 
-        if not isinstance(value, uuid.UUID):
+        if not isinstance(value, uuid.UUID | None):
             raise TypeError("Attribute 'mesh' must be a UUID or Entity.")
 
-        if self.on_file:
+        if self.on_file and value is not None:
             mesh_entity = self.workspace.get_entity(value)[0]
 
             if mesh_entity is None:
@@ -136,7 +136,7 @@ class FusionTableGroup(Group):
                 new_mesh = mesh_entity.copy(parent=self)
                 value = new_mesh.uid
 
-        if not isinstance(value, uuid.UUID):
+        if not isinstance(value, uuid.UUID | None):
             raise TypeError("Attribute 'mesh' must be a UUID or Entity.")
 
         self._mesh = value
