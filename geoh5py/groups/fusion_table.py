@@ -132,7 +132,7 @@ class FusionTableGroup(Group):
             if mesh_entity is None:
                 raise ValueError("The 'mesh' must be a valid entity in the workspace.")
 
-            if self.get_entity(value) is None and hasattr(mesh_entity, "copy"):
+            if self.get_entity(value)[0] is None and hasattr(mesh_entity, "copy"):
                 new_mesh = mesh_entity.copy(parent=self)
                 value = new_mesh.uid
 
