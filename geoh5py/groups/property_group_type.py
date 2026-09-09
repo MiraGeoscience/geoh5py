@@ -64,8 +64,8 @@ class DepthType(PropertyGroupType):
             or not isinstance(children[0], FloatData)
         ):
             raise TypeError(
-                "First children of 'Depth table' property group type "
-                "must be FloatData of 'Depth' association."
+                "First child of 'Depth table' property group type "
+                "must be of type FloatData of 'Depth' association."
             )
 
 
@@ -93,7 +93,7 @@ class IntervalType(PropertyGroupType):
         ):
             raise TypeError(
                 "First two children of 'Interval table' property group type "
-                "must be FloatData of 'Interval' association."
+                "must be of type FloatData of 'Interval' association."
             )
 
 

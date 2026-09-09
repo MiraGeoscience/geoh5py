@@ -175,11 +175,12 @@ class VPModel(GridObject, DrapeModel):
         is set to 5% of the vertical extent of the model.
 
         :param workspace: Workspace to be added to.
+        :param compression: Compression to be applied to the entity.
         :param kwargs: List of keyword arguments defining the properties of a class.
 
         :return entity: Registered Entity to the workspace.
         """
-        new_object = super().create(workspace, **kwargs)
+        new_object = super().create(workspace, compression=compression, **kwargs)
 
         viz_params = new_object.add_default_visual_parameters()
         viz_params.filter_basement = (
