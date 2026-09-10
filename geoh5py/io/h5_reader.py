@@ -522,6 +522,41 @@ class H5Reader:
         return bytes_value
 
     @classmethod
+    def fetch_compressed_textures(
+        cls, file: str | h5py.File, uid: uuid.UUID
+    ) -> dict[str, np.ndarray] | None:
+        """
+        Load compressed textures associated with an object
+
+        :param file: Name of the target geoh5 file
+        :param uid: Unique identifier of the target entity
+
+        :return values: Dictionary of compressed textures
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file)[0]
+
+            try:
+                textures = {}
+                values = {}
+                texture_group = h5file[name]["Data"][as_str_if_uuid(uid)][
+                    "CompressedTextures"
+                ]
+                for texture_name in texture_group:
+                    vals = texture_group[texture_name][()]
+                    if np.isdtype(vals.dtype, "numeric"):
+                        values[texture_name] = vals
+                    else:
+                        textures[texture_name] = vals[0].tobytes()
+
+                values["Textures"] = textures
+
+            except KeyError:
+                values = None
+
+        return values
+
+    @classmethod
     def fetch_values(
         cls, file: str | h5py.File, uid: uuid.UUID
     ) -> np.ndarray | str | float | None:

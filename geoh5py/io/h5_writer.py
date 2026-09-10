@@ -331,6 +331,8 @@ class H5Writer:
                 )
             elif attribute == "texture_image":
                 H5Writer.write_texture_image(h5file, entity)
+            elif attribute == "compressed_textures":
+                H5Writer.write_compressed_textures(h5file, entity)
             elif attribute in [
                 "values",
             ]:
@@ -1158,3 +1160,47 @@ class H5Writer:
                 data=np.asarray(np.void(entity.texture_image[:])),
                 shape=(1,),
             )
+
+    @staticmethod
+    def write_compressed_textures(file, entity: TextureData) -> None:
+        """
+        Write a dataset for texture stored as bytes.
+
+        :param file: Pointer to the geoh5 Group.
+        :param entity: Target :obj:`~geoh5py.data.texture_data.TextureData` entity.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity)
+
+            if entity_handle is None:
+                return
+
+            if entity.compressed_textures is None:
+                raise AttributeError("Compressed textures data required.")
+
+            if "CompressedTextures" in entity_handle:
+                del entity_handle["CompressedTextures"]
+                entity.workspace.repack = True
+
+            h5_group = entity_handle.create_group(
+                "CompressedTextures", track_order=True
+            )
+
+            compressed_textures = entity.compressed_textures.model_dump()
+
+            for key, value in compressed_textures.items():
+                if isinstance(value, np.ndarray):
+                    h5_group.create_dataset(
+                        key,
+                        data=value,
+                        dtype=np.uint32,
+                        compression="gzip",
+                        compression_opts=9,
+                    )
+
+            for key, value in entity.compressed_textures.textures.items():
+                h5_group.create_dataset(
+                    key,
+                    data=np.asarray(np.void(value[:])),
+                    shape=(1,),
+                )

@@ -67,6 +67,7 @@ INV_KEY_MAP = {
     "Color map": "color_map",
     "Colour": "COLOUR",
     "Complement filter": "complement_filter",
+    "CompressedTextures": "compressed_textures",
     "Contributors": "contributors",
     "Concatenated object IDs": "concatenated_object_ids",
     "Cost": "cost",

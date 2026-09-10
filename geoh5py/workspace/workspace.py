@@ -971,6 +971,16 @@ class Workspace(AbstractContextManager):
         """
         return self._io_call(H5Reader.fetch_file_object, uid, file_name)
 
+    def fetch_compressed_textures(self, uid: uuid.UUID) -> dict | None:
+        """
+        Fetch a dictionary of figures and their geometry.
+
+        :param uid: Unique identifier of target data object.
+        :param file_name: Name of the file to fetch.
+        :return: Array of values.
+        """
+        return self._io_call(H5Reader.fetch_compressed_textures, uid)
+
     def finalize(self) -> None:
         """
         Deprecate method finalize.
