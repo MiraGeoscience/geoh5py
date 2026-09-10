@@ -337,7 +337,13 @@ class H5Writer:
                 H5Writer.write_data_values(
                     h5file, entity, attribute, compression, **kwargs
                 )
-            elif attribute in ["metadata", "options", "parameters", "gif_parameters"]:
+            elif attribute in [
+                "metadata",
+                "options",
+                "parameters",
+                "gif_parameters",
+                "feature_list",
+            ]:
                 H5Writer.write_metadata(h5file, entity, attribute, **kwargs)
             elif attribute in [
                 "cells",
