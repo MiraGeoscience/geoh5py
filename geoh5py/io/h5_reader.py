@@ -524,7 +524,7 @@ class H5Reader:
     @classmethod
     def fetch_compressed_textures(
         cls, file: str | h5py.File, uid: uuid.UUID
-) -> dict[str, np.ndarray | dict[str, bytes]] | None:
+    ) -> dict[str, np.ndarray | dict[str, bytes]] | None:
         """
         Load compressed textures associated with an object
 
