@@ -174,7 +174,8 @@ class TextureData(Data):
 
         if not isinstance(value, None | CompressedTextures):
             raise TypeError(
-                "Attribute 'compressed_textures' must be a dict, TextureData or None."
+                "Attribute 'compressed_textures' must be a dict, "
+                "CompressedTextures or None."
             )
 
         self._compressed_textures = value
