@@ -197,7 +197,7 @@ class TextureData(Data):
     @texture_image.setter
     def texture_image(self, value: np.ndarray | bytes | Image.Image | None):
 
-        value = self.array_image_to_bytes(value)
+        value = self.array_image_to_bytes(value, compression_format="PNG")
         self._texture_image = value
 
         if self.on_file:
@@ -206,7 +206,17 @@ class TextureData(Data):
     @staticmethod
     def array_image_to_bytes(
         value: np.ndarray | bytes | Image.Image | None,
+        compression_format: str | None = None,
     ) -> bytes | None:
+        """
+        Convert a numpy array or PIL.Image to bytes.
+
+        :param value: Array of values or a PIL.Image object to convert to bytes.
+        :param compression_format: Saving format for the image.
+            If None, the image is saved in raw bytes.
+
+        :return: Bytes representation of the image or None if the input is None.
+        """
         if isinstance(value, np.ndarray):
             if value.ndim not in (2, 3) or (value.ndim == 3 and value.shape[2] != 3):
                 raise ValueError(
@@ -223,9 +233,12 @@ class TextureData(Data):
             value = Image.fromarray(value)
 
         if isinstance(value, Image.Image):
-            bio = BytesIO()
-            value.save(bio, format="PNG")
-            value = bio.getvalue()
+            if compression_format is not None:
+                bio = BytesIO()
+                value.save(bio, format=compression_format)
+                value = bio.getvalue()
+            else:
+                value = value.tobytes()
 
         if not isinstance(value, (bytes, type(None))):
             raise TypeError(

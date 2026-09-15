@@ -1204,3 +1204,7 @@ class H5Writer:
                     data=np.asarray(np.void(value[:])),
                     shape=(1,),
                 )
+
+            h5_group.attrs.create(
+                "Count", len(entity.compressed_textures.textures), dtype="int32"
+            )
