@@ -20,30 +20,29 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 from PIL import Image
 from scipy.spatial import Delaunay
 
-from geoh5py.data.texture_data import CompressedTextures, TextureData
+from geoh5py.data.texture_data import CompressedTextures
 from geoh5py.objects import Grid2D, Surface
 from geoh5py.workspace import Workspace
 
 
 def create_texture(workspace, image_size=(8, 16)):
-    file_path = Path(r"C:\Users\dominiquef\Downloads\doom.png")
-    with Image.open(file_path) as image:
-        # Forces Python to read the image data into memory
-        image.load()
+    # with Image.open(file_path) as image:
+    #     # Forces Python to read the image data into memory
+    #     image.load()
+    #
+    # image = np.array(image)
+    # image_size = image.shape
 
-    image = np.array(image)
-    image_size = image.shape
     u_pixel, v_pixel = np.meshgrid(
         np.arange(image_size[1], dtype=float), np.arange(image_size[0], dtype=float)
     )
-    # image = u_pixel + v_pixel * image_size[0]
+    image = u_pixel + v_pixel * image_size[0]
+    image = np.dstack([image, image, image])
     u_pixel = u_pixel.flatten()
     u_pixel /= image_size[1]
     u_pixel += 1 / image_size[1] / 2
@@ -55,8 +54,7 @@ def create_texture(workspace, image_size=(8, 16)):
     vertices = np.c_[
         x_locs.flatten(),
         y_locs.flatten(),
-        100
-        * (
+        (
             np.sin(y_locs / y_locs.max() * np.pi)
             * np.sin(x_locs / x_locs.max() * np.pi)
         ).flatten(),
@@ -83,10 +81,10 @@ def test_create_texture(tmp_path):
     with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         texture, image, pixels = create_texture(workspace)
 
-        # with pytest.raises(
-        #     ValueError, match="Shape of the 'texture_image' must be a 2D"
-        # ):
-        #     texture.texture_image = image.flatten()
+        with pytest.raises(
+            ValueError, match="Shape of the 'texture_image' must be a 2D"
+        ):
+            texture.texture_image = image.flatten()
 
         with pytest.raises(TypeError, match="Attribute 'values' must be a list"):
             texture.values = "abc"
@@ -119,9 +117,9 @@ def test_create_texture(tmp_path):
     # Re-open and check the texture
     with Workspace(tmp_path / f"{__name__}.geoh5") as workspace:
         texture = workspace.get_entity("test_texture")[0]
-        # np.testing.assert_almost_equal(
-        #     np.asarray(texture.image), (image / image.max() * 255).astype(int)
-        # )
+        np.testing.assert_almost_equal(
+            np.asarray(texture.image), (image / image.max() * 255).astype(int)
+        )
 
 
 def test_compressed_textures(tmp_path):
@@ -171,10 +169,3 @@ def test_compressed_textures(tmp_path):
         assert compressed_texture.widths[0] == width
         assert compressed_texture.heights[0] == height
         assert compressed_texture.formats[0] == 32849
-
-
-# def test_file():
-#     file = r"C:\Users\dominiquef\Downloads\obj_texture_data_multiple_compressed_images - Copy.geoh5"
-#     with Workspace(file) as workspace:
-#         texture = workspace.get_entity("texture")[0]
-#         compressed_texture = texture.compressed_textures
