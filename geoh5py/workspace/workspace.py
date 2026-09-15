@@ -973,11 +973,10 @@ class Workspace(AbstractContextManager):
 
     def fetch_compressed_textures(self, uid: uuid.UUID) -> dict | None:
         """
-        Fetch a dictionary of figures and their geometry.
+        Fetch compressed textures associated with a data object.
 
         :param uid: Unique identifier of target data object.
-        :param file_name: Name of the file to fetch.
-        :return: Array of values.
+        :return: Dictionary of compressed textures, or None when absent.
         """
         return self._io_call(H5Reader.fetch_compressed_textures, uid)
 

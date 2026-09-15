@@ -118,7 +118,13 @@ class H5Reader:
 
             if entity_type != "Data":
                 for key, value in entity.items():
-                    if key.lower() in ["metadata", "options", "parameters", "giftools"]:
+                    if key.lower() in [
+                        "metadata",
+                        "options",
+                        "parameters",
+                        "giftools",
+                        "featurelist",
+                    ]:
                         attributes[INV_KEY_MAP[key]] = cls.fetch_metadata(
                             file, uid, entity_type, key
                         )
@@ -524,7 +530,7 @@ class H5Reader:
     @classmethod
     def fetch_compressed_textures(
         cls, file: str | h5py.File, uid: uuid.UUID
-    ) -> dict[str, np.ndarray] | None:
+    ) -> dict[str, np.ndarray | dict[str, bytes]] | None:
         """
         Load compressed textures associated with an object
 

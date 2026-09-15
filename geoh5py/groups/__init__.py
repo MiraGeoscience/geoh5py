@@ -25,6 +25,7 @@ from .base import Group
 from .container import ContainerGroup
 from .custom import CustomGroup
 from .drillhole import DrillholeGroup, IntegratorDrillholeGroup
+from .fusion_table import FusionTableGroup
 from .giftools.giftools import GIFtoolsGroup
 from .giftools.gravity_gradiometry_inversion import GGInv3D
 from .giftools.gravity_inversion import GZInv3D
