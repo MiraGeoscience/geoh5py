@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 from scipy.spatial import Delaunay
 
 from geoh5py.data.texture_data import CompressedTextures
@@ -30,11 +31,19 @@ from geoh5py.workspace import Workspace
 
 
 def create_texture(workspace, image_size=(8, 16)):
+    from PIL import Image
+
+    with Image.open(r"C:\Users\dominiquef\Downloads\doom.png") as image:
+        # Forces Python to read the image data into memory
+        image.load()
+
+    image = np.array(image)
+    image_size = image.shape
     u_pixel, v_pixel = np.meshgrid(
         np.arange(image_size[1], dtype=float), np.arange(image_size[0], dtype=float)
     )
-    image = u_pixel + v_pixel * image_size[0]
-    image = np.dstack([image, image, image])
+    # image = u_pixel + v_pixel * image_size[0]
+    # image = np.dstack([image, image, image])
     u_pixel = u_pixel.flatten()
     u_pixel /= image_size[1]
     u_pixel += 1 / image_size[1] / 2
@@ -118,37 +127,46 @@ def test_compressed_textures(tmp_path):
     file = tmp_path / f"{__name__}.geoh5"
 
     with Workspace.create(file) as workspace:
-        texture, image, pixels = create_texture(workspace)
+        texture, image, pixels = create_texture(workspace, image_size=(7, 15))
 
+        with pytest.raises(TypeError, match="must be a numpy array or PIL"):
+            CompressedTextures.get_padded_image([1, 2])
+
+        with pytest.raises(ValueError, match="must be a 2D or a 3D array"):
+            CompressedTextures.get_padded_image(image.flatten())
+
+        padded = CompressedTextures.get_padded_image(image)
         valid_widths = image.shape[1]
         valid_heights = image.shape[0]
-        # Pad image to be a multiple of 4 in both dimensions
-        if (pad_u := valid_widths % 4) != 0:
-            pad_u = 4 - valid_widths % 4
-            padded_values = image[:, -1, :].reshape(image.shape[0], 1, -1)
-            image = np.concatenate(
-                [image, np.repeat(padded_values, pad_u, axis=1)], axis=1
-            )
 
-        if (pad_v := valid_heights % 4) != 0:
-            pad_v = 4 - valid_heights % 4
-            padded_values = image[-1, :, :].reshape(1, image.shape[1], -1)
-            image = np.concatenate(
-                [image, np.repeat(padded_values, pad_v, axis=0)], axis=0
-            )
+        width, height = padded.shape[1], padded.shape[0]
+        CompressedTextures.get_padded_image(image)
+        texture_kwargs = {
+            "valid_widths": np.r_[valid_widths],
+            "valid_heights": np.r_[valid_heights],
+            "widths": np.r_[width],
+            "heights": np.r_[height],
+            "textures": {"Blocks_0": padded},
+        }
 
-        width, height = valid_widths + pad_u, valid_heights + pad_v
+        with pytest.raises(ValidationError, match="Formats must be one"):
+            texture_kwargs["formats"] = np.r_[123]
+            compressed_texture = CompressedTextures(**texture_kwargs)
 
-        compressed_texture = CompressedTextures(
-            **{
-                "valid_widths": np.r_[valid_widths],
-                "valid_heights": np.r_[valid_heights],
-                "widths": np.r_[width],
-                "heights": np.r_[height],
-                "formats": np.r_[32849],
-                "textures": {"Blocks_0": image},
-            }
-        )
+        with pytest.raises(
+            ValidationError, match="All arrays must have the same length"
+        ):
+            texture_kwargs["formats"] = np.r_[32849, 32849]
+            compressed_texture = CompressedTextures(**texture_kwargs)
+
+        with pytest.raises(
+            TypeError, match="must be a dict, CompressedTextures or None"
+        ):
+            texture.compressed_textures = "abc"
+
+        texture_kwargs["formats"] = np.r_[32849]
+        compressed_texture = CompressedTextures(**texture_kwargs)
+
         pixels = np.c_[pixels, np.zeros((pixels.shape[0], 1))]
         texture.values = pixels
         texture.compressed_textures = compressed_texture
