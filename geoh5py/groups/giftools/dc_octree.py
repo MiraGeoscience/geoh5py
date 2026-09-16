@@ -96,7 +96,7 @@ DCOCTREE_FORWARD_PARAMETERS.update(
             "main": True,
             "ndv": 9.99999993922529e-09,
             "parent": "mesh",
-            "value": "{3e12116b-191d-48b6-adbb-ea2e6f3b98a1}",
+            "value": "",
         },
         "model_ip": {
             "association": "Cell",
