@@ -17,26 +17,16 @@
 #  along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.           '
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-from __future__ import annotations
+from PyQt5.QtCore import QPointF
+
+from geoh5py.gui import CanvasNode, EntityCanvas
 
 
-try:
-    from ._version import __version__
-except ModuleNotFoundError:
-    from datetime import datetime
+def test_canvas_builds_nodes_and_connections():
+    nodes = [
+        CanvasNode("A", QPointF(0, 0)),
+        CanvasNode("B", QPointF(100, 0)),
+    ]
+    scene = EntityCanvas(nodes, [("A", "B")])
 
-    __date_str = datetime.today().strftime("%Y%m%d")
-    __version__ = "0.0.0.dev0+" + __date_str
-
-
-from geoh5py.gui import CanvasNode, CanvasWindow, EntityCanvas
-from geoh5py.workspace.workspace import Workspace, active_workspace
-
-
-__all__ = [
-    "CanvasNode",
-    "CanvasWindow",
-    "EntityCanvas",
-    "Workspace",
-    "active_workspace",
-]
+    assert len(scene.items()) == 3
