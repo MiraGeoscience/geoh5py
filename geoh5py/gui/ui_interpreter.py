@@ -19,7 +19,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -45,14 +44,17 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from geoh5py.shared.validators import name_or_uid_to_type
 from geoh5py.ui_json.forms import (
     BaseForm,
     BoolForm,
     FloatForm,
     IntegerForm,
+    ObjectForm,
     RadioLabelForm,
 )
 from geoh5py.ui_json.ui_json import UIJson
+from geoh5py.workspace import Workspace
 
 
 def _as_uuid_text(value: Any) -> str:
@@ -64,13 +66,19 @@ def _as_uuid_text(value: Any) -> str:
 
 
 class FormWidget(QWidget):
-    def __init__(self, name: str, form: BaseForm, parent: QWidget | None = None):
+    def __init__(
+        self,
+        name: str,
+        form: BaseForm,
+        parent: QWidget | None = None,
+        workspace: Workspace = None,
+    ):
         super().__init__(parent)
         self.name = name
         self.form = form
-        self._build()
+        self._build(workspace)
 
-    def _build(self):
+    def _build(self, workspace: Workspace):
         layout = QFormLayout(self)
         label = QLabel(
             self.form.label
@@ -120,6 +128,18 @@ class FormWidget(QWidget):
                 value = value[0] if value else ""
             if value is not None:
                 editor.setCurrentText(str(value))
+        elif isinstance(self.form, ObjectForm):
+            editor = QComboBox()
+            mesh_type = tuple(getattr(self.form, "mesh_type", None))
+            editor.addItems(
+                [obj.name for obj in workspace.objects if isinstance(obj, mesh_type)]
+            )
+            value = getattr(self.form, "value", "")
+
+            entity = workspace.get_entity(value)[0]
+            if value is not None:
+                editor.setCurrentText(entity.name)
+
         elif hasattr(self.form, "value"):
             editor = QLineEdit(_as_uuid_text(self.form.value))
         else:
@@ -141,14 +161,14 @@ class UIJsonWindow(QMainWindow):
         root = QWidget()
         layout = QVBoxLayout(root)
 
-        for name in self.ui_json.model_fields:
-            value = getattr(self.ui_json, name, None)
-            if isinstance(value, BaseForm):
-                if not value.visible:
+        with Workspace(self.ui_json.geoh5) as workspace:
+            for name, form in self.ui_json:
+                if not isinstance(form, BaseForm) or not form.visible:
                     continue
-                group = QGroupBox(value.group or "Parameters")
+
+                group = QGroupBox(form.group or "Parameters")
                 group_layout = QVBoxLayout(group)
-                group_layout.addWidget(FormWidget(name, value))
+                group_layout.addWidget(FormWidget(name, form, workspace=workspace))
                 layout.addWidget(group)
 
         layout.addStretch(1)
@@ -158,26 +178,31 @@ class UIJsonWindow(QMainWindow):
         self.setCentralWidget(scroll)
 
 
-def run_ui_json(path: str | Path | dict[str, Any]):
-    data = (
-        json.loads(Path(path).read_text(encoding="utf-8"))
-        if not isinstance(path, dict)
-        else path
-    )
-    ui_json = UIJson.from_dict(data)
+def edit_ui_json(
+    path: str | Path | dict[str, Any] | UIJson,
+) -> tuple[QApplication, UIJsonWindow]:
+
+    if isinstance(path, dict):
+        ui_json = UIJson.from_dict(path)
+    elif isinstance(path, str | Path):
+        ui_json = UIJson.read(path)
+    else:
+        ui_json = path
+
     app = QApplication.instance() or QApplication([])
     window = UIJsonWindow(ui_json)
     window.resize(720, 640)
     window.show()
+
     return app, window
 
 
 if __name__ == "__main__":
     import sys
 
-    app, window = run_ui_json(
+    app, window = edit_ui_json(
         sys.argv[1]
         if len(sys.argv) > 1
-        else r"C:\Users\dominiquef\Documents\tests\dist.ui.json"
+        else r"C:\Users\dominiquef\Documents\tests\prototype_workflows\single_ui.ui.json"
     )
-    app.exec_()
+    app.exec()

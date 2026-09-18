@@ -36,6 +36,12 @@ from PyQt5.QtWidgets import (
     QMenu,
 )
 
+from geoh5py import Workspace
+from geoh5py.groups import UIJsonGroup
+from geoh5py.gui.ui_interpreter import edit_ui_json
+from geoh5py.objects import ObjectBase
+from geoh5py.ui_json import UIJson
+
 
 @dataclass
 class CanvasNode:
@@ -167,10 +173,11 @@ class EntityCanvas(QGraphicsScene):
         if self._context_menu_node is None:
             return
         try:
-            result = self._context_menu_node.execute_function(function_name)
-            print(
-                f"Executed {function_name} on {self._context_menu_node.name}: {result}"
-            )
+            app, window = self._context_menu_node.execute_function(function_name)
+            app.exec()
+            self.sub_app = app
+            self.sub_window = window
+            print(f"Executed {function_name}")
         except Exception as exc:  # pragma: no cover - GUI feedback path
             print(f"Error executing {function_name}: {exc}")
 
@@ -195,25 +202,56 @@ def show_canvas(nodes: list[CanvasNode], connections: list[tuple[str, str]]):
     return app, window
 
 
+class NodeActions:
+    def __init__(self, entity: UIJson):
+        self.entity = entity
+
+    def edit_options(self):
+        return edit_ui_json(self.entity)
+
+    def run_from_here(self):
+        pass
+
+
+def set_network(file: Path):
+
+    nodes = []
+    connections = []
+    # location = (100, 100)
+    with Workspace(file) as workspace:
+        for group in workspace.groups:
+            if isinstance(group, UIJsonGroup):
+                uijson = UIJson.from_dict(group.options)
+                nodes.append(
+                    CanvasNode(
+                        group.name, QPointF(100, 100), object_ref=NodeActions(uijson)
+                    )
+                )
+
+                options = uijson.to_params(workspace=workspace)
+                delta_y = 100
+                for elem in options.values():
+                    if isinstance(elem, ObjectBase):
+                        nodes.append(
+                            CanvasNode(elem.name, QPointF(100 - 100, 100 - delta_y))
+                        )
+                        delta_y += 100
+
+                        connections.append((group.name, elem.name))
+
+    return nodes, connections
+
+
 if __name__ == "__main__":
+    file = r"C:\Users\dominiquef\Documents\tests\prototype_workflows\single_ui.geoh5"
 
-    class DemoNode:
-        def __init__(self, value):
-            self.value = value
+    nodes, connections = set_network(file)
 
-        def increment(self):
-            self.value += 1
-            return self.value
-
-        def reset(self):
-            self.value = 0
-            return self.value
-
-    nodes = [
-        CanvasNode("Object A", QPointF(100, 100), object_ref=DemoNode(10)),
-        CanvasNode("Object B", QPointF(300, 200), object_ref=DemoNode(3)),
-        CanvasNode("Object C", QPointF(500, 100), object_ref=DemoNode(7)),
-    ]
-    connections = [("Object A", "Object B"), ("Object B", "Object C")]
+    # nodes = [
+    #     CanvasNode("Object A", QPointF(100, 100), object_ref=NodeActions()),
+    #     CanvasNode("Object B", QPointF(300, 200), object_ref=NodeActions()),
+    #     CanvasNode("Object C", QPointF(500, 100), object_ref=NodeActions()),
+    # ]
+    # connections = [("Object A", "Object B"), ("Object B", "Object C")]
     app, window = show_canvas(nodes, connections)
     app.exec()

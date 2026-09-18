@@ -29,7 +29,6 @@ except ModuleNotFoundError:
     __version__ = "0.0.0.dev0+" + __date_str
 
 
-from geoh5py.gui import CanvasNode, CanvasWindow, EntityCanvas
 from geoh5py.workspace.workspace import Workspace, active_workspace
 
 
