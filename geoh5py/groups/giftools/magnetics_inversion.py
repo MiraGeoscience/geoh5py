@@ -22,7 +22,11 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.base import (
+    BASE_INVERSION_PARAMETERS,
+    BaseGIFtoolsGroup,
+    merge_field,
+)
 from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
 from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
@@ -43,7 +47,7 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
         "value": "",
     },
     "matlab": "MAGinversion",
-    "uuid": BASE_PARAMETERS["uuid"],
+    "uuid": BASE_INVERSION_PARAMETERS["uuid"],
 }
 
 

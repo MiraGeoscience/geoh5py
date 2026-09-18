@@ -74,6 +74,37 @@ BASE_LENGTH_SCALES: dict[str, Any] = {
 # This dict is never spread whole into a group's parameter dict; individual
 # fields are plucked by key or using merge_field when needed
 BASE_PARAMETERS: dict[str, Any] = {
+    "mesh": {
+        "default": "",
+        "label": "Mesh",
+        "main": True,
+        "meshType": "{b020a277-90e2-4cd7-84d6-612ee3f25051}",
+        "value": "",
+    },
+    "results_loaded": False,
+    "topography": {
+        "default": "",
+        "enabled": False,
+        "label": "Topography",
+        "main": True,
+        "meshType": "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}",
+        "optional": True,
+        "value": "",
+    },
+    "uuid": "",
+    "working_directory": "",
+    "xy_localize": {
+        "default": False,
+        "label": "Localize coordinates",
+        "main": True,
+        "tooltip": "Writes files to disk with respect to UBC origin of 3D grid",
+        "value": False,
+    },
+}
+
+
+BASE_INVERSION_PARAMETERS: dict[str, Any] = {
+    **BASE_PARAMETERS,
     "active_model": {
         "association": "Cell",
         "dataType": ["Integer", "Boolean"],
@@ -176,13 +207,6 @@ BASE_PARAMETERS: dict[str, Any] = {
         "optional": True,
         "value": "",
     },
-    "mesh": {
-        "default": "",
-        "label": "Mesh",
-        "main": True,
-        "meshType": "{b020a277-90e2-4cd7-84d6-612ee3f25051}",
-        "value": "",
-    },
     "reference_model": {
         "association": "Cell",
         "dataType": "Float",
@@ -195,7 +219,6 @@ BASE_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 1.0e-8,
     },
-    "results_loaded": False,
     "smooth_mod": {
         "default": False,
         "group": "Model objective function",
@@ -211,16 +234,6 @@ BASE_PARAMETERS: dict[str, Any] = {
         "label": "Threshold value",
         "value": 5.0e-2,
     },
-    "topography": {
-        "default": "",
-        "enabled": False,
-        "label": "Topography",
-        "main": True,
-        "meshType": "{f26feba3-aded-494b-b9e9-b2bbcbe298e1}",
-        "optional": True,
-        "value": "",
-    },
-    "uuid": "",
     "wavelet": {
         "choiceList": [
             "daub1",
@@ -238,14 +251,6 @@ BASE_PARAMETERS: dict[str, Any] = {
         "groupOptional": True,
         "label": "Wavelet type",
         "value": "daub2",
-    },
-    "working_directory": "",
-    "xy_localize": {
-        "default": False,
-        "label": "Localize coordinates",
-        "main": True,
-        "tooltip": "Writes files to disk with respect to UBC origin of 3D grid",
-        "value": False,
     },
 }
 
