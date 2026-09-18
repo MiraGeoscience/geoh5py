@@ -38,6 +38,14 @@ from pydantic.alias_generators import to_pascal
 from .data import Data
 
 
+COMPRESSION_FORMATS = {
+    32849: "GL_RGB8: UNCOMPRESSED RGB",
+    32856: "GL_RGBA8: UNCOMPRESSED RGBA",
+    33776: "GL_COMPRESSED_RGBA_S3TC_DX: COMPRESSED BC1 RGB",
+    33779: "GL_COMPRESSED_RGBA_S3TC_DX: COMPRESSED BC3 RGBA",
+}
+
+
 class CompressedTextures(BaseModel):
     """
     Data container for an image texture associated with vertices.
@@ -73,8 +81,8 @@ class CompressedTextures(BaseModel):
     @field_validator("formats")
     @classmethod
     def validate_compression(cls, formats: np.ndarray) -> np.ndarray:
-        if not np.all(np.isin(formats, [32849, 32856, 33776, 33779])):
-            raise ValueError("Formats must be one of 32849, 32856, 33776, 33779")
+        if not np.all(np.isin(formats, list(COMPRESSION_FORMATS))):
+            raise ValueError(f"Formats must be one of {list(COMPRESSION_FORMATS)}")
         return formats
 
     @field_validator("textures", mode="before")
@@ -91,17 +99,22 @@ class CompressedTextures(BaseModel):
         """
         Validate that all arrays have the same length as the number of textures.
         """
+        conflicts = []
         for array in [
-            self.formats,
-            self.heights,
-            self.valid_widths,
-            self.valid_heights,
-            self.widths,
+            "formats",
+            "heights",
+            "valid_widths",
+            "valid_heights",
+            "widths",
         ]:
-            if len(array) != len(self.textures):
-                raise ValueError(
-                    "All arrays must have the same length as the number of textures"
-                )
+            if len(getattr(self, array)) != len(self.textures):
+                conflicts += [array]
+
+        if any(conflicts):
+            raise ValueError(
+                f"All arrays must have the same length as the number of textures.\n"
+                f"Conflicting arrays: {conflicts}\n"
+            )
         return self
 
     @staticmethod
