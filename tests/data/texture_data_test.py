@@ -31,11 +31,21 @@ from geoh5py.workspace import Workspace
 
 
 def create_texture(workspace, image_size=(8, 16)):
+
+    from PIL import Image
+
+    with Image.open(r"C:\Users\dominiquef\Downloads\doom.png") as image:
+        # Forces Python to read the image data into memory
+        image.load()
+
+    image = np.array(image)
+    image_size = image.shape
+
     u_pixel, v_pixel = np.meshgrid(
         np.arange(image_size[1], dtype=float), np.arange(image_size[0], dtype=float)
     )
-    image = u_pixel + v_pixel * image_size[0]
-    image = np.dstack([image, image, image])
+    # image = u_pixel + v_pixel * image_size[0]
+    # image = np.dstack([image, image, image])
     u_pixel = u_pixel.flatten()
     u_pixel /= image_size[1]
     u_pixel += 1 / image_size[1] / 2
@@ -120,24 +130,22 @@ def test_compressed_textures(tmp_path):
 
     with Workspace.create(file) as workspace:
         texture, image, pixels = create_texture(workspace, image_size=(7, 15))
-
+        formats = np.r_[32849]
         with pytest.raises(TypeError, match="must be a numpy array or PIL"):
             CompressedTextures.get_padded_image([1, 2])
 
         with pytest.raises(ValueError, match="must be a 2D or a 3D array"):
             CompressedTextures.get_padded_image(image.flatten())
 
+        widths = image.shape[1]
+        heights = image.shape[0]
         padded = CompressedTextures.get_padded_image(image)
-        valid_widths = image.shape[1]
-        valid_heights = image.shape[0]
 
-        width, height = padded.shape[1], padded.shape[0]
-        CompressedTextures.get_padded_image(image)
         texture_kwargs = {
-            "valid_widths": np.r_[valid_widths],
-            "valid_heights": np.r_[valid_heights],
-            "widths": np.r_[width],
-            "heights": np.r_[height],
+            "valid_widths": np.r_[widths],
+            "valid_heights": np.r_[heights],
+            "widths": np.r_[widths],
+            "heights": np.r_[heights],
             "textures": {"Blocks_0": padded},
         }
 
@@ -156,7 +164,7 @@ def test_compressed_textures(tmp_path):
         ):
             texture.compressed_textures = "abc"
 
-        texture_kwargs["formats"] = np.r_[32849]
+        texture_kwargs["formats"] = formats
         compressed_texture = CompressedTextures(**texture_kwargs)
 
         pixels = np.c_[pixels, np.zeros((pixels.shape[0], 1))]
@@ -166,8 +174,8 @@ def test_compressed_textures(tmp_path):
     with Workspace(file) as workspace:
         texture = workspace.get_entity("test_texture")[0]
         assert texture.compressed_textures is not None
-        assert compressed_texture.valid_widths[0] == valid_widths
-        assert compressed_texture.valid_heights[0] == valid_heights
-        assert compressed_texture.widths[0] == width
-        assert compressed_texture.heights[0] == height
+        assert compressed_texture.valid_widths[0] == widths
+        assert compressed_texture.valid_heights[0] == heights
+        assert compressed_texture.widths[0] == widths
+        assert compressed_texture.heights[0] == heights
         assert compressed_texture.formats[0] == 32849

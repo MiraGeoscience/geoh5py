@@ -118,13 +118,17 @@ class CompressedTextures(BaseModel):
         return self
 
     @staticmethod
-    def get_padded_image(image: np.ndarray | Image) -> np.ndarray:
+    def get_padded_image(
+        image: np.ndarray | Image, compression: bool = False
+    ) -> np.ndarray:
         """
         Pad an image width and height to the next multiplier of 4.
 
         The last value of the image is repeated to fill the padded values.
 
         :param image: An image or array to pad.
+        :param compression: Whether the image will be stored with compression.
+            If True, the image is padded in both width and height. If False, only the width is padded.
 
         :return: A padded array.
         """
@@ -139,15 +143,24 @@ class CompressedTextures(BaseModel):
         if image.ndim not in (2, 3):
             raise ValueError("Shape of the 'image' must be a 2D or a 3D array.")
 
-        for dim in range(2):
-            if image.shape[dim] % 4 != 0:
-                pad_width = 4 - (image.shape[dim] % 4)
-                shape = list(image.shape)
-                shape[dim] = 1
-                padded_values = image.take(indices=-1, axis=dim).reshape(shape)
-                image = np.concatenate(
-                    [image, np.repeat(padded_values, pad_width, axis=dim)], axis=dim
-                )
+        pad_axes = [0, 1]
+        # Only pad the width for uncompressed formats (GL_RGB8 and GL_RGBA8)
+        if not compression:
+            image = image.reshape((image.shape[0], -1))
+            pad_axes = [1]
+
+        # Loop through the axes to pad and check if the shape is a multiple of 4
+        for dim in pad_axes:
+            if image.shape[dim] % 4 == 0:
+                continue
+
+            pad_width = 4 - (image.shape[dim] % 4)
+            shape = list(image.shape)
+            shape[dim] = 1
+            padded_values = image.take(indices=-1, axis=dim).reshape(shape)
+            image = np.concatenate(
+                [image, np.repeat(padded_values, pad_width, axis=dim)], axis=dim
+            )
 
         return image
 
