@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import (
+    QAction,
     QApplication,
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -32,6 +33,7 @@ from PyQt5.QtWidgets import (
     QGraphicsTextItem,
     QGraphicsView,
     QMainWindow,
+    QMenu,
 )
 
 
@@ -40,6 +42,39 @@ class CanvasNode:
     name: str
     position: QPointF
     kind: str = "object"
+    object_ref: object | None = None
+
+    def available_functions(self) -> list[str]:
+        obj = self.object_ref if self.object_ref is not None else self
+        names: list[str] = []
+        for member_name in dir(obj):
+            if member_name.startswith("_") or member_name in {
+                "available_functions",
+                "execute_function",
+            }:
+                continue
+            member = getattr(obj, member_name)
+            if callable(member):
+                names.append(member_name)
+        return sorted(names)
+
+    def execute_function(self, function_name: str, *args, **kwargs):
+        obj = self.object_ref if self.object_ref is not None else self
+        if not hasattr(obj, function_name):
+            raise AttributeError(
+                f"Node '{self.name}' has no function '{function_name}'."
+            )
+
+        method = getattr(obj, function_name)
+        if not callable(method):
+            raise TypeError(f"'{function_name}' is not callable.")
+
+        try:
+            return method(*args, **kwargs)
+        except TypeError as exc:  # pragma: no cover - runtime guard for GUI feedback
+            raise TypeError(
+                f"Function '{function_name}' could not be executed with the supplied arguments."
+            ) from exc
 
 
 class NodeItem(QGraphicsEllipseItem):
@@ -101,6 +136,7 @@ class EntityCanvas(QGraphicsScene):
     ):
         super().__init__(parent)
         self._node_items: dict[str, NodeItem] = {}
+        self._context_menu_node: CanvasNode | None = None
         for node in nodes:
             item = NodeItem(node)
             self.addItem(item)
@@ -112,12 +148,39 @@ class EntityCanvas(QGraphicsScene):
                     ConnectionItem(self._node_items[source], self._node_items[target])
                 )
 
+    def contextMenuEvent(self, event):
+        item = self.itemAt(event.scenePos(), self.views()[0].transform())
+        if item is None or not isinstance(item, NodeItem):
+            return
+
+        menu = QMenu()
+        self._context_menu_node = item.node
+        for function_name in item.node.available_functions():
+            action = QAction(function_name, menu)
+            action.triggered.connect(
+                lambda checked=False, fn=function_name: self._execute_function(fn)
+            )
+            menu.addAction(action)
+        menu.exec_(event.screenPos())
+
+    def _execute_function(self, function_name: str):
+        if self._context_menu_node is None:
+            return
+        try:
+            result = self._context_menu_node.execute_function(function_name)
+            print(
+                f"Executed {function_name} on {self._context_menu_node.name}: {result}"
+            )
+        except Exception as exc:  # pragma: no cover - GUI feedback path
+            print(f"Error executing {function_name}: {exc}")
+
 
 class CanvasWindow(QMainWindow):
     def __init__(self, nodes: list[CanvasNode], connections: list[tuple[str, str]]):
         super().__init__()
         self.setWindowTitle("Entity Canvas")
         self.scene = EntityCanvas(nodes, connections, self)
+
         view = ConnectionView(self.scene)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
@@ -133,10 +196,23 @@ def show_canvas(nodes: list[CanvasNode], connections: list[tuple[str, str]]):
 
 
 if __name__ == "__main__":
+
+    class DemoNode:
+        def __init__(self, value):
+            self.value = value
+
+        def increment(self):
+            self.value += 1
+            return self.value
+
+        def reset(self):
+            self.value = 0
+            return self.value
+
     nodes = [
-        CanvasNode("Object A", QPointF(100, 100)),
-        CanvasNode("Object B", QPointF(300, 200)),
-        CanvasNode("Object C", QPointF(500, 100)),
+        CanvasNode("Object A", QPointF(100, 100), object_ref=DemoNode(10)),
+        CanvasNode("Object B", QPointF(300, 200), object_ref=DemoNode(3)),
+        CanvasNode("Object C", QPointF(500, 100), object_ref=DemoNode(7)),
     ]
     connections = [("Object A", "Object B"), ("Object B", "Object C")]
     app, window = show_canvas(nodes, connections)
