@@ -48,7 +48,9 @@ from geoh5py.shared.validators import name_or_uid_to_type
 from geoh5py.ui_json.forms import (
     BaseForm,
     BoolForm,
+    DataForm,
     FloatForm,
+    GroupForm,
     IntegerForm,
     ObjectForm,
     RadioLabelForm,
@@ -69,13 +71,14 @@ class FormWidget(QWidget):
     def __init__(
         self,
         name: str,
-        form: BaseForm,
+        ui_json: UIJson,
         parent: QWidget | None = None,
         workspace: Workspace = None,
     ):
         super().__init__(parent)
         self.name = name
-        self.form = form
+        self.ui_json = ui_json
+        self.form = getattr(self.ui_json, name)
         self._build(workspace)
 
     def _build(self, workspace: Workspace):
@@ -128,12 +131,51 @@ class FormWidget(QWidget):
                 value = value[0] if value else ""
             if value is not None:
                 editor.setCurrentText(str(value))
+
+        elif isinstance(self.form, GroupForm):
+            editor = QComboBox()
+            group_type = getattr(self.form, "group_type", None)
+            editor.addItems(
+                [obj.name for obj in workspace.groups if isinstance(obj, group_type)]
+            )
+            value = getattr(self.form, "value", "")
+
+            entity = workspace.get_entity(value)[0]
+            if value is not None:
+                editor.setCurrentText(entity.name)
+
         elif isinstance(self.form, ObjectForm):
             editor = QComboBox()
             mesh_type = tuple(getattr(self.form, "mesh_type", None))
             editor.addItems(
                 [obj.name for obj in workspace.objects if isinstance(obj, mesh_type)]
             )
+            value = getattr(self.form, "value", "")
+
+            entity = workspace.get_entity(value)[0]
+            if value is not None:
+                editor.setCurrentText(entity.name)
+
+        elif isinstance(self.form, DataForm):
+            editor = QComboBox()
+            data_type = getattr(self.form, "data_type", None)
+
+            if not isinstance(data_type, list):
+                data_type = [data_type]
+
+            parent_form = getattr(self.ui_json, getattr(self.form, "parent", None))
+            parent_value = getattr(parent_form, "value", None) if parent_form else None
+
+            if parent_value is not None:
+                parent_entity = workspace.get_entity(parent_value)[0]
+                editor.addItems(
+                    [
+                        obj.name
+                        for obj in parent_entity.children
+                        if obj.entity_type.primitive_type in data_type
+                    ]
+                )
+
             value = getattr(self.form, "value", "")
 
             entity = workspace.get_entity(value)[0]
@@ -154,8 +196,29 @@ class UIJsonWindow(QMainWindow):
     def __init__(self, ui_json: UIJson):
         super().__init__()
         self.ui_json = ui_json
+        self._field_widgets: dict[str, FormWidget] = {}
         self.setWindowTitle(ui_json.title)
         self._build()
+
+    def _apply(self):
+        values = {}
+        for name, widget in self._field_widgets.items():
+            editor = widget.editor
+            if isinstance(editor, QCheckBox):
+                values[name] = editor.isChecked()
+            elif isinstance(editor, QSpinBox):
+                values[name] = editor.value()
+            elif isinstance(editor, QDoubleSpinBox):
+                values[name] = editor.value()
+            elif isinstance(editor, QComboBox):
+                values[name] = editor.currentText()
+            elif isinstance(editor, QLineEdit):
+                values[name] = editor.text()
+            else:
+                values[name] = getattr(widget.form, "value", None)
+
+        print(f"Applying UIJson values: {values}")
+        self.close()
 
     def _build(self):
         root = QWidget()
@@ -168,8 +231,18 @@ class UIJsonWindow(QMainWindow):
 
                 group = QGroupBox(form.group or "Parameters")
                 group_layout = QVBoxLayout(group)
-                group_layout.addWidget(FormWidget(name, form, workspace=workspace))
+                widget = FormWidget(name, self.ui_json, workspace=workspace)
+                self._field_widgets[name] = widget
+                group_layout.addWidget(widget)
                 layout.addWidget(group)
+
+        button_row = QWidget()
+        button_layout = QHBoxLayout(button_row)
+        button_layout.addStretch(1)
+        apply_button = QPushButton("Apply")
+        apply_button.clicked.connect(self._apply)
+        button_layout.addWidget(apply_button)
+        layout.addWidget(button_row)
 
         layout.addStretch(1)
         scroll = QScrollArea()
@@ -191,7 +264,7 @@ def edit_ui_json(
 
     app = QApplication.instance() or QApplication([])
     window = UIJsonWindow(ui_json)
-    window.resize(720, 640)
+    window.resize(720, 700)
     window.show()
 
     return app, window
