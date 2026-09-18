@@ -26,7 +26,7 @@ concurrency:
 jobs:
   call-workflow-static-analysis:
     name: Static analysis
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-static_analysis.yml@7241532854727d993872b67fc761139b8438615b # v3.12.0
     permissions:
       contents: read
       pull-requests: read
@@ -36,7 +36,7 @@ jobs:
       python-version: '3.12'
   call-workflow-pytest:
     name: Pytest
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@v3
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@7241532854727d993872b67fc761139b8438615b # v3.12.0
     permissions:
       contents: read
       pull-requests: read
