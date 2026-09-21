@@ -30,7 +30,7 @@ from .giftools.giftools import GIFtoolsGroup
 from .giftools.gravity_gradiometry_inversion import GGInv3D
 from .giftools.gravity import GZInv3D, GZFor3D
 from .giftools.magnetics_inversion import MagInv3D
-from .giftools.dc_octree_inversion import DCOctreeInversion
+from .giftools.dc_octree import DCOctreeInversion, DCOctreeForward
 from .giftools.ip_octree_inversion import IPOctreeInversion
 from .giftools.octree_gravity_inversion import OCTGRVDEInversion
 from .giftools.ip_3d_inversion import IPInv3D

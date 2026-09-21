@@ -48,7 +48,7 @@ GIF Executables
     * - dcoctree_fwd
       - ``{a522d641-6cb7-421b-836b-a14c0d9c7801}``
       - DCOctree
-      - Not implemented
+      - ``20200508``
     * - dcoctree_inv
       - ``{54d296de-0588-472c-9a62-480098303394}``
       - DCOctree
