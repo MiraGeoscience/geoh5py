@@ -22,12 +22,16 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.base import (
+    BASE_INVERSION_PARAMETERS,
+    BaseGIFtoolsGroup,
+    merge_field,
+)
 from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
 
 
 # Local alias to save visual space and make the parameters dict a bit easier to read.
-BASE = BASE_PARAMETERS
+BASE = BASE_INVERSION_PARAMETERS
 
 
 # Fields unique to ipinv3d. Only a subset of BASE_PARAMETERS is used

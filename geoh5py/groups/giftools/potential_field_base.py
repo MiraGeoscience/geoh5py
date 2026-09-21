@@ -22,7 +22,7 @@ from __future__ import annotations
 from typing import Any
 
 from geoh5py.groups.giftools.base import (
-    BASE_PARAMETERS,
+    BASE_INVERSION_PARAMETERS,
     merge_field,
 )
 
@@ -80,10 +80,10 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "value": 2.0,
     },
     # add main=False relative to the universal base.
-    "active_model": merge_field(BASE_PARAMETERS["active_model"], main=False),
-    "auto_threshold": BASE_PARAMETERS["auto_threshold"],
-    "bound_model_upper": BASE_PARAMETERS["bound_model_upper"],
-    "cell_weight": BASE_PARAMETERS["cell_weight"],
+    "active_model": merge_field(BASE_INVERSION_PARAMETERS["active_model"], main=False),
+    "auto_threshold": BASE_INVERSION_PARAMETERS["auto_threshold"],
+    "bound_model_upper": BASE_INVERSION_PARAMETERS["bound_model_upper"],
+    "cell_weight": BASE_INVERSION_PARAMETERS["cell_weight"],
     "default_decay": {
         "default": False,
         "group": "Sensitivity weight options",
@@ -115,12 +115,12 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "min": 1.0e-8,
         "value": 1.0e-8,
     },
-    "face_weight": BASE_PARAMETERS["face_weight"],
-    "initial_model": BASE_PARAMETERS["initial_model"],
-    "inversion_mode": BASE_PARAMETERS["inversion_mode"],
-    "inversion_par": BASE_PARAMETERS["inversion_par"],
-    "inversion_tolerance": BASE_PARAMETERS["inversion_tolerance"],
-    "length_scales": BASE_PARAMETERS["length_scales"],
+    "face_weight": BASE_INVERSION_PARAMETERS["face_weight"],
+    "initial_model": BASE_INVERSION_PARAMETERS["initial_model"],
+    "inversion_mode": BASE_INVERSION_PARAMETERS["inversion_mode"],
+    "inversion_par": BASE_INVERSION_PARAMETERS["inversion_par"],
+    "inversion_tolerance": BASE_INVERSION_PARAMETERS["inversion_tolerance"],
+    "length_scales": BASE_INVERSION_PARAMETERS["length_scales"],
     "lp_epsilon": {
         "default": -1234567,
         "enabled": False,
@@ -145,15 +145,15 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "label": "ENZ epsilon",
         "value": 1e-5,
     },
-    "matrix_file": BASE_PARAMETERS["matrix_file"],
-    "mesh": BASE_PARAMETERS["mesh"],
-    "reference_model": BASE_PARAMETERS["reference_model"],
-    "results_loaded": BASE_PARAMETERS["results_loaded"],
-    "smooth_mod": BASE_PARAMETERS["smooth_mod"],
-    "threshold": BASE_PARAMETERS["threshold"],
-    "topography": BASE_PARAMETERS["topography"],
+    "matrix_file": BASE_INVERSION_PARAMETERS["matrix_file"],
+    "mesh": BASE_INVERSION_PARAMETERS["mesh"],
+    "reference_model": BASE_INVERSION_PARAMETERS["reference_model"],
+    "results_loaded": BASE_INVERSION_PARAMETERS["results_loaded"],
+    "smooth_mod": BASE_INVERSION_PARAMETERS["smooth_mod"],
+    "threshold": BASE_INVERSION_PARAMETERS["threshold"],
+    "topography": BASE_INVERSION_PARAMETERS["topography"],
     "version": "6",
-    "wavelet": BASE_PARAMETERS["wavelet"],
+    "wavelet": BASE_INVERSION_PARAMETERS["wavelet"],
     "wavelet_diagnostics": {
         "default": False,
         "group": "Wavelet compression",
@@ -164,6 +164,6 @@ POTENTIAL_FIELD_PARAMETERS: dict[str, Any] = {
         "main": False,
         "value": False,
     },
-    "working_directory": BASE_PARAMETERS["working_directory"],
-    "xy_localize": BASE_PARAMETERS["xy_localize"],
+    "working_directory": BASE_INVERSION_PARAMETERS["working_directory"],
+    "xy_localize": BASE_INVERSION_PARAMETERS["xy_localize"],
 }

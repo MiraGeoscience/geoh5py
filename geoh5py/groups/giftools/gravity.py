@@ -21,7 +21,12 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.base import (
+    BASE_INVERSION_PARAMETERS,
+    BASE_PARAMETERS,
+    BaseGIFtoolsGroup,
+    merge_field,
+)
 from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
 from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
@@ -40,7 +45,7 @@ GZINV3D_PARAMETERS: dict[str, Any] = {
         "value": "",
     },
     "matlab": "GRAVinversion",
-    "uuid": BASE_PARAMETERS["uuid"],
+    "uuid": BASE_INVERSION_PARAMETERS["uuid"],
 }
 
 
@@ -50,3 +55,35 @@ class GZInv3D(BaseGIFtoolsGroup):
     _TYPE_UID = UUID("{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}")
     _default_name = "gzinv3d_60"
     _default_parameters: dict[str, Any] = GZINV3D_PARAMETERS
+
+
+GZFOR3D_PARAMETERS: dict[str, Any] = {
+    **BASE_PARAMETERS,
+    "data": {
+        "default": "",
+        "gifType": ["GRAVdata"],
+        "label": "Data",
+        "main": True,
+        "meshType": "",
+        "value": "",
+    },
+    "matlab": "GRAVforward",
+    "version": "5",
+    "model": {
+        "association": "Cell",
+        "dataType": "Float",
+        "default": "",
+        "label": "Model property",
+        "main": True,
+        "parent": "mesh",
+        "value": "",
+    },
+}
+
+
+class GZFor3D(BaseGIFtoolsGroup):
+    """Inversion group for UBC-GZINV3D (gzinv3d_60)."""
+
+    _TYPE_UID = UUID("{a4857df0-d175-4824-ac5d-cecfdcc2f20b}")
+    _default_name = "gzfor3d"
+    _default_parameters: dict[str, Any] = GZFOR3D_PARAMETERS

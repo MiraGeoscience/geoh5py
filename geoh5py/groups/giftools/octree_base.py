@@ -22,8 +22,8 @@ from __future__ import annotations
 from typing import Any
 
 from geoh5py.groups.giftools.base import (
+    BASE_INVERSION_PARAMETERS,
     BASE_LENGTH_SCALES,
-    BASE_PARAMETERS,
     merge_field,
 )
 from geoh5py.groups.giftools.inversion_base import INVERSION_CONTROL_PARAMETERS
@@ -35,7 +35,7 @@ CONTROL = INVERSION_CONTROL_PARAMETERS
 # Parameters shared by the GIFtools octree inversion groups.
 
 OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
-    "active_model": BASE_PARAMETERS["active_model"],
+    "active_model": BASE_INVERSION_PARAMETERS["active_model"],
     "beta_given": CONTROL["beta_given"],
     "beta_one": CONTROL["beta_one"],
     "beta_two": CONTROL["beta_two"],
@@ -44,9 +44,9 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "label": "No bounds",
         "value": True,
     },
-    "cell_weight": BASE_PARAMETERS["cell_weight"],
+    "cell_weight": BASE_INVERSION_PARAMETERS["cell_weight"],
     "delta_beta": CONTROL["delta_beta"],
-    "face_weight": BASE_PARAMETERS["face_weight"],
+    "face_weight": BASE_INVERSION_PARAMETERS["face_weight"],
     "global_weight": {
         "association": "Cell",
         "dataType": "Float",
@@ -62,7 +62,7 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
     "gn_tolerance": CONTROL["gn_tolerance"],
     # initial_model shares the common base and octree adds max/min bounds.
     "initial_model": merge_field(
-        BASE_PARAMETERS["initial_model"],
+        BASE_INVERSION_PARAMETERS["initial_model"],
         max=1.0e8,
         min=1.0e-8,
     ),
@@ -117,8 +117,8 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 1e-3,
     },
-    "results_loaded": BASE_PARAMETERS["results_loaded"],
-    "smooth_mod": BASE_PARAMETERS["smooth_mod"],
+    "results_loaded": BASE_INVERSION_PARAMETERS["results_loaded"],
+    "smooth_mod": BASE_INVERSION_PARAMETERS["smooth_mod"],
     "topography": {
         "association": "Cell",
         "dataType": ["Integer", "Boolean"],
@@ -148,9 +148,9 @@ OCTREE_INVERSION_PARAMETERS: dict[str, Any] = {
         "property": "",
         "value": 10.0,
     },
-    "uuid": BASE_PARAMETERS["uuid"],
+    "uuid": BASE_INVERSION_PARAMETERS["uuid"],
     "version": "",
-    "working_directory": BASE_PARAMETERS["working_directory"],
+    "working_directory": BASE_INVERSION_PARAMETERS["working_directory"],
     "xy_localize": {
         "default": False,
         "label": "Localize coordinates",
