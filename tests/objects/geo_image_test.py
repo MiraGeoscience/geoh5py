@@ -585,7 +585,7 @@ def test_converting_rotated_images(tmp_path):
         np.testing.assert_almost_equal(grid_test.v_cell_size, grid.v_cell_size)
         np.testing.assert_almost_equal(grid_test.u_count, grid.u_count)
         np.testing.assert_almost_equal(grid_test.v_count, grid.v_count)
-        assert grid_test.origin == grid.origin
+        np.testing.assert_almost_equal(grid_test.origin, grid.origin)
         np.testing.assert_almost_equal(grid_test.rotation, grid.rotation)
 
         assert all(
