@@ -222,6 +222,12 @@ def set_network(file: Path):
         for group in workspace.groups:
             if isinstance(group, UIJsonGroup):
                 uijson = UIJson.from_dict(group.options)
+                if group.name == "Second UI":
+                    pass
+                    # uijson.set_values(**{"data_mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
+                    # uijson.to_ui_json_group(workspace=workspace)
+                    # workspace.remove_entity(group)
+                    # del group
                 nodes.append(
                     CanvasNode(
                         group.name, QPointF(100, 100), object_ref=NodeActions(uijson)
@@ -243,7 +249,7 @@ def set_network(file: Path):
 
 
 if __name__ == "__main__":
-    file = r"C:\Users\dominiquef\Documents\tests\prototype_workflows\single_ui.geoh5"
+    file = r"C:\Users\dominiquef\Documents\tests\prototype_workflows\workload.geoh5"
 
     nodes, connections = set_network(file)
 

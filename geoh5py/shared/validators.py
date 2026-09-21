@@ -30,7 +30,6 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py import groups, objects
 from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
@@ -47,23 +46,10 @@ from geoh5py.shared.exceptions import (
     iterable,
 )
 from geoh5py.shared.utils import (
-    ClassIdentifierEnum,
     dict_mapper,
-    equalize_string,
-    is_uuid,
-    map_to_class,
 )
 from geoh5py.workspace import TYPE_UID_TO_CLASS, Workspace
-
-
-GA_NAME_TO_OBJECT: dict[str, type[ObjectBase]] = {
-    equalize_string(k): v
-    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
-}
-GA_NAME_TO_GROUP: dict[str, type[Group]] = {
-    equalize_string(k): v
-    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [groups]).items()
-}
+from geoh5py.workspace.workspace import name_or_uid_to_type
 
 
 def to_path(value: list[str]) -> list[Path]:
@@ -84,34 +70,6 @@ def to_list(value: Any) -> list[Any]:
     if not isinstance(value, list):
         value = [value]
     return value
-
-
-def name_or_uid_to_type(
-    value: str | UUID | type,
-) -> type[ObjectBase] | type[Group] | UUID:
-    """
-    Convert a string to a geoh5py type or group type.
-
-    :param value: String representing geoh5py type, either as a UUID or name.
-    :return: Type of object, group or UUID
-    """
-    if not isinstance(value, str):
-        return value
-
-    if is_uuid(value):
-        return UUID(value)
-
-    value = equalize_string(value)
-    obj: type[ObjectBase] | type[Group] | None = GA_NAME_TO_OBJECT.get(
-        value, None
-    ) or GA_NAME_TO_GROUP.get(value, None)
-    if obj is None:
-        raise ValueError(
-            f"Provided string {value!s} is not a recognized "
-            f"geoh5py object or group type."
-        ) from None
-
-    return obj
 
 
 def to_class_type(

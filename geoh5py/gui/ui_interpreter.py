@@ -44,7 +44,6 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from geoh5py.shared.validators import name_or_uid_to_type
 from geoh5py.ui_json.forms import (
     BaseForm,
     BoolForm,
@@ -57,6 +56,7 @@ from geoh5py.ui_json.forms import (
 )
 from geoh5py.ui_json.ui_json import UIJson
 from geoh5py.workspace import Workspace
+from geoh5py.workspace.workspace import name_or_uid_to_type
 
 
 def _as_uuid_text(value: Any) -> str:
