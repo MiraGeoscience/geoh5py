@@ -20,12 +20,150 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 from PIL import Image
+from pydantic import (
+    AliasChoices,
+    AliasGenerator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
+from pydantic.alias_generators import to_pascal
 
 from .data import Data
+
+
+COMPRESSION_FORMATS = {
+    32849: "GL_RGB8: UNCOMPRESSED RGB",
+    32856: "GL_RGBA8: UNCOMPRESSED RGBA",
+    33776: "GL_COMPRESSED_RGBA_S3TC_DX: COMPRESSED BC1 RGB",
+    33779: "GL_COMPRESSED_RGBA_S3TC_DX: COMPRESSED BC3 RGBA",
+}
+
+
+class CompressedTextures(BaseModel):
+    """
+    Data container for an image texture associated with vertices.
+
+    :param textures: The texture images as bytes representation of a :obj:`PIL.Image` object.
+    :param widths: Array of images widths with padding for compression.
+    :param heights: Array of images heights with padding for compression.
+    :param valid_widths: Array of images widths without padding.
+    :param valid_heights: Array of images heights without padding.
+    """
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        serialize_by_alias=True,
+        alias_generator=AliasGenerator(
+            serialization_alias=to_pascal,
+        ),
+    )
+
+    formats: np.ndarray = Field(validation_alias=AliasChoices("Formats", "formats"))
+    heights: np.ndarray = Field(validation_alias=AliasChoices("Heights", "heights"))
+    textures: dict[str, bytes] = Field(
+        validation_alias=AliasChoices("Textures", "textures")
+    )
+    valid_widths: np.ndarray = Field(
+        validation_alias=AliasChoices("ValidWidths", "valid_widths")
+    )
+    valid_heights: np.ndarray = Field(
+        validation_alias=AliasChoices("ValidHeights", "valid_heights")
+    )
+    widths: np.ndarray = Field(validation_alias=AliasChoices("Widths", "widths"))
+
+    @field_validator("formats")
+    @classmethod
+    def validate_compression(cls, formats: np.ndarray) -> np.ndarray:
+        if not np.all(np.isin(formats, list(COMPRESSION_FORMATS))):
+            raise ValueError(f"Formats must be one of {list(COMPRESSION_FORMATS)}")
+        return formats
+
+    @field_validator("textures", mode="before")
+    @classmethod
+    def validate_texture_images(
+        cls, formats: dict[str, np.ndarray | bytes | Image.Image]
+    ) -> dict[str, bytes]:
+        for key, value in formats.items():
+            formats[key] = TextureData.array_image_to_bytes(value)
+        return formats
+
+    @model_validator(mode="after")
+    def arrays_size(self) -> Self:
+        """
+        Validate that all arrays have the same length as the number of textures.
+        """
+        conflicts = []
+        for array in [
+            "formats",
+            "heights",
+            "valid_widths",
+            "valid_heights",
+            "widths",
+        ]:
+            if len(getattr(self, array)) != len(self.textures):
+                conflicts += [array]
+
+        if any(conflicts):
+            raise ValueError(
+                f"All arrays must have the same length as the number of textures.\n"
+                f"Conflicting arrays: {conflicts}\n"
+            )
+        return self
+
+    @staticmethod
+    def get_padded_image(
+        image: np.ndarray | Image, compression: bool = False
+    ) -> np.ndarray:
+        """
+        Pad an image width and height to the next multiplier of 4.
+
+        The last value of the image is repeated to fill the padded values.
+
+        :param image: An image or array to pad.
+        :param compression: Whether the image will be stored with compression.
+            If True, the image is padded in both width and height.
+            If False, only the width is padded.
+
+        :return: A padded array.
+        """
+        if isinstance(image, Image.Image):
+            image = np.array(image)
+
+        if not isinstance(image, np.ndarray):
+            raise TypeError(
+                "Attribute 'image' must be a numpy array or PIL.Image object."
+            )
+
+        if image.ndim not in (2, 3):
+            raise ValueError("Shape of the 'image' must be a 2D or a 3D array.")
+
+        pad_axes = [0, 1]
+        # Only pad the width for uncompressed formats (GL_RGB8 and GL_RGBA8)
+        if not compression:
+            image = image.reshape((image.shape[0], -1))
+            pad_axes = [1]
+
+        # Loop through the axes to pad and check if the shape is a multiple of 4
+        for dim in pad_axes:
+            if image.shape[dim] % 4 == 0:
+                continue
+
+            pad_width = 4 - (image.shape[dim] % 4)
+            shape = list(image.shape)
+            shape[dim] = 1
+            padded_values = image.take(indices=-1, axis=dim).reshape(shape)
+            image = np.concatenate(
+                [image, np.repeat(padded_values, pad_width, axis=dim)], axis=dim
+            )
+
+        return image
 
 
 class TextureData(Data):
@@ -38,17 +176,24 @@ class TextureData(Data):
 
     _attribute_map = Data._attribute_map.copy()
     __VALUES_DTYPE = np.dtype([("v[0]", "<f4"), ("v[1]", "<f4")])
+    __COMPRESSED_DTYPE = np.dtype([("v[0]", "<f4"), ("v[1]", "<f4"), ("v[2]", "<f4")])
 
     def __init__(
         self,
         allow_move=False,
         texture_image: Image.Image | bytes | np.ndarray | None = None,
+        compressed_textures: CompressedTextures | None = None,
         values: np.recarray | None = None,
         **kwargs,
     ):
+
         self._texture_image: bytes | None = None
+        self._compressed_textures: CompressedTextures | None = None
+
         super().__init__(allow_move=allow_move, values=values, **kwargs)
+
         self.texture_image = texture_image
+        self.compressed_textures = compressed_textures
 
     @property
     def image(self) -> Image.Image | None:
@@ -71,6 +216,35 @@ class TextureData(Data):
         super()._set_parent(parent)
 
     @property
+    def compressed_textures(self) -> CompressedTextures | None:
+        """
+        The compressed textures associated with the vertices.
+        """
+        if self._compressed_textures is None and self.on_file:
+            textures = self.workspace.fetch_compressed_textures(self.uid)
+
+            if textures is not None:
+                self._compressed_textures = CompressedTextures(**textures)
+
+        return self._compressed_textures
+
+    @compressed_textures.setter
+    def compressed_textures(self, value: dict | CompressedTextures | None):
+        if isinstance(value, dict):
+            value = CompressedTextures(**value)
+
+        if not isinstance(value, None | CompressedTextures):
+            raise TypeError(
+                "Attribute 'compressed_textures' must be a dict, "
+                "CompressedTextures or None."
+            )
+
+        self._compressed_textures = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "compressed_textures")
+
+    @property
     def texture_image(self) -> bytes | None:
         """
         The texture image associated with the vertices.
@@ -84,6 +258,27 @@ class TextureData(Data):
 
     @texture_image.setter
     def texture_image(self, value: np.ndarray | bytes | Image.Image | None):
+
+        value = self.array_image_to_bytes(value, compression_format="PNG")
+        self._texture_image = value
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "texture_image")
+
+    @staticmethod
+    def array_image_to_bytes(
+        value: np.ndarray | bytes | Image.Image | None,
+        compression_format: str | None = None,
+    ) -> bytes | None:
+        """
+        Convert a numpy array or PIL.Image to bytes.
+
+        :param value: Array of values or a PIL.Image object to convert to bytes.
+        :param compression_format: Saving format for the image.
+            If None, the image is saved in raw bytes.
+
+        :return: Bytes representation of the image or None if the input is None.
+        """
         if isinstance(value, np.ndarray):
             if value.ndim not in (2, 3) or (value.ndim == 3 and value.shape[2] != 3):
                 raise ValueError(
@@ -100,14 +295,19 @@ class TextureData(Data):
             value = Image.fromarray(value)
 
         if isinstance(value, Image.Image):
-            bio = BytesIO()
-            value.save(bio, format="PNG")
-            value = bio.getvalue()
+            if compression_format is not None:
+                bio = BytesIO()
+                value.save(bio, format=compression_format)
+                value = bio.getvalue()
+            else:
+                value = value.tobytes()
 
-        self._texture_image = value
+        if not isinstance(value, (bytes, type(None))):
+            raise TypeError(
+                "Attribute 'texture_image' must be a numpy array, PIL.Image, bytes or None."
+            )
 
-        if self.on_file:
-            self.workspace.update_attribute(self, "texture_image")
+        return value
 
     def validate_values(self, values: Any | None) -> np.ndarray | None:
         """
@@ -129,19 +329,24 @@ class TextureData(Data):
             )
 
         if np.issubdtype(values.dtype, np.number):
-            if values.ndim != 2 or values.shape[1] != 2:
-                raise ValueError("'values' requires an ndarray of shape (*, 2).")
+            if values.ndim != 2 or values.shape[1] not in [2, 3]:
+                raise ValueError(
+                    "'values' requires an ndarray of shape (*, 2) or (*, 3)."
+                )
 
             values = np.asarray(
                 np.rec.fromarrays(
                     values.T.tolist(),
-                    dtype=self.__VALUES_DTYPE,
+                    dtype=self.__VALUES_DTYPE
+                    if values.shape[1] == 2
+                    else self.__COMPRESSED_DTYPE,
                 )
             )
 
-        if values.dtype != self.__VALUES_DTYPE:
+        if values.dtype not in (self.__VALUES_DTYPE, self.__COMPRESSED_DTYPE):
             raise TypeError(
-                f"Array of 'values' must be of dtype = {self.__VALUES_DTYPE}"
+                "Array of 'values' must be of dtype "
+                f"{self.__VALUES_DTYPE} or {self.__COMPRESSED_DTYPE}."
             )
 
         if self.parent is not None and len(values) != self.parent.n_vertices:

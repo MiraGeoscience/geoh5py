@@ -22,47 +22,57 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 from scipy.spatial import Delaunay
 
-from geoh5py.data import TextureData
+from geoh5py.data.texture_data import CompressedTextures
 from geoh5py.objects import Grid2D, Surface
 from geoh5py.workspace import Workspace
 
 
+def create_texture(workspace, image_size=(8, 16)):
+    u_pixel, v_pixel = np.meshgrid(
+        np.arange(image_size[1], dtype=float), np.arange(image_size[0], dtype=float)
+    )
+    image = u_pixel + v_pixel * image_size[0]
+    image = np.dstack([image, image, image])
+    u_pixel = u_pixel.flatten()
+    u_pixel /= image_size[1]
+    u_pixel += 1 / image_size[1] / 2
+    v_pixel = v_pixel.flatten()
+    v_pixel /= image_size[0]
+    v_pixel += 1 / image_size[0] / 2
+    pixels = np.c_[u_pixel, v_pixel]
+    x_locs, y_locs = np.meshgrid(np.arange(image_size[1]), np.arange(image_size[0]))
+    vertices = np.c_[
+        x_locs.flatten(),
+        y_locs.flatten(),
+        (
+            np.sin(y_locs / y_locs.max() * np.pi)
+            * np.sin(x_locs / x_locs.max() * np.pi)
+        ).flatten(),
+    ]
+    surf = Delaunay(vertices[:, :2])
+    obj = Surface.create(
+        workspace,
+        vertices=vertices,
+        cells=surf.simplices,
+    )
+
+    texture = obj.add_data(
+        {
+            "test_texture": {
+                "primitive_type": "TEXTURE",
+                "association": "VERTEX",
+            },
+        }
+    )
+    return texture, image, pixels
+
+
 def test_create_texture(tmp_path):
     with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
-        image_size = 8, 16
-
-        u_pixel, v_pixel = np.meshgrid(
-            np.arange(image_size[1], dtype=float), np.arange(image_size[0], dtype=float)
-        )
-        image = u_pixel + v_pixel * image_size[0]
-        u_pixel = u_pixel.flatten()
-        u_pixel /= image_size[1]
-        u_pixel += 1 / image_size[1] / 2
-        v_pixel = v_pixel.flatten()
-        v_pixel /= image_size[0]
-        v_pixel += 1 / image_size[0] / 2
-
-        x_locs, y_locs = np.meshgrid(np.arange(image_size[1]), np.arange(image_size[0]))
-        vertices = np.c_[
-            x_locs.flatten(), y_locs.flatten(), np.zeros_like(y_locs).flatten()
-        ]
-        surf = Delaunay(vertices[:, :2])
-        obj = Surface.create(
-            workspace,
-            vertices=vertices,
-            cells=surf.simplices,
-        )
-
-        texture = obj.add_data(
-            {
-                "test_texture": {
-                    "primitive_type": "TEXTURE",
-                    "association": "VERTEX",
-                },
-            }
-        )
+        texture, image, pixels = create_texture(workspace)
 
         with pytest.raises(
             ValueError, match="Shape of the 'texture_image' must be a 2D"
@@ -87,7 +97,7 @@ def test_create_texture(tmp_path):
                 )
             )
 
-        texture.values = np.c_[u_pixel, v_pixel]
+        texture.values = pixels
         texture.texture_image = image
 
         grid = Grid2D.create(workspace)
@@ -103,3 +113,59 @@ def test_create_texture(tmp_path):
         np.testing.assert_almost_equal(
             np.asarray(texture.image), (image / image.max() * 255).astype(int)
         )
+
+
+def test_compressed_textures(tmp_path):
+    file = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(file) as workspace:
+        texture, image, pixels = create_texture(workspace, image_size=(7, 15))
+        formats = np.r_[32849]
+        with pytest.raises(TypeError, match="must be a numpy array or PIL"):
+            CompressedTextures.get_padded_image([1, 2])
+
+        with pytest.raises(ValueError, match="must be a 2D or a 3D array"):
+            CompressedTextures.get_padded_image(image.flatten())
+
+        widths = image.shape[1]
+        heights = image.shape[0]
+        padded = CompressedTextures.get_padded_image(image)
+
+        texture_kwargs = {
+            "valid_widths": np.r_[widths],
+            "valid_heights": np.r_[heights],
+            "widths": np.r_[widths],
+            "heights": np.r_[heights],
+            "textures": {"Blocks_0": padded},
+        }
+
+        with pytest.raises(ValidationError, match="Formats must be one"):
+            texture_kwargs["formats"] = np.r_[123]
+            CompressedTextures(**texture_kwargs)
+
+        with pytest.raises(
+            ValidationError, match="All arrays must have the same length"
+        ):
+            texture_kwargs["formats"] = np.r_[32849, 32849]
+            CompressedTextures(**texture_kwargs)
+
+        with pytest.raises(
+            TypeError, match="must be a dict, CompressedTextures or None"
+        ):
+            texture.compressed_textures = "abc"
+
+        texture_kwargs["formats"] = formats
+        compressed_texture = CompressedTextures(**texture_kwargs)
+
+        pixels = np.c_[pixels, np.zeros((pixels.shape[0], 1))]
+        texture.values = pixels
+        texture.compressed_textures = compressed_texture
+
+    with Workspace(file) as workspace:
+        texture = workspace.get_entity("test_texture")[0]
+        assert texture.compressed_textures is not None
+        assert compressed_texture.valid_widths[0] == widths
+        assert compressed_texture.valid_heights[0] == heights
+        assert compressed_texture.widths[0] == widths
+        assert compressed_texture.heights[0] == heights
+        assert compressed_texture.formats[0] == 32849
