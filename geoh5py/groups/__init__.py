@@ -28,7 +28,7 @@ from .drillhole import DrillholeGroup, IntegratorDrillholeGroup
 from .fusion_table import FusionTableGroup
 from .giftools.giftools import GIFtoolsGroup
 from .giftools.gravity_gradiometry_inversion import GGInv3D
-from .giftools.gravity_inversion import GZInv3D
+from .giftools.gravity import GZInv3D, GZFor3D
 from .giftools.magnetics_inversion import MagInv3D
 from .giftools.dc_octree_inversion import DCOctreeInversion
 from .giftools.ip_octree_inversion import IPOctreeInversion

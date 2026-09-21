@@ -72,7 +72,7 @@ GIF Executables
     * - gzfor3d
       - ``{a4857df0-d175-4824-ac5d-cecfdcc2f20b}``
       - GZFOR3D
-      - Not implemented
+      - ``6``
     * - gzinv3d_60
       - ``{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}``
       - GZINV3D
