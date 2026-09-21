@@ -128,7 +128,8 @@ class CompressedTextures(BaseModel):
 
         :param image: An image or array to pad.
         :param compression: Whether the image will be stored with compression.
-            If True, the image is padded in both width and height. If False, only the width is padded.
+            If True, the image is padded in both width and height.
+            If False, only the width is padded.
 
         :return: A padded array.
         """
