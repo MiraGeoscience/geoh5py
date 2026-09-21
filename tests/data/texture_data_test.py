@@ -31,21 +31,11 @@ from geoh5py.workspace import Workspace
 
 
 def create_texture(workspace, image_size=(8, 16)):
-
-    from PIL import Image
-
-    with Image.open(r"C:\Users\dominiquef\Downloads\doom.png") as image:
-        # Forces Python to read the image data into memory
-        image.load()
-
-    image = np.array(image)
-    image_size = image.shape
-
     u_pixel, v_pixel = np.meshgrid(
         np.arange(image_size[1], dtype=float), np.arange(image_size[0], dtype=float)
     )
-    # image = u_pixel + v_pixel * image_size[0]
-    # image = np.dstack([image, image, image])
+    image = u_pixel + v_pixel * image_size[0]
+    image = np.dstack([image, image, image])
     u_pixel = u_pixel.flatten()
     u_pixel /= image_size[1]
     u_pixel += 1 / image_size[1] / 2
