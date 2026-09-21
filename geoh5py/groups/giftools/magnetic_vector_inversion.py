@@ -21,7 +21,11 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from geoh5py.groups.giftools.base import BASE_PARAMETERS, BaseGIFtoolsGroup, merge_field
+from geoh5py.groups.giftools.base import (
+    BASE_INVERSION_PARAMETERS,
+    BaseGIFtoolsGroup,
+    merge_field,
+)
 from geoh5py.groups.giftools.inversion_base import BOUND_MODEL_LOWER_FIELD
 from geoh5py.groups.giftools.potential_field_base import POTENTIAL_FIELD_PARAMETERS
 
@@ -77,7 +81,7 @@ MVIINV_PARAMETERS: dict[str, Any] = {
         "value": 1.0,
     },
     "initial_model": merge_field(
-        BASE_PARAMETERS["initial_model"],
+        BASE_INVERSION_PARAMETERS["initial_model"],
         drop_keys="dataType",
         dataGroupType="3D vector",
     ),
@@ -140,7 +144,7 @@ MVIINV_PARAMETERS: dict[str, Any] = {
         "label": "Theta Vertical",
         "value": 1e-2,
     },
-    "uuid": BASE_PARAMETERS["uuid"],
+    "uuid": BASE_INVERSION_PARAMETERS["uuid"],
     "version": "3",
     "wavelet_diagnostics": merge_field(
         POTENTIAL_FIELD_PARAMETERS["wavelet_diagnostics"],

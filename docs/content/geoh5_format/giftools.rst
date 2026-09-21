@@ -48,7 +48,7 @@ GIF Executables
     * - dcoctree_fwd
       - ``{a522d641-6cb7-421b-836b-a14c0d9c7801}``
       - DCOctree
-      - Not implemented
+      - ``20200508``
     * - dcoctree_inv
       - ``{54d296de-0588-472c-9a62-480098303394}``
       - DCOctree
@@ -72,7 +72,7 @@ GIF Executables
     * - gzfor3d
       - ``{a4857df0-d175-4824-ac5d-cecfdcc2f20b}``
       - GZFOR3D
-      - Not implemented
+      - ``6``
     * - gzinv3d_60
       - ``{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}``
       - GZINV3D
