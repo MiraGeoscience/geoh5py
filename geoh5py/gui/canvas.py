@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
@@ -40,6 +41,7 @@ from geoh5py import Workspace
 from geoh5py.groups import UIJsonGroup
 from geoh5py.gui.ui_interpreter import edit_ui_json
 from geoh5py.objects import ObjectBase
+from geoh5py.shared.entity import Substitute
 from geoh5py.ui_json import UIJson
 
 
@@ -83,12 +85,20 @@ class CanvasNode:
             ) from exc
 
 
+COLOR_MAP = {
+    "object": QColor("#4C78A8"),
+    "data": QColor("#F58518"),
+    "group": QColor("#E45756"),
+    "future": QColor("#72B7B2"),
+}
+
+
 class NodeItem(QGraphicsEllipseItem):
     def __init__(self, node: CanvasNode):
         super().__init__(-28, -28, 56, 56)
         self.node = node
         self._links: list[ConnectionItem] = []
-        self.setBrush(QBrush(QColor("#4C78A8")))
+        self.setBrush(QBrush(QColor(COLOR_MAP[node.kind])))
         self.setPen(QPen(Qt.GlobalColor.white, 2))
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
@@ -114,7 +124,13 @@ class ConnectionItem(QGraphicsPathItem):
         super().__init__()
         self.source = source
         self.target = target
-        self.setPen(QPen(QColor("#666666"), 2))
+
+        pen_args = [QColor("#666666"), 2]
+
+        if "future" in source.node.name or "future" in target.node.name:
+            pen_args += [Qt.DashLine]
+
+        self.setPen(QPen(*pen_args))
         self.setZValue(-1)
         source.add_link(self)
         target.add_link(self)
@@ -217,7 +233,7 @@ def set_network(file: Path):
 
     nodes = []
     connections = []
-    # location = (100, 100)
+    location = [100, 100]
     with Workspace(file) as workspace:
         for group in workspace.groups:
             if isinstance(group, UIJsonGroup):
@@ -230,7 +246,10 @@ def set_network(file: Path):
                     # del group
                 nodes.append(
                     CanvasNode(
-                        group.name, QPointF(100, 100), object_ref=NodeActions(uijson)
+                        group.name,
+                        QPointF(*location),
+                        object_ref=NodeActions(uijson),
+                        kind="group",
                     )
                 )
 
@@ -238,12 +257,26 @@ def set_network(file: Path):
                 delta_y = 100
                 for elem in options.values():
                     if isinstance(elem, ObjectBase):
+                        name = elem.name
+                        if isinstance(elem, Substitute):
+                            sign = 1
+                            kind = "future"
+                            name = name.replace(elem.parent.name, "")
+                            connections.append((elem.parent.name, name))
+                        else:
+                            sign = -1
+                            kind = "object"
+
                         nodes.append(
-                            CanvasNode(elem.name, QPointF(100 - 100, 100 - delta_y))
+                            CanvasNode(
+                                name, QPointF(location[0] + sign * 100, 100), kind=kind
+                            )
                         )
                         delta_y += 100
 
-                        connections.append((group.name, elem.name))
+                        connections.append((group.name, name))
+
+                location[1] += 300
 
     return nodes, connections
 
