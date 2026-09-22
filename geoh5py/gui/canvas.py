@@ -22,6 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import networkx as nx
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import (
@@ -38,7 +39,7 @@ from PyQt5.QtWidgets import (
 )
 
 from geoh5py import Workspace
-from geoh5py.groups import UIJsonGroup
+from geoh5py.groups import RootGroup, UIJsonGroup
 from geoh5py.gui.ui_interpreter import edit_ui_json
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.entity import Substitute
@@ -229,54 +230,68 @@ class NodeActions:
         pass
 
 
+def get_tree_depth(entity: ObjectBase, depth=1) -> int:
+    if isinstance(entity, RootGroup):
+        return depth
+
+    return get_tree_depth(entity.parent, depth + 1)
+
+
 def set_network(file: Path):
 
     nodes = []
     connections = []
-    location = [100, 100]
+    graph = nx.DiGraph()
+
     with Workspace(file) as workspace:
         for group in workspace.groups:
+            actions = None
             if isinstance(group, UIJsonGroup):
                 uijson = UIJson.from_dict(group.options)
+                actions = NodeActions(uijson)
                 if group.name == "Second UI":
                     pass
                     # uijson.set_values(**{"data_mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
                     # uijson.to_ui_json_group(workspace=workspace)
                     # workspace.remove_entity(group)
                     # del group
-                nodes.append(
-                    CanvasNode(
-                        group.name,
-                        QPointF(*location),
-                        object_ref=NodeActions(uijson),
-                        kind="group",
-                    )
-                )
 
                 options = uijson.to_params(workspace=workspace)
-                delta_y = 100
+
                 for elem in options.values():
-                    if isinstance(elem, ObjectBase):
-                        name = elem.name
-                        if isinstance(elem, Substitute):
-                            sign = 1
-                            kind = "future"
-                            name = name.replace(elem.parent.name, "")
-                            connections.append((elem.parent.name, name))
-                        else:
-                            sign = -1
-                            kind = "object"
+                    if not isinstance(elem, ObjectBase):
+                        continue
 
-                        nodes.append(
-                            CanvasNode(
-                                name, QPointF(location[0] + sign * 100, 100), kind=kind
-                            )
-                        )
-                        delta_y += 100
+                    name = elem.name
+                    if isinstance(elem, Substitute):
+                        kind = "future"
+                        name = name.replace(elem.parent.name, "")
+                        connections.append((elem.parent.name, name))
+                    else:
+                        kind = "object"
+                        if ("Workspace", name) not in connections:
+                            connections.append(("Workspace", name))
 
-                        connections.append((group.name, name))
+                    nodes.append(CanvasNode(name, QPointF(100, 100), kind=kind))
+                    connections.append((name, group.name))
 
-                location[1] += 300
+            nodes.append(
+                CanvasNode(
+                    group.name,
+                    QPointF(100, 100),
+                    object_ref=actions,
+                    kind="group",
+                )
+            )
+
+        graph.add_edges_from(connections)
+
+        # Re-order nodes to ensure that hiarchy of operations is respected
+        levels = dict.fromkeys(range(len(nodes)), 0)
+        for node in nodes:
+            depth = nx.shortest_path_length(graph, "Workspace", node.name)
+            levels[depth] += 1
+            node.position = QPointF(depth * 200, levels[depth] * 100)
 
     return nodes, connections
 
