@@ -249,12 +249,12 @@ def set_network(file: Path):
             if isinstance(group, UIJsonGroup):
                 uijson = UIJson.from_dict(group.options)
                 actions = NodeActions(uijson)
-                if group.name == "Second UI":
-                    pass
-                    # uijson.set_values(**{"data_mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
-                    # uijson.to_ui_json_group(workspace=workspace)
-                    # workspace.remove_entity(group)
-                    # del group
+
+                # if group.name == "Second UI":
+                #     uijson.set_values(**{"data_mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
+                #     uijson.to_ui_json_group(workspace=workspace)
+                #     workspace.remove_entity(group)
+                #     del group
 
                 options = uijson.to_params(workspace=workspace)
 
@@ -269,11 +269,14 @@ def set_network(file: Path):
                         connections.append((elem.parent.name, name))
                     else:
                         kind = "object"
-                        if ("Workspace", name) not in connections:
-                            connections.append(("Workspace", name))
+                        if (elem.parent.name, name) not in connections:
+                            connections.append((elem.parent.name, name))
 
                     nodes.append(CanvasNode(name, QPointF(100, 100), kind=kind))
                     connections.append((name, group.name))
+
+            elif not isinstance(group, RootGroup):
+                connections.append((group.parent.name, group.name))
 
             nodes.append(
                 CanvasNode(
@@ -289,7 +292,12 @@ def set_network(file: Path):
         # Re-order nodes to ensure that hiarchy of operations is respected
         levels = dict.fromkeys(range(len(nodes)), 0)
         for node in nodes:
-            depth = nx.shortest_path_length(graph, "Workspace", node.name)
+            depth = max(
+                [
+                    len(path)
+                    for path in nx.all_simple_paths(graph, "Workspace", node.name)
+                ]
+            )
             levels[depth] += 1
             node.position = QPointF(depth * 200, levels[depth] * 100)
 
