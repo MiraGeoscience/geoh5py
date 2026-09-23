@@ -24,7 +24,10 @@ from pathlib import Path
 from typing import Any
 from warnings import warn
 
+import numpy as np
+
 from .data import Data
+from .data_association_enum import DataAssociationEnum
 
 
 class FilenameData(Data):
@@ -105,7 +108,20 @@ class FilenameData(Data):
         return Path(path) / name
 
     def validate_values(self, values: Any | None) -> Any:
-        if not isinstance(values, str | None):
-            raise ValueError("Input 'values' for FilenameData must be of type 'str'.")
+
+        if values is None:
+            return values
+
+        if self.association is DataAssociationEnum.OBJECT and not isinstance(
+            values, str
+        ):
+            raise TypeError("Input 'values' for FilenameData must be of type 'str'.")
+
+        elif self.association is DataAssociationEnum.VERTEX and not (
+            isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.flexible)
+        ):
+            raise TypeError(
+                "Input 'values' for FilenameData must be of type 'np.ndarray' with string dtype."
+            )
 
         return values
