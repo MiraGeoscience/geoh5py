@@ -46,6 +46,8 @@ class FilenameData(Data):
         public: bool = False,
         **kwargs,
     ):
+        self._file_bytes = None
+
         super().__init__(values=values, name=name, public=public, **kwargs)
 
         self.file_bytes = file_bytes
@@ -55,11 +57,7 @@ class FilenameData(Data):
         """
         Binary blob value representation of a file.
         """
-        if (
-            self.values is not None
-            and self.on_file
-            and getattr(self, "_file_bytes", None) is None
-        ):
+        if self.values is not None and self.on_file and self._file_bytes is None:
             file_bytes = {}
             for value in self.values:
                 byte_data = self.workspace.fetch_file_object(self.uid, value)
@@ -86,14 +84,15 @@ class FilenameData(Data):
                     "Input 'file_bytes' for FilenameData must be a list of "
                     "elements of type 'bytes'."
                 )
-            self._file_bytes = value
 
         elif value is not None:
             if not isinstance(value, bytes):
                 raise TypeError(
                     "Input 'file_bytes' for FilenameData must be of type 'bytes'."
                 )
-            self._file_bytes = {self.values[0]: value}
+            value = {self.values[0]: value}
+
+        self._file_bytes = value
 
         if self._file_bytes is not None and self.on_file:
             self.workspace.update_attribute(self, "values")
