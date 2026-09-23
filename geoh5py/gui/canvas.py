@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import networkx as nx
+import numpy as np
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import (
@@ -39,6 +40,7 @@ from PyQt5.QtWidgets import (
 )
 
 from geoh5py import Workspace
+from geoh5py.data import Data
 from geoh5py.groups import RootGroup, UIJsonGroup
 from geoh5py.gui.ui_interpreter import edit_ui_json
 from geoh5py.objects import ObjectBase
@@ -93,10 +95,19 @@ COLOR_MAP = {
     "future": QColor("#72B7B2"),
 }
 
+SIZE_MAP = {
+    "object": (32, 32),
+    "data": (16, 16),
+    "group": (64, 64),
+    "future": (32, 32),
+}
+
 
 class NodeItem(QGraphicsEllipseItem):
     def __init__(self, node: CanvasNode):
-        super().__init__(-28, -28, 56, 56)
+
+        size = SIZE_MAP[node.kind]
+        super().__init__(-size[0] / 2, -size[0] / 2, *size)
         self.node = node
         self._links: list[ConnectionItem] = []
         self.setBrush(QBrush(QColor(COLOR_MAP[node.kind])))
@@ -108,7 +119,7 @@ class NodeItem(QGraphicsEllipseItem):
 
         label = QGraphicsTextItem(node.name, self)
         label.setDefaultTextColor(Qt.GlobalColor.white)
-        label.setPos(-label.boundingRect().width() / 2, 34)
+        label.setPos(-label.boundingRect().width() / 2, size[0] / 2)
 
     def add_link(self, link: ConnectionItem):
         self._links.append(link)
@@ -239,7 +250,7 @@ def get_tree_depth(entity: ObjectBase, depth=1) -> int:
 
 def set_network(file: Path):
 
-    nodes = []
+    nodes = {}
     connections = []
     graph = nx.DiGraph()
 
@@ -259,7 +270,7 @@ def set_network(file: Path):
                 options = uijson.to_params(workspace=workspace)
 
                 for elem in options.values():
-                    if not isinstance(elem, ObjectBase):
+                    if not isinstance(elem, ObjectBase | Data):
                         continue
 
                     name = elem.name
@@ -267,41 +278,82 @@ def set_network(file: Path):
                         kind = "future"
                         name = name.replace(elem.parent.name, "")
                         connections.append((elem.parent.name, name))
-                    else:
+                    elif isinstance(elem, ObjectBase):
                         kind = "object"
                         if (elem.parent.name, name) not in connections:
                             connections.append((elem.parent.name, name))
+                    else:
+                        kind = "data"
+                        if (elem.parent.name, name) not in connections:
+                            connections.append((elem.parent.name, name))
 
-                    nodes.append(CanvasNode(name, QPointF(100, 100), kind=kind))
+                    nodes[elem] = CanvasNode(name, QPointF(0, 0), kind=kind)
                     connections.append((name, group.name))
 
             elif not isinstance(group, RootGroup):
                 connections.append((group.parent.name, group.name))
 
-            nodes.append(
-                CanvasNode(
-                    group.name,
-                    QPointF(100, 100),
-                    object_ref=actions,
-                    kind="group",
-                )
+            nodes[group] = CanvasNode(
+                group.name,
+                QPointF(0, 0),
+                object_ref=actions,
+                kind="group",
             )
 
         graph.add_edges_from(connections)
 
         # Re-order nodes to ensure that hiarchy of operations is respected
         levels = dict.fromkeys(range(len(nodes)), 0)
-        for node in nodes:
+        planets = {}
+        satellites = {}
+        max_depth = 0
+        for entity, node in nodes.items():
             depth = max(
                 [
                     len(path)
                     for path in nx.all_simple_paths(graph, "Workspace", node.name)
                 ]
             )
+            max_depth = max(depth, max_depth)
             levels[depth] += 1
-            node.position = QPointF(depth * 200, levels[depth] * 100)
 
-    return nodes, connections
+            position = depth * 200, levels[depth] * 100
+
+            if isinstance(entity, ObjectBase):
+                planets[entity.parent] = planets.get(entity.parent, []) + [entity]
+            elif isinstance(entity, Data):
+                satellites[entity.parent] = satellites.get(entity.parent, []) + [entity]
+
+            node.position = QPointF(*position)
+
+        for parent, children in planets.items():
+            angles = np.linspace(np.pi / 4, -np.pi / 4, len(children))
+
+            depth = max(
+                [
+                    len(path)
+                    for path in nx.all_simple_paths(
+                        graph, "Workspace", nodes[parent].name
+                    )
+                ]
+            )
+
+            radius = 50 * (max_depth - depth)
+            for angle, child in zip(angles, children):
+                nodes[child].position = nodes[parent].position + QPointF(
+                    np.cos(angle) * radius, np.sin(angle) * radius
+                )
+
+        for parent, children in satellites.items():
+            angles = np.linspace(-np.pi / 4, np.pi / 4, len(children))
+
+            radius = 100
+            for angle, child in zip(angles, children):
+                nodes[child].position = nodes[parent].position + QPointF(
+                    np.cos(angle) * radius, np.sin(angle) * radius
+                )
+
+    return list(nodes.values()), connections
 
 
 if __name__ == "__main__":
@@ -310,7 +362,7 @@ if __name__ == "__main__":
     nodes, connections = set_network(file)
 
     # nodes = [
-    #     CanvasNode("Object A", QPointF(100, 100), object_ref=NodeActions()),
+    #     CanvasNode("Object A", QPointF(0, 0), object_ref=NodeActions()),
     #     CanvasNode("Object B", QPointF(300, 200), object_ref=NodeActions()),
     #     CanvasNode("Object C", QPointF(500, 100), object_ref=NodeActions()),
     # ]
