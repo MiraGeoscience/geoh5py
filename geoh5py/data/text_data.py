@@ -38,7 +38,9 @@ def text_formating(values: None | np.ndarray | str) -> ndarray | None:
     :return: The formatted values.
     """
 
-    if values is None or isinstance(values[0], bytes):
+    if values is None or (
+        isinstance(values, np.ndarray) and np.issubdtype(values.dtype, object)
+    ):
         return values
 
     return np.char.encode(values, encoding="utf-8").astype("O")
