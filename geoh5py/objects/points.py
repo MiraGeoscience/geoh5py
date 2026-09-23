@@ -68,10 +68,10 @@ class Points(ObjectBase):
         """
         validated = {}
         for in_name, blob in file.items():
-            file_name, blob = self._validate_file_data(blob)
+            _, blob = self._validate_file_data(blob)
 
             in_name = get_unique_name_from_entities(
-                file_name or in_name, self.children, key="values", types=FilenameData
+                in_name, self.children, key="values", types=FilenameData
             )
             validated[in_name] = blob
 
