@@ -21,7 +21,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from warnings import warn
 
 import numpy as np
@@ -41,7 +41,7 @@ class FilenameData(Data):
     def __init__(
         self,
         values: str | None = None,
-        file_bytes: bytes | None = None,
+        file_bytes: dict[str, bytes] | None = None,
         name="GeoImageMesh_Image",
         public: bool = False,
         **kwargs,
@@ -60,23 +60,42 @@ class FilenameData(Data):
             and self.on_file
             and getattr(self, "_file_bytes", None) is None
         ):
-            self._file_bytes = self.workspace.fetch_file_object(self.uid, self.values)
+            file_bytes = {}
+            for value in self.values:
+                byte_data = self.workspace.fetch_file_object(self.uid, value)
+
+                if byte_data is not None:
+                    file_bytes[value] = self.workspace.fetch_file_object(
+                        self.uid, value
+                    )
+
+            self._file_bytes = cast(dict[str, bytes], file_bytes)
 
         return self._file_bytes
 
     @file_bytes.setter
-    def file_bytes(self, value: bytes | None):
+    def file_bytes(self, value: bytes | dict[str, bytes] | None):
         if value is not None and self.values is None:
             raise AttributeError("FilenameData requires the 'values' to be set.")
 
-        if not isinstance(value, bytes | None):
-            raise TypeError(
-                "Input 'file_bytes' for FilenameData must be of type 'bytes'."
-            )
+        if isinstance(value, dict):
+            if not all(
+                isinstance(k, str) and isinstance(v, bytes) for k, v in value.items()
+            ):
+                raise TypeError(
+                    "Input 'file_bytes' for FilenameData must be a list of "
+                    "elements of type 'bytes'."
+                )
+            self._file_bytes = value
 
-        self._file_bytes = value
+        elif value is not None:
+            if not isinstance(value, bytes):
+                raise TypeError(
+                    "Input 'file_bytes' for FilenameData must be of type 'bytes'."
+                )
+            self._file_bytes = {self.values[0]: value}
 
-        if self.on_file:
+        if self._file_bytes is not None and self.on_file:
             self.workspace.update_attribute(self, "values")
 
     @property
@@ -88,7 +107,7 @@ class FilenameData(Data):
 
         return self.values
 
-    def save_file(self, path: str | Path = Path(), name=None) -> Path:
+    def save_file(self, path: str | Path = Path()) -> Path:
         """
         Save the file to disk.
 
@@ -98,30 +117,41 @@ class FilenameData(Data):
         :return: Path to the saved file.
         """
         Path(path).mkdir(exist_ok=True)
-        if name is None:
-            name = getattr(self, "values", "image.tiff")
 
         if self.file_bytes is not None:
-            with open(Path(path) / name, "wb") as raw_binary:
-                raw_binary.write(self.file_bytes)
+            for name, file_bytes in self.file_bytes.items():
+                with open(Path(path) / name, "wb") as raw_binary:
+                    raw_binary.write(file_bytes)
 
-        return Path(path) / name
+        return Path(path)
 
-    def validate_values(self, values: Any | None) -> Any:
+    def validate_values(self, values: Any | None) -> np.ndarray[str]:
 
         if values is None:
             return values
 
-        if self.association is DataAssociationEnum.OBJECT and not isinstance(
-            values, str
-        ):
-            raise TypeError("Input 'values' for FilenameData must be of type 'str'.")
+        if isinstance(values, str):
+            values = np.asarray(values, dtype=str).reshape((1,))
 
-        elif self.association is DataAssociationEnum.VERTEX and not (
+        if not (
             isinstance(values, np.ndarray) and np.issubdtype(values.dtype, np.flexible)
         ):
             raise TypeError(
                 "Input 'values' for FilenameData must be of type 'np.ndarray' with string dtype."
+            )
+
+        if self.association is DataAssociationEnum.OBJECT and len(values) != 1:
+            raise ValueError(
+                "Input 'values' for FilenameData with OBJECT association must be a single string."
+            )
+
+        if (
+            self.association is DataAssociationEnum.VERTEX
+            and len(values) != self.parent.n_vertices
+        ):
+            raise ValueError(
+                "Input 'values' for FilenameData with VERTEX association must have the "
+                "same length as the number of vertices in the parent object."
             )
 
         return values

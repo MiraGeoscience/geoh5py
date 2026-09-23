@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Curve
+from geoh5py.objects import Curve, Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -51,18 +51,16 @@ def test_add_file(tmp_path: Path):
         assert file_data.n_values == 1, "Object association should have 1 value."
         # Rename the file locally and write back out
         new_path = tmp_path / r"temp"
-        file_data.save_file(path=new_path, name="numpy_array.dat")
-        assert (new_path / "numpy_array.dat").is_file(), (
-            f"Input path '{new_path / 'numpy_array.dat'}' does not exist."
-        )
+        file_data.save_file(path=new_path)
+        assert (new_path / "numpy_array.txt").is_file()
 
         file_data.save_file(path=new_path)
         np.testing.assert_array_equal(
             np.loadtxt(new_path / "numpy_array.txt"),
-            np.loadtxt(BytesIO(file_data.file_bytes)),
+            np.loadtxt(BytesIO(file_data.file_bytes["numpy_array.txt"])),
             err_msg="Loaded and stored bytes array not the same",
         )
-        file_data.file_bytes = b"abc"
+        file_data.file_bytes["numpy_array.txt"] = b"abc"
         obj.copy(parent=workspace_copy)
         workspace_copy.close()
         workspace_copy.open()
@@ -100,3 +98,20 @@ def test_add_file_increment_names(tmp_path: Path):
         names.append(file_data.values)
 
     assert names == ["test.txt", "test(1).txt", "test(2).txt"]
+
+
+def test_add_file_vertices(tmp_path: Path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        points = Points.create(workspace, vertices=np.random.rand(10, 3))
+
+        xyz = np.random.randn(32)
+        np.savetxt(tmp_path / r"numpy_array.txt", xyz)
+        file_name = "numpy_array.txt"
+
+        file_data = points.add_file_vertices(
+            dict.fromkeys("abc", tmp_path / file_name),
+            indices=[1, 3, 5],
+            name="test_file_data",
+        )
+
+        assert len(file_data.file_bytes) == 3, "File bytes should have 3 entries."

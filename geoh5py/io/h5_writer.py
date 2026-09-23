@@ -42,6 +42,7 @@ from ..data import (
     TextureData,
 )
 from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
+from ..data.text_data import text_formating
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
 from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
@@ -982,20 +983,19 @@ class H5Writer:
 
         entity_handle.create_dataset(
             "Data",
-            data=entity.values,
-            dtype=h5py.special_dtype(vlen=str),
-            shape=(1,),
+            data=text_formating(entity.values),
         )
 
-        if entity.values in entity_handle:
-            del entity_handle[entity.values]
-            entity.workspace.repack = True
+        for elem, blob in entity.file_bytes.items():
+            if elem in entity_handle:
+                del entity_handle[elem]
+                entity.workspace.repack = True
 
-        entity_handle.create_dataset(
-            entity.values,
-            data=np.asarray(np.void(entity.file_bytes[:])),
-            shape=(1,),
-        )
+            entity_handle.create_dataset(
+                elem,
+                data=np.asarray(np.void(blob[:])),
+                shape=(1,),
+            )
 
     @staticmethod
     def write_properties(

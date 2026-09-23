@@ -116,13 +116,18 @@ class EntityContainer(Entity):
                 "Comments": self.comments.values["Comments"] + [comment_dict]
             }
 
-    def add_file(self, file: str | Path | bytes | BytesIO, name: str = "filename.dat"):
+    def _validate_file_data(
+        self, file: str | Path | bytes | BytesIO
+    ) -> tuple[str | None, bytes]:
         """
-        Add a file to the object or group stored as bytes on a FilenameData
+        Validate the input file data and return the file name and blob.
 
-        :param file: File name with path to import.
-        :param name: Name of the file in the workspace.
+        :param file: Either a file path (str or Path), bytes, or BytesIO object.
+
+        :return: A tuple containing the file name (or None if not applicable)
+            and the file data as bytes.
         """
+        name = None
         if isinstance(file, str):
             file = Path(file)
 
@@ -146,8 +151,19 @@ class EntityContainer(Entity):
                 f"Input file must be a path or BytesIO object, not {type(file)}"
             )
 
+        return name, blob
+
+    def add_file(self, file: str | Path | bytes | BytesIO, name: str = "filename.dat"):
+        """
+        Add a file to the object or group stored as bytes on a FilenameData
+
+        :param file: File name with path to import.
+        :param name: Name of the file in the workspace.
+        """
+        file_name, blob = self._validate_file_data(file)
+
         name = get_unique_name_from_entities(
-            name, self.children, key="values", types=FilenameData
+            file_name or name, self.children, key="values", types=FilenameData
         )
 
         attributes = {
