@@ -248,6 +248,35 @@ class H5Reader:
         return children
 
     @classmethod
+    def fetch_concatenated_file_bytes(
+        cls,
+        file: str | h5py.File,
+        uid: uuid.UUID,
+        label: str,
+    ) -> tuple | None:
+        """
+        Get binary values from a concatenated group.
+
+        :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param uid: Unique identifier
+        :param label: Value identifier for the attribute requested.
+
+        :return children: [{uuid: type}, ... ]
+            List of dictionaries for the children uid and type
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file)[0]
+            group = h5file[name]["Groups"][as_str_if_uuid(uid)]["Concatenated Data"]
+
+            try:
+                bytes_value = group["Data"]["Binary"][label][()].tobytes()
+
+            except KeyError:
+                bytes_value = None
+
+        return bytes_value
+
+    @classmethod
     def fetch_concatenated_values(
         cls,
         file: str | h5py.File,
@@ -502,7 +531,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_file_object(
+    def fetch_file_bytes(
         cls, file: str | h5py.File, uid: uuid.UUID, file_name: str
     ) -> bytes | None:
         """

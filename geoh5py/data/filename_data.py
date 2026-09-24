@@ -60,12 +60,10 @@ class FilenameData(Data):
         if self.values is not None and self.on_file and self._file_bytes is None:
             file_bytes = {}
             for value in self.values:
-                byte_data = self.workspace.fetch_file_object(self.uid, value)
+                byte_data = self.workspace.fetch_file_object(self, value)
 
                 if byte_data is not None:
-                    file_bytes[value] = self.workspace.fetch_file_object(
-                        self.uid, value
-                    )
+                    file_bytes[value] = byte_data
 
             self._file_bytes = cast(dict[str, bytes], file_bytes)
 

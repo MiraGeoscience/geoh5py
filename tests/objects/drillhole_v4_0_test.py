@@ -30,6 +30,7 @@ import string
 import numpy as np
 import pytest
 from h5py import special_dtype
+from PIL import Image
 
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
@@ -1167,15 +1168,31 @@ def test_add_file_vertices(tmp_path):
 
     _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="1.0")
 
+    xx, yy = np.meshgrid(np.arange(128), np.arange(128))
+    diagonal = ((xx + yy) / (128 + 128) * 255).astype("uint8")
+    image_data = np.stack([diagonal, diagonal, diagonal], axis=-1)
+    image = Image.fromarray(image_data, "RGB")
+    image_path = tmp_path / "test_tagged.tif"
+    image.save(image_path, exif=image.getexif())
+
     with workspace.open():
         drillhole = workspace.get_entity("well")[0]
 
-        xyz = np.random.randn(32)
-        np.savetxt(tmp_path / r"numpy_array.txt", xyz)
-        file_name = "numpy_array.txt"
-
         drillhole.add_file_vertices(
-            dict.fromkeys("abc", tmp_path / file_name),
-            indices=[1, 3, 5],
+            dict.fromkeys(["a.tif", "b.tif", "c.tif"], image_path),
+            np.vstack(
+                [
+                    [1, 10],
+                    [20, 30],
+                    [40, 50],
+                ]
+            ),
             name="test_file_data",
         )
+
+    with workspace.open():
+        drillhole = workspace.get_entity("well")[0]
+        file_data = drillhole.get_data("File")[0]
+        assert len(file_data.file_bytes) == 3
+        assert len(file_data.values) == 3
+        assert np.all(file_data.values == ["a.tif", "b.tif", "c.tif"])
