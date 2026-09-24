@@ -250,9 +250,7 @@ class TextureData(Data):
         The texture image associated with the vertices.
         """
         if self._texture_image is None and self.on_file:
-            self._texture_image = self.workspace.fetch_file_object(
-                self.uid, "TextureImage"
-            )
+            self._texture_image = self.workspace.fetch_file_object(self, "TextureImage")
 
         return self._texture_image
 
