@@ -1160,3 +1160,22 @@ def test_surveys_info(tmp_path):
     with workspace.open():
         dh = workspace.get_entity("Info Drillhole")[0]
         assert len(dh.surveys) == 5
+
+
+def test_add_file_vertices(tmp_path):
+    h5file_path = tmp_path / r"test_append_data_to_tables.geoh5"
+
+    _, workspace = create_drillholes(h5file_path, version=2.0, ga_version="1.0")
+
+    with workspace.open():
+        drillhole = workspace.get_entity("well")[0]
+
+        xyz = np.random.randn(32)
+        np.savetxt(tmp_path / r"numpy_array.txt", xyz)
+        file_name = "numpy_array.txt"
+
+        drillhole.add_file_vertices(
+            dict.fromkeys("abc", tmp_path / file_name),
+            indices=[1, 3, 5],
+            name="test_file_data",
+        )
