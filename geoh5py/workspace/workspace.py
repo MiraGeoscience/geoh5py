@@ -1540,6 +1540,14 @@ class Workspace(AbstractContextManager):
 
             self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
 
+    def update_binary_attribute(self, entity: ConcatenatedData):
+        """
+        Update the binary attribute of a ConcatenatedData entity in geoh5.
+
+        :param entity: ConcatenatedData entity to be updated.
+        """
+        self._io_call(H5Writer.update_binary_entries, entity, mode="r+")
+
     def validate_data_type(self, attributes: dict, values) -> DataType:
         """
         Find or create a data type from input dictionary.

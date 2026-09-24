@@ -861,6 +861,43 @@ class H5Writer:
                 entity.workspace.repack = True
 
     @staticmethod
+    def update_binary_entries(file, entity):
+        """
+        Update the binary entries of a :obj:`~geoh5py.shared.entity.Entity`.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity.parent.parent)
+
+            if entity_handle is None or "Concatenated Data" not in entity_handle:
+                return
+
+            entity_handle = entity_handle["Concatenated Data"]["Data"]
+
+            if "Binary" not in entity_handle:
+                entity_handle.create_group("Binary", track_order=True)
+
+            entity_handle = entity_handle["Binary"]
+
+            for elem, blob in entity.file_bytes.items():
+                uuid_name = (
+                    as_str_if_uuid(entity.parent.uid)
+                    + as_str_if_uuid(entity.uid)
+                    + elem
+                )
+                if uuid_name in entity_handle:
+                    del entity_handle[uuid_name]
+                    entity.workspace.repack = True
+
+                entity_handle.create_dataset(
+                    uuid_name,
+                    data=np.asarray(np.void(blob[:])),
+                    shape=(1,),
+                )
+
+    @staticmethod
     def write_entity(
         file: str | h5py.File,
         entity,

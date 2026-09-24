@@ -149,6 +149,9 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
             self.update_array_attribute(child, "surveys")
             self.update_array_attribute(child, "trace")
 
+        if hasattr(child, "file_bytes"):
+            self.workspace.update_binary_attribute(child)
+
         child.on_file = True
 
     @property

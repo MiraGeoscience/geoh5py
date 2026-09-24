@@ -143,7 +143,8 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
             )
 
         # set a specific nan value if text
-        if attributes.get("type") == "TEXT":
+        primitive_type = attributes.get("type") or attributes.get("primitive_type")
+        if primitive_type in ["FILENAME", "TEXT"]:
             nan_value = ""
         else:
             nan_value = np.nan
