@@ -109,7 +109,6 @@ class FilenameData(Data):
         Save the file to disk.
 
         :param path: Directory to save the file to.
-        :param name: Name given to the file.
 
         :return: Path to the saved file.
         """
