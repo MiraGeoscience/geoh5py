@@ -80,7 +80,9 @@ class Points(ObjectBase):
                 "The number of indices must match the number of files provided."
             )
 
-        values = np.empty(self.n_vertices, dtype=str)
+        values = np.full(
+            self.n_vertices, "", dtype=f"<U{max(map(len, validated), default=1)}"
+        )
         values[indices] = list(validated)
 
         attributes = {

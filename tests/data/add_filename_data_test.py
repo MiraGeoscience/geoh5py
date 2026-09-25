@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+import random
+import string
 from io import BytesIO
 from pathlib import Path
 
@@ -104,12 +106,18 @@ def test_add_file_vertices(tmp_path: Path):
     with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         points = Points.create(workspace, vertices=np.random.rand(10, 3))
 
-        xyz = np.random.randn(32)
-        np.savetxt(tmp_path / r"numpy_array.txt", xyz)
-        file_name = "numpy_array.txt"
+        file_dict = {}
+        for _ in range(3):
+            file_name = (
+                tmp_path
+                / f"{''.join(random.choices(string.ascii_letters, k=random.randint(5, 25)))}.txt"
+            )
+            xyz = np.random.randn(32)
+            np.savetxt(file_name, xyz)
+            file_dict[file_name.name] = file_name
 
         file_data = points.add_file_vertices(
-            dict.fromkeys("abc", tmp_path / file_name),
+            file_dict,
             indices=[1, 3, 5],
             name="test_file_data",
         )
