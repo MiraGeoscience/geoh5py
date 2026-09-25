@@ -79,8 +79,8 @@ class FilenameData(Data):
                 isinstance(k, str) and isinstance(v, bytes) for k, v in value.items()
             ):
                 raise TypeError(
-                    "Input 'file_bytes' for FilenameData must be a list of "
-                    "elements of type 'bytes'."
+                    "Input 'file_bytes' for FilenameData must be a dict of "
+                    "string keys and bytes values."
                 )
 
         elif value is not None:
