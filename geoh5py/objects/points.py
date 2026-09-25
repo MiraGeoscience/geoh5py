@@ -22,10 +22,14 @@ from __future__ import annotations
 
 import uuid
 import warnings
+from io import BytesIO
+from pathlib import Path
 
 import numpy as np
 
-from ..data import DataAssociationEnum
+from geoh5py.shared.utils import get_unique_name_from_entities
+
+from ..data import DataAssociationEnum, FilenameData
 from .object_base import ObjectBase
 
 
@@ -49,6 +53,53 @@ class Points(ObjectBase):
         self._vertices: np.ndarray = self.validate_vertices(vertices)
 
         super().__init__(**kwargs)
+
+    def add_file_vertices(
+        self,
+        file: dict[str, str | Path | bytes | BytesIO],
+        indices: list[int] | np.ndarray,
+        name: str = "File",
+    ) -> FilenameData:
+        """
+        Add a files associated with the vertices, stored as bytes on a FilenameData
+
+        :param file: List of name with path to import.
+        :param name: Name of the file in the workspace.
+        """
+        validated = {}
+        for in_name, blob in file.items():
+            _, blob = self._validate_file_data(blob)
+
+            in_name = get_unique_name_from_entities(
+                in_name, self.children, key="values", types=FilenameData
+            )
+            validated[in_name] = blob
+
+        if len(indices) != len(validated):
+            raise ValueError(
+                "The number of indices must match the number of files provided."
+            )
+
+        values = np.full(
+            self.n_vertices, "", dtype=f"<U{max(map(len, validated), default=1)}"
+        )
+        values[indices] = list(validated)
+
+        attributes = {
+            "name": name,
+            "file_bytes": validated,
+            "association": "VERTEX",
+            "parent": self,
+            "values": values,
+            "public": True,
+        }
+        entity_type = {"name": name, "primitive_type": "FILENAME"}
+
+        file_data = self.workspace.create_entity(
+            None, entity=attributes, entity_type=entity_type
+        )
+
+        return file_data
 
     def copy(
         self,

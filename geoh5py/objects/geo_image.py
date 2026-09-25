@@ -346,8 +346,11 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         if self.image_data is not None and self.image_data.file_bytes is not None:
             old_limit = Image.MAX_IMAGE_PIXELS
             Image.MAX_IMAGE_PIXELS = None
+            if not self.image_data.file_bytes:
+                return None
+            file_bytes = list(self.image_data.file_bytes.values())[0]
             try:
-                im = Image.open(BytesIO(self.image_data.file_bytes))
+                im = Image.open(BytesIO(file_bytes))
             finally:
                 Image.MAX_IMAGE_PIXELS = old_limit
             return im

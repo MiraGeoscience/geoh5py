@@ -239,7 +239,9 @@ def test_uijson_to_file_data(tmp_path):
         assert len(pts.children) == 1
         assert pts.children[0].name == "File Data.ui.json"
 
-        json_string = pts.children[0].file_bytes.decode(encoding="utf-8")
+        json_string = list(pts.children[0].file_bytes.values())[0].decode(
+            encoding="utf-8"
+        )
         data = json.loads(json_string)
 
         assert data["my_string_parameter"]["value"] == "hello world"

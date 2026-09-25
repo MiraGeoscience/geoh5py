@@ -73,6 +73,7 @@ from geoh5py.shared.utils import (
     DEFAULT_PAGE_SIZE,
     ClassIdentifierEnum,
     as_str_if_utf8_bytes,
+    as_str_if_uuid,
     clear_array_attributes,
     dict_mapper,
     get_attributes,
@@ -962,14 +963,22 @@ class Workspace(AbstractContextManager):
 
         return self._io_call(H5Reader.fetch_values, entity.uid)
 
-    def fetch_file_object(self, uid: uuid.UUID, file_name: str) -> bytes | None:
+    def fetch_file_object(self, entity: Entity, file_name: str) -> bytes | None:
         """
         Fetch an image from file name.
         :param uid: Unique identifier of target data object.
         :param file_name: Name of the file to fetch.
         :return: Array of values.
         """
-        return self._io_call(H5Reader.fetch_file_object, uid, file_name)
+        if isinstance(entity, (ConcatenatedObject | ConcatenatedData)):
+            uuid_name = as_str_if_uuid(entity.parent.uid) + as_str_if_uuid(entity.uid)
+            return self._io_call(
+                H5Reader.fetch_concatenated_file_bytes,
+                entity.concatenator.uid,
+                uuid_name + file_name,
+            )
+
+        return self._io_call(H5Reader.fetch_file_bytes, entity.uid, file_name)
 
     def fetch_compressed_textures(self, uid: uuid.UUID) -> dict | None:
         """
@@ -1539,6 +1548,14 @@ class Workspace(AbstractContextManager):
                 )
 
             self._io_call(H5Writer.clear_stats_cache, entity, mode="r+")
+
+    def update_binary_attribute(self, entity: ConcatenatedData):
+        """
+        Update the binary attribute of a ConcatenatedData entity in geoh5.
+
+        :param entity: ConcatenatedData entity to be updated.
+        """
+        self._io_call(H5Writer.update_binary_entries, entity, mode="r+")
 
     def validate_data_type(self, attributes: dict, values) -> DataType:
         """
