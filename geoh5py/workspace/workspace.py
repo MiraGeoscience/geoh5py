@@ -638,13 +638,19 @@ class Workspace(AbstractContextManager):
             if isinstance(child, dict):
                 base_type = name_or_uid_to_type(child.get("type", None))
                 concrete = str2uuid(child.get("value", None))
-                concrete = None if len(concrete) == 0 else self.get_entity(concrete)[0]
+                concrete = self.get_entity(concrete)[0] if concrete else None
+
+                if concrete:
+                    name = f"Child {count}\n({base_type.__name__})"
+                else:
+                    name = f"Future {count}\n({base_type.__name__})"
+
                 promoted_children[uid] = Substitute.build(
                     parent=parent,
                     uid=uid,
                     base_type=base_type,
                     value=concrete,
-                    name=parent.name + f"_future_{count}",
+                    name=name,
                 )
             elif isinstance(child, Substitute):
                 promoted_children[uid] = child

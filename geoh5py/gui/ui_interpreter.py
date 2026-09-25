@@ -135,6 +135,10 @@ class FormWidget(QWidget):
         elif isinstance(self.form, GroupForm):
             editor = QComboBox()
             group_type = getattr(self.form, "group_type", None)
+
+            if isinstance(group_type, list):
+                group_type = tuple(group_type)
+
             editor.addItems(
                 [obj.name for obj in workspace.groups if isinstance(obj, group_type)]
             )

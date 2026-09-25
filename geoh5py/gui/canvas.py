@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from shutil import copy
 
 import networkx as nx
 import numpy as np
@@ -356,16 +357,30 @@ def set_network(file: Path):
     return list(nodes.values()), connections
 
 
-if __name__ == "__main__":
-    file = r"C:\Users\dominiquef\Documents\tests\prototype_workflows\workload.geoh5"
-
-    nodes, connections = set_network(file)
-
-    # nodes = [
-    #     CanvasNode("Object A", QPointF(0, 0), object_ref=NodeActions()),
-    #     CanvasNode("Object B", QPointF(300, 200), object_ref=NodeActions()),
-    #     CanvasNode("Object C", QPointF(500, 100), object_ref=NodeActions()),
-    # ]
-    # connections = [("Object A", "Object B"), ("Object B", "Object C")]
+def main(geoh5: Path):
+    nodes, connections = set_network(geoh5)
     app, window = show_canvas(nodes, connections)
     app.exec()
+
+
+def mock_linkage(geoh5):
+    with Workspace(geoh5) as workspace:
+        group = workspace.get_entity("Weight of Evidence")[0]
+        uijson = UIJson.from_dict(group.options)
+        uijson.set_values(**{"mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
+        uijson.to_ui_json_group(workspace=workspace)
+        workspace.remove_entity(group)
+        del group
+
+
+if __name__ == "__main__":
+    file = r"C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{e470a76e-568a-4654-b8da-a763415c6c33}/Python/Files/GA-WorkflowPanel_0925-084708.ui.json"
+    # file = sys.argv[1]
+    file_path = Path(file)
+    ui_json = UIJson.read(file_path)
+    working_file = file_path.parent / ui_json.workspace_geoh5.name
+    copy(ui_json.workspace_geoh5, working_file)
+
+    mock_linkage(working_file)
+
+    main(working_file)
