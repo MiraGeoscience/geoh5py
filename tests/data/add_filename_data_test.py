@@ -51,6 +51,12 @@ def test_add_file(tmp_path: Path):
         file_data = obj.add_file(tmp_path / file_name)
         assert file_data.values == file_name, "File_name not properly set."
         assert file_data.n_values == 1, "Object association should have 1 value."
+
+        with pytest.raises(
+            ValueError, match="OBJECT association must be a single string"
+        ):
+            file_data.values = np.asarray(["abc", "def"])
+
         # Rename the file locally and write back out
         new_path = tmp_path / r"temp"
         file_data.save_file(path=new_path)
@@ -123,3 +129,17 @@ def test_add_file_vertices(tmp_path: Path):
         )
 
         assert len(file_data.file_bytes) == 3, "File bytes should have 3 entries."
+
+        with pytest.raises(TypeError, match="string keys and bytes values"):
+            file_data.file_bytes = {1: b"abc"}
+
+        with pytest.raises(TypeError, match="string keys and bytes values"):
+            file_data.file_bytes = {"abc": "abc"}
+
+        with pytest.raises(
+            TypeError, match=r"must be of type 'np.ndarray' with string dtype"
+        ):
+            file_data.values = np.array([1, 2, 3])
+
+        with pytest.raises(ValueError, match=r"must have the same length"):
+            file_data.values = np.asarray(["abc", "def"])
