@@ -25,6 +25,7 @@ from shutil import copy
 
 import networkx as nx
 import numpy as np
+from jupyter_server.gateway import connections
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import (
@@ -46,6 +47,7 @@ from geoh5py.groups import RootGroup, UIJsonGroup
 from geoh5py.gui.ui_interpreter import edit_ui_json
 from geoh5py.objects import ObjectBase
 from geoh5py.shared.entity import Substitute
+from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.ui_json import UIJson
 
 
@@ -170,17 +172,18 @@ class EntityCanvas(QGraphicsScene):
         self, nodes: list[CanvasNode], connections: list[tuple[str, str]], parent=None
     ):
         super().__init__(parent)
-        self._node_items: dict[str, NodeItem] = {}
+        self.node_items: dict[str, NodeItem] = {}
+        self.connections: list[tuple[str, str]] = connections
         self._context_menu_node: CanvasNode | None = None
         for node in nodes:
             item = NodeItem(node)
             self.addItem(item)
-            self._node_items[node.name] = item
+            self.node_items[node.name] = item
 
         for source, target in connections:
-            if source in self._node_items and target in self._node_items:
+            if source in self.node_items and target in self.node_items:
                 self.addItem(
-                    ConnectionItem(self._node_items[source], self._node_items[target])
+                    ConnectionItem(self.node_items[source], self.node_items[target])
                 )
 
     def contextMenuEvent(self, event):
@@ -202,7 +205,7 @@ class EntityCanvas(QGraphicsScene):
         if self._context_menu_node is None:
             return
         try:
-            app, window = self._context_menu_node.execute_function(function_name)
+            app, window = self._context_menu_node.execute_function(function_name, self)
             app.exec()
             self.sub_app = app
             self.sub_window = window
@@ -232,13 +235,49 @@ def show_canvas(nodes: list[CanvasNode], connections: list[tuple[str, str]]):
 
 
 class NodeActions:
-    def __init__(self, entity: UIJson):
+    def __init__(self, entity: UIJsonGroup):
         self.entity = entity
 
-    def edit_options(self):
+    def edit_options(self, *_):
         return edit_ui_json(self.entity)
 
-    def run_from_here(self):
+    def fork_here(self, canvas):
+
+        node_item = canvas.node_items[self.entity.name]
+
+        with fetch_active_workspace(self.entity.workspace) as ws:
+            new_entity = self.entity.copy(parent=ws)
+            new_entity.name = f"{self.entity.name}_future"
+
+            location = canvas.node_items[self.entity.name].node.position + QPointF(
+                0, -200
+            )
+            actions = NodeActions(new_entity)
+
+            node = CanvasNode(
+                new_entity.name,
+                location,
+                object_ref=actions,
+                kind="group",
+            )
+            node_item = NodeItem(node)
+            canvas.addItem(node_item)
+            canvas.node_items[new_entity.name] = node_item
+
+        connections = [
+            values[0] for values in canvas.connections if values[1] == self.entity.name
+        ]
+        for source in connections:
+            canvas.addItem(
+                ConnectionItem(
+                    canvas.node_items[source], canvas.node_items[new_entity.name]
+                )
+            )
+            canvas.connections.append((source, new_entity.name))
+
+        pass
+
+    def run_from_here(self, *_):
         pass
 
 
@@ -249,25 +288,18 @@ def get_tree_depth(entity: ObjectBase, depth=1) -> int:
     return get_tree_depth(entity.parent, depth + 1)
 
 
-def set_network(file: Path):
+def set_network(file: Workspace):
 
     nodes = {}
     connections = []
     graph = nx.DiGraph()
 
-    with Workspace(file) as workspace:
+    with fetch_active_workspace(file) as workspace:
         for group in workspace.groups:
             actions = None
             if isinstance(group, UIJsonGroup):
                 uijson = UIJson.from_dict(group.options)
-                actions = NodeActions(uijson)
-
-                # if group.name == "Second UI":
-                #     uijson.set_values(**{"data_mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
-                #     uijson.to_ui_json_group(workspace=workspace)
-                #     workspace.remove_entity(group)
-                #     del group
-
+                actions = NodeActions(group)
                 options = uijson.to_params(workspace=workspace)
 
                 for elem in options.values():
@@ -303,7 +335,7 @@ def set_network(file: Path):
 
         graph.add_edges_from(connections)
 
-        # Re-order nodes to ensure that hiarchy of operations is respected
+        # Re-order nodes to ensure that hierarchy of operations is respected
         levels = dict.fromkeys(range(len(nodes)), 0)
         planets = {}
         satellites = {}
@@ -358,9 +390,11 @@ def set_network(file: Path):
 
 
 def main(geoh5: Path):
-    nodes, connections = set_network(geoh5)
-    app, window = show_canvas(nodes, connections)
-    app.exec()
+
+    with Workspace(geoh5) as workspace:
+        nodes, connections = set_network(workspace)
+        app, window = show_canvas(nodes, connections)
+        app.exec()
 
 
 def mock_linkage(geoh5):

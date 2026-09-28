@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import numpy as np
 
@@ -136,6 +136,21 @@ class UIJsonGroup(Group):
             clear_cache=clear_cache,
             **kwargs,
         )
+
+        if self.workspace.h5file == copied.workspace.h5file:
+            new_subs = {}
+            for elem, kwargs in self.substitutes.items():
+                uid = uuid4()
+                new_subs[uid] = {
+                    "parent": copied,
+                    "uid": uid,
+                    "type": kwargs.concrete_type,
+                }
+
+            subs = copied.workspace.create_substitutes(new_subs, copied)
+            copied.substitutes = subs
+
+            # copied.options = self._prepare_options(self.options.copy())
 
         return copied
 

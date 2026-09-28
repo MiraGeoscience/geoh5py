@@ -44,6 +44,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from geoh5py.groups import UIJsonGroup
 from geoh5py.ui_json.forms import (
     BaseForm,
     BoolForm,
@@ -258,6 +259,9 @@ class UIJsonWindow(QMainWindow):
 def edit_ui_json(
     path: str | Path | dict[str, Any] | UIJson,
 ) -> tuple[QApplication, UIJsonWindow]:
+
+    if isinstance(path, UIJsonGroup):
+        path = path.options
 
     if isinstance(path, dict):
         ui_json = UIJson.from_dict(path)

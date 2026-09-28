@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import Any, Self, TYPE_CHECKING
 
 import numpy as np
 
@@ -36,6 +36,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from .. import shared
     from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
+    from ..groups import UIJsonGroup
 
 DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
 
@@ -473,17 +474,21 @@ class Substitute:
     def __init__(
         self,
         parent: UIJsonGroup,
-        uid: UUID,
+        uid: uuid.UUID,
+        concrete_type: type,
         value: Any | None = None,
         name: str = "Future",
     ):
-        self.concrete_type = value
+        self.concrete_type = concrete_type
         self.parent = parent
         self.uid = uid
         self.name = name
+        self.value = value
 
     @classmethod
-    def build(cls, parent: UIJsonGroup, uid: UUID, base_type: type, **kwargs) -> Self:
+    def build(
+        cls, parent: UIJsonGroup, uid: uuid.UUID, concrete_type: type, **kwargs
+    ) -> Self:
         """
         Create a Substitute instance from a dictionary.
 
@@ -491,9 +496,9 @@ class Substitute:
         :returns: Substitute object.
         """
         child_type = type(
-            base_type.__name__ + "Substitute", (Substitute, base_type), {}
+            concrete_type.__name__ + "Substitute", (Substitute, concrete_type), {}
         )
-        return child_type(parent, uid, **kwargs)
+        return child_type(parent, uid, concrete_type, **kwargs)
 
     @property
     def parent(self):
