@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Self, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 
@@ -34,9 +34,9 @@ from .entity_type import EntityType
 
 if TYPE_CHECKING:  # pragma: no cover
     from .. import shared
+    from ..groups import UIJsonGroup
     from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
-    from ..groups import UIJsonGroup
 
 DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
 

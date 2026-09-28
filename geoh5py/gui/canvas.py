@@ -22,6 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy
+from uuid import UUID
 
 import networkx as nx
 import numpy as np
@@ -43,10 +44,10 @@ from PyQt5.QtWidgets import (
 
 from geoh5py import Workspace
 from geoh5py.data import Data
-from geoh5py.groups import RootGroup, UIJsonGroup
+from geoh5py.groups import Group, RootGroup, UIJsonGroup
 from geoh5py.gui.ui_interpreter import edit_ui_json
 from geoh5py.objects import ObjectBase
-from geoh5py.shared.entity import Substitute
+from geoh5py.shared.entity import Entity, Substitute
 from geoh5py.shared.utils import fetch_active_workspace
 from geoh5py.ui_json import UIJson
 
@@ -168,23 +169,46 @@ class ConnectionView(QGraphicsView):
 
 
 class EntityCanvas(QGraphicsScene):
-    def __init__(
-        self, nodes: list[CanvasNode], connections: list[tuple[str, str]], parent=None
-    ):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.node_items: dict[str, NodeItem] = {}
-        self.connections: list[tuple[str, str]] = connections
+        self.node_items: dict[UUID, NodeItem] = {}
+        self.connections: list[tuple[UUID, UUID]] = []
         self._context_menu_node: CanvasNode | None = None
-        for node in nodes:
-            item = NodeItem(node)
-            self.addItem(item)
-            self.node_items[node.name] = item
 
-        for source, target in connections:
+    def add_node(self, entity: Entity):
+        if entity.uid in self.node_items:
+            return
+
+        name = entity.name
+
+        if isinstance(entity, Group):
+            kind = "group"
+        elif isinstance(entity, Substitute):
+            kind = "future"
+            name = name.replace(entity.parent.name, "")
+        elif isinstance(entity, ObjectBase):
+            kind = "object"
+        else:
+            kind = "data"
+
+        node = CanvasNode(
+            name,
+            QPointF(0, 0),
+            object_ref=None,
+            kind=kind,
+        )
+        item = NodeItem(node)
+        self.addItem(item)
+        self.node_items[entity.uid] = item
+
+    def add_connection(self, connection: tuple[UUID, UUID]):
+        if connection not in self.connections:
+            source, target = connection
             if source in self.node_items and target in self.node_items:
                 self.addItem(
                     ConnectionItem(self.node_items[source], self.node_items[target])
                 )
+            self.connections.append(connection)
 
     def contextMenuEvent(self, event):
         item = self.itemAt(event.scenePos(), self.views()[0].transform())
@@ -215,10 +239,10 @@ class EntityCanvas(QGraphicsScene):
 
 
 class CanvasWindow(QMainWindow):
-    def __init__(self, nodes: list[CanvasNode], connections: list[tuple[str, str]]):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle("Entity Canvas")
-        self.scene = EntityCanvas(nodes, connections, self)
+        self.scene = EntityCanvas(self)
 
         view = ConnectionView(self.scene)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -226,9 +250,9 @@ class CanvasWindow(QMainWindow):
         self.setCentralWidget(view)
 
 
-def show_canvas(nodes: list[CanvasNode], connections: list[tuple[str, str]]):
+def show_canvas():
     app = QApplication.instance() or QApplication([])
-    window = CanvasWindow(nodes, connections)
+    window = CanvasWindow()
     window.resize(900, 600)
     window.show()
     return app, window
@@ -242,8 +266,6 @@ class NodeActions:
         return edit_ui_json(self.entity)
 
     def fork_here(self, canvas):
-
-        node_item = canvas.node_items[self.entity.name]
 
         with fetch_active_workspace(self.entity.workspace) as ws:
             new_entity = self.entity.copy(parent=ws)
@@ -288,76 +310,76 @@ def get_tree_depth(entity: ObjectBase, depth=1) -> int:
     return get_tree_depth(entity.parent, depth + 1)
 
 
-def set_network(file: Workspace):
+def recursive_add_nodes(entity: Entity, canvas: EntityCanvas):
+    if entity.uid in canvas.node_items:
+        return
 
-    nodes = {}
-    connections = []
+    canvas.add_node(entity)
+
+    if isinstance(entity, UIJsonGroup):
+        uijson = UIJson.from_dict(entity.options)
+        actions = NodeActions(entity)
+        canvas.node_items[entity.uid].node.object_ref = actions
+
+        options = uijson.to_params(workspace=entity.workspace)
+        for elem in options.values():
+            if not isinstance(elem, Entity):
+                continue
+
+            recursive_add_nodes(elem, canvas)
+            connection = (elem.uid, entity.uid)
+            canvas.add_connection(connection)
+
+    if not isinstance(entity, RootGroup):
+        recursive_add_nodes(entity.parent, canvas)
+
+        connection = (entity.parent.uid, entity.uid)
+        canvas.add_connection(connection)
+
+    else:
+        canvas.node_items[entity.uid].node.position = QPointF(-1000, 0)
+
+
+def set_network(file: Workspace, canvas: EntityCanvas):
+
     graph = nx.DiGraph()
 
     with fetch_active_workspace(file) as workspace:
         for group in workspace.groups:
-            actions = None
-            if isinstance(group, UIJsonGroup):
-                uijson = UIJson.from_dict(group.options)
-                actions = NodeActions(group)
-                options = uijson.to_params(workspace=workspace)
+            recursive_add_nodes(group, canvas)
 
-                for elem in options.values():
-                    if not isinstance(elem, ObjectBase | Data):
-                        continue
-
-                    name = elem.name
-                    if isinstance(elem, Substitute):
-                        kind = "future"
-                        name = name.replace(elem.parent.name, "")
-                        connections.append((elem.parent.name, name))
-                    elif isinstance(elem, ObjectBase):
-                        kind = "object"
-                        if (elem.parent.name, name) not in connections:
-                            connections.append((elem.parent.name, name))
-                    else:
-                        kind = "data"
-                        if (elem.parent.name, name) not in connections:
-                            connections.append((elem.parent.name, name))
-
-                    nodes[elem] = CanvasNode(name, QPointF(0, 0), kind=kind)
-                    connections.append((name, group.name))
-
-            elif not isinstance(group, RootGroup):
-                connections.append((group.parent.name, group.name))
-
-            nodes[group] = CanvasNode(
-                group.name,
-                QPointF(0, 0),
-                object_ref=actions,
-                kind="group",
-            )
-
-        graph.add_edges_from(connections)
+        graph.add_edges_from(canvas.connections)
 
         # Re-order nodes to ensure that hierarchy of operations is respected
-        levels = dict.fromkeys(range(len(nodes)), 0)
+        levels = dict.fromkeys(range(len(canvas.node_items)), 0)
         planets = {}
         satellites = {}
         max_depth = 0
-        for entity, node in nodes.items():
+        for uid, item in canvas.node_items.items():
+            node = item.node
             depth = max(
                 [
                     len(path)
-                    for path in nx.all_simple_paths(graph, "Workspace", node.name)
+                    for path in nx.all_simple_paths(graph, workspace.root.uid, uid)
                 ]
             )
             max_depth = max(depth, max_depth)
             levels[depth] += 1
 
             position = depth * 200, levels[depth] * 100
+            entity = workspace.get_entity(uid)[0]
 
             if isinstance(entity, ObjectBase):
-                planets[entity.parent] = planets.get(entity.parent, []) + [entity]
+                planets[entity.parent.uid] = planets.get(entity.parent.uid, []) + [
+                    entity.uid
+                ]
             elif isinstance(entity, Data):
-                satellites[entity.parent] = satellites.get(entity.parent, []) + [entity]
+                satellites[entity.parent.uid] = satellites.get(
+                    entity.parent.uid, []
+                ) + [entity.uid]
 
             node.position = QPointF(*position)
+            item.setPos(node.position)
 
         for parent, children in planets.items():
             angles = np.linspace(np.pi / 4, -np.pi / 4, len(children))
@@ -365,35 +387,38 @@ def set_network(file: Workspace):
             depth = max(
                 [
                     len(path)
-                    for path in nx.all_simple_paths(
-                        graph, "Workspace", nodes[parent].name
-                    )
+                    for path in nx.all_simple_paths(graph, workspace.root.uid, parent)
                 ]
             )
 
             radius = 50 * (max_depth - depth)
             for angle, child in zip(angles, children):
-                nodes[child].position = nodes[parent].position + QPointF(
+                canvas.node_items[child].node.position = canvas.node_items[
+                    parent
+                ].node.position + QPointF(
                     np.cos(angle) * radius, np.sin(angle) * radius
                 )
+                canvas.node_items[child].setPos(canvas.node_items[child].node.position)
 
         for parent, children in satellites.items():
             angles = np.linspace(-np.pi / 4, np.pi / 4, len(children))
 
             radius = 100
             for angle, child in zip(angles, children):
-                nodes[child].position = nodes[parent].position + QPointF(
+                canvas.node_items[child].node.position = canvas.node_items[
+                    parent
+                ].node.position + QPointF(
                     np.cos(angle) * radius, np.sin(angle) * radius
                 )
-
-    return list(nodes.values()), connections
+                canvas.node_items[child].setPos(canvas.node_items[child].node.position)
 
 
 def main(geoh5: Path):
 
     with Workspace(geoh5) as workspace:
-        nodes, connections = set_network(workspace)
-        app, window = show_canvas(nodes, connections)
+        app, window = show_canvas()
+        set_network(workspace, window.scene)
+
         app.exec()
 
 
