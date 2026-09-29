@@ -714,7 +714,7 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         return distance_v / self.v_count
 
     def _create_geoimage_from_attributes(
-        self, parent: None | Entity | Workspace = None, **kwargs
+        self, parent: Entity | Workspace | None = None, **kwargs
     ) -> GeoImage:
         """
         Create a new GeoImage from attributes.
