@@ -275,7 +275,7 @@ class DataType(EntityType):
 
     @filter_min.setter
     def filter_min(self, value: float | None):
-        if not isinstance(value, np.number | None):
+        if not isinstance(value, float | int | np.number | None):
             raise TypeError(
                 f"Attribute 'filter_min' must be a float, not {type(value)}"
             )
