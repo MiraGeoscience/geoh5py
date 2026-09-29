@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy
@@ -26,7 +27,6 @@ from uuid import UUID
 
 import networkx as nx
 import numpy as np
-from jupyter_server.gateway import connections
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import (
@@ -449,8 +449,7 @@ def mock_linkage(geoh5):
 
 
 if __name__ == "__main__":
-    file = r"C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{e470a76e-568a-4654-b8da-a763415c6c33}/Python/Files/GA-WorkflowPanel_0925-084708.ui.json"
-    # file = sys.argv[1]
+    file = sys.argv[1]
     file_path = Path(file)
     ui_json = UIJson.read(file_path)
     working_file = file_path.parent / ui_json.workspace_geoh5.name
