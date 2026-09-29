@@ -250,7 +250,7 @@ class DataType(EntityType):
 
     @filter_max.setter
     def filter_max(self, value: float | None):
-        if not isinstance(value, np.number | None):
+        if not isinstance(value, float | int | np.number | None):
             raise TypeError(
                 f"Attribute 'filter_max' must be a float, not {type(value)}"
             )
