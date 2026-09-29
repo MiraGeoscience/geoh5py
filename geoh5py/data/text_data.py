@@ -29,7 +29,7 @@ from ..shared.utils import as_str_if_uuid, dict_mapper
 from .data import Data
 
 
-def text_formating(values: None | np.ndarray | str) -> ndarray | None:
+def text_formatting(values: None | np.ndarray | str) -> ndarray | None:
     """
     Format text values to utf-8.
 
@@ -49,7 +49,7 @@ def text_formating(values: None | np.ndarray | str) -> ndarray | None:
 class TextData(Data):
     @property
     def formatted_values(self):
-        return text_formating(self.values)
+        return text_formatting(self.values)
 
     @property
     def nan_value(self):
@@ -141,7 +141,7 @@ class MultiTextData(TextData):
 
     @property
     def formatted_values(self):
-        return text_formating(self.values)
+        return text_formatting(self.values)
 
     @property
     def nan_value(self):
