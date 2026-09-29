@@ -37,7 +37,6 @@ from geoh5py.shared.utils import get_unique_name_from_entities
 
 
 if TYPE_CHECKING:
-    from .. import shared
     from ..groups import PropertyGroup
 
 DEFAULT_CRS = {"Code": "Unknown", "Name": "Unknown"}
@@ -272,7 +271,7 @@ class EntityContainer(Entity):
         ]
         return sorted(name_list)
 
-    def remove_children(self, children: list[shared.Entity | PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup]):
         """
         Remove children from the list of children entities.
 

@@ -60,15 +60,15 @@ def test_insert_drillhole_data(tmp_path):
         indices = np.where(~np.isnan(old_depths))[0]
         insert = np.random.randint(0, high=len(indices) - 1, size=2)
         new_depths = old_depths[indices[insert]]
-        new_depths[0] -= 2e-6  # Out of tolerance
-        new_depths[1] -= 5e-7  # Within tolerance
+        new_depths[0] -= 2e-3  # Out of tolerance
+        new_depths[1] -= 5e-4  # Within tolerance
 
         match_test = well.add_data(
             {
                 "match_depth": {
                     "depth": new_depths,
                     "values": np.random.randint(1, high=8, size=2),
-                    "collocation_distance": 1e-6,
+                    "collocation_distance": 1e-3,
                 }
             }
         )
