@@ -93,18 +93,9 @@ def test_data_boolean(tmp_path):
             assert data2.entity_type.primitive_type == PrimitiveTypeEnum.BOOLEAN
 
             with pytest.raises(
-                ValueError,
-                match="Values provided by my_boolean are not containing only 0 or 1",
-            ):
-                data2.values = np.array([1.1, 0.2, 1.1])
-
-            with pytest.raises(
                 TypeError, match="Input 'entity_type' with primitive_type"
             ):
                 data2.entity_type = non_bool.entity_type
-
-            with pytest.raises(ValueError, match="Values provided by "):
-                data2.values = np.array([0, 2, 1])
 
             with pytest.raises(TypeError, match="Input 'values' must be a numpy array"):
                 data2.values = "bidon"

@@ -29,8 +29,9 @@ from uuid import UUID
 
 import numpy as np
 
-from ..shared import EntityType, utils
-from . import DataTypeEnum, PrimitiveTypeEnum
+from ..shared import DataTypeEnum, utils
+from ..shared.entity_type import EntityType
+from . import PrimitiveTypeEnum
 from .color_map import ColorMap
 from .reference_value_map import BOOLEAN_VALUE_MAP, ReferenceValueMap
 
@@ -249,7 +250,7 @@ class DataType(EntityType):
 
     @filter_max.setter
     def filter_max(self, value: float | None):
-        if not isinstance(value, float | int | None):
+        if not isinstance(value, np.number | None):
             raise TypeError(
                 f"Attribute 'filter_max' must be a float, not {type(value)}"
             )
@@ -274,7 +275,7 @@ class DataType(EntityType):
 
     @filter_min.setter
     def filter_min(self, value: float | None):
-        if not isinstance(value, float | int | None):
+        if not isinstance(value, np.number | None):
             raise TypeError(
                 f"Attribute 'filter_min' must be a float, not {type(value)}"
             )

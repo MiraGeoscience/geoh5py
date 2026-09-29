@@ -40,7 +40,7 @@ class FloatData(NumericData):
         if not np.issubdtype(values.dtype, np.number):
             raise TypeError("Values must be a numpy array of numeric values.")
 
-        return values
+        return super().format_type(values)
 
     @property
     def formatted_values(self):
