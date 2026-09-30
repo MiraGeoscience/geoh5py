@@ -329,7 +329,7 @@ class CanvasWindow(QMainWindow):
 def show_canvas(workspace):
     app = QApplication.instance() or QApplication([])
     window = CanvasWindow(workspace)
-    window.resize(900, 600)
+    window.resize(1800, 900)
     window.show()
     return app, window
 
@@ -420,6 +420,11 @@ def recursive_add_nodes(entity: Entity, canvas: EntityCanvas):
             connection = (elem.uid, entity.uid)
             canvas.add_connection(connection)
 
+        for sub in entity.substitutes.values():
+            recursive_add_nodes(sub, canvas)
+            connection = (entity.uid, sub.uid)
+            canvas.add_connection(connection)
+
 
 def set_network(file: Workspace, canvas: EntityCanvas):
 
@@ -443,9 +448,8 @@ def mock_linkage(geoh5):
         group = workspace.get_entity("Weight of Evidence")[0]
         uijson = UIJson.from_dict(group.options)
         uijson.set_values(**{"mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
-        uijson.to_ui_json_group(workspace=workspace)
-        workspace.remove_entity(group)
-        del group
+        options = uijson.serialize("json")
+        group.options = options
 
 
 if __name__ == "__main__":

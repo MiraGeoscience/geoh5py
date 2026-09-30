@@ -646,7 +646,7 @@ class Workspace(AbstractContextManager):
                     name = f"Future {count}\n({concrete_type.__name__})"
 
                 promoted_children[uid] = Substitute.build(
-                    parent,
+                    self.get_entity(child.get("parent", None))[0] or parent,
                     uid,
                     concrete_type,
                     value=concrete,
@@ -1741,9 +1741,15 @@ def name_or_uid_to_type(
         return UUID(value)
 
     value = equalize_string(value)
-    obj: type[ObjectBase] | type[Group] | None = GA_NAME_TO_OBJECT.get(
-        value, None
-    ) or GA_NAME_TO_GROUP.get(value, None)
+    obj: type[ObjectBase] | type[Group] | None = (
+        GA_NAME_TO_OBJECT.get(value, None)
+        or GA_NAME_TO_GROUP.get(value, None)
+        or (
+            PrimitiveTypeEnum(value.upper()).value
+            if value.upper() in PrimitiveTypeEnum
+            else None
+        )
+    )
     if obj is None:
         raise ValueError(
             f"Provided string {value!s} is not a recognized "

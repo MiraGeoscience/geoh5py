@@ -521,3 +521,10 @@ class Substitute:
     @name.setter
     def name(self, name):
         self._name = name
+
+    @property
+    def workspace(self) -> Workspace:
+        """
+        :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
+        """
+        return self.parent.workspace
