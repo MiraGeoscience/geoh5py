@@ -40,7 +40,7 @@ class ReferenceValueMap:
         If False, it will be stored as an auxiliary value map.
     """
 
-    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", np.dtypes.StringDType)])
+    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class ReferenceValueMap:
 
     def __call__(self) -> dict:
         try:
-            map_string = self._map.astype(np.dtype([("Key", "<u4"), ("Value", "U25")]))
+            map_string = self._map.astype(self.MAP_DTYPE)
         except UnicodeDecodeError:
             map_string = self._map
 
@@ -97,16 +97,16 @@ class ReferenceValueMap:
             unique_names: list[str] = []
             value_list: list[tuple[int, Any]] = []
             for key, value in value_map.items():
+                if isinstance(value, bytes):
+                    value = value.decode("utf-8")
+
                 if isinstance(value, str) and main:
                     value = find_unique_name(value, unique_names, case_sensitive=False)
                     unique_names.append(value)
+
                 value_list.append((key, value))
 
-            value_map = np.array(
-                value_list, dtype=[("Key", "<u4"), ("Value", np.dtypes.StringDType)]
-            )
-
-            # str_len = max((len(str(val)) for val in value_map["Value"]), default=32)
+            value_map = np.array(value_list, dtype=cls.MAP_DTYPE)
             value_map["Value"] = np.char.encode(
                 value_map["Value"].astype(np.dtypes.StringDType),
                 "utf-8",

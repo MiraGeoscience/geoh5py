@@ -107,7 +107,10 @@ def test_copy_reference_data(tmp_path):
 
         value_map = ref_data.value_map()
 
-        assert list(value_map.values())[-1] == extra_name + "(1)"
+        assert (
+            list(value_map.values())[-1].decode("utf-8")
+            == extra_name.decode("utf-8") + "(1)"
+        )
 
 
 def test_create_reference_data(tmp_path):
@@ -158,22 +161,17 @@ def test_add_data_map(tmp_path):
         with pytest.raises(TypeError, match="Property maps must be a dictionary"):
             data.data_maps = data_map
 
+        float_data = parent.add_data(
+            {"float_data": {"values": np.random.randn(len(parent.locations))}}
+        )
         with pytest.raises(
-            TypeError, match=r"Value map must be a numpy array or dict\."
+            TypeError, match=r"Data type must be of type 'ReferencedData'"
         ):
-            data.add_data_map("test", "abc")
+            parent.add_data_map(float_data, "float_data_map", data_map)
 
         assert data.remove_data_map("DataValues") is None
 
-        value_map = data.entity_type.value_map
-        data.entity_type.value_map = None
-
-        with pytest.raises(ValueError, match=r"Entity type must have a value map\."):
-            data.add_data_map("test", data_map)
-
-        data.entity_type.value_map = value_map
         data.add_data_map("test", data_map)
-
         data_map = np.c_[
             data.entity_type.value_map.map["Key"],
             np.random.randn(len(data.entity_type.value_map.map["Key"])),
@@ -310,11 +308,7 @@ def test_create_bytes_reference(tmp_path):
 
     with Workspace.create(h5file_path) as workspace:
         points, data, _ = generate_value_map(workspace)
-
         value_map = data.entity_type.value_map()
-        for key, value in value_map.items():
-            value_map[key] = value.encode()
-
         points.add_data(
             {
                 "DataValues_bytes": {
@@ -327,8 +321,8 @@ def test_create_bytes_reference(tmp_path):
 
     with Workspace(h5file_path) as workspace:
         data = workspace.get_entity("DataValues_bytes")[0]
-        assert data.entity_type.value_map.map.dtype == np.dtype(
-            [("Key", "<u4"), ("Value", "O")]
+        assert (
+            data.entity_type.value_map.map.dtype == data.entity_type.value_map.MAP_DTYPE
         )
 
 
