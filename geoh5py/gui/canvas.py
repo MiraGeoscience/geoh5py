@@ -96,15 +96,17 @@ class CanvasNode:
 COLOR_MAP = {
     "object": QColor("#4C78A8"),
     "data": QColor("#F58518"),
-    "group": QColor("#E45756"),
+    "group": QColor("#8250C4"),
+    "ui_json": QColor("#E45756"),
     "future": QColor("#72B7B2"),
 }
 
 SIZE_MAP = {
-    "object": (32, 32),
-    "data": (16, 16),
-    "group": (64, 64),
-    "future": (32, 32),
+    "object": (30, 30),
+    "data": (20, 20),
+    "group": (50, 50),
+    "ui_json": (40, 40),
+    "future": (30, 30),
 }
 
 
@@ -201,7 +203,9 @@ class EntityCanvas(QGraphicsScene):
         name = entity.name
 
         position = (0, 0)
-        if isinstance(entity, Group):
+        if isinstance(entity, UIJsonGroup):
+            kind = "ui_json"
+        elif isinstance(entity, Group):
             kind = "group"
         elif isinstance(entity, Substitute):
             kind = "future"
