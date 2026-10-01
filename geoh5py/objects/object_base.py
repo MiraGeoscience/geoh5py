@@ -462,7 +462,7 @@ class ObjectBase(EntityContainer):
         :return: Bounding box defined by the bottom South-West and
             top North-East coordinates,  shape(2, 3).
         """
-        if not np.any(self.locations):
+        if self.locations.size == 0:
             return None
 
         return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
