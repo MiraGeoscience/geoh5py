@@ -597,14 +597,10 @@ class ReferenceDataType(DataType):
     def validate_value_map(
         self,
         value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap,
-    ) -> ReferenceValueMap | None:
+    ) -> ReferenceValueMap:
         """
         Validate the attribute of ReferencedDataType
         """
-
-        if value_map is None:
-            return None
-
         if isinstance(value_map, dict | np.ndarray | tuple):
             value_map = ReferenceValueMap(value_map, main=True)
 
@@ -619,7 +615,7 @@ class ReferenceDataType(DataType):
         return value_map
 
     @property
-    def value_map(self) -> ReferenceValueMap | None:
+    def value_map(self) -> ReferenceValueMap:
         r"""
         Reference value map for to map index with description.
 
