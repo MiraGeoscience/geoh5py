@@ -40,7 +40,7 @@ class ReferenceValueMap:
         If False, it will be stored as an auxiliary value map.
     """
 
-    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", special_dtype(vlen=str))])
+    MAP_DTYPE = np.dtype([("Key", "<u4"), ("Value", np.dtypes.StringDType)])
 
     def __init__(
         self,
@@ -103,12 +103,12 @@ class ReferenceValueMap:
                 value_list.append((key, value))
 
             value_map = np.array(
-                value_list, dtype=[("Key", "<u4"), ("Value", special_dtype(vlen=str))]
+                value_list, dtype=[("Key", "<u4"), ("Value", np.dtypes.StringDType)]
             )
 
-            str_len = max((len(str(val)) for val in value_map["Value"]), default=32)
+            # str_len = max((len(str(val)) for val in value_map["Value"]), default=32)
             value_map["Value"] = np.char.encode(
-                value_map["Value"].astype(f"U{str_len}"),
+                value_map["Value"].astype(np.dtypes.StringDType),
                 "utf-8",
             )
 
