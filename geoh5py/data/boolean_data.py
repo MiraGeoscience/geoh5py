@@ -20,38 +20,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import numpy as np
-
 from .referenced_data import ReferencedData
-
-
-if TYPE_CHECKING:
-    from .data_type import ReferencedBooleanType
 
 
 class BooleanData(ReferencedData):
     """
     Data class for logical (bool) values.
     """
-
-    def format_type(self, values: np.ndarray):
-        """
-        Check if the type of values is valid and coerce to type bool.
-        :param values: numpy array to modify.
-        :return: the formatted values.
-        """
-        if set(values) - {0, 1} != set():
-            raise ValueError(
-                f"Values provided by {self.name} are not containing only 0 or 1"
-            )
-
-        return values.astype(bool)
-
-    @property
-    def formatted_values(self):
-        return super().formatted_values.astype("int8")
 
     @property
     def ndv(self) -> int:

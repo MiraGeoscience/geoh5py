@@ -31,7 +31,7 @@ import pytest
 
 from geoh5py.groups import ContainerGroup, DrillholeGroup, PropertyGroup
 from geoh5py.objects import Points
-from geoh5py.shared import Entity
+from geoh5py.shared.entity import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
     JSONParameterValidationError,

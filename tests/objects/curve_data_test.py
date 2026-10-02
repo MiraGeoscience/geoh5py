@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 from geoh5py.objects import Curve
+from geoh5py.shared import DataTypeEnum
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -146,8 +147,9 @@ def test_create_curve_data(tmp_path: Path):
             compare_entities(data_objects[0], data_vert_rec)
             compare_entities(data_objects[1], ws2.get_entity("cellValues")[0])
 
-            with pytest.raises(TypeError, match=r"Values cannot have decimal points\."):
-                data_vert_rec.values = np.random.randn(n_data)  # warning here
+            assert data_vert_rec.values.dtype == DataTypeEnum.from_primitive_type(
+                data_vert_rec.primitive_type()
+            )  # warning here
 
             data_vert_rec.values = np.random.randint(
                 0, curve.n_vertices, curve.n_vertices

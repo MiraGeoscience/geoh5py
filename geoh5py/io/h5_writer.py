@@ -44,14 +44,16 @@ from ..data import (
 from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
+from ..shared import FLOAT_NDV
 from ..shared.concatenation import Concatenator
-from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
+from ..shared.entity import Entity
+from ..shared.entity_type import EntityType
+from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper, fetch_h5_handle
 from .utils import str_from_subtype, str_from_type
 
 
 if TYPE_CHECKING:
-    from .. import shared, workspace
+    from .. import workspace
 
 
 class H5Writer:
@@ -456,7 +458,7 @@ class H5Writer:
     @staticmethod
     def write_color_map(
         file: str | h5py.File,
-        entity_type: shared.EntityType,
+        entity_type: EntityType,
     ) -> None:
         """
         Add :obj:`~geoh5py.data.color_map.ColorMap` to a
@@ -926,7 +928,7 @@ class H5Writer:
     @staticmethod
     def write_entity_type(
         file: str | h5py.File,
-        entity_type: shared.EntityType | ReferenceDataType,
+        entity_type: EntityType | ReferenceDataType,
     ) -> h5py.Group:
         """
         Add an :obj:`~geoh5py.shared.entity_type.EntityType` to geoh5.
