@@ -1,0 +1,37 @@
+name: TEST download_dist_release action (temporary, do not merge)
+
+on:
+  push:
+    branches:
+      - DEVOPS-1154
+
+permissions: {}
+
+jobs:
+  before-change:
+    name: CI-tools v3.13.0 (with type keys)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download release assets
+        uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-download_dist_release@b2de1e00a0be160d8cf6e14716825673070bf264 # v3.13.0
+        with:
+          release-tag: v0.13.1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: List downloaded files
+        run: ls -la dist-download/
+
+  after-change:
+    name: CI-tools DEVOPS-1154-download-test (without type keys)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download release assets
+        uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-download_dist_release@a94e76db08f35d9cc70ab2ecc10579f3bb2d891a # DEVOPS-1154-download-test
+        with:
+          release-tag: v0.13.1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: List downloaded files
+        run: ls -la dist-download/
