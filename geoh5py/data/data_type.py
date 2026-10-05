@@ -710,7 +710,7 @@ class GeometricDynamicDataType(DataType, ABC):
         }
     )
     _TYPE_UID: UUID | None
-    _DYNAMIC_IMPLEMENTATION_ID: UUID
+    _dynamic_implementation_id: UUID
 
     def __init__(
         self,
@@ -735,7 +735,7 @@ class GeometricDynamicDataType(DataType, ABC):
         """
         The dynamic implementation id.
         """
-        return self._DYNAMIC_IMPLEMENTATION_ID
+        return self._dynamic_implementation_id
 
 
 class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
@@ -743,7 +743,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     Data container for value map
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
+    _dynamic_implementation_id = UUID("{4b6ecb37-0623-4ea0-95f1-4873008890a8}")
     _TYPE_UID = None
 
     def __init__(
@@ -892,7 +892,7 @@ class GeometricDataXType(GeometricDynamicDataType):
     Data container for X values
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
+    _dynamic_implementation_id = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
     _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
 
 
@@ -901,7 +901,7 @@ class GeometricDataYType(GeometricDynamicDataType):
     Data container for Y values
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
+    _dynamic_implementation_id = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
     _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
 
 
@@ -910,11 +910,11 @@ class GeometricDataZType(GeometricDynamicDataType):
     Data container for Z values
     """
 
-    _DYNAMIC_IMPLEMENTATION_ID = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
+    _dynamic_implementation_id = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
     _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
 
 
 DYNAMIC_CLASS_IDS = {
-    cls._DYNAMIC_IMPLEMENTATION_ID: cls  # pylint: disable=protected-access
+    cls._dynamic_implementation_id: cls  # pylint: disable=protected-access
     for cls in GeometricDynamicDataType.__subclasses__()
 }

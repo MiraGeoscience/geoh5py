@@ -400,7 +400,7 @@ class H5Writer:
 
             for key, attr in entity.attribute_map.items():
                 try:
-                    value = getattr(entity, attr)
+                    value = getattr(entity, f"_{attr}")
                 except AttributeError:
                     continue
 

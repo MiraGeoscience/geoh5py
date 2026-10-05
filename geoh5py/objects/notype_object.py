@@ -21,13 +21,8 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
 
 from .object_base import ObjectBase
-
-
-if TYPE_CHECKING:
-    from numpy import ndarray
 
 
 class NoTypeObject(ObjectBase):
