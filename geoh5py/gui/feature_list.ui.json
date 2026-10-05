@@ -1,0 +1,46 @@
+{
+    "title": "Feature List",
+    "conda_environment": "mirageo",
+    "run_command": "mock_feature_list",
+    "geoh5": "C:/Users/dominiquef/Documents/tests/prototype_workflows/single_ui.geoh5",
+    "monitoring_directory": "",
+    "data_mesh": {
+        "meshType": [
+            "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
+            "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}"
+        ],
+        "label": "Select Points or Curve",
+        "value": "{15f682e7-65a0-4f1d-b31f-d35264de976c}",
+        "optional": true,
+        "main": true,
+        "enabled": true
+    },
+    "data_channel": {
+        "association": "Vertex",
+        "dataType": "Float",
+        "label": "Data channel",
+        "parent": "data_mesh",
+        "value": [
+            "{a24a31dd-311e-487f-b4db-41a7b6a6b229}"
+        ],
+        "main": true,
+        "multiSelect": true,
+        "group": "Data selection",
+        "enabled": true
+    },
+    "out_group": {
+        "group": "Output preferences",
+        "label": "UIJson group",
+        "value": "{60d4a540-4ee8-4324-802b-01c1067f1c62}",
+        "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+        "visible": true,
+        "optional": true,
+        "enabled": true
+    },
+    "children": {
+        "{5caf0577-7992-45d2-95c7-bba1502dc353}": {
+            "type": "PropertyGroup",
+            "value": ""
+        }
+    }
+}

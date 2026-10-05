@@ -684,6 +684,12 @@ class Workspace(AbstractContextManager):
             self._root.entity_type.on_file = True
             self.fetch_children(self._root, recursively=True)
 
+            for group in self.groups:
+                if options := getattr(group, "options", None):
+                    subs = self.create_substitutes(
+                        options.get("children", None), parent=group
+                    )
+                    group.substitutes = subs
             return
 
         # Fetch all entities and build the family tree with RootGroup at the base
@@ -884,12 +890,6 @@ class Workspace(AbstractContextManager):
                     and recovered_object.property_groups is not None
                 ):
                     family_tree += recovered_object.property_groups
-
-                if options := getattr(recovered_object, "options", None):
-                    subs = self.create_substitutes(
-                        options.get("children", None), parent=recovered_object
-                    )
-                    recovered_object.substitutes = subs
 
         if isinstance(entity, ObjectBase) and entity.property_groups is not None:
             family_tree += entity.property_groups
@@ -1749,6 +1749,7 @@ def name_or_uid_to_type(
             if value.upper() in PrimitiveTypeEnum
             else None
         )
+        or (PropertyGroup if value == "propertygroup" else None)
     )
     if obj is None:
         raise ValueError(

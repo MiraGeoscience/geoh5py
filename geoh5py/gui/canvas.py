@@ -19,7 +19,6 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy
@@ -405,9 +404,9 @@ def recursive_add_nodes(entity: Entity, canvas: EntityCanvas):
     canvas.add_node(entity)
 
     if not isinstance(entity, RootGroup):
-        recursive_add_nodes(entity.parent, canvas)
+        recursive_add_nodes(entity._parent, canvas)
 
-        connection = (entity.parent.uid, entity.uid)
+        connection = (entity._parent.uid, entity.uid)
         canvas.add_connection(connection)
 
     if isinstance(entity, UIJsonGroup):
@@ -451,13 +450,14 @@ def mock_linkage(geoh5):
     with Workspace(geoh5) as workspace:
         group = workspace.get_entity("Weight of Evidence")[0]
         uijson = UIJson.from_dict(group.options)
-        uijson.set_values(**{"mesh": "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}"})
+        uijson.set_values(**{"data_channel": "{5caf0577-7992-45d2-95c7-bba1502dc353}"})
         options = uijson.serialize("json")
         group.options = options
 
 
 if __name__ == "__main__":
-    file = sys.argv[1]
+    # file = sys.argv[1]
+    file = r"C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{0f4b606a-db12-4cef-8204-7b19cc8d0a2a}/Python/Files/GA-WorkflowPanel_1005-124545.ui.json"
     file_path = Path(file)
     ui_json = UIJson.read(file_path)
     working_file = file_path.parent / ui_json.workspace_geoh5.name

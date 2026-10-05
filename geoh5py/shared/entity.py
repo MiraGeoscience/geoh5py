@@ -484,6 +484,22 @@ class Substitute:
         self.uid = uid
         self.name = name
         self.value = value
+        self.on_file = value is not None
+
+    def __getattr__(self, item):
+        """
+
+        :param item:
+        :return:
+        """
+        try:
+            if self.value:
+                return getattr(self.value, item)
+
+        except AttributeError:
+            self.__getattribute__(item)
+
+            raise AttributeError(item)
 
     @classmethod
     def build(
@@ -505,6 +521,9 @@ class Substitute:
         """
         Get the parent UIJson object.
         """
+        if self.value:
+            return self.value.parent
+
         return self._parent
 
     @parent.setter
