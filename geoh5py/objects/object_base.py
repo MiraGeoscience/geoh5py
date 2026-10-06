@@ -462,7 +462,7 @@ class ObjectBase(EntityContainer):
         :return: Bounding box defined by the bottom South-West and
             top North-East coordinates,  shape(2, 3).
         """
-        if self.locations is None:
+        if self.locations.size == 0:
             return None
 
         return np.c_[self.locations.min(axis=0), self.locations.max(axis=0)].T
@@ -600,17 +600,16 @@ class ObjectBase(EntityContainer):
             _ = getattr(child, "values", None)
 
     @property
-    def locations(self) -> np.ndarray | None:
+    def locations(self) -> np.ndarray:
         """
         Exposes the vertices or centroids of the object.
         """
-        out = None
         if hasattr(self, "vertices"):
-            out = self.vertices
+            return self.vertices
         if hasattr(self, "centroids"):
-            out = self.centroids
+            return self.centroids
 
-        return out
+        return np.empty((0, 3), dtype=float)
 
     def mask_by_extent(
         self, extent: np.ndarray, inverse: bool = False
