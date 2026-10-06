@@ -734,7 +734,7 @@ class GeometricDynamicDataType(DataType, ABC):
         return self._dynamic_implementation_id
 
 
-class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
+class GeometricDataValueMapType(GeometricDynamicDataType):
     """
     Data container for value map
     """
@@ -762,6 +762,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
             **kwargs,
         )
         self._parent = parent
+        self.value_map = self.validate_value_map(value_map)
 
     def set_parent_reference(self, data: GeometricDataConstants, new_name: str):
         """
