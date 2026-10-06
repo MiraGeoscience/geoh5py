@@ -149,7 +149,7 @@ def test_create_curve_data(tmp_path: Path):
 
             assert data_vert_rec.values.dtype == DataTypeEnum.from_primitive_type(
                 data_vert_rec.primitive_type()
-            )  # warning here
+            )
 
             data_vert_rec.values = np.random.randint(
                 0, curve.n_vertices, curve.n_vertices
