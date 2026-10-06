@@ -822,7 +822,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
     def validate_value_map(
         self,
         value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap,
-    ) -> ReferenceValueMap | None:
+    ) -> ReferenceValueMap | None:  # type: ignore
         """
         Validate the attribute of ReferencedDataType
         """
@@ -842,7 +842,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         return value_map
 
     @property
-    def value_map(self) -> ReferenceValueMap | None:
+    def value_map(self) -> ReferenceValueMap | None:  # type: ignore
         r"""
         Reference value to map index with description.
 
