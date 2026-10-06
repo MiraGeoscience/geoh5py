@@ -72,7 +72,7 @@ def test_reference_value_map():
     with pytest.raises(KeyError, match="Key must be an positive integer"):
         ReferenceValueMap({-1: "test"})
 
-    with pytest.raises(ValueError, match="Value for key 0 must be b'Unknown'"):
+    with pytest.raises(ValueError, match="Value for key 0 must be 'Unknown'"):
         ReferencedValueMapType(workspace, value_map=((0, "test"),))
 
     with pytest.raises(ValueError, match="Array of 'value_map' must be of dtype"):
@@ -393,13 +393,11 @@ def test_variable_string_length(tmp_path):
         )
 
         np.testing.assert_allclose(
-            [int(val) for val in data.value_map.map["Value"] if val != b"Unknown"],
+            [int(val) for val in data.value_map.map["Value"] if val != "Unknown"],
             list(value_map.values()),
         )
 
         _, data, orig = generate_value_map(workspace, n_class=100)
 
-        values = [
-            val.decode() for val in data.value_map.map["Value"] if val != b"Unknown"
-        ]
+        values = [val for val in data.value_map.map["Value"] if val != "Unknown"]
         assert len(set(values).difference(set(orig.values()))) == 0

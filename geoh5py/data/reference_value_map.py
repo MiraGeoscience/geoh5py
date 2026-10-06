@@ -106,7 +106,7 @@ class ReferenceValueMap:
                 value = find_unique_name(value, unique_names, case_sensitive=False)
                 unique_names.append(value)
 
-            value_map[ind] = (key, value)
+            value_map[ind] = (key, str(value))
 
         if value_map.dtype != cls.MAP_DTYPE:
             raise ValueError(f"Array of 'value_map' must be of dtype = {cls.MAP_DTYPE}")
