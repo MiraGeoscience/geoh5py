@@ -29,6 +29,7 @@ import h5py
 import numpy as np
 import psutil
 
+from ..data.reference_value_map import ReferenceValueMap
 from ..shared import FLOAT_NDV, fetch_h5_handle
 from ..shared.exceptions import MemoryValidationError
 from ..shared.utils import (
@@ -475,7 +476,7 @@ class H5Reader:
 
         if "Value map" in type_handle:
             type_attributes["value_map"] = type_handle["Value map"][:].astype(
-                [("Key", "<u4"), ("Value", np.dtypes.StringDType)]
+                ReferenceValueMap.MAP_DTYPE
             )
         return type_attributes
 

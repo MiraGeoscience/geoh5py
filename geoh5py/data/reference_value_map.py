@@ -20,8 +20,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 from h5py import special_dtype
 
@@ -93,27 +91,22 @@ class ReferenceValueMap:
             if not np.all(np.asarray(list(value_map)) >= 0):
                 raise KeyError("Key must be an positive integer")
 
-            # Make sure no duplicated name as case-insensitive
-            unique_names: list[str] = []
-            value_list: list[tuple[int, Any]] = []
-            for key, value in value_map.items():
-                if isinstance(value, bytes):
-                    value = value.decode("utf-8")
-
-                if isinstance(value, str) and main:
-                    value = find_unique_name(value, unique_names, case_sensitive=False)
-                    unique_names.append(value)
-
-                value_list.append((key, value))
-
-            value_map = np.array(value_list, dtype=cls.MAP_DTYPE)
-            value_map["Value"] = np.char.encode(
-                value_map["Value"].astype(np.dtypes.StringDType),
-                "utf-8",
-            )
+            value_map = np.array(list(value_map.items()), dtype=cls.MAP_DTYPE)
 
         if not isinstance(value_map, np.ndarray):
             raise TypeError("Value map must be a numpy array or dict.")
+
+        # Check that names are strings, are unique for the "main" value map
+        unique_names: list[str] = []
+        for ind, (key, value) in enumerate(value_map):
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+
+            if isinstance(value, str) and main:
+                value = find_unique_name(value, unique_names, case_sensitive=False)
+                unique_names.append(value)
+
+            value_map[ind] = (key, value)
 
         if value_map.dtype != cls.MAP_DTYPE:
             raise ValueError(f"Array of 'value_map' must be of dtype = {cls.MAP_DTYPE}")

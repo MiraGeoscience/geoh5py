@@ -107,10 +107,7 @@ def test_copy_reference_data(tmp_path):
 
         value_map = ref_data.value_map()
 
-        assert (
-            list(value_map.values())[-1].decode("utf-8")
-            == extra_name.decode("utf-8") + "(1)"
-        )
+        assert list(value_map.values())[-1] == extra_name + "(1)"
 
 
 def test_create_reference_data(tmp_path):
