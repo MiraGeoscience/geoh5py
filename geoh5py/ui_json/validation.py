@@ -30,6 +30,7 @@ from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import ObjectBase
 from geoh5py.shared import Entity
+from geoh5py.shared.entity import Substitute
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import (
     AssociationValidator,
@@ -512,6 +513,9 @@ def parent_validation(name: str, data: dict[str, Any], ui_json: UIJson):
 
     parent_name = form.parent
     child = data[name]
+
+    if isinstance(child, Substitute):
+        child = child.value
 
     # Special case for DataRangeForm
     if isinstance(child, dict):

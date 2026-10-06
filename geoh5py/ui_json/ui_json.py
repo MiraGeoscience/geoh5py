@@ -39,7 +39,12 @@ from geoh5py import Workspace
 from geoh5py.data import FilenameData
 from geoh5py.groups import UIJsonGroup
 from geoh5py.shared.entity_container import EntityContainer
-from geoh5py.shared.utils import copy_dict_relatives, fetch_active_workspace, stringify
+from geoh5py.shared.utils import (
+    copy_dict_relatives,
+    fetch_active_workspace,
+    str2uuid,
+    stringify,
+)
 from geoh5py.ui_json.annotations import OptionalPath, OptionalString
 from geoh5py.ui_json.forms import BaseForm, DependencyType, GroupForm
 from geoh5py.ui_json.validation import (
@@ -49,6 +54,7 @@ from geoh5py.ui_json.validation import (
     get_validations,
     promote_or_catch,
 )
+from geoh5py.workspace.workspace import name_or_uid_to_type
 
 
 logger = logging.getLogger(__name__)
@@ -67,6 +73,7 @@ class UIJson(BaseModel):
     :param conda_environment: Conda environment to run the application.
     :param workspace_geoh5: Path to the workspace geoh5 file.
     :param out_group: Optional group form to hold the UIJson group.
+    :param children: Optional dictionary of outputs to be stored in the UIJson group.
 
     :param _form_dependencies: Nested dictionaries describing the dependencies between forms,
         where the key is the name of the form, and the value is a dictionary of
@@ -91,6 +98,7 @@ class UIJson(BaseModel):
     workspace_geoh5: OptionalPath = None
 
     out_group: GroupForm | OptionalString = None
+    children: dict[str, dict] | None = None
 
     _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
     _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)

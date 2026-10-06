@@ -1,0 +1,59 @@
+{
+    "title": "Exploratory Data Analysis (EDA)",
+    "conda_environment": "mirageo",
+    "run_command": "mock_eda.py",
+    "geoh5": "./eda.geoh5",
+    "monitoring_directory": "",
+    "data_mesh": {
+        "meshType": [
+            "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
+            "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}"
+        ],
+        "label": "Select Points or Curve",
+        "value": "{4efc1715-d484-4aeb-825d-5637a19e2c84}",
+        "optional": true,
+        "main": true,
+        "enabled": true
+    },
+    "data_channel": {
+        "association": "Vertex",
+        "dataType": "Float",
+        "label": "Data channel",
+        "parent": "data_mesh",
+        "multiSelect": true,
+        "value": [
+            "{8805725d-c2a6-4bac-9092-207164d6a6f0}",
+            "{a6e876be-580f-4b80-8183-d0907061ff75}",
+            "{aee439d7-8e8f-4889-86b5-fb157d38843a}",
+            "{84bb3a37-75a2-411c-9810-d68c06941c5c}"
+        ],
+        "main": true,
+        "group": "Data selection",
+        "enabled": true
+    },
+    "target_channel": {
+        "association": "Vertex",
+        "dataType": "Referenced",
+        "label": "Target channel",
+        "parent": "data_mesh",
+        "value": "{49aa09b3-bded-4ef2-bbe0-6a69d729a0c3}",
+        "main": true,
+        "group": "Data selection",
+        "enabled": true
+    },
+    "out_group": {
+        "group": "Output preferences",
+        "label": "UIJson group",
+        "value": "{353287b1-a7b3-4f50-b458-089b67e28f2e}",
+        "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+        "visible": true,
+        "optional": true,
+        "enabled": true
+    },
+    "children": {
+        "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}": {
+            "type": "FusionTable",
+            "value": ""
+        }
+    }
+}

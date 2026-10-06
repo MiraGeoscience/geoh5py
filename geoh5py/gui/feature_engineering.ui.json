@@ -1,0 +1,47 @@
+{
+    "title": "Feature Engineering",
+    "conda_environment": "mirageo",
+    "run_command": "mock_feature_eng",
+    "geoh5": "C:/Users/dominiquef/Documents/tests/prototype_workflows/feat_eng.ui.geoh5",
+    "monitoring_directory": "C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{1f696072-f93f-4290-8cb8-3082adce8b5b}/Python/Monitoring",
+    "workspace_geoh5": "C:/Users/dominiquef/Documents/tests/prototype_workflows/single_ui.geoh5",
+    "data_mesh": {
+        "meshType": [
+            "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
+            "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}"
+        ],
+        "label": "Select Points or Curve",
+        "value": "{6e247df9-4158-4ea8-8431-cd462d460a99}",
+        "optional": true,
+        "main": true,
+        "enabled": true
+    },
+    "data_channel": {
+        "association": "Vertex",
+        "dataType": "Float",
+        "label": "Data channel",
+        "multiSelect": true,
+        "parent": "data_mesh",
+        "value": [
+            "{6004227e-3db4-433d-b0d6-6e9b91172032}"
+        ],
+        "main": true,
+        "group": "Data selection",
+        "enabled": true
+    },
+    "out_group": {
+        "group": "Output preferences",
+        "label": "UIJson group",
+        "value": "{00000000-0000-0000-0000-000000000000}",
+        "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+        "visible": true,
+        "optional": true,
+        "enabled": true
+    },
+    "children": {
+        "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}": {
+            "type": "FloatData",
+            "value": ""
+        }
+    }
+}

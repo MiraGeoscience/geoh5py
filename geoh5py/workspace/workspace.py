@@ -36,12 +36,13 @@ from pathlib import Path
 from shutil import copy, move
 from subprocess import CalledProcessError
 from typing import Any, ClassVar, cast
+from uuid import UUID
 from weakref import ReferenceType
 
 import h5py
 import numpy as np
 
-from geoh5py import data, groups, objects
+from geoh5py import groups, objects
 from geoh5py.data import CommentsData, Data, PrimitiveTypeEnum, ReferencedData
 from geoh5py.data.data_type import DataType
 from geoh5py.data.text_data import TextData
@@ -66,7 +67,7 @@ from geoh5py.shared.concatenation import (
     ConcatenatedPropertyGroup,
     Concatenator,
 )
-from geoh5py.shared.entity import Entity
+from geoh5py.shared.entity import Entity, Substitute
 from geoh5py.shared.entity_type import EntityType
 from geoh5py.shared.exceptions import Geoh5FileClosedError
 from geoh5py.shared.utils import (
@@ -75,7 +76,9 @@ from geoh5py.shared.utils import (
     as_str_if_utf8_bytes,
     clear_array_attributes,
     dict_mapper,
+    equalize_string,
     get_attributes,
+    is_uuid,
     map_to_class,
     str2uuid,
 )
@@ -96,6 +99,15 @@ NETWORK_DRIVES = [
 TYPE_UID_TO_CLASS = map_to_class(
     ClassIdentifierEnum.DEFAULT_TYPE_UID, [groups, objects]
 )
+
+GA_NAME_TO_GROUP: dict[str, type[Group]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [groups]).items()
+}
+GA_NAME_TO_OBJECT: dict[str, type[ObjectBase]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
+}
 
 
 # pylint: disable=too-many-instance-attributes
@@ -607,6 +619,50 @@ class Workspace(AbstractContextManager):
 
         return root
 
+    def create_substitutes(
+        self, value: dict[str, Any] | None, parent
+    ) -> dict[str, Substitute] | None:
+        """
+        Create Substitute entity for UIJson group results.
+
+        :param value: Dictionary of children to promote.
+        :param parent: Parent entity for the substitutes.
+
+        :return: Dictionary of promoted children.
+        """
+        if value is None:
+            return None
+
+        promoted_children = {}
+        for count, (uid, child) in enumerate(value.items()):
+            if isinstance(child, dict):
+                concrete_type = name_or_uid_to_type(child.get("type", None))
+                concrete = str2uuid(child.get("value", None))
+                concrete = self.get_entity(concrete)[0] if concrete else None
+
+                if concrete:
+                    name = f"Child {count}\n({concrete_type.__name__})"
+                else:
+                    name = f"Future {count}\n({concrete_type.__name__})"
+
+                promoted_children[uid] = Substitute.build(
+                    self.get_entity(child.get("parent", None))[0] or parent,
+                    uid,
+                    concrete_type,
+                    value=concrete,
+                    name=name,
+                )
+            elif isinstance(child, Substitute):
+                promoted_children[uid] = child
+            else:
+                raise ValueError(
+                    f"Substitute {uid} must be a dictionary or a Substitute object."
+                )
+
+            self.register(promoted_children[uid])
+
+        return promoted_children
+
     @property
     def data(self) -> list[data.Data]:
         """Get all active Data entities registered in the workspace."""
@@ -628,6 +684,12 @@ class Workspace(AbstractContextManager):
             self._root.entity_type.on_file = True
             self.fetch_children(self._root, recursively=True)
 
+            for group in self.groups:
+                if options := getattr(group, "options", None):
+                    subs = self.create_substitutes(
+                        options.get("children", None), parent=group
+                    )
+                    group.substitutes = subs
             return
 
         # Fetch all entities and build the family tree with RootGroup at the base
@@ -1661,3 +1723,38 @@ def validate_page_size(value: int) -> int:
         raise ValueError("Page size must be an integer multiple of 2, and >=512.")
 
     return value
+
+
+def name_or_uid_to_type(
+    value: str | UUID | type,
+) -> type[ObjectBase] | type[Group] | UUID:
+    """
+    Convert a string to a geoh5py type or group type.
+
+    :param value: String representing geoh5py type, either as a UUID or name.
+    :return: Type of object, group or UUID
+    """
+    if not isinstance(value, str):
+        return value
+
+    if is_uuid(value):
+        return UUID(value)
+
+    value = equalize_string(value)
+    obj: type[ObjectBase] | type[Group] | None = (
+        GA_NAME_TO_OBJECT.get(value, None)
+        or GA_NAME_TO_GROUP.get(value, None)
+        or (
+            PrimitiveTypeEnum(value.upper()).value
+            if value.upper() in PrimitiveTypeEnum
+            else None
+        )
+        or (PropertyGroup if value == "propertygroup" else None)
+    )
+    if obj is None:
+        raise ValueError(
+            f"Provided string {value!s} is not a recognized "
+            f"geoh5py object or group type."
+        ) from None
+
+    return obj

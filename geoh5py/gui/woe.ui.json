@@ -1,0 +1,47 @@
+{
+    "title": "Weight of Evidence",
+    "conda_environment": "mirageo",
+    "run_command": "mock_woe",
+    "geoh5": "",
+    "monitoring_directory": "",
+    "feature_list": {
+        "meshType": "{d9576a5e-07e9-42ee-8b83-6b4b1cd992d4}",
+        "label": "Feature list",
+        "value": "{15f682e7-65a0-4f1d-b31f-d35264de976c}",
+        "optional": false,
+        "main": true,
+        "enabled": true
+    },
+    "data_channel": {
+        "association": [
+            "Vertex"
+        ],
+        "dataType": "Boolean",
+        "main": true,
+        "label": "Balancing mask",
+        "parent": "feature_list",
+        "optional": false,
+        "enabled": true,
+        "value": ""
+    },
+    "out_group": {
+        "group": "Output preferences",
+        "label": "UIJson group",
+        "value": "{9b437cdb-05d3-4c96-9544-55a9a0664be1}",
+        "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+        "visible": true,
+        "optional": true,
+        "enabled": true
+    },
+    "children": {
+        "{babcabd3-dd17-4f5c-a8fa-93c7458c5d98}": {
+            "type": "Points",
+            "value": ""
+        },
+        "{9a5cd7b6-f396-4d97-8fd5-7f6d406862db}": {
+            "type": "Float",
+            "value": "",
+            "parent": "{babcabd3-dd17-4f5c-a8fa-93c7458c5d98}"
+        }
+    }
+}

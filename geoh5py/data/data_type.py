@@ -757,6 +757,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
         **kwargs,
     ):
         self._referenced_data = None
+        self._value_map: ReferenceValueMap | None = None
 
         super().__init__(
             workspace,

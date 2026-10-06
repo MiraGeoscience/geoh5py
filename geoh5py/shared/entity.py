@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 
@@ -34,6 +34,7 @@ from .entity_type import EntityType
 
 if TYPE_CHECKING:  # pragma: no cover
     from .. import shared
+    from ..groups import UIJsonGroup
     from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
 
@@ -461,3 +462,88 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
         """
         return self.entity_type.workspace
+
+
+class Substitute:
+    """
+    Class for storing results of a run command in a UIJson object.
+
+    The class inherits from the type of the child object.
+    """
+
+    def __init__(
+        self,
+        parent: UIJsonGroup,
+        uid: uuid.UUID,
+        concrete_type: type,
+        value: Any | None = None,
+        name: str = "Future",
+    ):
+        self.concrete_type = concrete_type
+        self.parent = parent
+        self.uid = uid
+        self.name = name
+        self.value = value
+        self.on_file = value is not None
+
+    def __getattr__(self, item):
+        """
+
+        :param item:
+        :return:
+        """
+        try:
+            if self.value:
+                return getattr(self.value, item)
+
+        except AttributeError:
+            self.__getattribute__(item)
+
+            raise AttributeError(item)
+
+    @classmethod
+    def build(
+        cls, parent: UIJsonGroup, uid: uuid.UUID, concrete_type: type, **kwargs
+    ) -> Self:
+        """
+        Create a Substitute instance from a dictionary.
+
+        :param data: Dictionary representing the child object.
+        :returns: Substitute object.
+        """
+        child_type = type(
+            concrete_type.__name__ + "Substitute", (Substitute, concrete_type), {}
+        )
+        return child_type(parent, uid, concrete_type, **kwargs)
+
+    @property
+    def parent(self):
+        """
+        Get the parent UIJson object.
+        """
+        if self.value:
+            return self.value.parent
+
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent):
+        self._parent = parent
+
+    @property
+    def name(self):
+        """
+        Get the name of the sub object.
+        """
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    @property
+    def workspace(self) -> Workspace:
+        """
+        :obj:`~geoh5py.workspace.workspace.Workspace` to which the Entity belongs to.
+        """
+        return self.parent.workspace
