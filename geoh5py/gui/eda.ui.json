@@ -52,7 +52,7 @@
     },
     "children": {
         "{da1c8f8f-9f70-48f4-85e9-de261022f8eb}": {
-            "type": "Grid2D",
+            "type": "FusionTable",
             "value": ""
         }
     }

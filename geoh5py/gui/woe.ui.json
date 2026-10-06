@@ -4,13 +4,10 @@
     "run_command": "mock_woe",
     "geoh5": "",
     "monitoring_directory": "",
-    "data_mesh": {
-        "meshType": [
-            "{202C5DB1-A56D-4004-9CAD-BAAFD8899406}",
-            "{6A057FDC-B355-11E3-95BE-FD84A7FFCB88}"
-        ],
-        "label": "Object",
-        "value": "{60259e7b-9106-4d46-b9f4-3791144d915b}",
+    "feature_list": {
+        "meshType": "{d9576a5e-07e9-42ee-8b83-6b4b1cd992d4}",
+        "label": "Feature list",
+        "value": "{15f682e7-65a0-4f1d-b31f-d35264de976c}",
         "optional": false,
         "main": true,
         "enabled": true
@@ -19,11 +16,10 @@
         "association": [
             "Vertex"
         ],
-        "dataType": "Float",
-        "dataGroupType": "Multi-element",
+        "dataType": "Boolean",
         "main": true,
-        "label": "Feature list",
-        "parent": "data_mesh",
+        "label": "Balancing mask",
+        "parent": "feature_list",
         "optional": false,
         "enabled": true,
         "value": ""

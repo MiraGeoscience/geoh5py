@@ -1,0 +1,30 @@
+{
+    "title": "Balancing",
+    "conda_environment": "mirageo",
+    "run_command": "mock_feature_list",
+    "geoh5": "C:/Users/dominiquef/Documents/tests/prototype_workflows/single_ui.geoh5",
+    "monitoring_directory": "",
+    "feature_list": {
+        "meshType": "{d9576a5e-07e9-42ee-8b83-6b4b1cd992d4}",
+        "label": "Feature list",
+        "value": "{15f682e7-65a0-4f1d-b31f-d35264de976c}",
+        "optional": false,
+        "main": true,
+        "enabled": true
+    },
+    "out_group": {
+        "group": "Output preferences",
+        "label": "UIJson group",
+        "value": "{60d4a540-4ee8-4324-802b-01c1067f1c62}",
+        "groupType": "{BB50AC61-A657-4926-9C82-067658E246A0}",
+        "visible": true,
+        "optional": true,
+        "enabled": true
+    },
+    "children": {
+        "{3c2f3328-1b73-4228-b25e-a0a154a44614}": {
+            "type": "BooleanData",
+            "value": ""
+        }
+    }
+}

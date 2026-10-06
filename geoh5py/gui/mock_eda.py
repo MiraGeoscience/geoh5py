@@ -36,23 +36,22 @@ def main(ui_file):
         # Convert to a dict with geoh5py entities
         my_inputs = ifile.to_params(workspace=workspace)
 
-        # Create top group
-        eda_group = FusionTableGroup.create(
-            workspace,
-            mesh=my_inputs["data_mesh"],
-            referenced_data=my_inputs["target_channel"],
-            name="EDA Group",
-            parent=my_inputs["out_group"],
-        )
-
         # Create feature list group
-        source = Path(__name__).resolve().parent / "feature_list.ui.json"
+        source = Path(__name__).resolve().parent / "data_normalization.ui.json"
         features = UIJson.read(source)
         features.set_values(
             data_channel=my_inputs["data_channel"], data_mesh=my_inputs["data_mesh"]
         )
 
         features_group = features.to_ui_json_group(workspace, name="Feature List")
+        # Create top group
+        eda_group = FusionTableGroup.create(
+            workspace,
+            mesh=my_inputs["data_mesh"],
+            referenced_data=my_inputs["target_channel"],
+            name="EDA Group",
+            parent=features_group,
+        )
 
         prop_group = my_inputs["data_mesh"].create_property_group(
             name="Feature List", properties=my_inputs["data_channel"]

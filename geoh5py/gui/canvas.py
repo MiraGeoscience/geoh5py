@@ -251,6 +251,8 @@ class EntityCanvas(QGraphicsScene):
             children = [
                 uids[1] for uids in self.connections if uids[0] == entity.parent.uid
             ]
+            if entity.uid not in children:
+                continue
             ind = children.index(entity.uid)
             angle = np.linspace(np.pi / 4, -np.pi / 4, len(children))[ind]
 
@@ -457,7 +459,7 @@ def mock_linkage(geoh5):
 
 if __name__ == "__main__":
     # file = sys.argv[1]
-    file = r"C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{0f4b606a-db12-4cef-8204-7b19cc8d0a2a}/Python/Files/GA-WorkflowPanel_1005-124545.ui.json"
+    file = r"C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{937a32cf-0176-4d38-a011-ebf84deaca3c}/Python/Files/GA-WorkflowPanel_1006-082405.ui.json"
     file_path = Path(file)
     ui_json = UIJson.read(file_path)
     working_file = file_path.parent / ui_json.workspace_geoh5.name
