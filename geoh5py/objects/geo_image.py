@@ -344,10 +344,10 @@ class GeoImage(ObjectBase):  # pylint: disable=too-many-public-methods
         Get the image as a :obj:`PIL.Image` object.
         """
         if self.image_data is not None and self.image_data.file_bytes is not None:
-            old_limit = Image.MAX_IMAGE_PIXELS
-            Image.MAX_IMAGE_PIXELS = None
             if not self.image_data.file_bytes:
                 return None
+            old_limit = Image.MAX_IMAGE_PIXELS
+            Image.MAX_IMAGE_PIXELS = None
             file_bytes = list(self.image_data.file_bytes.values())[0]
             try:
                 im = Image.open(BytesIO(file_bytes))
