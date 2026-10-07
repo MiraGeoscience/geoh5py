@@ -30,7 +30,7 @@ import numpy as np
 import psutil
 
 from ..data.reference_value_map import ReferenceValueMap
-from ..shared import FLOAT_NDV, fetch_h5_handle
+from ..shared import FLOAT_NDV
 from ..shared.exceptions import MemoryValidationError
 from ..shared.utils import (
     INV_KEY_MAP,
@@ -38,6 +38,7 @@ from ..shared.utils import (
     PROPERTY_KWARGS,
     as_str_if_utf8_bytes,
     as_str_if_uuid,
+    fetch_h5_handle,
     str2uuid,
     str_json_to_dict,
 )

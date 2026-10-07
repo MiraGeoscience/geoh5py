@@ -29,7 +29,7 @@ from warnings import warn
 from geoh5py import Workspace
 from geoh5py.groups import PropertyGroup
 from geoh5py.objects import ObjectBase
-from geoh5py.shared import Entity
+from geoh5py.shared.entity import Entity
 from geoh5py.shared.exceptions import RequiredValidationError
 from geoh5py.shared.validators import (
     AssociationValidator,

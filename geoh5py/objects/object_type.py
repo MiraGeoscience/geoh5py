@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..shared import EntityType
+from ..shared.entity_type import EntityType
 
 
 if TYPE_CHECKING:

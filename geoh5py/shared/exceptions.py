@@ -28,7 +28,7 @@ from uuid import UUID
 if TYPE_CHECKING:
     from geoh5py import Workspace
     from geoh5py.groups import PropertyGroup
-    from geoh5py.shared import Entity
+    from geoh5py.shared.entity import Entity
 
 
 class Geoh5FileClosedError(ABC, Exception):

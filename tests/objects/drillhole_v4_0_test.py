@@ -34,7 +34,6 @@ from h5py import special_dtype
 from geoh5py.data import FloatData, data_type
 from geoh5py.groups import ContainerGroup, DrillholeGroup, Group
 from geoh5py.objects import Drillhole, ObjectBase
-from geoh5py.shared import fetch_h5_handle
 from geoh5py.shared.concatenation import (
     ConcatenatedData,
     ConcatenatedObject,
@@ -42,7 +41,7 @@ from geoh5py.shared.concatenation import (
     Concatenator,
 )
 from geoh5py.shared.concatenation.drillholes_group_table import DrillholesGroupTable
-from geoh5py.shared.utils import as_str_if_uuid, compare_entities
+from geoh5py.shared.utils import as_str_if_uuid, compare_entities, fetch_h5_handle
 from geoh5py.workspace import Workspace
 
 
