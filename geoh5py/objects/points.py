@@ -64,6 +64,7 @@ class Points(ObjectBase):
         Add a files associated with the vertices, stored as bytes on a FilenameData
 
         :param file: List of name with path to import.
+        :param indices: Indices of vertices to add.
         :param name: Name of the file in the workspace.
         """
         validated = {}
