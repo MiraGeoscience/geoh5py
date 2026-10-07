@@ -37,6 +37,7 @@ class BooleanData(ReferencedData):
         :param values: numpy array to modify.
         :return: the formatted values.
         """
+        values[np.isnan(values)] = False
         if set(values) - {0, 1} != set():
             raise ValueError(
                 f"Values provided by {self.name} are not containing only 0 or 1"

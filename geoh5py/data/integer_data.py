@@ -33,7 +33,7 @@ class IntegerData(NumericData):
         :param values: numpy array to modify.
         :return: the formatted values.
         """
-        if np.any(np.modf(values)[0] != 0):
+        if np.any((np.modf(values)[0] != 0) & ~np.isnan(values)):
             raise TypeError("Values cannot have decimal points.")
 
         return super().format_type(values)
