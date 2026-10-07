@@ -1157,6 +1157,8 @@ def get_unique_name_from_entities(
             sub_name = getattr(child, key, None)
             if isinstance(sub_name, str):
                 names.append(sub_name)
+            elif isinstance(sub_name, Iterable):
+                names.extend([str(n) for n in sub_name if isinstance(n, str)])
 
     return find_unique_name(name, names)
 

@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+import random
+import string
 from io import BytesIO
 from pathlib import Path
 
@@ -27,7 +29,7 @@ import numpy as np
 import pytest
 
 from geoh5py.groups import ContainerGroup
-from geoh5py.objects import Curve
+from geoh5py.objects import Curve, Points
 from geoh5py.shared.utils import compare_entities
 from geoh5py.workspace import Workspace
 
@@ -49,20 +51,24 @@ def test_add_file(tmp_path: Path):
         file_data = obj.add_file(tmp_path / file_name)
         assert file_data.values == file_name, "File_name not properly set."
         assert file_data.n_values == 1, "Object association should have 1 value."
+
+        with pytest.raises(
+            ValueError, match="OBJECT association must be a single string"
+        ):
+            file_data.values = np.asarray(["abc", "def"])
+
         # Rename the file locally and write back out
         new_path = tmp_path / r"temp"
-        file_data.save_file(path=new_path, name="numpy_array.dat")
-        assert (new_path / "numpy_array.dat").is_file(), (
-            f"Input path '{new_path / 'numpy_array.dat'}' does not exist."
-        )
+        file_data.save_file(path=new_path)
+        assert (new_path / "numpy_array.txt").is_file()
 
         file_data.save_file(path=new_path)
         np.testing.assert_array_equal(
             np.loadtxt(new_path / "numpy_array.txt"),
-            np.loadtxt(BytesIO(file_data.file_bytes)),
+            np.loadtxt(BytesIO(file_data.file_bytes["numpy_array.txt"])),
             err_msg="Loaded and stored bytes array not the same",
         )
-        file_data.file_bytes = b"abc"
+        file_data.file_bytes["numpy_array.txt"] = b"abc"
         obj.copy(parent=workspace_copy)
         workspace_copy.close()
         workspace_copy.open()
@@ -100,3 +106,40 @@ def test_add_file_increment_names(tmp_path: Path):
         names.append(file_data.values)
 
     assert names == ["test.txt", "test(1).txt", "test(2).txt"]
+
+
+def test_add_file_vertices(tmp_path: Path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
+        points = Points.create(workspace, vertices=np.random.rand(10, 3))
+
+        file_dict = {}
+        for _ in range(3):
+            file_name = (
+                tmp_path
+                / f"{''.join(random.choices(string.ascii_letters, k=random.randint(5, 25)))}.txt"
+            )
+            xyz = np.random.randn(32)
+            np.savetxt(file_name, xyz)
+            file_dict[file_name.name] = file_name
+
+        file_data = points.add_file_vertices(
+            file_dict,
+            indices=[1, 3, 5],
+            name="test_file_data",
+        )
+
+        assert len(file_data.file_bytes) == 3, "File bytes should have 3 entries."
+
+        with pytest.raises(TypeError, match="string keys and bytes values"):
+            file_data.file_bytes = {1: b"abc"}
+
+        with pytest.raises(TypeError, match="string keys and bytes values"):
+            file_data.file_bytes = {"abc": "abc"}
+
+        with pytest.raises(
+            TypeError, match=r"must be of type 'np.ndarray' with string dtype"
+        ):
+            file_data.values = np.array([1, 2, 3])
+
+        with pytest.raises(ValueError, match=r"must have the same length"):
+            file_data.values = np.asarray(["abc", "def"])

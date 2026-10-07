@@ -25,15 +25,18 @@ from __future__ import annotations
 import re
 import uuid
 import warnings
+from io import BytesIO
 from numbers import Real
+from pathlib import Path
 
 import numpy as np
 from h5py import special_dtype
 
-from ..data import Data, FloatData, NumericData
+from ..data import Data, FilenameData, FloatData, NumericData
 from ..shared.utils import (
     box_intersect,
     dip_azimuth_to_vector,
+    get_unique_name_from_entities,
     mask_by_extent,
     merge_arrays,
 )
@@ -122,6 +125,80 @@ class Drillhole(Points):
         self.end_of_hole = end_of_hole
         self.planning = planning
         self.surveys = surveys
+
+    def add_file_vertices(
+        self,
+        file: dict[str, str | Path | bytes | BytesIO],
+        indices: np.ndarray,
+        name: str = "File",
+    ) -> FilenameData:
+        """
+        Add a files associated with the vertices, stored as bytes on a FilenameData
+
+        :param file: List of name with path to import.
+        :param indices: Depths or from_to locations to associate the files.
+        :param name: Name of the file in the workspace.
+        """
+        validated = {}
+        for in_name, blob in file.items():
+            _, blob = self._validate_file_data(blob)
+
+            in_name = get_unique_name_from_entities(
+                in_name, self.children, key="values", types=FilenameData
+            )
+            validated[in_name] = blob
+
+        if indices.shape[0] != len(validated):
+            raise ValueError(
+                "The number of depth values must match the number of files provided."
+            )
+
+        attributes = {
+            "name": "File",
+            "file_bytes": validated,
+            "association": "DEPTH",
+            "parent": self,
+            "public": True,
+            "values": np.asarray(list(validated), dtype=str),
+            "primitive_type": "FILENAME",
+        }
+
+        if indices.ndim > 1:
+            attributes["from-to"] = indices
+        else:
+            attributes["depth"] = indices
+
+        attributes, validate_property_group = self.validate_association(
+            attributes, property_group=name
+        )
+
+        data_object = self.workspace.create_entity(
+            Data,
+            entity={
+                "parent": self,
+                **{
+                    key: val
+                    for key, val in attributes.items()
+                    if key
+                    not in [
+                        "parent",
+                        "entity_type",
+                        "type",
+                        "primitive_type",
+                        "visible",
+                    ]
+                },
+            },
+            entity_type=self.workspace.validate_data_type(
+                attributes, attributes.get("values")
+            ),
+        )
+        self.add_data_to_group(
+            data_object,  # type: ignore
+            validate_property_group,
+        )
+
+        return data_object
 
     @property
     def cells(self) -> np.ndarray | None:
