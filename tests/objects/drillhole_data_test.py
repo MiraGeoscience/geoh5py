@@ -430,7 +430,7 @@ def test_insert_drillhole_data(tmp_path):
     well_name = "bullseye"
     n_data = 10
     collocation = 1e-5
-    h5file_path = tmp_path / f"{__name__}.geoh5"
+    h5file_path = tmp_path / r"testCurve.geoh5"
 
     with Workspace(version=1.0).save_as(h5file_path) as workspace:
         max_depth = 100
@@ -439,8 +439,8 @@ def test_insert_drillhole_data(tmp_path):
             collar=np.r_[0.0, 10.0, 10],
             surveys=np.c_[
                 np.linspace(0, max_depth, n_data),
-                np.ones(n_data) * 45.0,
                 np.linspace(-89, -75, n_data),
+                np.ones(n_data) * 45.0,
             ],
             name=well_name,
             default_collocation_distance=collocation,
@@ -457,31 +457,39 @@ def test_insert_drillhole_data(tmp_path):
 
         # Add more data with single match
         old_depths = well.get_data("DEPTH")[0].values
-        insert = np.random.randint(0, high=n_data - 1, size=2)
-        new_depths = old_depths[insert]
-        new_depths[0] -= 2e-6  # Out of tolerance
-        new_depths[1] -= 5e-7  # Within tolerance
-
-        well.add_data(
+        indices = np.where(~np.isnan(old_depths))[0]
+        insert = random.sample(range(1, len(indices) - 1), 2)
+        new_depths = np.empty(2)
+        new_depths[0] = old_depths[indices[insert[0]]] - 2e-5  # Out of tolerance
+        new_depths[1] = old_depths[indices[insert[1]]] - 5e-6  # Within tolerance
+        match_test = well.add_data(
             {
                 "match_depth": {
                     "depth": new_depths,
                     "values": np.random.randint(1, high=8, size=2),
-                },
-            },
-            collocation_distance=1e-6,
+                    "collocation_distance": 1e-5,
+                }
+            }
         )
 
         assert well.n_vertices == n_data + 1, (
             "Error adding values with collocated tolerance"
         )
-        assert np.isnan(data_object.values[insert[0]]), (
+
+        assert np.isnan(data_object.values[indices[insert][0]]), (
             "Old values not re-sorted properly after insertion"
         )
 
-        assert np.where(well.depths.values == new_depths[0])[0] == insert[0], (
-            "Depth insertion error"
-        )
+        insert_ind = np.where(~np.isnan(match_test.values))[0]
+        if insert[0] <= insert[1]:
+            assert all(
+                ind in [indices[insert][0], indices[insert][1] + 1]
+                for ind in insert_ind
+            ), "Depth insertion error"
+        else:
+            assert all(
+                ind in [indices[insert][0], indices[insert][1]] for ind in insert_ind
+            ), "Depth insertion error"
 
 
 def test_mask_drillhole_data(tmp_path):

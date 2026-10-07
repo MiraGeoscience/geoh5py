@@ -40,8 +40,8 @@ from ..data import (
 )
 from ..data.data_type import GeometricDataValueMapType
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
-from ..shared import Entity
 from ..shared.conversion import BaseConversion
+from ..shared.entity import Entity
 from ..shared.entity_container import EntityContainer
 from ..shared.utils import (
     array_is_colour,
