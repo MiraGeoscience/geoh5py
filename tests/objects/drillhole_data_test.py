@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import random
 import string
-from copy import copy
 
 import numpy as np
 import pytest
@@ -460,9 +459,9 @@ def test_insert_drillhole_data(tmp_path):
         old_depths = well.get_data("DEPTH")[0].values
         indices = np.where(~np.isnan(old_depths))[0]
         insert = random.sample(range(1, len(indices) - 1), 2)
-        new_depths = copy(old_depths[indices[insert]])
-        new_depths[0] -= 2e-6  # Out of tolerance
-        new_depths[1] -= 5e-7  # Within tolerance
+        new_depths = np.empty(2)
+        new_depths[0] = old_depths[indices[insert[0]]] - 2e-6  # Out of tolerance
+        new_depths[1] = old_depths[indices[insert[1]]] - 5e-7  # Within tolerance
         match_test = well.add_data(
             {
                 "match_depth": {
