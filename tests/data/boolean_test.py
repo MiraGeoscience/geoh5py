@@ -68,15 +68,16 @@ def test_data_boolean(tmp_path):
             values[3:-3, 3:-3] = 0
             values[:1, :1] = np.nan
 
-            grid.add_data(
-                {
-                    "my_boolean2": {
-                        "association": "CELL",
-                        "values": values.flatten(),
-                        "entity_type": grid.get_data("my_boolean")[0].entity_type,
+            with pytest.raises(ValueError, match="are not containing only 0 or 1"):
+                grid.add_data(
+                    {
+                        "my_boolean2": {
+                            "association": "CELL",
+                            "values": values.flatten(),
+                            "entity_type": grid.get_data("my_boolean")[0].entity_type,
+                        }
                     }
-                }
-            )
+                )
 
             assert (
                 grid.get_data("my_boolean")[0].entity_type.primitive_type

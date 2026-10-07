@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from .referenced_data import ReferencedData
 
 
@@ -27,6 +29,20 @@ class BooleanData(ReferencedData):
     """
     Data class for logical (bool) values.
     """
+
+    def format_type(self, values: np.ndarray):
+        """
+        Check if the type of values is valid and coerce to type bool.
+
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
+        if set(values) - {0, 1} != set():
+            raise ValueError(
+                f"Values provided by {self.name} are not containing only 0 or 1"
+            )
+
+        return super().format_type(values)
 
     @property
     def ndv(self) -> int:

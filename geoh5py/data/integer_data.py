@@ -20,11 +20,24 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from ..shared import INTEGER_NDV
 from .numeric_data import NumericData
 
 
 class IntegerData(NumericData):
+    def format_type(self, values: np.ndarray) -> np.ndarray:
+        """
+        Check if the type of values is valid and coerce to type int32.
+        :param values: numpy array to modify.
+        :return: the formatted values.
+        """
+        if np.any(np.modf(values)[0] != 0):
+            raise TypeError("Values cannot have decimal points.")
+
+        return super().format_type(values)
+
     @property
     def formatted_values(self):
         values = self.ndv_values
