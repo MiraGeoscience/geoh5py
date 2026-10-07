@@ -40,13 +40,14 @@ class FilenameData(Data):
 
     def __init__(
         self,
-        values: str | None = None,
+        values: np.ndarray[str] | str | None = None,
         file_bytes: dict[str, bytes] | None = None,
         name="GeoImageMesh_Image",
         public: bool = False,
         **kwargs,
     ):
         self._file_bytes = None
+        self._values: np.ndarray[str] | None = None
 
         super().__init__(values=values, name=name, public=public, **kwargs)
 
