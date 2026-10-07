@@ -33,7 +33,7 @@ import h5py
 import numpy as np
 from pydantic import BaseModel
 
-from ..data import (
+from geoh5py.data import (
     CommentsData,
     Data,
     FilenameData,
@@ -41,13 +41,18 @@ from ..data import (
     ReferenceValueMap,
     TextureData,
 )
-from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
-from ..data.text_data import text_formating
-from ..groups import Group, GroupType, PropertyGroup, RootGroup
-from ..objects import ObjectBase, ObjectType
-from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
-from ..shared.concatenation import Concatenator
-from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
+from geoh5py.data.data_type import (
+    DataType,
+    GeometricDataValueMapType,
+    ReferenceDataType,
+)
+from geoh5py.data.text_data import text_formating
+from geoh5py.groups import Group, GroupType, PropertyGroup, RootGroup
+from geoh5py.objects import ObjectBase, ObjectType
+from geoh5py.shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
+from geoh5py.shared.concatenation import Concatenator
+from geoh5py.shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
+
 from .utils import str_from_subtype, str_from_type
 
 
