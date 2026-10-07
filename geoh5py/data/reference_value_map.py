@@ -153,6 +153,6 @@ class ReferenceValueMap:
 
 
 BOOLEAN_VALUE_MAP = np.array(
-    [(0, b"False"), (1, b"True")],
+    [(0, "False"), (1, "True")],
     dtype=ReferenceValueMap.MAP_DTYPE,
 )

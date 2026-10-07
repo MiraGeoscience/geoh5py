@@ -692,7 +692,7 @@ class ReferencedBooleanType(ReferenceDataType):
         Validate the keys of the value map.
         """
         if not np.all(value_map.map == BOOLEAN_VALUE_MAP):
-            raise ValueError("Boolean value map must be (0: 'False', 1: 'True'")
+            raise ValueError("Boolean value map must be {0: 'False', 1: 'True'}")
 
 
 class GeometricDynamicDataType(DataType, ABC):
