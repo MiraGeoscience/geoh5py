@@ -46,7 +46,7 @@ from geoh5py.data.data_type import (
     GeometricDataValueMapType,
     ReferenceDataType,
 )
-from geoh5py.data.text_data import text_formating
+from geoh5py.data.text_data import text_formatting
 from geoh5py.groups import Group, GroupType, PropertyGroup, RootGroup
 from geoh5py.objects import ObjectBase, ObjectType
 from geoh5py.shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
@@ -1025,7 +1025,7 @@ class H5Writer:
 
         entity_handle.create_dataset(
             "Data",
-            data=text_formating(entity.values),
+            data=text_formatting(entity.values),
         )
 
         for elem, blob in entity.file_bytes.items():
