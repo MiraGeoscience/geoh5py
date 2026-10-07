@@ -762,7 +762,7 @@ class GeometricDataValueMapType(GeometricDynamicDataType):
             **kwargs,
         )
         self._parent = parent
-        self.value_map = self.validate_value_map(value_map)
+        self._value_map = self.validate_value_map(value_map)
 
     def set_parent_reference(self, data: GeometricDataConstants, new_name: str):
         """
