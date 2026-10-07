@@ -24,7 +24,7 @@ from pathlib import Path
 from uuid import UUID
 
 from ..groups import PropertyGroup, UIJsonGroup
-from ..shared import Entity
+from ..shared.entity import Entity
 from ..workspace import Workspace
 
 

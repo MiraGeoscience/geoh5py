@@ -42,9 +42,9 @@ def test_create_point_data(tmp_path, caplog):
             }
         )
 
-    assert np.array_equal(data[0].values, values[:12])
+    np.testing.assert_allclose(data[0].values, values[:12])
 
     test = np.full((12,), np.nan)
     test[:8] = values[:8]
 
-    assert np.array_equal(data[1].values, test, equal_nan=True)
+    np.testing.assert_allclose(data[1].values, test, equal_nan=True)

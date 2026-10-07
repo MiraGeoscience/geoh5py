@@ -27,7 +27,7 @@ import uuid
 from uuid import UUID
 
 from .. import groups, objects
-from ..shared import Entity
+from ..shared.entity import Entity
 
 
 known_object_types = [
