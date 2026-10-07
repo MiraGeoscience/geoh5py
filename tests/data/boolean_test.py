@@ -66,7 +66,7 @@ def test_data_boolean(tmp_path):
 
             values = np.ones(grid.shape)
             values[3:-3, 3:-3] = 0
-            values[:1, :1] = np.nan
+            values[:1, :1] = 1.1
 
             with pytest.raises(ValueError, match="are not containing only 0 or 1"):
                 grid.add_data(
