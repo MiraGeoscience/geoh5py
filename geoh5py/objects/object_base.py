@@ -252,14 +252,14 @@ class ObjectBase(EntityContainer):
         :param values: The values to add to the data map.
         :param public: Whether the data map is public or not.
         """
+        if not isinstance(data, ReferencedData):
+            raise TypeError("Data type must be of type 'ReferencedData'.")
+
         data_maps = data.data_maps or {}
 
         name = get_unique_name_from_entities(
             name, self.children, types=GeometricDataConstants
         )
-
-        if data.entity_type.value_map is None:
-            raise ValueError("Entity type must have a value map.")
 
         data_type = self.add_data_map_type(name, values, data.entity_type.name)
 

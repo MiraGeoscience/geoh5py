@@ -177,7 +177,7 @@ def test_copy_from_extent(
 
             assert list(
                 transmitters_rec.tx_id_property.entity_type.value_map.map["Value"]
-            ) == [b"Unknown", b"Loop 2"]
+            ) == ["Unknown", "Loop 2"]
 
 
 def test_copy_no_children(

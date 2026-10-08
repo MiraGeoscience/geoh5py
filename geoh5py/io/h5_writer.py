@@ -515,8 +515,6 @@ class H5Writer:
             if entity_type_handle is None:
                 return
 
-            dtype = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
-
             if value_map is None:
                 value_map = entity_type.value_map
 
@@ -532,7 +530,7 @@ class H5Writer:
 
             H5Writer.create_dataset(
                 entity_type_handle,
-                value_map.map.astype(dtype),
+                value_map.map.astype(entity_type.value_map.MAP_DTYPE),
                 name,
             )
 
