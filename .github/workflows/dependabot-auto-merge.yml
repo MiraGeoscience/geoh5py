@@ -14,4 +14,3 @@ jobs:
       checks: read
     with:
       dependabot-groups: mirageo-ci-tools,pre-commit-hooks
-      checks-to-skip: 'pre-commit.ci - pr,CodeQL'
