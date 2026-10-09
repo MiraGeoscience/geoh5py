@@ -27,6 +27,7 @@ import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     TypeAdapter,
     ValidationError,
     field_serializer,
@@ -227,8 +228,8 @@ class IntegerForm(BaseForm):
     """
 
     value: int
-    min: float = -np.inf
-    max: float = np.inf
+    min: int | None = Field(None, exclude_if=lambda v: v is None)
+    max: int | None = Field(None, exclude_if=lambda v: v is None)
 
 
 class FloatForm(BaseForm):
@@ -248,8 +249,8 @@ class FloatForm(BaseForm):
     """
 
     value: float
-    min: float = -np.inf
-    max: float = np.inf
+    min: float | None = Field(None, exclude_if=lambda v: v is None)
+    max: float | None = Field(None, exclude_if=lambda v: v is None)
     precision: int = 2
     line_edit: bool = True
 
@@ -608,8 +609,8 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     value: float | int
     is_value: bool
     property: OptionalUUID
-    min: float = -np.inf
-    max: float = np.inf
+    min: float | None = Field(None, exclude_if=lambda v: v is None)
+    max: float | None = Field(None, exclude_if=lambda v: v is None)
     precision: int = 2
     line_edit: bool = False
 
