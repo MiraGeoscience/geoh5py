@@ -598,14 +598,10 @@ class ReferenceDataType(DataType):
     def validate_value_map(
         self,
         value_map: dict[int, str] | np.ndarray | tuple | ReferenceValueMap,
-    ) -> ReferenceValueMap | None:
+    ) -> ReferenceValueMap:
         """
         Validate the attribute of ReferencedDataType
         """
-
-        if value_map is None:
-            return None
-
         if isinstance(value_map, dict | np.ndarray | tuple):
             value_map = ReferenceValueMap(value_map, main=True)
 
@@ -620,7 +616,7 @@ class ReferenceDataType(DataType):
         return value_map
 
     @property
-    def value_map(self) -> ReferenceValueMap | None:
+    def value_map(self) -> ReferenceValueMap:
         r"""
         Reference value map for to map index with description.
 
@@ -669,10 +665,10 @@ class ReferencedValueMapType(ReferenceDataType):
         """
         if 0 not in value_map.map["Key"]:
             value_map.map.resize(len(value_map) + 1, refcheck=False)
-            value_map.map[-1] = (0, b"Unknown")
+            value_map.map[-1] = (0, "Unknown")
 
         if dict(value_map.map)[0] not in ["Unknown", b"Unknown"]:
-            raise ValueError("Value for key 0 must be b'Unknown'")
+            raise ValueError("Value for key 0 must be 'Unknown'")
 
 
 class ReferencedBooleanType(ReferenceDataType):
@@ -696,7 +692,7 @@ class ReferencedBooleanType(ReferenceDataType):
         Validate the keys of the value map.
         """
         if not np.all(value_map.map == BOOLEAN_VALUE_MAP):
-            raise ValueError("Boolean value map must be (0: 'False', 1: 'True'")
+            raise ValueError("Boolean value map must be {0: 'False', 1: 'True'}")
 
 
 class GeometricDynamicDataType(DataType, ABC):
@@ -739,7 +735,7 @@ class GeometricDynamicDataType(DataType, ABC):
         return self._dynamic_implementation_id
 
 
-class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
+class GeometricDataValueMapType(GeometricDynamicDataType):
     """
     Data container for value map
     """
@@ -767,6 +763,7 @@ class GeometricDataValueMapType(ReferenceDataType, GeometricDynamicDataType):
             **kwargs,
         )
         self._parent = parent
+        self._value_map = self.validate_value_map(value_map)
 
     def set_parent_reference(self, data: GeometricDataConstants, new_name: str):
         """
