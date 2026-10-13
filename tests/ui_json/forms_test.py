@@ -189,8 +189,8 @@ def test_integer_form():
     form = IntegerForm(label="name", value=2)
     assert form.label == "name"
     assert form.value == 2
-    assert form.min == -np.inf
-    assert form.max == np.inf
+    assert form.min is None
+    assert form.max is None
     msg = "Input should be a valid integer"
     with pytest.raises(ValueError, match=msg):
         _ = IntegerForm(label="name", value="nope")
@@ -200,8 +200,8 @@ def test_float_form():
     form = FloatForm(label="name", value=2.0)
     assert form.label == "name"
     assert form.value == 2.0
-    assert form.min == -np.inf
-    assert form.max == np.inf
+    assert form.min is None
+    assert form.max is None
     assert form.precision == 2
     assert form.line_edit
 
