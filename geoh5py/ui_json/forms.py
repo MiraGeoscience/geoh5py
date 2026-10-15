@@ -27,7 +27,6 @@ import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
-    Field,
     TypeAdapter,
     ValidationError,
     field_serializer,
