@@ -186,7 +186,7 @@ def test_bool_form():
 
 
 def test_integer_form():
-    form = IntegerForm(label="name", value=2)
+    form = IntegerForm(label="name", value=2, min=None, max=None)
     assert form.label == "name"
     assert form.value == 2
     assert form.min is None
@@ -194,6 +194,11 @@ def test_integer_form():
     msg = "Input should be a valid integer"
     with pytest.raises(ValueError, match=msg):
         _ = IntegerForm(label="name", value="nope")
+
+    serialized = form.model_dump()
+
+    assert "min" not in serialized
+    assert "max" not in serialized
 
 
 def test_float_form():

@@ -40,6 +40,7 @@ from geoh5py.groups import GroupTypeEnum
 from geoh5py.ui_json.annotations import (
     AssociationOptions,
     DataTypeOptions,
+    ExcludeIfNone,
     GroupTypes,
     MeshTypes,
     OptionalUUID,
@@ -228,8 +229,8 @@ class IntegerForm(BaseForm):
     """
 
     value: int
-    min: int | None = Field(None, exclude_if=lambda v: v is None)
-    max: int | None = Field(None, exclude_if=lambda v: v is None)
+    min: ExcludeIfNone = None
+    max: ExcludeIfNone = None
 
 
 class FloatForm(BaseForm):
@@ -249,8 +250,8 @@ class FloatForm(BaseForm):
     """
 
     value: float
-    min: float | None = Field(None, exclude_if=lambda v: v is None)
-    max: float | None = Field(None, exclude_if=lambda v: v is None)
+    min: ExcludeIfNone = None
+    max: ExcludeIfNone = None
     precision: int = 2
     line_edit: bool = True
 
@@ -609,8 +610,8 @@ class DataOrValueForm(DataFormMixin, BaseForm):
     value: float | int
     is_value: bool
     property: OptionalUUID
-    min: float | None = Field(None, exclude_if=lambda v: v is None)
-    max: float | None = Field(None, exclude_if=lambda v: v is None)
+    min: ExcludeIfNone = None
+    max: ExcludeIfNone = None
     precision: int = 2
     line_edit: bool = False
 
