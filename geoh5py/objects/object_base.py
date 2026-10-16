@@ -40,8 +40,8 @@ from ..data import (
 )
 from ..data.data_type import GeometricDataValueMapType
 from ..groups.property_group import GroupTypeEnum, PropertyGroup
-from ..shared import Entity
 from ..shared.conversion import BaseConversion
+from ..shared.entity import Entity
 from ..shared.entity_container import EntityContainer
 from ..shared.utils import (
     array_is_colour,
@@ -252,14 +252,14 @@ class ObjectBase(EntityContainer):
         :param values: The values to add to the data map.
         :param public: Whether the data map is public or not.
         """
+        if not isinstance(data, ReferencedData):
+            raise TypeError("Data type must be of type 'ReferencedData'.")
+
         data_maps = data.data_maps or {}
 
         name = get_unique_name_from_entities(
             name, self.children, types=GeometricDataConstants
         )
-
-        if data.entity_type.value_map is None:
-            raise ValueError("Entity type must have a value map.")
 
         data_type = self.add_data_map_type(name, values, data.entity_type.name)
 

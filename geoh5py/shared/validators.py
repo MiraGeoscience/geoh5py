@@ -32,7 +32,7 @@ import numpy as np
 
 from geoh5py.groups import Group, PropertyGroup
 from geoh5py.objects import ObjectBase
-from geoh5py.shared import Entity
+from geoh5py.shared.entity import Entity
 from geoh5py.shared.exceptions import (
     AssociationValidationError,
     AtLeastOneValidationError,

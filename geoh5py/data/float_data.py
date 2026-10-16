@@ -33,14 +33,14 @@ class FloatData(NumericData):
 
     def format_type(self, values: np.ndarray) -> np.ndarray:
         """
-        Check if the type of values is valid and coerce to type float64.
+        Check if the type of values is valid and coerce to type float32.
         :param values: numpy array to modify.
         :return: the formatted values.
         """
         if not np.issubdtype(values.dtype, np.number):
             raise TypeError("Values must be a numpy array of numeric values.")
 
-        return values
+        return super().format_type(values)
 
     @property
     def formatted_values(self):

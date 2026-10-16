@@ -219,3 +219,10 @@ class ReferencedData(IntegerData):
         Nan-Data-Value
         """
         return 0
+
+    @property
+    def ndv(self) -> int:
+        """
+        No-Data-Value
+        """
+        return 0

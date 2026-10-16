@@ -29,7 +29,8 @@ import h5py
 import numpy as np
 import psutil
 
-from ..shared import FLOAT_NDV, fetch_h5_handle
+from ..data.reference_value_map import ReferenceValueMap
+from ..shared import FLOAT_NDV
 from ..shared.exceptions import MemoryValidationError
 from ..shared.utils import (
     INV_KEY_MAP,
@@ -37,6 +38,7 @@ from ..shared.utils import (
     PROPERTY_KWARGS,
     as_str_if_utf8_bytes,
     as_str_if_uuid,
+    fetch_h5_handle,
     str2uuid,
     str_json_to_dict,
 )
@@ -246,6 +248,35 @@ class H5Reader:
                         ).lower()
 
         return children
+
+    @classmethod
+    def fetch_concatenated_file_bytes(
+        cls,
+        file: str | h5py.File,
+        uid: uuid.UUID,
+        label: str,
+    ) -> tuple | None:
+        """
+        Get binary values from a concatenated group.
+
+        :param file: :obj:`h5py.File` or name of the target geoh5 file
+        :param uid: Unique identifier
+        :param label: Value identifier for the attribute requested.
+
+        :return children: [{uuid: type}, ... ]
+            List of dictionaries for the children uid and type
+        """
+        with fetch_h5_handle(file) as h5file:
+            name = list(h5file)[0]
+            group = h5file[name]["Groups"][as_str_if_uuid(uid)]["Concatenated Data"]
+
+            try:
+                bytes_value = group["Data"]["Binary"][label][()].tobytes()
+
+            except KeyError:
+                bytes_value = None
+
+        return bytes_value
 
     @classmethod
     def fetch_concatenated_values(
@@ -475,7 +506,7 @@ class H5Reader:
 
         if "Value map" in type_handle:
             type_attributes["value_map"] = type_handle["Value map"][:].astype(
-                [("Key", "<u4"), ("Value", h5py.special_dtype(vlen=str))]
+                ReferenceValueMap.MAP_DTYPE
             )
         return type_attributes
 
@@ -502,7 +533,7 @@ class H5Reader:
         return uuids
 
     @classmethod
-    def fetch_file_object(
+    def fetch_file_bytes(
         cls, file: str | h5py.File, uid: uuid.UUID, file_name: str
     ) -> bytes | None:
         """

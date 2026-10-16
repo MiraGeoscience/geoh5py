@@ -26,7 +26,7 @@ from uuid import UUID
 
 import numpy as np
 
-from geoh5py.data import DataTypeEnum
+from geoh5py.shared import DataTypeEnum
 
 from ..data import DataAssociationEnum, ReferencedData
 from ..shared.utils import decode_byte_array

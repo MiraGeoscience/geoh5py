@@ -33,7 +33,7 @@ import h5py
 import numpy as np
 from pydantic import BaseModel
 
-from ..data import (
+from geoh5py.data import (
     CommentsData,
     Data,
     FilenameData,
@@ -41,17 +41,21 @@ from ..data import (
     ReferenceValueMap,
     TextureData,
 )
+
 from ..data.data_type import DataType, GeometricDataValueMapType, ReferenceDataType
+from ..data.text_data import text_formatting
 from ..groups import Group, GroupType, PropertyGroup, RootGroup
 from ..objects import ObjectBase, ObjectType
-from ..shared import FLOAT_NDV, Entity, EntityType, fetch_h5_handle
+from ..shared import FLOAT_NDV
 from ..shared.concatenation import Concatenator
-from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper
+from ..shared.entity import Entity
+from ..shared.entity_type import EntityType
+from ..shared.utils import KEY_MAP, as_str_if_uuid, dict_mapper, fetch_h5_handle
 from .utils import str_from_subtype, str_from_type
 
 
 if TYPE_CHECKING:
-    from .. import shared, workspace
+    from .. import workspace
 
 
 class H5Writer:
@@ -456,7 +460,7 @@ class H5Writer:
     @staticmethod
     def write_color_map(
         file: str | h5py.File,
-        entity_type: shared.EntityType,
+        entity_type: EntityType,
     ) -> None:
         """
         Add :obj:`~geoh5py.data.color_map.ColorMap` to a
@@ -511,8 +515,6 @@ class H5Writer:
             if entity_type_handle is None:
                 return
 
-            dtype = np.dtype([("Key", "<u4"), ("Value", H5Writer.str_type)])
-
             if value_map is None:
                 value_map = entity_type.value_map
 
@@ -528,7 +530,7 @@ class H5Writer:
 
             H5Writer.create_dataset(
                 entity_type_handle,
-                value_map.map.astype(dtype),
+                value_map.map.astype(entity_type.value_map.MAP_DTYPE),
                 name,
             )
 
@@ -860,6 +862,43 @@ class H5Writer:
                 entity.workspace.repack = True
 
     @staticmethod
+    def update_binary_entries(file, entity):
+        """
+        Update the binary entries of a :obj:`~geoh5py.shared.entity.Entity`.
+
+        :param file: Name or handle to a geoh5 file.
+        :param entity: Target :obj:`~geoh5py.shared.entity.Entity`.
+        """
+        with fetch_h5_handle(file, mode="r+") as h5file:
+            entity_handle = H5Writer.fetch_handle(h5file, entity.parent.parent)
+
+            if entity_handle is None or "Concatenated Data" not in entity_handle:
+                return
+
+            entity_handle = entity_handle["Concatenated Data"]["Data"]
+
+            if "Binary" not in entity_handle:
+                entity_handle.create_group("Binary", track_order=True)
+
+            entity_handle = entity_handle["Binary"]
+
+            for elem, blob in entity.file_bytes.items():
+                uuid_name = (
+                    as_str_if_uuid(entity.parent.uid)
+                    + as_str_if_uuid(entity.uid)
+                    + elem
+                )
+                if uuid_name in entity_handle:
+                    del entity_handle[uuid_name]
+                    entity.workspace.repack = True
+
+                entity_handle.create_dataset(
+                    uuid_name,
+                    data=np.asarray(np.void(blob[:])),
+                    shape=(1,),
+                )
+
+    @staticmethod
     def write_entity(
         file: str | h5py.File,
         entity,
@@ -926,7 +965,7 @@ class H5Writer:
     @staticmethod
     def write_entity_type(
         file: str | h5py.File,
-        entity_type: shared.EntityType | ReferenceDataType,
+        entity_type: EntityType | ReferenceDataType,
     ) -> h5py.Group:
         """
         Add an :obj:`~geoh5py.shared.entity_type.EntityType` to geoh5.
@@ -982,20 +1021,19 @@ class H5Writer:
 
         entity_handle.create_dataset(
             "Data",
-            data=entity.values,
-            dtype=h5py.special_dtype(vlen=str),
-            shape=(1,),
+            data=text_formatting(entity.values),
         )
 
-        if entity.values in entity_handle:
-            del entity_handle[entity.values]
-            entity.workspace.repack = True
+        for elem, blob in entity.file_bytes.items():
+            if elem in entity_handle:
+                del entity_handle[elem]
+                entity.workspace.repack = True
 
-        entity_handle.create_dataset(
-            entity.values,
-            data=np.asarray(np.void(entity.file_bytes[:])),
-            shape=(1,),
-        )
+            entity_handle.create_dataset(
+                elem,
+                data=np.asarray(np.void(blob[:])),
+                shape=(1,),
+            )
 
     @staticmethod
     def write_properties(

@@ -25,8 +25,7 @@ import pytest
 from geoh5py import groups
 from geoh5py.io import H5Writer
 from geoh5py.objects import Points
-from geoh5py.shared import fetch_h5_handle
-from geoh5py.shared.utils import compare_entities
+from geoh5py.shared.utils import compare_entities, fetch_h5_handle
 from geoh5py.workspace import Workspace
 
 

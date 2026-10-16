@@ -33,7 +33,6 @@ from .entity_type import EntityType
 
 
 if TYPE_CHECKING:  # pragma: no cover
-    from .. import shared
     from ..groups import UIJsonGroup
     from ..shared.entity_container import EntityContainer
     from ..workspace import Workspace
@@ -78,7 +77,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
         *,
-        entity_type: shared.EntityType | None = None,
+        entity_type: EntityType | None = None,
         allow_delete: bool = True,
         allow_move: bool = True,
         allow_rename: bool = True,
@@ -498,8 +497,6 @@ class Substitute:
 
         except AttributeError:
             self.__getattribute__(item)
-
-            raise AttributeError(item)
 
     @classmethod
     def build(

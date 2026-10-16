@@ -26,6 +26,8 @@ from warnings import warn
 
 import numpy as np
 
+from geoh5py.shared import DataTypeEnum
+
 from .data import Data
 
 
@@ -54,13 +56,15 @@ class NumericData(Data, ABC):
 
         return values
 
-    @abstractmethod
     def format_type(self, values: np.ndarray) -> np.ndarray:
         """
         Check if the type of values is valid and convert it to right dtype.
         :param values: numpy array to modify.
         :return: the formatted values.
         """
+        return values.astype(
+            DataTypeEnum.from_primitive_type(self.entity_type.primitive_type)
+        )
 
     def validate_values(self, values: np.ndarray | None) -> np.ndarray:
         """
@@ -81,15 +85,11 @@ class NumericData(Data, ABC):
             values = np.ravel(values)
             warn("Input 'values' converted to a 1D array.")
 
-        values = values.astype(float)
+        # check the value type
+        formatted_values = self.format_type(values)
 
         # change nan values to nan_value
-        values[np.isnan(values)] = self.nan_value
+        formatted_values[np.isnan(values)] = self.nan_value
 
         # check the length of the values
-        values = self.format_length(values)
-
-        # check the value type
-        values = self.format_type(values)
-
-        return values
+        return self.format_length(formatted_values)

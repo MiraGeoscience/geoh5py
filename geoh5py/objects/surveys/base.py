@@ -168,7 +168,8 @@ class BaseSurvey(ObjectBase, ABC):
             new_entity,
         )
 
-        new_entity._renumber_reference_ids()  # pylint: disable=protected-access
+        if mask is not None and np.any(~mask):
+            new_entity._renumber_reference_ids()  # pylint: disable=protected-access
 
         return new_complement
 

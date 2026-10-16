@@ -277,7 +277,7 @@ def test_create_geoimage_full_georeferencing(tmp_path):  # pylint: disable=too-m
 
         # Setting image from byte
         geoimage_copy = GeoImage.create(workspace, name="MyGeoImageTwin")
-        geoimage_copy.image = geoimage.image_data.file_bytes
+        geoimage_copy.image = list(geoimage.image_data.file_bytes.values())[0]
         assert geoimage_copy.image == geoimage.image, "Error setting image from bytes."
 
         # Re-load from file
