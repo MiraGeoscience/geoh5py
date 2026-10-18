@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy
@@ -271,7 +272,10 @@ class EntityCanvas(QGraphicsScene):
             children = [
                 uids[1] for uids in self.connections if uids[0] == entity.parent.uid
             ]
-            ind = children.index(entity.uid)
+            try:
+                ind = children.index(entity.uid)
+            except:
+                continue
             angle = np.linspace(np.pi / 4, -np.pi / 4, len(children))[ind]
 
             radius = 50
@@ -458,13 +462,10 @@ def mock_linkage(geoh5):
 
 
 if __name__ == "__main__":
-    # file = sys.argv[1]
-    file = r"C:/Users/dominiquef/AppData/Local/Mira Geoscience/Geoscience ANALYST/Session Cache/{937a32cf-0176-4d38-a011-ebf84deaca3c}/Python/Files/GA-WorkflowPanel_1006-082405.ui.json"
+    file = sys.argv[1]
     file_path = Path(file)
     ui_json = UIJson.read(file_path)
     working_file = file_path.parent / ui_json.workspace_geoh5.name
     copy(ui_json.workspace_geoh5, working_file)
-
-    mock_linkage(working_file)
 
     main(working_file)

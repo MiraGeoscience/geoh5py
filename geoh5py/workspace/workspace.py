@@ -1467,8 +1467,6 @@ class Workspace(AbstractContextManager):
             weakref_utils.insert_once(self._objects, entity.uid, entity)
         elif isinstance(entity, PropertyGroup):
             weakref_utils.insert_once(self._property_groups, entity.uid, entity)
-            if not entity.on_file:
-                self.add_or_update_property_group(entity)
         else:
             raise ValueError(f"Entity of type {type(entity)} is not supported.")
 
@@ -1751,11 +1749,11 @@ def name_or_uid_to_type(
     :param value: String representing geoh5py type, either as a UUID or name.
     :return: Type of object, group or UUID
     """
+    if is_uuid(value):
+        return TYPE_UID_TO_CLASS.get(UUID(str(value)), None)
+
     if not isinstance(value, str):
         return value
-
-    if is_uuid(value):
-        return UUID(value)
 
     value = equalize_string(value)
     obj: type[ObjectBase] | type[Group] | None = (

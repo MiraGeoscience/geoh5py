@@ -98,7 +98,7 @@ class UIJson(BaseModel):
     icon: str | None = Field(None, exclude_if=lambda v: v is None)
     workspace_geoh5: OptionalPath = Field(None, exclude_if=lambda v: v is None)
 
-    children: dict[str, dict] | None = None
+    children: dict[UUID, dict] | None = None
     out_group: GroupForm | OptionalString = Field(None, exclude_if=lambda v: v is None)
 
     _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
