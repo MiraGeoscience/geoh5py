@@ -231,20 +231,21 @@ class Workspace(AbstractContextManager):
             and not isinstance(self._h5file, BytesIO)
             and self._h5file is not None
         ):
-            temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
-            try:
-                subprocess.run(
-                    ["h5repack", "--native", str(self._h5file), str(temp_file)],
-                    check=True,
-                    capture_output=True,
-                    encoding="utf8",
-                )
-                Path(self._h5file).unlink()
-                move(temp_file, self._h5file, copy)
-            except FileNotFoundError:
-                pass
-            except CalledProcessError as process_error:
-                logger.error("%s\n%s", process_error.stdout, process_error.stderr)
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                temp_file = Path(temporary_directory) / Path(self._h5file).name
+                try:
+                    subprocess.run(
+                        ["h5repack", "--native", str(self._h5file), str(temp_file)],
+                        check=True,
+                        capture_output=True,
+                        encoding="utf8",
+                    )
+                    Path(self._h5file).unlink()
+                    move(temp_file, self._h5file, copy)
+                except FileNotFoundError:
+                    pass
+                except CalledProcessError as process_error:
+                    logger.error("%s\n%s", process_error.stdout, process_error.stderr)
 
             self.repack = False
 
