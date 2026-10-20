@@ -796,7 +796,7 @@ class GeometricDataValueMapType(GeometricDynamicDataType):
             if (
                 hasattr(child, "entity_type")
                 and isinstance(child.entity_type, ReferencedValueMapType)
-                and child.entity_type.name == ref_data_name
+                and ref_data_name in [child.name, child.entity_type.name]
             ):
                 ref_data.append(child)
 
