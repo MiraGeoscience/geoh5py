@@ -207,6 +207,36 @@ def test_disk_save_as(tmp_path):
             assert ws_a.objects[0].uid == ws_b.objects[0].uid
 
 
+def test_repack_uses_unique_temporary_paths(tmp_path, monkeypatch):
+    repack_paths = []
+    repack_contents = [b"first workspace repack", b"second workspace repack"]
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        temp_path = Path(command[-1])
+        temp_path.write_bytes(repack_contents[len(repack_paths)])
+        repack_paths.append(temp_path)
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    output_paths = []
+    for directory in ("first", "second"):
+        output_path = tmp_path / directory / "output.geoh5"
+        output_path.parent.mkdir()
+        workspace = Workspace.create(output_path)
+        workspace.repack = True
+        workspace.close()
+        output_paths.append(output_path)
+
+    assert repack_paths[0] != repack_paths[1]
+    assert output_paths[0].read_bytes() == repack_contents[0]
+    assert output_paths[1].read_bytes() == repack_contents[1]
+    assert not repack_paths[0].exists()
+    assert not repack_paths[1].exists()
+
+
 def test_create_bytesio():
     with pytest.raises(TypeError, match="The 'h5file' attribute must be a str"):
         Workspace.create(123)
