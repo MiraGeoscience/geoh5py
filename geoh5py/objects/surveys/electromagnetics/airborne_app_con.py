@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC
 
 import numpy as np
 
@@ -34,7 +35,7 @@ from .base import FEMSurvey
 # pylint: disable=too-many-ancestors, duplicate-code
 
 
-class AirborneAppConSurvey(FEMSurvey):
+class AirborneAppConSurvey(FEMSurvey, ABC):
     """
     Base tipper survey class.
     """

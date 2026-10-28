@@ -223,7 +223,7 @@ class TextObject(Points):
         """
         Set the attribute value.
         """
-        if key in TextEntry.model_fields:
+        if key in TextEntry.model_fields:  # pylint: disable=unsupported-membership-test
             value = self._validate_value_length(value)
 
             for entry, elem in zip(self.text_mesh_data.data, value, strict=False):
