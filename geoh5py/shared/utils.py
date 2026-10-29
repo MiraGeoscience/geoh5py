@@ -926,7 +926,7 @@ def path2str(value):
 
 
 def nan2str(value):
-    if value is np.nan:
+    if value is np.nan:  # pylint: disable=nan-comparison
         return ""
     return value
 
