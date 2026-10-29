@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import inspect
+import math
 import re
 import types as types_module
 from abc import ABC
@@ -926,7 +927,7 @@ def path2str(value):
 
 
 def nan2str(value):
-    if value is np.nan:  # pylint: disable=nan-comparison
+    if math.isnan(value):
         return ""
     return value
 
