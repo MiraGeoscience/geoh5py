@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC
 
 from .base import FEMSurvey, LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey
 
@@ -28,7 +29,7 @@ from .base import FEMSurvey, LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey
 # pylint: disable=too-many-ancestors
 
 
-class MovingLoopGroundFEMSurvey(FEMSurvey, MovingLoopGroundEMSurvey):
+class MovingLoopGroundFEMSurvey(FEMSurvey, MovingLoopGroundEMSurvey, ABC):
     @property
     def default_input_types(self) -> list[str]:
         """Choice of survey creation types."""
@@ -121,7 +122,7 @@ class MovingLoopGroundFEMTransmitters(MovingLoopGroundFEMSurvey):  # pylint: dis
         return self.__TYPE
 
 
-class LargeLoopGroundFEMSurvey(FEMSurvey, LargeLoopGroundEMSurvey):
+class LargeLoopGroundFEMSurvey(FEMSurvey, LargeLoopGroundEMSurvey, ABC):
     @property
     def default_metadata(self) -> dict:
         """

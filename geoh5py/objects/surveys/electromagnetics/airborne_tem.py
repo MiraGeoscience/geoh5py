@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC
 
 from geoh5py.objects.curve import Curve
 
@@ -30,7 +31,7 @@ from .base import AirborneEMSurvey, TEMSurvey
 # pylint: disable=too-many-ancestors
 
 
-class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey):
+class AirborneTEMSurvey(TEMSurvey, AirborneEMSurvey, ABC):
     @property
     def default_metadata(self) -> dict:
         """

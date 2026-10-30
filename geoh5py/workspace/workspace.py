@@ -33,8 +33,7 @@ from getpass import getuser
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
-from shutil import copy, move
-from subprocess import CalledProcessError
+from shutil import copy
 from typing import Any, ClassVar, cast
 from weakref import ReferenceType
 
@@ -231,25 +230,56 @@ class Workspace(AbstractContextManager):
             and not isinstance(self._h5file, BytesIO)
             and self._h5file is not None
         ):
-            temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
-            try:
-                subprocess.run(
-                    ["h5repack", "--native", str(self._h5file), str(temp_file)],
-                    check=True,
-                    capture_output=True,
-                    encoding="utf8",
-                )
-                Path(self._h5file).unlink()
-                move(temp_file, self._h5file, copy)
-            except FileNotFoundError:
-                pass
-            except CalledProcessError as process_error:
-                logger.error("%s\n%s", process_error.stdout, process_error.stderr)
-
+            self._repack_h5_file(self._h5file)
             self.repack = False
 
         if isinstance(self._h5file, BytesIO):
             self._h5file.seek(0)
+
+    def _repack_h5_file(self, h5file: Path) -> None:
+        """
+        Repack an HDF5 workspace in-place by writing to a unique temporary sibling file.
+        """
+        # Create a temp file in the same directory as the target to avoid copying across
+        # filesystems. Use NamedTemporaryFile to ensure a unique file name.
+        with tempfile.NamedTemporaryFile(
+            prefix=f".{h5file.stem}.repack",
+            suffix=h5file.suffix,
+            dir=h5file.parent,
+            delete=False,
+        ) as temp_file:
+            temp_repack_file = Path(temp_file.name)
+
+        try:
+            subprocess.run(
+                ["h5repack", "--native", str(h5file), str(temp_repack_file)],
+                check=True,
+                capture_output=True,
+                encoding="utf8",
+            )
+        except FileNotFoundError:
+            return
+        except subprocess.CalledProcessError as process_error:
+            logger.error("%s\n%s", process_error.stdout, process_error.stderr)
+            return
+
+        try:
+            temp_repack_file.replace(h5file)
+        except OSError as replace_error:
+            logger.error(
+                "Failed to replace workspace file %s with repacked file: %s",
+                h5file,
+                replace_error,
+            )
+        finally:
+            try:
+                temp_repack_file.unlink(missing_ok=True)
+            except OSError as cleanup_error:
+                logger.error(
+                    "Failed to remove temporary repack file %s: %s",
+                    temp_repack_file,
+                    cleanup_error,
+                )
 
     @property
     def contributors(self) -> np.ndarray:
@@ -1075,7 +1105,7 @@ class Workspace(AbstractContextManager):
         if not list_entity_uid:
             return [None]
 
-        entity_list: list[Entity | None | PropertyGroup] = []
+        entity_list: list[Entity | PropertyGroup | None] = []
         for uid in list_entity_uid:
             entity_list.append(self.find_entity(uid))
 

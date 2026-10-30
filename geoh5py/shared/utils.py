@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import inspect
+import math
 import re
 import types as types_module
 from abc import ABC
@@ -901,33 +902,39 @@ def to_tuple(value: Any) -> tuple:
     return (value,)
 
 
-def inf2str(value):  # map np.inf to "inf"
+def inf2str(value: Any) -> Any:  # map np.inf to "inf"
     if not isinstance(value, (int, float)):
         return value
     return str(value) if not np.isfinite(value) else value
 
 
-def list2str(value):
+def list2str(value: Any) -> Any:
     if isinstance(value, list):  # & (key not in exclude):
         return str(value)[1:-1]
     return value
 
 
-def none2str(value):
+def none2str(value: Any) -> Any:
     if value is None:
         return ""
     return value
 
 
-def path2str(value):
+def path2str(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
     return value
 
 
-def nan2str(value):
-    if value is np.nan:
-        return ""
+def nan2str(value: Any) -> Any:
+    if np.iscomplexobj(value):
+        return value
+    try:
+        if math.isnan(value):
+            return ""
+    except TypeError:
+        # Not a numeric value: keep original value
+        pass
     return value
 
 
@@ -1027,7 +1034,7 @@ def min_max_scaler(
     values: np.ndarray,
     min_scaler: float = 0.0,
     max_scaler: float = 1.0,
-    axis: None | int = None,
+    axis: int | None = None,
 ) -> np.ndarray:
     """
     Min-Max scale an array.
