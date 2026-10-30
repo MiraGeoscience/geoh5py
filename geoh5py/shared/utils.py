@@ -933,6 +933,7 @@ def nan2str(value: Any) -> Any:
         if math.isnan(value):
             return ""
     except TypeError:
+        # Not a numeric value: keep original value
         pass
     return value
 
