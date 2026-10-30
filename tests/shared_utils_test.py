@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 import uuid
 from decimal import Decimal
@@ -55,6 +56,13 @@ def test_nan2str():
     assert nan2str(np.nan) == ""
     assert nan2str(np.float32(np.nan)) == ""
     assert nan2str(Decimal("NaN")) == ""
+    assert nan2str(float("NaN")) == ""
+    assert nan2str(float("nan")) == ""
+    assert nan2str(math.inf * 0) == ""
+    assert nan2str(np.inf * 0) == ""
+    assert nan2str(math.inf) == math.inf
+    assert nan2str(np.inf) == np.inf
+    assert nan2str(None) is None
     assert nan2str(Fraction(1, 2)) == Fraction(1, 2)
     assert nan2str(1) == 1
     assert nan2str("a") == "a"
