@@ -902,33 +902,38 @@ def to_tuple(value: Any) -> tuple:
     return (value,)
 
 
-def inf2str(value):  # map np.inf to "inf"
+def inf2str(value: Any) -> Any:  # map np.inf to "inf"
     if not isinstance(value, (int, float)):
         return value
     return str(value) if not np.isfinite(value) else value
 
 
-def list2str(value):
+def list2str(value: Any) -> Any:
     if isinstance(value, list):  # & (key not in exclude):
         return str(value)[1:-1]
     return value
 
 
-def none2str(value):
+def none2str(value: Any) -> Any:
     if value is None:
         return ""
     return value
 
 
-def path2str(value):
+def path2str(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
     return value
 
 
-def nan2str(value):
-    if math.isnan(value):
-        return ""
+def nan2str(value: Any) -> Any:
+    if np.iscomplexobj(value):
+        return value
+    try:
+        if math.isnan(value):
+            return ""
+    except TypeError:
+        pass
     return value
 
 

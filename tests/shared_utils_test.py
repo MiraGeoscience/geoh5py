@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import re
 import uuid
+from decimal import Decimal
+from fractions import Fraction
 
 import numpy as np
 import pytest
@@ -51,8 +53,14 @@ def test_inf2str():
 
 def test_nan2str():
     assert nan2str(np.nan) == ""
+    assert nan2str(np.float32(np.nan)) == ""
+    assert nan2str(Decimal("NaN")) == ""
+    assert nan2str(Fraction(1, 2)) == Fraction(1, 2)
     assert nan2str(1) == 1
     assert nan2str("a") == "a"
+    assert nan2str(np.complex64(1 + 2j)) == np.complex64(1 + 2j)
+    with Workspace() as workspace:
+        assert nan2str(workspace) is workspace
 
 
 def test_iterable():
