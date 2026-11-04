@@ -121,3 +121,5 @@ PathList = Annotated[
     BeforeValidator(to_list),
     PlainSerializer(stringify, when_used="json"),
 ]
+
+ExcludeIfNone = Annotated[float | int | None, Field(exclude_if=lambda v: v is None)]

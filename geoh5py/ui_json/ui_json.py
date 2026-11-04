@@ -30,6 +30,7 @@ from uuid import UUID, uuid4
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     PrivateAttr,
     create_model,
     field_validator,
@@ -87,10 +88,10 @@ class UIJson(BaseModel):
     run_command: str | None
     monitoring_directory: OptionalPath = None
     conda_environment: str | None
-    icon: str | None = None
-    workspace_geoh5: OptionalPath = None
+    icon: str | None = Field(None, exclude_if=lambda v: v is None)
+    workspace_geoh5: OptionalPath = Field(None, exclude_if=lambda v: v is None)
 
-    out_group: GroupForm | OptionalString = None
+    out_group: GroupForm | OptionalString = Field(None, exclude_if=lambda v: v is None)
 
     _form_dependencies: dict[str, dict[str, bool]] = PrivateAttr(default_factory=dict)
     _group_dependencies: dict[str, BaseForm] = PrivateAttr(default_factory=dict)
@@ -468,7 +469,9 @@ class UIJson(BaseModel):
             raise FileNotFoundError(f"geoh5 path {path} does not exist.")
         return path
 
-    def write(self, path: Path | str | None = None) -> Path | BytesIO:
+    def write(
+        self, path: Path | str | None = None, exclude_unset=True
+    ) -> Path | BytesIO:
         """
         Write the UIJson object to file.
 
@@ -476,7 +479,9 @@ class UIJson(BaseModel):
 
         :return: Return path to the ui_json file or BytesIO object.
         """
-        data = self.model_dump_json(exclude_unset=True, by_alias=True, indent=4)
+        data = self.model_dump_json(
+            exclude_unset=exclude_unset, by_alias=True, indent=4
+        )
 
         if isinstance(path, Path | str):
             file_name = Path(path)
