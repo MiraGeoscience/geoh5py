@@ -58,7 +58,7 @@ repos:
                 geoh5py/ui_json/validation.py
             )$
 -   repo: https://github.com/codingjoe/relint
-    rev: 3.5.0
+    rev: 3.6.1
     hooks:
     -   id: relint
         args: [-W]  # to fail on warnings

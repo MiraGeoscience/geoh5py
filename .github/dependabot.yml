@@ -28,7 +28,6 @@ updates:
     cooldown:
       default-days: 4
     ignore:
-      - dependency-name: "https://github.com/codingjoe/relint"
       - dependency-name: "https://github.com/pre-commit/mirrors-mypy"
     groups:
       pre-commit-hooks:
