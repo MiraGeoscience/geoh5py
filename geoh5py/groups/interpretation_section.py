@@ -112,7 +112,7 @@ class InterpretationSection(Group):
         :param key: The key to update.
         :param values: The values to update.
         """
-        metadata: None | list = None
+        metadata: list | None = None
 
         if values:
             if key == "Interpretation curves":

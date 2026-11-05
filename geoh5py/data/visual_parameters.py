@@ -86,7 +86,7 @@ class VisualParameters(TextData):
         self.workspace.update_attribute(self, "values")
 
     @property
-    def colour(self) -> None | list:
+    def colour(self) -> list | None:
         """
         Colour of the object in [Red, Green, Blue] format.
 
@@ -128,7 +128,7 @@ class VisualParameters(TextData):
         self.set_tags(colour=str(value))
 
     @property
-    def filter_basement(self) -> None | float:
+    def filter_basement(self) -> float | None:
         """
         Filter basement tag for VPmodel.
         """
@@ -151,7 +151,7 @@ class VisualParameters(TextData):
 
         self.set_tags(filterbasement=str(value))
 
-    def get_tag(self, tag: str) -> None | ET.Element:
+    def get_tag(self, tag: str) -> ET.Element | None:
         """
         Recover the tag element.
 
