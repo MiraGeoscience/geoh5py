@@ -17,12 +17,12 @@ repos:
     -   id: poetry-check
         args: [--lock, --no-plugins]
 -   repo: https://github.com/hadialqattan/pycln
-    rev: v2.6.0
+    rev: v2.6.1
     hooks:
     -   id: pycln
         args: [--config=pyproject.toml]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+    rev: v0.17.3
     hooks:
     -   id: ruff-check
         args:
