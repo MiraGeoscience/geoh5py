@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC
 
 from .base import LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey, TEMSurvey
 
@@ -31,7 +32,7 @@ from .base import LargeLoopGroundEMSurvey, MovingLoopGroundEMSurvey, TEMSurvey
 # mypy: disable-error-code="attr-defined"
 
 
-class MovingLoopGroundTEMSurvey(TEMSurvey, MovingLoopGroundEMSurvey):
+class MovingLoopGroundTEMSurvey(TEMSurvey, MovingLoopGroundEMSurvey, ABC):
     @property
     def default_metadata(self) -> dict:
         """
@@ -120,7 +121,7 @@ class MovingLoopGroundTEMTransmitters(MovingLoopGroundTEMSurvey):  # pylint: dis
         return self.__TYPE
 
 
-class LargeLoopGroundTEMSurvey(TEMSurvey, LargeLoopGroundEMSurvey):
+class LargeLoopGroundTEMSurvey(TEMSurvey, LargeLoopGroundEMSurvey, ABC):
     @property
     def default_metadata(self) -> dict:
         """

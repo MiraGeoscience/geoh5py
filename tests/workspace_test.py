@@ -207,6 +207,88 @@ def test_disk_save_as(tmp_path):
             assert ws_a.objects[0].uid == ws_b.objects[0].uid
 
 
+def test_repack_uses_unique_temporary_paths(tmp_path, monkeypatch):
+    repack_paths = []
+    repack_contents = [b"first workspace repack", b"second workspace repack"]
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        temp_path = Path(command[-1])
+        temp_path.write_bytes(repack_contents[len(repack_paths)])
+        repack_paths.append(temp_path)
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    output_paths = []
+    for directory in ("first", "second"):
+        output_path = tmp_path / directory / "output.geoh5"
+        output_path.parent.mkdir()
+        workspace = Workspace.create(output_path)
+        workspace.repack = True
+        workspace.close()
+        output_paths.append(output_path)
+
+    assert repack_paths[0] != repack_paths[1]
+    assert output_paths[0].read_bytes() == repack_contents[0]
+    assert output_paths[1].read_bytes() == repack_contents[1]
+    assert not repack_paths[0].exists()
+    assert not repack_paths[1].exists()
+
+
+def test_repack_does_not_use_existing_temporary_path(tmp_path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+    existing_temp_path = tmp_path / ".output.repack.geoh5"
+    existing_temp_path.write_bytes(b"another process's temporary file")
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert output_path.read_bytes() == b"repacked workspace"
+    assert existing_temp_path.read_bytes() == b"another process's temporary file"
+
+
+def test_repack_logs_replace_failure_and_cleans_temporary_file(
+    tmp_path, monkeypatch, caplog
+):
+    output_path = tmp_path / "output.geoh5"
+    temp_paths = []
+    original_contents = []
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        original_contents.append(Path(command[-2]).read_bytes())
+        temp_path = Path(command[-1])
+        temp_path.write_bytes(b"repacked workspace")
+        temp_paths.append(temp_path)
+
+    def fail_replace(_path, _target):
+        raise PermissionError("workspace file is locked")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+    monkeypatch.setattr(Path, "replace", fail_replace)
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert output_path.read_bytes() == original_contents[0]
+    assert not temp_paths[0].exists()
+    assert "Failed to replace workspace file" in caplog.text
+
+
 def test_create_bytesio():
     with pytest.raises(TypeError, match="The 'h5file' attribute must be a str"):
         Workspace.create(123)
