@@ -27,6 +27,8 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 4
+    ignore:
+      - dependency-name: "https://github.com/pre-commit/mirrors-mypy"
     groups:
       pre-commit-hooks:
         patterns:
