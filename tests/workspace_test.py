@@ -22,6 +22,7 @@ from __future__ import annotations
 import io
 import operator
 import os
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -207,7 +208,7 @@ def test_disk_save_as(tmp_path):
             assert ws_a.objects[0].uid == ws_b.objects[0].uid
 
 
-def test_repack_uses_unique_temporary_paths(tmp_path, monkeypatch):
+def test_repack_uses_unique_temporary_paths(tmp_path: Path, monkeypatch):
     repack_paths = []
     repack_contents = [b"first workspace repack", b"second workspace repack"]
 
@@ -237,7 +238,7 @@ def test_repack_uses_unique_temporary_paths(tmp_path, monkeypatch):
     assert not repack_paths[1].exists()
 
 
-def test_repack_does_not_use_existing_temporary_path(tmp_path, monkeypatch):
+def test_repack_does_not_use_existing_temporary_path(tmp_path: Path, monkeypatch):
     output_path = tmp_path / "output.geoh5"
     existing_temp_path = tmp_path / ".output.repack.geoh5"
     existing_temp_path.write_bytes(b"another process's temporary file")
@@ -259,7 +260,7 @@ def test_repack_does_not_use_existing_temporary_path(tmp_path, monkeypatch):
 
 
 def test_repack_logs_replace_failure_and_cleans_temporary_file(
-    tmp_path, monkeypatch, caplog
+    tmp_path: Path, monkeypatch, caplog
 ):
     output_path = tmp_path / "output.geoh5"
     temp_paths = []
@@ -271,8 +272,11 @@ def test_repack_logs_replace_failure_and_cleans_temporary_file(
         temp_path.write_bytes(b"repacked workspace")
         temp_paths.append(temp_path)
 
+    # mock the replace method to simulate a failure
+    mock_error_msg = "[MOCK] workspace file is locked"
+
     def fail_replace(_path, _target):
-        raise PermissionError("workspace file is locked")
+        raise PermissionError(mock_error_msg)
 
     monkeypatch.setattr(
         "geoh5py.workspace.workspace.subprocess.run",
@@ -286,7 +290,41 @@ def test_repack_logs_replace_failure_and_cleans_temporary_file(
 
     assert output_path.read_bytes() == original_contents[0]
     assert not temp_paths[0].exists()
-    assert "Failed to replace workspace file" in caplog.text
+    assert "Failed to repack workspace file" in caplog.text
+    assert mock_error_msg in caplog.text
+
+
+def test_repack_logs_process_output_upon_failure(tmp_path: Path, monkeypatch, caplog):
+    output_path = tmp_path / "output.geoh5"
+    cmd_output_paths = []
+
+    mock_stdout_value = "[MOCK] repack stdout"
+    mock_stderr_value = "[MOCK] repack stderr"
+
+    def failing_repack(command: list[str], **_kwargs) -> None:
+        cmd_output_paths.append(Path(command[-1]))
+        raise subprocess.CalledProcessError(
+            1, command, output=mock_stdout_value, stderr=mock_stderr_value
+        )
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        failing_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert "h5repack failed" in caplog.text
+
+    # assert the log exposed h5repack stdout and stderr
+    assert mock_stdout_value in caplog.text
+    assert mock_stderr_value in caplog.text
+
+    # assert the log does not expose the full h5repack command line
+    assert "--native" not in caplog.text
+    assert not cmd_output_paths[0].exists()
 
 
 def test_create_bytesio():

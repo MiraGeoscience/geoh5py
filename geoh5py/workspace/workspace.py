@@ -27,7 +27,7 @@ import tempfile
 import uuid
 import warnings
 import weakref
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import AbstractContextManager, contextmanager, suppress
 from gc import collect
 from getpass import getuser
 from io import BytesIO
@@ -257,29 +257,16 @@ class Workspace(AbstractContextManager):
                 capture_output=True,
                 encoding="utf8",
             )
-        except FileNotFoundError:
-            return
-        except subprocess.CalledProcessError as process_error:
-            logger.error("%s\n%s", process_error.stdout, process_error.stderr)
-            return
-
-        try:
             temp_repack_file.replace(h5file)
-        except OSError as replace_error:
-            logger.error(
-                "Failed to replace workspace file %s with repacked file: %s",
-                h5file,
-                replace_error,
-            )
+        except FileNotFoundError:  # h5repack not installed
+            pass
+        except subprocess.CalledProcessError as error:
+            logger.error("h5repack failed:\n%s\n%s", error.stdout, error.stderr)
+        except OSError as error:
+            logger.error("Failed to repack workspace file %s: %s", h5file, error)
         finally:
-            try:
+            with suppress(OSError):
                 temp_repack_file.unlink(missing_ok=True)
-            except OSError as cleanup_error:
-                logger.error(
-                    "Failed to remove temporary repack file %s: %s",
-                    temp_repack_file,
-                    cleanup_error,
-                )
 
     @property
     def contributors(self) -> np.ndarray:
