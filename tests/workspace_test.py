@@ -294,6 +294,104 @@ def test_repack_logs_replace_failure_and_cleans_temporary_file(
     assert mock_error_msg in caplog.text
 
 
+def test_repack_logs_temporary_file_allocation_failure(
+    tmp_path: Path, monkeypatch, caplog
+):
+    output_path = tmp_path / "output.geoh5"
+    mock_error_msg = "[MOCK] no space left on device"
+
+    def fail_allocation(*_args, **_kwargs):
+        raise OSError(mock_error_msg)
+
+    def unexpected_repack(*_args, **_kwargs):
+        pytest.fail("h5repack must not run without a temporary file")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.tempfile.NamedTemporaryFile",
+        fail_allocation,
+    )
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        unexpected_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert "Failed to repack workspace file" in caplog.text
+    assert mock_error_msg in caplog.text
+    assert output_path.exists()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits only")
+def test_repack_preserves_file_permissions(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    output_path.chmod(0o664)
+    workspace.close()
+
+    assert output_path.read_bytes() == b"repacked workspace"
+    assert output_path.stat().st_mode & 0o777 == 0o664
+
+
+def test_repack_copies_posix_acl(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+    acl_value = b"mock acl"
+    applied = {}
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    def fake_getxattr(path, name):
+        assert Path(path) == output_path
+        assert name == "system.posix_acl_access"
+        return acl_value
+
+    def fake_setxattr(path, name, value):
+        applied[(Path(path).name.startswith("."), name)] = value
+
+    monkeypatch.setattr("geoh5py.workspace.workspace.subprocess.run", fake_repack)
+    monkeypatch.setattr(os, "getxattr", fake_getxattr, raising=False)
+    monkeypatch.setattr(os, "setxattr", fake_setxattr, raising=False)
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert applied == {(True, "system.posix_acl_access"): acl_value}
+
+
+def test_repack_ignores_missing_posix_acl(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    def no_acl(*_args):
+        raise OSError("[MOCK] no data available")
+
+    monkeypatch.setattr("geoh5py.workspace.workspace.subprocess.run", fake_repack)
+    monkeypatch.setattr(os, "getxattr", no_acl, raising=False)
+    monkeypatch.setattr(os, "setxattr", no_acl, raising=False)
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert output_path.read_bytes() == b"repacked workspace"
+
+
 def test_repack_logs_process_output_upon_failure(tmp_path: Path, monkeypatch, caplog):
     output_path = tmp_path / "output.geoh5"
     cmd_output_paths = []
