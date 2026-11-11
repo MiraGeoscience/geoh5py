@@ -68,7 +68,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
     workspace.close()
 
 
-def test_empty_workspace(tmp_path):
+def test_empty_workspace(tmp_path: Path):
     with Workspace.create(
         tmp_path / r"test.geoh5",
     ) as workspace:
@@ -90,7 +90,7 @@ def test_empty_workspace(tmp_path):
         )
 
 
-def test_missing_type(tmp_path):
+def test_missing_type(tmp_path: Path):
     Workspace.create(
         tmp_path / r"test.geoh5",
     ).close()
@@ -103,7 +103,7 @@ def test_missing_type(tmp_path):
     ).close()
 
 
-def test_bad_extension(tmp_path):
+def test_bad_extension(tmp_path: Path):
     with pytest.raises(ValueError) as error:
         Workspace(
             tmp_path / r"test.h5",
@@ -112,7 +112,7 @@ def test_bad_extension(tmp_path):
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
 
 
-def test_read_bytes(tmp_path):
+def test_read_bytes(tmp_path: Path):
     workspace = Workspace.create(tmp_path / r"test_warning.geoh5")
 
     assert workspace.h5file.is_file()  # type: ignore
@@ -132,7 +132,7 @@ def test_read_bytes(tmp_path):
     assert len(byte_objects) == len(file_objects)
 
 
-def test_reopening_mode(tmp_path):
+def test_reopening_mode(tmp_path: Path):
     name = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(name) as workspace:
         pass
@@ -149,7 +149,7 @@ def test_reopening_mode(tmp_path):
                 assert workspace.geoh5.mode == "r+"
 
 
-def test_downgrade_mode(tmp_path, monkeypatch):
+def test_downgrade_mode(tmp_path: Path, monkeypatch):
     """
     Replicates another-application file lock causing OSError on r+ open.
     Workspace should fall back to read-only mode.
@@ -193,7 +193,7 @@ def test_in_memory_to_disk():
     workspace.close()
 
 
-def test_disk_save_as(tmp_path):
+def test_disk_save_as(tmp_path: Path):
     workspace = Workspace.create(tmp_path / f"{__name__}.geoh5")
     Points.create(workspace, vertices=np.random.randn(12, 3), name="Points_A")
 
@@ -336,14 +336,14 @@ def test_create_bytesio():
     assert isinstance(workspace.h5file, io.BytesIO)
 
 
-def test_network_drive_warning(tmp_path):
+def test_network_drive_warning(tmp_path: Path):
     network_drive = tmp_path / "Dropbox"
     network_drive.mkdir()
     with pytest.warns(match="Opening workspace with write access in a network drive"):
         _ = Workspace(network_drive / "test.geoh5")
 
 
-def test_page_size(tmp_path):
+def test_page_size(tmp_path: Path):
 
     with pytest.raises(TypeError, match="Page size must be an integer"):
         Workspace.create(tmp_path / f"{__name__}.geoh5", page_size="abc")
@@ -370,7 +370,7 @@ def test_page_size(tmp_path):
     ],
 )
 def test_compression_below_page(
-    tmp_path, n_values: int, compressions: tuple, expected_opt
+    tmp_path: Path, n_values: int, compressions: tuple, expected_opt
 ):
     vertices = np.c_[np.arange(n_values), np.arange(n_values), np.arange(n_values)]
     values = np.arange(n_values)
