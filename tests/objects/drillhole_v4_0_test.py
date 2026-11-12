@@ -27,6 +27,7 @@ from __future__ import annotations
 import random
 import string
 
+import h5py
 import numpy as np
 import pytest
 from h5py import special_dtype
@@ -1195,3 +1196,54 @@ def test_add_file_vertices(tmp_path):
         assert len(file_data.file_bytes) == 3
         assert len(file_data.values) == 3
         assert np.all(file_data.values == ["a.tif", "b.tif", "c.tif"])
+
+
+def test_empty_index(tmp_path):
+    path = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(path) as workspace:
+        group = DrillholeGroup.create(workspace, name="Planned holes")
+        hole = Drillhole.create(
+            workspace,
+            parent=group,
+            name="DH-01",
+            collar=[0.0, 0.0, 0.0],
+            end_of_hole=10.0,
+        )
+        group_uid, hole_uid = group.uid, hole.uid
+
+    # Control: a drillhole without stored surveys is readable.
+    with Workspace(path, mode="r"):
+        print("Before adding zero-size index: opens successfully", flush=True)
+
+    index_dtype = np.dtype(
+        [
+            ("Start index", "<u4"),
+            ("Size", "<u4"),
+            ("Object ID", h5py.string_dtype()),
+            ("Data ID", h5py.string_dtype()),
+        ]
+    )
+    row = (
+        0,
+        0,
+        f"{{{hole_uid}}}",
+        "{00000000-0000-0000-0000-000000000000}",
+    )
+
+    with h5py.File(path, "r+") as file:
+        root = file[next(iter(file))]
+        concatenated = root["Groups"][f"{{{group_uid}}}"]["Concatenated Data"]
+        index = concatenated.require_group("Index")
+        data = concatenated.require_group("Data")
+        label = "Property Group IDs"
+        assert label not in index
+        assert label not in data
+        assert label not in concatenated
+        index.create_dataset(label, data=np.array([row], dtype=index_dtype))
+
+    with Workspace(path, mode="r") as workspace:
+        group = workspace.get_entity("Planned holes")[0]
+        hole = workspace.get_entity("DH-01")[0]
+        assert group.uid == group_uid
+        assert hole.uid == hole_uid
