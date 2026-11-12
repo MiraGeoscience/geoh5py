@@ -22,6 +22,7 @@ from __future__ import annotations
 import io
 import operator
 import os
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -67,7 +68,7 @@ def test_workspace_from_kwargs(tmp_path: Path):
     workspace.close()
 
 
-def test_empty_workspace(tmp_path):
+def test_empty_workspace(tmp_path: Path):
     with Workspace.create(
         tmp_path / r"test.geoh5",
     ) as workspace:
@@ -89,7 +90,7 @@ def test_empty_workspace(tmp_path):
         )
 
 
-def test_missing_type(tmp_path):
+def test_missing_type(tmp_path: Path):
     Workspace.create(
         tmp_path / r"test.geoh5",
     ).close()
@@ -102,7 +103,7 @@ def test_missing_type(tmp_path):
     ).close()
 
 
-def test_bad_extension(tmp_path):
+def test_bad_extension(tmp_path: Path):
     with pytest.raises(ValueError) as error:
         Workspace(
             tmp_path / r"test.h5",
@@ -111,7 +112,7 @@ def test_bad_extension(tmp_path):
     assert "Input 'h5file' file must have a 'geoh5' extension." in str(error)
 
 
-def test_read_bytes(tmp_path):
+def test_read_bytes(tmp_path: Path):
     workspace = Workspace.create(tmp_path / r"test_warning.geoh5")
 
     assert workspace.h5file.is_file()  # type: ignore
@@ -131,7 +132,7 @@ def test_read_bytes(tmp_path):
     assert len(byte_objects) == len(file_objects)
 
 
-def test_reopening_mode(tmp_path):
+def test_reopening_mode(tmp_path: Path):
     name = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(name) as workspace:
         pass
@@ -148,7 +149,7 @@ def test_reopening_mode(tmp_path):
                 assert workspace.geoh5.mode == "r+"
 
 
-def test_downgrade_mode(tmp_path, monkeypatch):
+def test_downgrade_mode(tmp_path: Path, monkeypatch):
     """
     Replicates another-application file lock causing OSError on r+ open.
     Workspace should fall back to read-only mode.
@@ -192,7 +193,7 @@ def test_in_memory_to_disk():
     workspace.close()
 
 
-def test_disk_save_as(tmp_path):
+def test_disk_save_as(tmp_path: Path):
     workspace = Workspace.create(tmp_path / f"{__name__}.geoh5")
     Points.create(workspace, vertices=np.random.randn(12, 3), name="Points_A")
 
@@ -207,6 +208,223 @@ def test_disk_save_as(tmp_path):
             assert ws_a.objects[0].uid == ws_b.objects[0].uid
 
 
+def test_repack_uses_unique_temporary_paths(tmp_path: Path, monkeypatch):
+    repack_paths = []
+    repack_contents = [b"first workspace repack", b"second workspace repack"]
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        temp_path = Path(command[-1])
+        temp_path.write_bytes(repack_contents[len(repack_paths)])
+        repack_paths.append(temp_path)
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    output_paths = []
+    for directory in ("first", "second"):
+        output_path = tmp_path / directory / "output.geoh5"
+        output_path.parent.mkdir()
+        workspace = Workspace.create(output_path)
+        workspace.repack = True
+        workspace.close()
+        output_paths.append(output_path)
+
+    assert repack_paths[0] != repack_paths[1]
+    assert output_paths[0].read_bytes() == repack_contents[0]
+    assert output_paths[1].read_bytes() == repack_contents[1]
+    assert not repack_paths[0].exists()
+    assert not repack_paths[1].exists()
+
+
+def test_repack_does_not_use_existing_temporary_path(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+    existing_temp_path = tmp_path / ".output.repack.geoh5"
+    existing_temp_path.write_bytes(b"another process's temporary file")
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert output_path.read_bytes() == b"repacked workspace"
+    assert existing_temp_path.read_bytes() == b"another process's temporary file"
+
+
+def test_repack_logs_replace_failure_and_cleans_temporary_file(
+    tmp_path: Path, monkeypatch, caplog
+):
+    output_path = tmp_path / "output.geoh5"
+    temp_paths = []
+    original_contents = []
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        original_contents.append(Path(command[-2]).read_bytes())
+        temp_path = Path(command[-1])
+        temp_path.write_bytes(b"repacked workspace")
+        temp_paths.append(temp_path)
+
+    # mock the replace method to simulate a failure
+    mock_error_msg = "[MOCK] workspace file is locked"
+
+    def fail_replace(_path, _target):
+        raise PermissionError(mock_error_msg)
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+    monkeypatch.setattr(Path, "replace", fail_replace)
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert output_path.read_bytes() == original_contents[0]
+    assert not temp_paths[0].exists()
+    assert "Failed to repack workspace file" in caplog.text
+    assert mock_error_msg in caplog.text
+
+
+def test_repack_logs_temporary_file_allocation_failure(
+    tmp_path: Path, monkeypatch, caplog
+):
+    output_path = tmp_path / "output.geoh5"
+    mock_error_msg = "[MOCK] no space left on device"
+
+    def fail_allocation(*_args, **_kwargs):
+        raise OSError(mock_error_msg)
+
+    def unexpected_repack(*_args, **_kwargs):
+        pytest.fail("h5repack must not run without a temporary file")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.tempfile.NamedTemporaryFile",
+        fail_allocation,
+    )
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        unexpected_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert "Failed to repack workspace file" in caplog.text
+    assert mock_error_msg in caplog.text
+    assert output_path.exists()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits only")
+def test_repack_preserves_file_permissions(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        fake_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    output_path.chmod(0o664)
+    workspace.close()
+
+    assert output_path.read_bytes() == b"repacked workspace"
+    assert output_path.stat().st_mode & 0o777 == 0o664
+
+
+def test_repack_copies_posix_acl(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+    acl_value = b"mock acl"
+    applied = {}
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    def fake_getxattr(path, name):
+        assert Path(path) == output_path
+        assert name == "system.posix_acl_access"
+        return acl_value
+
+    def fake_setxattr(path, name, value):
+        applied[(Path(path).name.startswith("."), name)] = value
+
+    monkeypatch.setattr("geoh5py.workspace.workspace.subprocess.run", fake_repack)
+    monkeypatch.setattr(os, "getxattr", fake_getxattr, raising=False)
+    monkeypatch.setattr(os, "setxattr", fake_setxattr, raising=False)
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert applied == {(True, "system.posix_acl_access"): acl_value}
+
+
+def test_repack_ignores_missing_posix_acl(tmp_path: Path, monkeypatch):
+    output_path = tmp_path / "output.geoh5"
+
+    def fake_repack(command: list[str], **_kwargs) -> None:
+        Path(command[-1]).write_bytes(b"repacked workspace")
+
+    def no_acl(*_args):
+        raise OSError("[MOCK] no data available")
+
+    monkeypatch.setattr("geoh5py.workspace.workspace.subprocess.run", fake_repack)
+    monkeypatch.setattr(os, "getxattr", no_acl, raising=False)
+    monkeypatch.setattr(os, "setxattr", no_acl, raising=False)
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert output_path.read_bytes() == b"repacked workspace"
+
+
+def test_repack_logs_process_output_upon_failure(tmp_path: Path, monkeypatch, caplog):
+    output_path = tmp_path / "output.geoh5"
+    cmd_output_paths = []
+
+    mock_stdout_value = "[MOCK] repack stdout"
+    mock_stderr_value = "[MOCK] repack stderr"
+
+    def failing_repack(command: list[str], **_kwargs) -> None:
+        cmd_output_paths.append(Path(command[-1]))
+        raise subprocess.CalledProcessError(
+            1, command, output=mock_stdout_value, stderr=mock_stderr_value
+        )
+
+    monkeypatch.setattr(
+        "geoh5py.workspace.workspace.subprocess.run",
+        failing_repack,
+    )
+
+    workspace = Workspace.create(output_path)
+    workspace.repack = True
+    workspace.close()
+
+    assert "h5repack failed" in caplog.text
+
+    # assert the log exposed h5repack stdout and stderr
+    assert mock_stdout_value in caplog.text
+    assert mock_stderr_value in caplog.text
+
+    # assert the log does not expose the full h5repack command line
+    assert "--native" not in caplog.text
+    assert not cmd_output_paths[0].exists()
+
+
 def test_create_bytesio():
     with pytest.raises(TypeError, match="The 'h5file' attribute must be a str"):
         Workspace.create(123)
@@ -216,14 +434,14 @@ def test_create_bytesio():
     assert isinstance(workspace.h5file, io.BytesIO)
 
 
-def test_network_drive_warning(tmp_path):
+def test_network_drive_warning(tmp_path: Path):
     network_drive = tmp_path / "Dropbox"
     network_drive.mkdir()
     with pytest.warns(match="Opening workspace with write access in a network drive"):
         _ = Workspace(network_drive / "test.geoh5")
 
 
-def test_page_size(tmp_path):
+def test_page_size(tmp_path: Path):
 
     with pytest.raises(TypeError, match="Page size must be an integer"):
         Workspace.create(tmp_path / f"{__name__}.geoh5", page_size="abc")
@@ -250,7 +468,7 @@ def test_page_size(tmp_path):
     ],
 )
 def test_compression_below_page(
-    tmp_path, n_values: int, compressions: tuple, expected_opt
+    tmp_path: Path, n_values: int, compressions: tuple, expected_opt
 ):
     vertices = np.c_[np.arange(n_values), np.arange(n_values), np.arange(n_values)]
     values = np.arange(n_values)

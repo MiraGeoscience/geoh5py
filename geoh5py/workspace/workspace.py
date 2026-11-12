@@ -22,19 +22,19 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 import uuid
 import warnings
 import weakref
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import AbstractContextManager, contextmanager, suppress
 from gc import collect
 from getpass import getuser
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
-from shutil import copy, move
-from subprocess import CalledProcessError
+from shutil import copy, copymode
 from typing import Any, ClassVar, cast
 from weakref import ReferenceType
 
@@ -93,6 +93,20 @@ NETWORK_DRIVES = [
     "Box",
     "iCloud",
 ]
+
+
+def _copy_posix_acl(source: Path, target: Path) -> None:
+    """
+    Copy the POSIX access ACL (Linux only) from one file to another, if any.
+    """
+    if not (hasattr(os, "getxattr") and hasattr(os, "setxattr")):
+        return  # not available on Windows and macOS
+
+    attribute = "system.posix_acl_access"
+    with suppress(OSError):  # no ACL, or not supported by the file system
+        # pylint: disable-next=no-member
+        os.setxattr(target, attribute, os.getxattr(source, attribute))
+
 
 TYPE_UID_TO_CLASS = map_to_class(
     ClassIdentifierEnum.DEFAULT_TYPE_UID, [groups, objects]
@@ -231,25 +245,49 @@ class Workspace(AbstractContextManager):
             and not isinstance(self._h5file, BytesIO)
             and self._h5file is not None
         ):
-            temp_file = Path(tempfile.gettempdir()) / Path(self._h5file).name
-            try:
-                subprocess.run(
-                    ["h5repack", "--native", str(self._h5file), str(temp_file)],
-                    check=True,
-                    capture_output=True,
-                    encoding="utf8",
-                )
-                Path(self._h5file).unlink()
-                move(temp_file, self._h5file, copy)
-            except FileNotFoundError:
-                pass
-            except CalledProcessError as process_error:
-                logger.error("%s\n%s", process_error.stdout, process_error.stderr)
-
+            self._repack_h5_file(self._h5file)
             self.repack = False
 
         if isinstance(self._h5file, BytesIO):
             self._h5file.seek(0)
+
+    def _repack_h5_file(self, h5file: Path) -> None:
+        """
+        Repack an HDF5 workspace in-place by writing to a unique temporary sibling file.
+        """
+        # Create a temp file in the same directory as the target to avoid copying across
+        # filesystems. Use NamedTemporaryFile to ensure a unique file name.
+        temp_repack_file: Path | None = None
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                prefix=f".{h5file.stem}.repack",
+                suffix=h5file.suffix,
+                dir=h5file.parent,
+                delete=False,
+            ) as temp_file:
+                temp_repack_file = Path(temp_file.name)
+
+            subprocess.run(
+                ["h5repack", "--native", str(h5file), str(temp_repack_file)],
+                check=True,
+                capture_output=True,
+                encoding="utf8",
+            )
+            _copy_posix_acl(h5file, temp_repack_file)
+            # Temp file is created with mode 0600: keep the original permissions
+            copymode(h5file, temp_repack_file)
+            temp_repack_file.replace(h5file)
+        except FileNotFoundError:  # h5repack not installed
+            pass
+        except subprocess.CalledProcessError as error:
+            logger.error("h5repack failed:\n%s\n%s", error.stdout, error.stderr)
+        except OSError as error:
+            logger.error("Failed to repack workspace file %s: %s", h5file, error)
+        finally:
+            if temp_repack_file is not None:
+                with suppress(OSError):
+                    temp_repack_file.unlink(missing_ok=True)
 
     @property
     def contributors(self) -> np.ndarray:

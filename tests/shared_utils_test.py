@@ -20,8 +20,11 @@
 
 from __future__ import annotations
 
+import math
 import re
 import uuid
+from decimal import Decimal
+from fractions import Fraction
 
 import numpy as np
 import pytest
@@ -33,6 +36,7 @@ from geoh5py.shared.utils import (
     ClassIdentifierEnum,
     as_str_if_uuid,
     box_intersect,
+    dict_mapper,
     dict_to_json_str,
     equalize_string,
     inf2str,
@@ -51,8 +55,28 @@ def test_inf2str():
 
 def test_nan2str():
     assert nan2str(np.nan) == ""
+    assert nan2str(np.float32(np.nan)) == ""
+    assert nan2str(Decimal("NaN")) == ""
+    assert nan2str(float("NaN")) == ""
+    assert nan2str(float("nan")) == ""
+    assert nan2str(math.inf * 0) == ""
+    assert nan2str(np.inf * 0) == ""
+    assert nan2str(math.inf) == math.inf
+    assert nan2str(np.inf) == np.inf
+    assert nan2str(None) is None
+    assert nan2str(Fraction(1, 2)) == Fraction(1, 2)
     assert nan2str(1) == 1
     assert nan2str("a") == "a"
+    assert nan2str(np.complex64(1 + 2j)) == np.complex64(1 + 2j)
+    with Workspace() as workspace:
+        assert nan2str(workspace) is workspace
+
+
+def test_dict_mapper_preserves_numpy_arrays():
+    for array in (np.array([np.nan]), np.array([np.nan, 1.0])):
+        mapped = dict_mapper({"values": array}, [nan2str])
+
+        assert mapped["values"] is array
 
 
 def test_iterable():

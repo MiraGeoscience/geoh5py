@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from typing import TYPE_CHECKING
 
 from ...data import Data
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     from .property_group import ConcatenatedPropertyGroup
 
 
-class ConcatenatedData(Concatenated, Data):
+class ConcatenatedData(Concatenated, Data, ABC):
     def __init__(self, **kwargs):
         if kwargs.get("parent") is None:
             raise UserWarning(
