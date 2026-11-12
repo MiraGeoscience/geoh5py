@@ -32,9 +32,7 @@ class Surface(CellObject):
     Surface object defined by vertices and cells
     """
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0xF26FEBA3, 0xADED, 0x494B, 0xB9, 0xE9, 0xB2BBCBE298E1)
-    )
+    _TYPE_UID = uuid.UUID("f26feba3-aded-494b-b9e9-b2bbcbe298e1")
     _default_name = "Surface"
     _minimum_vertices = 3
 
