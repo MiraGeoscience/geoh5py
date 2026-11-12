@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC
 
 import numpy as np
 
@@ -34,7 +35,7 @@ from .base import FEMSurvey
 # pylint: disable=too-many-ancestors
 
 
-class TipperSurvey(FEMSurvey):
+class TipperSurvey(FEMSurvey, ABC):
     """
     Base tipper survey class.
     """
