@@ -317,6 +317,9 @@ class H5Reader:
                 if array is None:
                     array = group.get(label.replace("/", "\u2044"))
 
+                if array is None:
+                    return None
+
                 attribute = array[:]
 
                 if attribute.dtype in [float, "float64", "float32"]:
