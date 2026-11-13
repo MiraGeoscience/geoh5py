@@ -188,3 +188,18 @@ def test_color_map_values_setter():
     )
     color_map = ColorMap(values=values.T)
     assert np.allclose(values, color_map.values)
+
+
+def test_color_map_scale(tmp_path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+    with Workspace.create(h5file_path) as workspace:
+        n_x, n_y = 10, 15
+        _, data, colormap = create_object_and_data(
+            workspace, "Grid2D_Colormap", n_x, n_y
+        )
+        data.entity_type.color_map = colormap
+        # data.entity_type.scale = "Log"
+        data.entity_type.mapping = "logarithmic"
+        data.entity_type.transform_min = 1e-7
+        data.entity_type.transform_max = 1e-0
+        data.entity_type.number_of_bins = 50

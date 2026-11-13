@@ -143,6 +143,8 @@ INV_KEY_MAP = {
     "Trace": "trace",
     "TraceDepth": "trace_depth",
     "Transparent no data": "transparent_no_data",
+    "transform_min": "transform_min",
+    "transform_max": "transform_max",
     "Unknown": "UNKNOWN",
     "U cell delimiters": "u_cell_delimiters",
     "V cell delimiters": "v_cell_delimiters",

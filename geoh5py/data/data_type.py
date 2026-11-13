@@ -95,6 +95,8 @@ class DataType(EntityType):
                 "Transparent no data",
                 "Scale",
                 "Scientific notation",
+                "transform_max",
+                "transform_min",
             ]
         }
     )
@@ -116,6 +118,8 @@ class DataType(EntityType):
         precision: int = 2,
         scale: str | None = None,
         scientific_notation: bool = False,
+        transform_min: float | None = None,
+        transform_max: float | None = None,
         transparent_no_data: bool = True,
         units: str | None = None,
         **kwargs,
@@ -136,6 +140,8 @@ class DataType(EntityType):
         self.scale = scale
         self.scientific_notation = scientific_notation
         self.transparent_no_data = transparent_no_data
+        self.transform_min = transform_min
+        self.transform_max = transform_max
         self.units = units
 
     @property
@@ -377,7 +383,8 @@ class DataType(EntityType):
             )
         self._mapping: str = value
 
-        self.workspace.update_attribute(self, "attributes")
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def number_of_bins(self) -> int | None:
@@ -399,7 +406,8 @@ class DataType(EntityType):
 
         self._number_of_bins: int | None = n_bins
 
-        self.workspace.update_attribute(self, "attributes")
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def precision(self) -> int:
@@ -439,6 +447,56 @@ class DataType(EntityType):
             )
 
         self._primitive_type = value
+
+    @property
+    def transform_min(self) -> float | None:
+        """
+        Minimum value of the colormap transform.
+        """
+        return self._transform_min
+
+    @transform_min.setter
+    def transform_min(self, value: float | None):
+        if not isinstance(value, float | int | np.number | None):
+            raise TypeError(
+                f"Attribute 'transform_min' must be a float, not {type(value)}"
+            )
+
+        transform_max: float | None = getattr(self, "_transform_max", None)
+        if transform_max and value and value > transform_max:
+            raise ValueError(
+                "Attribute 'transform_min' must be less than or equal to 'transform_max'."
+            )
+
+        self._transform_min = float(value) if value else None
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
+
+    @property
+    def transform_max(self) -> float | None:
+        """
+        Maximum value of the colormap transform.
+        """
+        return self._transform_max
+
+    @transform_max.setter
+    def transform_max(self, value: float | None):
+        if not isinstance(value, float | int | np.number | None):
+            raise TypeError(
+                f"Attribute 'transform_max' must be a float, not {type(value)}"
+            )
+
+        transform_min: float | None = getattr(self, "_transform_min", None)
+        if transform_min and value and value < transform_min:
+            raise ValueError(
+                "Attribute 'transform_max' must be greater than or equal to 'transform_min'."
+            )
+
+        self._transform_max = float(value) if value else None
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def transparent_no_data(self) -> bool:
