@@ -649,7 +649,7 @@ class ReferencedValueMapType(ReferenceDataType):
     Data container for referenced value map.
     """
 
-    _TYPE_UID = UUID(fields=(0x2D5D6C1E, 0x4D8C, 0x4F3A, 0x9B, 0x3F, 0x2E5A0D8E1C1F))
+    _TYPE_UID = UUID("2d5d6c1e-4d8c-4f3a-9b3f-2e5a0d8e1c1f")
 
     def __init__(
         self,
@@ -891,7 +891,7 @@ class GeometricDataXType(GeometricDynamicDataType):
     """
 
     _dynamic_implementation_id = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
-    _TYPE_UID = UUID(fields=(0xE9E6B408, 0x4109, 0x4E42, 0xB6, 0xA8, 0x685C37A802EE))
+    _TYPE_UID = UUID("e9e6b408-4109-4e42-b6a8-685c37a802ee")
 
 
 class GeometricDataYType(GeometricDynamicDataType):
@@ -900,7 +900,7 @@ class GeometricDataYType(GeometricDynamicDataType):
     """
 
     _dynamic_implementation_id = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
-    _TYPE_UID = UUID(fields=(0xF55B07BD, 0xD8A0, 0x4DFF, 0xBA, 0xE5, 0xC975D490D71C))
+    _TYPE_UID = UUID("f55b07bd-d8a0-4dff-bae5-c975d490d71c")
 
 
 class GeometricDataZType(GeometricDynamicDataType):
@@ -909,7 +909,7 @@ class GeometricDataZType(GeometricDynamicDataType):
     """
 
     _dynamic_implementation_id = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
-    _TYPE_UID = UUID(fields=(0xDBAFB885, 0x1531, 0x410C, 0xB1, 0x8E, 0x6AC9A40B4466))
+    _TYPE_UID = UUID("dbafb885-1531-410c-b18e-6ac9a40b4466")
 
 
 DYNAMIC_CLASS_IDS = {

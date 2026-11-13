@@ -85,7 +85,7 @@ class InterpretationSection(Group):
         }
     )
 
-    _TYPE_UID = UUID(fields=(0x27EE59E1, 0xB1CE, 0x41EC, 0x8A, 0x86, 0x8BD3D229E198))
+    _TYPE_UID = UUID("27ee59e1-b1ce-41ec-8a86-8bd3d229e198")
     _default_name = "Interpretation"
 
     def __init__(self, can_add_group: bool = False, **kwargs):
