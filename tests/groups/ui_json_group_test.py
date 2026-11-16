@@ -118,11 +118,12 @@ def test_uijson_group_copy_relatives(tmp_path):
                 label="Data",
                 parent="curve",
                 data_type="Float",
+                association="Vertex",
                 value="",
             )
             group: GroupForm = GroupForm(
                 label="Group",
-                group_type="UIJsonGroup",
+                group_type="UIJson",
                 value="",
             )
 
