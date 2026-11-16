@@ -18,7 +18,6 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 from __future__ import annotations
 
-from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -26,10 +25,22 @@ import pytest
 
 from geoh5py.groups import UIJsonGroup
 from geoh5py.shared.utils import compare_entities
-from geoh5py.ui_json import constants, templates
+from geoh5py.ui_json import UIJson
+from geoh5py.ui_json.forms import DataForm, FloatForm, GroupForm, ObjectForm
 from geoh5py.workspace import Workspace
 
 from .property_group_test import make_example
+
+
+class TestUIJson(UIJson):
+    title: str = "Test UIJson"
+    geoh5: Workspace | None = None
+    run_command: str = "run_command"
+    conda_environment: str = ""
+    something: FloatForm = FloatForm(
+        label="Something",
+        value=1.0,
+    )
 
 
 def test_uijson_group(tmp_path):
@@ -37,16 +48,15 @@ def test_uijson_group(tmp_path):
 
     # Create a workspace with group
     with Workspace.create(h5file_path) as workspace:
-        curve, _ = make_example(workspace)
+        make_example(workspace)
 
         # prepare a fancy uijson
-        uijson = deepcopy(constants.default_ui_json)
-        uijson["something"] = templates.float_parameter()
-        uijson["curve"] = curve
-        uijson["data"] = curve.get_data("Period1")[0]
-        uijson["property_group"] = curve.get_property_group("myGroup")[0]
-
-        group = UIJsonGroup.create(workspace, name="test", options=uijson)
+        uijson = TestUIJson()
+        group = UIJsonGroup.create(
+            workspace,
+            name="test",
+            options=uijson.serialize(mode="json", exclude_unset=False),
+        )
 
         # Copy on new workspace
         with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
@@ -94,27 +104,33 @@ def test_uijson_group_copy_relatives(tmp_path):
         # create an objects, a property group and
         curve, _ = make_example(workspace)
 
-        # prepare a fancy uijson
-        uijson = deepcopy(constants.default_ui_json)
-        uijson["something"] = templates.float_parameter()
-        uijson["curve"] = {"a nested dict": curve}
-        uijson["data"] = {
-            "another one": {
-                "and a list too": [
-                    {
-                        "keep swimming": curve.get_data("Period1")[0],
-                    }
-                ]
-            },
-        }
-        uijson["property_group"] = curve.get_property_group("myGroup")[0]
-        uijson["group"] = {
-            "value": UIJsonGroup.create(workspace, name="dummy"),
-            "groupType": UIJsonGroup.default_type_uid(),
-        }
+        class TestUIRelatives(TestUIJson):
+            title: str = "Test UIJson"
+            geoh5: Workspace | None = None
+            run_command: str = "run_command"
+            conda_environment: str = ""
+            curve: ObjectForm = ObjectForm(
+                label="Object",
+                mesh_type="Curve",
+                value="",
+            )
+            data: DataForm = DataForm(
+                label="Data",
+                parent="curve",
+                data_type="Float",
+                value="",
+            )
+            group: GroupForm = GroupForm(
+                label="Group",
+                group_type="UIJsonGroup",
+                value="",
+            )
 
+        # prepare a fancy uijson
+        uijson = TestUIRelatives()
         group = UIJsonGroup.create(workspace)
-        group.options = uijson
+        uijson.set_values(curve=curve, data=curve.get_data("Period1")[0], group=group)
+        group.options = uijson.serialize(mode="json", exclude_unset=False)
 
         with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
             group.copy(
@@ -223,12 +239,26 @@ def test_double_uijson_group(tmp_path):
         curve, _ = make_example(workspace)
 
         # prepare a fancy uijson
-        uijson = deepcopy(constants.default_ui_json)
-        uijson["something"] = templates.float_parameter()
-        uijson["curve"] = curve
+        class TestDoubleRelatives(TestUIJson):
+            title: str = "Test UIJson"
+            geoh5: Workspace | None = None
+            run_command: str = "run_command"
+            conda_environment: str = ""
+            curve: ObjectForm = ObjectForm(
+                label="Object",
+                mesh_type="Curve",
+                value="",
+            )
 
-        group_1 = UIJsonGroup.create(workspace, name="test_1", options=uijson)
-        group_2 = UIJsonGroup.create(workspace, name="test_2", options=uijson)
+        # prepare a fancy uijson
+        uijson = TestDoubleRelatives()
+        group_1 = UIJsonGroup.create(workspace, name="test_1")
+        uijson.set_values(curve=curve)
+        group_1.options = uijson.serialize(mode="json", exclude_unset=False)
+
+        group_2 = UIJsonGroup.create(workspace, name="test_2")
+        uijson.set_values(curve=curve)
+        group_2.options = uijson.serialize(mode="json", exclude_unset=False)
 
         with Workspace() as new_workspace:
             group_1.copy(parent=new_workspace)
