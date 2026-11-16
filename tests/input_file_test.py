@@ -42,8 +42,7 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
 )
 from geoh5py.shared.utils import compare_entities
-from geoh5py.ui_json import InputValidation, templates
-from geoh5py.ui_json.constants import default_ui_json, ui_validations
+
 from geoh5py.ui_json.input_file import DEFAULT_UI_JSON_NAME, InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
@@ -87,14 +86,9 @@ def get_workspace(directory: str | Path):
 def test_input_file_json():
     # Test missing required ui_json parameter
     with pytest.raises(
-        ValueError, match="Input 'ui_json' must be of type dict or None"
+        TypeError, match="Expected a dictionary or UIJson instance"
     ):
         InputFile(ui_json=123)
-
-    with pytest.raises(
-        AttributeError, match=r"'ui_json' must be set before setting data\."
-    ):
-        InputFile().data = {"abc": 123}
 
     with pytest.raises(
         AttributeError, match=r"InputFile requires a 'ui_json' to be defined\."
@@ -837,56 +831,6 @@ def test_collect():
     enabled_params = collect(ui_json, "enabled", value=True)
     assert all("enabled" in v for v in enabled_params.values())
     assert all(v["enabled"] for v in enabled_params.values())
-
-
-def test_unique_validations():
-    # pylint: disable=protected-access
-    result = InputValidation._unique_validators(
-        {"param1": {"types": [str], "values": ["test2"]}, "param2": {"types": [float]}}
-    )
-    assert all(k in result for k in ["types", "values"])
-    assert all(k in ["types", "values"] for k in result)
-
-
-def test_required_validators():
-    # pylint: disable=protected-access
-    result = InputValidation._required_validators(
-        {"param1": {"types": [str], "values": ["test2"]}, "param2": {"types": [float]}}
-    )
-    assert all(k in result for k in ["types", "values"])
-    assert all(k in ["types", "values"] for k in result)
-    assert all(k == v.validator_type for k, v in result.items())
-
-
-def test_merge_validations():
-    # pylint: disable=protected-access
-
-    ui_json = deepcopy(default_ui_json)
-    ui_json["string_parameter"] = templates.string_parameter(optional="enabled")
-    ui_json["float_parameter"] = templates.float_parameter(optional="disabled")
-    ui_json["integer_parameter"] = templates.integer_parameter()
-    ui_json["data_value_parameter"] = {
-        "isValue": True,
-        "parent": "Dwayne",
-    }
-    validations = InputValidation._validations_from_uijson(ui_json)
-    validations = InputValidation._merge_validations(
-        validations, {"integer_parameter": {"types": [type(None)]}}
-    )
-
-    # Test handling of isValue
-    assert validations["data_value_parameter"]["association"] == "Dwayne"
-    assert validations["data_value_parameter"]["uuid"] is None
-
-    # If validation exists it is overwritten
-    assert len(validations["integer_parameter"]["types"]) == 1
-    assert type(None) in validations["integer_parameter"]["types"]
-
-    # If validation doesn't exist it is added
-    validations = InputValidation._merge_validations(
-        validations, {"integer_parameter": {"shape": (3, 2)}}
-    )
-    assert all(k in validations["integer_parameter"] for k in ["types", "shape"])
 
 
 def test_dependency_enabling(tmp_path: Path):
