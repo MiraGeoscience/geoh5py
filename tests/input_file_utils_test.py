@@ -24,10 +24,10 @@ import uuid
 from copy import deepcopy
 
 import pytest
-from geoh5py.ui_json.constants import default_ui_json
 
 from geoh5py.shared.utils import dict_mapper
 from geoh5py.ui_json import InputValidation, templates
+from geoh5py.ui_json.constants import default_ui_json
 from geoh5py.ui_json.utils import (
     collect,
     flatten,
