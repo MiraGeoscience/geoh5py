@@ -26,6 +26,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import pytest
+from geoh5py.ui_json.constants import default_ui_json
 
 from geoh5py import Workspace
 from geoh5py.ui_json import UIJson
