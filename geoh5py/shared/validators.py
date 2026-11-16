@@ -29,7 +29,6 @@ from uuid import UUID
 from geoh5py import groups, objects
 from geoh5py.groups import Group
 from geoh5py.objects import ObjectBase
-
 from geoh5py.shared.utils import (
     ClassIdentifierEnum,
     dict_mapper,

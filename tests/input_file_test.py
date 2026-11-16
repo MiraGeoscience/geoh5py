@@ -42,7 +42,6 @@ from geoh5py.shared.exceptions import (
     ValueValidationError,
 )
 from geoh5py.shared.utils import compare_entities
-
 from geoh5py.ui_json.input_file import DEFAULT_UI_JSON_NAME, InputFile
 from geoh5py.ui_json.utils import collect
 from geoh5py.workspace import Workspace
@@ -85,9 +84,7 @@ def get_workspace(directory: str | Path):
 
 def test_input_file_json():
     # Test missing required ui_json parameter
-    with pytest.raises(
-        TypeError, match="Expected a dictionary or UIJson instance"
-    ):
+    with pytest.raises(TypeError, match="Expected a dictionary or UIJson instance"):
         InputFile(ui_json=123)
 
     with pytest.raises(

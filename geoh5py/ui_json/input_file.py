@@ -26,6 +26,7 @@ from typing import Any
 
 from geoh5py.ui_json import UIJson
 
+
 DEFAULT_UI_JSON_NAME = "quick_run.ui.json"
 logger = logging.getLogger(__name__)
 
