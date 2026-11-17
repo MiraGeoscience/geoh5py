@@ -20,7 +20,7 @@
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Literal, Self
 from uuid import UUID
 
 import numpy as np
@@ -175,6 +175,7 @@ class LabelForm(BaseForm):
     """
 
     value: None = None
+    icon: Literal["information", "warning", "critical", "question"] | None = None
 
 
 class StringForm(BaseForm):
