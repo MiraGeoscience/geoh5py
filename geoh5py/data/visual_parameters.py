@@ -20,11 +20,11 @@
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from collections.abc import Sequence
+from xml.etree.ElementTree import Element, SubElement
 
+import defusedxml.ElementTree as ET
 import numpy as np
-from defusedxml.ElementTree import fromstring, tostring
 
 from .data_association_enum import DataAssociationEnum
 from .text_data import TextData
@@ -35,7 +35,7 @@ ATTRIBUTES = ["tag", "text", "attrib"]
 
 
 class VisualParameters(TextData):
-    _xml: ET.Element | None = None
+    _xml: Element | None = None
     _association = DataAssociationEnum.OBJECT
 
     def __init__(
@@ -47,7 +47,7 @@ class VisualParameters(TextData):
         super().__init__(association=association, public=public, **kwargs)
 
     @property
-    def xml(self) -> ET.Element:
+    def xml(self) -> Element:
         """
         :obj:`str` XML string.
         """
@@ -60,14 +60,14 @@ class VisualParameters(TextData):
                     </IParameterList>
                 """
 
-            self._xml = fromstring(str_xml)
+            self._xml = ET.fromstring(str_xml)
 
         return self._xml
 
     @property
     def values(self) -> str | None:
         if self._xml is not None:
-            self._values = tostring(self._xml, encoding="unicode")
+            self._values = ET.tostring(self._xml, encoding="unicode")
 
         elif (getattr(self, "_values", None) is None) and self.on_file:
             values = self.workspace.fetch_values(self)
@@ -152,7 +152,7 @@ class VisualParameters(TextData):
 
         self.set_tags(filterbasement=str(value))
 
-    def get_tag(self, tag: str) -> ET.Element | None:
+    def get_tag(self, tag: str) -> Element | None:
         """
         Recover the tag element.
 
@@ -172,7 +172,7 @@ class VisualParameters(TextData):
         for tag, value in values.items():
             element = self.xml.find(tag.capitalize())
             if element is None:
-                element = ET.SubElement(self.xml, tag.capitalize())
+                element = SubElement(self.xml, tag.capitalize())
 
             element.text = str(value)
 
