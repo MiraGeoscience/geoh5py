@@ -28,7 +28,5 @@ from .base import Group
 class ContainerGroup(Group):
     """The type for the basic Container group."""
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0x61FBB4E8, 0xA480, 0x11E3, 0x8D, 0x5A, 0x2776BDF4F982)
-    )
+    _TYPE_UID = uuid.UUID("61fbb4e8-a480-11e3-8d5a-2776bdf4f982")
     _default_name = "Container"
