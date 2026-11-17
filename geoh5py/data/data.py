@@ -246,14 +246,14 @@ class Data(Entity):
         return self._association
 
     @property
-    def entity_type(self) -> DataType | ReferenceDataType:
+    def entity_type(self):
         """
         Type of data.
         """
         return self._entity_type
 
     @entity_type.setter
-    def entity_type(self, data_type: DataType):
+    def entity_type(self, data_type: DataType | ReferenceDataType):
         self._entity_type = self.validate_entity_type(data_type)
 
         if self.on_file:
