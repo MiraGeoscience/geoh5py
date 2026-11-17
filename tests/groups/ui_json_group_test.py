@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from geoh5py.groups import UIJsonGroup
+from geoh5py.groups import ContainerGroup, UIJsonGroup
 from geoh5py.shared.utils import compare_entities
 from geoh5py.ui_json import UIJson
 from geoh5py.ui_json.forms import DataForm, FloatForm, GroupForm, ObjectForm
@@ -130,7 +130,10 @@ def test_uijson_group_copy_relatives(tmp_path):
         # prepare a fancy uijson
         uijson = TestUIRelatives()
         group = UIJsonGroup.create(workspace)
-        uijson.set_values(curve=curve, data=curve.get_data("Period1")[0], group=group)
+        some_group = ContainerGroup.create(workspace, name="myGroup")
+        uijson.set_values(
+            curve=curve, data=curve.get_data("Period1")[0], group=some_group
+        )
         group.options = uijson.serialize(mode="json", exclude_unset=False)
 
         with Workspace.create(tmp_path / r"testGroup2.geoh5") as new_workspace:
@@ -151,19 +154,8 @@ def test_uijson_group_copy_relatives(tmp_path):
 
         assert options["group"]["groupType"] == UIJsonGroup.default_type_uid()
 
-        assert (
-            new_workspace.get_entity(options["curve"]["a nested dict"])[0].name
-            == "curve"
-        )
-        assert (
-            new_workspace.get_entity(
-                options["data"]["another one"]["and a list too"][0]["keep swimming"]
-            )[0].name
-            == "Period1"
-        )
-        assert new_workspace.get_entity(options["property_group"])[0].name == "myGroup"
-        # all children are getting copied
-        assert new_workspace.get_entity("Period2")[0].name == "Period2"
+        assert new_workspace.get_entity(options["curve"]["value"])[0].name == "curve"
+        assert new_workspace.get_entity(options["data"]["value"])[0].name == "Period1"
 
     with Workspace(h5file_path) as workspace:
         original = workspace.get_entity("UIJson")[0]

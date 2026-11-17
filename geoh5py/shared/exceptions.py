@@ -30,10 +30,6 @@ if TYPE_CHECKING:
     from geoh5py.shared.entity import Entity
 
 
-class Geoh5FileClosedError(ABC, Exception):
-    """Error for closed geoh5 file."""
-
-
 class BaseValidationError(ABC, Exception):
     """
     Base class for custom exceptions.
@@ -50,6 +46,10 @@ class BaseValidationError(ABC, Exception):
 
         Each subclass of BaseValidationError should implement the message class method.
         """
+
+
+class Geoh5FileClosedError(ABC, Exception):
+    """Error for closed geoh5 file."""
 
 
 class ShapeValidationError(BaseValidationError):
