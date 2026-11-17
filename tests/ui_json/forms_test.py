@@ -153,6 +153,9 @@ def test_label_form():
     with pytest.raises(ValueError, match=msg):
         _ = LabelForm(label="name", value=1)
 
+    with pytest.raises(ValidationError, match="Input should be"):
+        _ = LabelForm(label="name", icon="bad")
+
 
 def test_string_form():
     form = StringForm(label="name", value="test")
