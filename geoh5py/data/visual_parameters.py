@@ -24,6 +24,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Sequence
 
 import numpy as np
+from defusedxml.ElementTree import fromstring, tostring
 
 from .data_association_enum import DataAssociationEnum
 from .text_data import TextData
@@ -59,14 +60,14 @@ class VisualParameters(TextData):
                     </IParameterList>
                 """
 
-            self._xml = ET.fromstring(str_xml)
+            self._xml = fromstring(str_xml)
 
         return self._xml
 
     @property
     def values(self) -> str | None:
         if self._xml is not None:
-            self._values = ET.tostring(self._xml, encoding="unicode")
+            self._values = tostring(self._xml, encoding="unicode")
 
         elif (getattr(self, "_values", None) is None) and self.on_file:
             values = self.workspace.fetch_values(self)
