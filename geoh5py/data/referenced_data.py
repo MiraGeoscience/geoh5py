@@ -21,7 +21,7 @@
 from __future__ import annotations
 
 import copy
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -31,6 +31,10 @@ from .data import Data
 from .geometric_data import GeometricDataConstants
 from .integer_data import IntegerData
 from .reference_value_map import ReferenceValueMap
+
+
+if TYPE_CHECKING:
+    from geoh5py.data.data_type import ReferenceDataType
 
 
 class ReferencedData(IntegerData):
@@ -103,8 +107,12 @@ class ReferencedData(IntegerData):
             self.parent.children,
             types=GeometricDataConstants,
         )
+
+        if (value_map := getattr(data_map.entity_type, "value_map", None)) is None:
+            return None
+
         data_type = self.parent.add_data_map_type(
-            name, data_map.entity_type.value_map.map, self.entity_type.name
+            name, value_map.map, self.entity_type.name
         )
 
         geometric_data = cast(
@@ -168,6 +176,20 @@ class ReferencedData(IntegerData):
             self.workspace.update_attribute(self, "data_map")
 
     @property
+    def entity_type(self) -> ReferenceDataType:
+        """
+        Type of data.
+        """
+        return self._entity_type
+
+    @entity_type.setter
+    def entity_type(self, data_type: ReferenceDataType):
+        self._entity_type = self.validate_entity_type(data_type)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "entity_type")
+
+    @property
     def mapped_values(self) -> np.ndarray:
         """
         The values mapped from the reference data.
@@ -178,7 +200,7 @@ class ReferencedData(IntegerData):
         return self.value_map.map_values(self.values)
 
     @property
-    def value_map(self) -> ReferenceValueMap | None:
+    def value_map(self) -> ReferenceValueMap:
         """
         Pointer to the :obj:`data.data_type.DataType.value_map`
         """
