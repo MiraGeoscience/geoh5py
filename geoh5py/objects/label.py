@@ -38,7 +38,7 @@ class Label(ObjectBase):
 
     """
 
-    _TYPE_UID = uuid.UUID("e79f449d-74e3-4598-9c9c-351a28b8b69e")
+    _TYPE_UID = uuid.UUID("{e79f449d-74e3-4598-9c9c-351a28b8b69e}")
     _default_name = "Label"
 
     def __init__(self, **kwargs):

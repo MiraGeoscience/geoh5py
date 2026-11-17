@@ -891,7 +891,7 @@ class GeometricDataXType(GeometricDynamicDataType):
     """
 
     _dynamic_implementation_id = UUID("{2dbf303e-05d6-44ba-9692-39474e88d516}")
-    _TYPE_UID = UUID("e9e6b408-4109-4e42-b6a8-685c37a802ee")
+    _TYPE_UID = UUID("{e9e6b408-4109-4e42-b6a8-685c37a802ee}")
 
 
 class GeometricDataYType(GeometricDynamicDataType):
@@ -900,7 +900,7 @@ class GeometricDataYType(GeometricDynamicDataType):
     """
 
     _dynamic_implementation_id = UUID("{d56406dc-5eeb-418d-add4-a1282a6ef668}")
-    _TYPE_UID = UUID("f55b07bd-d8a0-4dff-bae5-c975d490d71c")
+    _TYPE_UID = UUID("{f55b07bd-d8a0-4dff-bae5-c975d490d71c}")
 
 
 class GeometricDataZType(GeometricDynamicDataType):
@@ -909,7 +909,7 @@ class GeometricDataZType(GeometricDynamicDataType):
     """
 
     _dynamic_implementation_id = UUID("{9dacdc3b-6878-408d-93ae-e9a95e640f0c}")
-    _TYPE_UID = UUID("dbafb885-1531-410c-b18e-6ac9a40b4466")
+    _TYPE_UID = UUID("{dbafb885-1531-410c-b18e-6ac9a40b4466}")
 
 
 DYNAMIC_CLASS_IDS = {

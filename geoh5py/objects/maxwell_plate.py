@@ -212,7 +212,7 @@ class MaxwellPlate(ObjectBase):
     """
 
     _default_name = "Maxwell Plate"
-    _TYPE_UID: uuid.UUID | None = uuid.UUID("{878684e5-01bc-47f1-8c67-943b57d2e694}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{878684e5-01bc-47f1-8c67-943b57d2e694}")
 
     def __init__(
         self,

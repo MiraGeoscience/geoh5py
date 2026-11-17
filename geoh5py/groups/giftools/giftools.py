@@ -37,7 +37,7 @@ from geoh5py.shared.utils import (
 class GIFtoolsGroup(Group):
     """The type for a GIFtools group."""
 
-    _TYPE_UID = UUID("585b3218-c24b-41fe-ad1f-24d5e6e8348a")
+    _TYPE_UID = UUID("{585b3218-c24b-41fe-ad1f-24d5e6e8348a}")
     _default_name = "GIFtools Project"
     _attribute_map: dict = Group._attribute_map.copy()
     _attribute_map.update(

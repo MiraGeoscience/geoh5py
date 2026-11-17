@@ -30,5 +30,5 @@ class NoTypeObject(ObjectBase):
     Generic Data object without a registered type
     """
 
-    _TYPE_UID = uuid.UUID("849d2f3e-a46e-11e3-b401-2776bdf4f982")
+    _TYPE_UID = uuid.UUID("{849d2f3e-a46e-11e3-b401-2776bdf4f982}")
     _default_name = None

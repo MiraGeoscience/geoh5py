@@ -68,7 +68,7 @@ class Drillhole(Points):
     :param default_collocation_distance: Minimum collocation distance for matching depth on merge.
     """
 
-    _TYPE_UID = uuid.UUID("7caebf0e-d16e-11e3-bc69-e4632694aa37")
+    _TYPE_UID = uuid.UUID("{7caebf0e-d16e-11e3-bc69-e4632694aa37}")
     _default_name = "Drillhole"
     __COLLAR_DTYPE = np.dtype([("x", float), ("y", float), ("z", float)])
     _attribute_map = Points._attribute_map.copy()

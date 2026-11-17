@@ -43,7 +43,7 @@ class Octree(GridObject):
     :param octree_cells: Array defining the i, j, k position and size of each cell.
     """
 
-    _TYPE_UID = uuid.UUID("4ea87376-3ece-438b-bf12-3479733ded46")
+    _TYPE_UID = uuid.UUID("{4ea87376-3ece-438b-bf12-3479733ded46}")
     _default_name = "Octree Grid"
     __OCTREE_DTYPE = np.dtype(
         [("I", "<i4"), ("J", "<i4"), ("K", "<i4"), ("NCells", "<i4")]

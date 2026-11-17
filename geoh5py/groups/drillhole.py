@@ -28,7 +28,7 @@ from .base import Group
 class DrillholeGroup(Group):
     """The type for the group containing drillholes."""
 
-    _TYPE_UID = uuid.UUID("825424fb-c2c6-4fea-9f2b-6cd00023d393")
+    _TYPE_UID = uuid.UUID("{825424fb-c2c6-4fea-9f2b-6cd00023d393}")
     _default_name = "Drillholes"
 
 
