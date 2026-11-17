@@ -24,7 +24,7 @@ license-files = [
 ]
 keywords = ["geology", "geophysics", "data", "interoperability"]
 readme = "package.rst"
-dynamic = ["version"]
+dynamic = ["version", "classifiers"]
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
@@ -32,21 +32,6 @@ maintainers = [
     { name = "Benjamin Kary", email = "benjamink@mirageoscience.com" },
     { name = "Dominique Fournier", email = "dominiquef@mirageoscience.com" },
     { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
-]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
-    "Topic :: Database",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
     "h5py>=3.15.0,<3.16.0",
@@ -78,6 +63,18 @@ dev = [
 
 [tool.poetry]
 requires-poetry = ">=2.2.0"
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
 
 exclude = ["geoh5py/handlers/*", "geoh5py/interfaces/*"]
 
