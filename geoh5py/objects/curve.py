@@ -39,7 +39,7 @@ class Curve(CellObject):
     :param vertices: Array of vertices as defined by :obj:`~geoh5py.objects.points.Points.vertices`.
     """
 
-    _TYPE_UID: uuid.UUID = uuid.UUID("6a057fdc-b355-11e3-95be-fd84a7ffcb88")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{6a057fdc-b355-11e3-95be-fd84a7ffcb88}")
     _default_name: str | None = "Curve"
     _attribute_map: dict = CellObject._attribute_map.copy()
     _attribute_map.update(
