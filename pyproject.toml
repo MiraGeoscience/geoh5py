@@ -63,11 +63,13 @@ include = [
 version = "0.0.0.dev0"
 
 [tool.poetry.dependencies]
+defusedxml = "~0.7.1"
 h5py = "~3.15.0"
 numpy = "~2.4.0"
 Pillow = "^12.2.0"
 psutil = "~7.2.2"
 pydantic = "~2.12.0"
+
 
 [tool.poetry.group.dev.dependencies]
 lockfile = "^0.12.2"

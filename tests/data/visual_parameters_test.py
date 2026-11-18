@@ -24,9 +24,23 @@ import logging
 
 import numpy as np
 import pytest
+from defusedxml.common import EntitiesForbidden
 
 from geoh5py.objects import Curve, Grid2D, Points, Surface
 from geoh5py.workspace import Workspace
+
+
+def test_xml_with_internal_entity_is_rejected(tmp_path):
+    with Workspace.create(tmp_path / "test_internal_entity.geoh5") as workspace:
+        points = Points.create(workspace, vertices=np.zeros((1, 3)))
+        visual_parameters = points.add_default_visual_parameters()
+        visual_parameters.values = (
+            '<!DOCTYPE IParameterList [<!ENTITY value "forbidden">]>'
+            "<IParameterList><Colour>&value;</Colour></IParameterList>"
+        )
+
+        with pytest.raises(EntitiesForbidden):
+            visual_parameters.xml
 
 
 def test_visual_parameters(tmp_path, caplog):
