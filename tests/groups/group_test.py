@@ -20,13 +20,12 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
-
 import pytest
 
 from geoh5py.groups import ContainerGroup, SimPEGGroup
 from geoh5py.shared.utils import compare_entities
-from geoh5py.ui_json import constants, templates
+from geoh5py.ui_json import UIJson
+from geoh5py.ui_json.forms import FloatForm
 from geoh5py.workspace import Workspace
 
 
@@ -47,11 +46,21 @@ def test_create_group(tmp_path):
 def test_simpeg_group(tmp_path):
     h5file_path = tmp_path / r"testGroup.geoh5"
 
+    class TestUIJson(UIJson):
+        title: str = "Test UIJson"
+        geoh5: Workspace | None = None
+        run_command: str = "run_command"
+        conda_environment: str = "mirageo"
+        something: FloatForm = FloatForm(
+            name="Something",
+            label="Something",
+            value=1.0,
+        )
+
     # Create a workspace with group
     workspace = Workspace.create(h5file_path)
     group = SimPEGGroup.create(workspace)
-    group.options = deepcopy(constants.default_ui_json)
-    group.options["something"] = templates.float_parameter()
+    group.options = TestUIJson().serialize(mode="json", exclude_unset=False)
 
     # Copy
     new_workspace = Workspace.create(tmp_path / r"testGroup2.geoh5")

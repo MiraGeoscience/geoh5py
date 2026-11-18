@@ -25,8 +25,8 @@ import pytest
 
 from geoh5py.data.color_map import ColorMap
 from geoh5py.objects import Grid2D
+from geoh5py.shared.exceptions import ShapeValidationError
 from geoh5py.shared.utils import compare_entities
-from geoh5py.shared.validators import ShapeValidationError
 from geoh5py.workspace import Workspace
 
 
