@@ -79,7 +79,7 @@ def test_create_surface_data(tmp_path: Path):
         # Read the object from a different workspace object on the same file
         new_workspace = Workspace(h5file_path)
 
-        rec_obj = new_workspace.get_entity("mySurf")[0]
+        rec_obj = new_workspace.get_entity(surface.name)[0]
         rec_data = rec_obj.get_data("TMI")[0]
 
         compare_entities(surface, rec_obj)
