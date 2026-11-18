@@ -20,428 +20,189 @@
 
 from __future__ import annotations
 
-import warnings
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
 from shutil import copy, move
 from time import time
 from typing import Any
+from uuid import UUID
 
-from geoh5py import Workspace
-from geoh5py.groups import ContainerGroup
+from geoh5py import Workspace, groups, objects
 from geoh5py.shared.entity_container import EntityContainer
 from geoh5py.shared.utils import (
+    ClassIdentifierEnum,
     dict_mapper,
     entity2uuid,
+    equalize_string,
     fetch_active_workspace,
+    is_uuid,
+    map_to_class,
     str2none,
 )
+from geoh5py.workspace import TYPE_UID_TO_CLASS
 
 
 logger = getLogger(__name__)
 
 
-def flatten(ui_json: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    """
-    Flatten ui.json format to simple key/value pairs.
-
-    Converts the nested ui.json structure to a flat dictionary where most fields
-    have their values extracted from the 'value' member. For widgets storing
-    multiple values, the values are passed as a dictionary.
-
-    :param ui_json: The form containing the UI data to flatten.
-
-    :return: A flattened dictionary with parameter names as keys and their values.
-    """
-    data: dict[str, Any] = {}
-    for name, value in ui_json.items():
-        if isinstance(value, dict):
-            if is_form(value):
-                field = "value" if truth(ui_json, name, "isValue") else "property"
-                if not truth(ui_json, name, "enabled"):
-                    data[name] = None
-                elif (
-                    "groupValue" in value
-                    and "value" in value
-                    and value["groupValue"] is not None
-                ):
-                    data[name] = {
-                        "groupValue": value["groupValue"],
-                        "value": value["value"],
-                    }
-                elif (
-                    "isComplement" in value
-                    and "property" in value
-                    and value["property"] is not None
-                ):
-                    data[name] = {
-                        "value": value["value"],
-                        "isComplement": value["isComplement"],
-                        "property": value["property"],
-                    }
-                else:
-                    data[name] = value[field]
-
-        else:
-            data[name] = value
-
-    return data
+GA_NAME_TO_OBJECT: dict[str, type[objects.ObjectBase]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [objects]).items()
+}
+GA_NAME_TO_GROUP: dict[str, type[groups.Group]] = {
+    equalize_string(k): v
+    for k, v in map_to_class(ClassIdentifierEnum.DEFAULT_NAME, [groups]).items()
+}
 
 
-def collect(
-    ui_json: dict[str, dict[str, Any]], member: str, value: Any = None
-) -> dict[str, dict[str, Any]]:
-    """
-    Collect UI parameters with a common field and optional value.
-
-    Searches through the ui_json dictionary for parameters that contain a
-    specific member field, optionally filtering by the value of that field.
-
-    :param ui_json: The UI JSON dictionary to search through.
-    :param member: The field name to search for in each parameter.
-    :param value: Optional value to match against the member field.
-
-    :return: Dictionary of parameters that match the criteria.
-    """
-
-    parameters = {}
-    for name, form in ui_json.items():
-        if is_form(form) and member in form:
-            if value is None or form[member] == value:
-                parameters[name] = form
-
-    return parameters
-
-
-def find_all(
-    ui_json: dict[str, dict[str, Any]], member: str, value: Any = None
-) -> list[str]:
-    """
-    Return names of all parameters matching the given criteria.
-
-    Convenience function that returns just the parameter names from the collect
-    function results.
-
-    :param ui_json: The UI JSON dictionary to search through.
-    :param member: The field name to search for in each parameter.
-    :param value: Optional value to match against the member field.
-
-    :return: List of parameter names that match the criteria.
-    """
-    parameters = collect(ui_json, member, value)
-    return list(parameters.keys())
-
-
-def group_optional(ui_json: dict[str, dict[str, Any]], group_name: str) -> bool:
-    """
-    Check if a group has the groupOptional flag enabled.
-
-    Searches for parameters belonging to the specified group and returns the
-    groupOptional boolean value for that group.
-
-    :param ui_json: The UI JSON dictionary to search through.
-    :param group_name: Name of the group to check.
-
-    :return: True if the group is optional, False otherwise.
-    """
-    group = collect(ui_json, "group", group_name)
-    parameters = find_all(group, "groupOptional")
-    return group[parameters[0]]["groupOptional"] if parameters else False
-
-
-def optional_requires_value(ui_json: dict[str, dict[str, Any]], parameter: str) -> bool:
-    """
-    Check if an optional parameter requires a value based on its enabled state.
-
-    For optional parameters, this function checks the 'enabled' field to determine
-    if the parameter requires a value.
-
-    :param ui_json: UI JSON dictionary containing the parameters.
-    :param parameter: Name of the parameter to check.
-
-    :return: True if the parameter is enabled, False otherwise.
-    """
-    return ui_json[parameter].get("enabled", True)
-
-
-def dependency_requires_value(
-    ui_json: dict[str, dict[str, Any]], parameter: str
-) -> bool:
-    """
-    Check if a parameter requires a value based on its dependency constraints.
-
-    Handles dependency and optional requirements for parameters. If a dependency
-    doesn't require a value then the function returns False. If the dependency
-    does require a value, the return value is either True, or will take on the
-    enabled state if the dependent parameter is optional.
-
-    :param ui_json: UI JSON dictionary containing the parameters.
-    :param parameter: Name of the parameter to check.
-
-    :return: True if the parameter requires a value based on dependencies, False otherwise.
-    """
-    dependency = ui_json[parameter]["dependency"]
-
-    key = (
-        "enabled"
-        if (
-            ui_json[dependency].get("optional", False)
-            or "enabled" in ui_json[dependency]
-        )
-        else "value"
-    )
-
-    if ui_json[parameter].get("dependencyType", "enabled") == "enabled":
-        is_required = bool(ui_json[dependency].get(key, True)) & bool(
-            ui_json[dependency]["value"]
-        )
-    else:
-        is_required = not ui_json[dependency].get(key, True)
-    if ("optional" in ui_json[parameter]) & bool(is_required):
-        is_required = ui_json[parameter]["enabled"]
-
-    return is_required
-
-
-def group_requires_value(ui_json: dict[str, dict[str, Any]], parameter: str) -> bool:
-    """
-    Check if a parameter requires a value based on its group's optional status.
-
-    Determines if a parameter requires a value by checking if its group is optional
-    and if the group is enabled.
-
-    :param ui_json: UI JSON dictionary containing the parameters.
-    :param parameter: Name of the parameter to check.
-
-    :return: True if the group is optional and enabled, or if the group is not optional.
-    """
-    is_required = True
-    groupname = ui_json[parameter]["group"]
-    group = collect(ui_json, "group", groupname)
-    if group_optional(ui_json, groupname):
-        is_required = group_enabled(group)
-    return is_required
-
-
-def requires_value(ui_json: dict[str, dict[str, Any]], parameter: str) -> bool:
-    """
-    Check if a UI JSON parameter requires a value based on hierarchy of switches.
-
-    The required status of a parameter depends on a hierarchy of UI switches.
-    At the top is the groupOptional switch, below that is the dependency
-    switch, and at the bottom is the optional switch. When groupOptional
-    is disabled, all parameters in the group are not required. When the
-    groupOptional is enabled, the required status of a parameter depends first
-    on any dependencies and lastly on its optional status.
-
-    :param ui_json: UI JSON dictionary containing the parameters.
-    :param parameter: Name of the parameter to check.
-
-    :return: True if the parameter requires a value, False otherwise.
-    """
-    is_required = True
-
-    if is_form(ui_json[parameter]):
-        if "group" in ui_json[parameter]:
-            group_required = group_requires_value(ui_json, parameter)
-            if group_required:
-                if "dependency" in ui_json[parameter]:
-                    is_required = dependency_requires_value(ui_json, parameter)
-                elif "optional" in ui_json[parameter]:
-                    is_required = optional_requires_value(ui_json, parameter)
-            else:
-                is_required = False
-
-        elif "dependency" in ui_json[parameter]:
-            is_required = dependency_requires_value(ui_json, parameter)
-
-        elif "optional" in ui_json[parameter]:
-            is_required = optional_requires_value(ui_json, parameter)
-
-    return is_required
-
-
-def group_enabled(group: dict[str, dict[str, Any]]) -> bool:
-    """
-    Check if a group is enabled based on groupOptional and enabled flags.
-
-    Returns True if both groupOptional and enabled are True for the group.
-
-    :param group: UI JSON group dictionary containing parameters.
-
-    :return: True if the group is enabled, False otherwise.
-
-    :raises ValueError: If the provided group does not contain a
-        parameter with groupOptional member.
-    """
-    parameters = find_all(group, "groupOptional")
-    if not parameters:
+def class_or_raise(value: UUID) -> type[objects.ObjectBase] | type[groups.Group]:
+    """Promote uid to class, raise if uid is not a geoh5py type uid."""
+    if value not in TYPE_UID_TO_CLASS:
         raise ValueError(
-            "Provided group does not contain a parameter with groupOptional member."
+            f"Provided type_uid string {value!s} is not a recognized "
+            f"geoh5py object or group type uid."
         )
-    return group[parameters[0]].get("enabled", True)
+    return TYPE_UID_TO_CLASS[value]
 
 
-def set_enabled(
-    ui_json: dict[str, Any], parameter: str, value: bool, validate: bool = True
-) -> None:
+def monitored_directory_copy(
+    directory: str,
+    entities: EntityContainer | list[EntityContainer],
+    copy_children: bool = True,
+) -> str:
     """
-    Set the enabled status for an optional or groupOptional parameter.
+    Create a temporary geoh5 file in the monitoring folder and export entities for update.
 
-    Updates the 'enabled' field for parameters that support it, including optional
-    parameters, parameters with dependencies, and group optional parameters.
+    Creates a temporary workspace in the specified monitoring directory and copies
+    the given entities to it. This is useful for monitoring and updating entities
+    in a separate workspace environment.
 
-    :param ui_json: UI JSON dictionary containing the parameters.
-    :param parameter: Name of the parameter to modify.
-    :param value: Boolean value to set for the parameter's enabled member.
-    :param validate: Whether to perform validation checks on the operation.
+    :param directory: Path to the monitoring directory where the temporary file will be created.
+    :param entities: Entity (objects.ObjectBase or groups.Group) to be copied for monitoring.
+    :param copy_children: Whether to copy children entities along with the main entities.
 
-    :raises Warning: If attempting to disable a non-optional parameter.
+    :return: Full path to the created temporary geoh5 file.
     """
-    if ui_json[parameter].get("optional", False) or bool(
-        ui_json[parameter].get("dependency", False)
+    directory_path = Path(directory)
+    working_path = directory_path / ".working"
+    working_path.mkdir(exist_ok=True)
+
+    temp_geoh5 = f"temp{time():.3f}.geoh5"
+
+    if not isinstance(entities, list | tuple):
+        entities = [entities]
+
+    with fetch_active_workspace(entities[0].workspace, mode="r"):
+        with Workspace.create(working_path / temp_geoh5) as w_s:
+            for entity in entities:
+                entity.copy(parent=w_s, copy_children=copy_children)
+
+    move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
+
+    return str(directory_path / temp_geoh5)
+
+
+def name_or_uid_to_type(
+    value: str | UUID | type,
+) -> type[objects.ObjectBase] | type[groups.Group] | UUID:
+    """
+    Convert a string to a geoh5py type or group type.
+
+    :param value: String representing geoh5py type, either as a UUID or name.
+    :return: Type of object, group or UUID
+    """
+    if not isinstance(value, str):
+        return value
+
+    if is_uuid(value):
+        return UUID(value)
+
+    value = equalize_string(value)
+    obj: type[objects.ObjectBase] | type[groups.Group] | None = GA_NAME_TO_OBJECT.get(
+        value, None
+    ) or GA_NAME_TO_GROUP.get(value, None)
+    if obj is None:
+        raise ValueError(
+            f"Provided string {value!s} is not a recognized "
+            f"geoh5py object or group type."
+        ) from None
+
+    return obj
+
+
+def optional_uuid_mapper(value: Any):
+    """
+    Take values and convert them into UUID or None (or list of).
+
+    :param value: Either a string of entity, or list of.
+    :return: UUID, Nont or list of.
+    """
+    return dict_mapper(value, [str2none, entity2uuid])
+
+
+def to_class(
+    value: UUID | type[objects.ObjectBase] | type[groups.Group],
+) -> type[objects.ObjectBase] | type[groups.Group]:
+    """
+    Promote uid to class.
+
+    Passes existing classes and raises if uid is not a geoh5py type uid.
+    """
+    if isinstance(value, UUID):
+        value = class_or_raise(value)
+
+    if not isinstance(value, type) or not issubclass(
+        value, (objects.ObjectBase, groups.Group)
     ):
-        ui_json[parameter]["enabled"] = value
-
-    is_group_optional = False
-    group_name = ui_json[parameter].get("group", False)
-    if group_name:
-        group = collect(ui_json, "group", group_name)
-        parameters = find_all(group, "groupOptional")
-        if parameters:
-            is_group_optional = True
-            if parameters[0] == parameter:
-                for form in group.values():
-                    form["enabled"] = value
-
-    if validate:
-        if not is_group_optional and "dependency" in ui_json[parameter]:
-            is_group_optional = not dependency_requires_value(ui_json, parameter)
-
-        if (not value) and not (
-            ui_json[parameter].get("optional", False) or is_group_optional
-        ):
-            warnings.warn(
-                f"Non-option parameter '{parameter}' cannot be set to 'enabled' False "
-            )
-
-
-def truth(ui_json: dict[str, dict[str, Any]], name: str, member: str) -> bool:
-    """
-    Get a parameter's member value with default fallback for non-existent members.
-
-    Returns the value of a specific member field for a parameter, or a default
-    value if the member doesn't exist.
-
-    :param ui_json: UI JSON dictionary containing the parameters.
-    :param name: Name of the parameter to check.
-    :param member: Name of the member field to retrieve.
-
-    :return: The member's value or its default value.
-
-    :raises ValueError: If the field was not provided and does not have a default state.
-    """
-    default_states = {
-        "enabled": True,
-        "optional": False,
-        "groupOptional": False,
-        "main": False,
-        "isValue": True,
-    }
-    if member in ui_json[name]:
-        return ui_json[name][member]
-
-    if member in default_states:
-        return default_states[member]
-
-    raise ValueError(
-        f"Field: {member} was not provided in ui.json and does not have a default state."
-    )
-
-
-def is_uijson(ui_json: dict[str, dict[str, Any]]) -> bool:
-    """
-    Check if a dictionary contains all the required UI JSON parameters.
-
-    Validates that a dictionary has the structure and required fields of a
-    valid UI JSON configuration.
-
-    :param ui_json: Dictionary to validate as UI JSON.
-
-    :return: True if the dictionary contains all required parameters, False otherwise.
-    """
-    required_parameters = [
-        "title",
-        "monitoring_directory",
-        "run_command",
-        "conda_environment",
-        "geoh5",
-        "workspace_geoh5",
-    ]
-
-    is_a_uijson = True
-    for k in required_parameters:
-        if k not in ui_json.keys():
-            is_a_uijson = False
-
-    return is_a_uijson
-
-
-def is_form(var: Any) -> bool:
-    """
-    Check if a variable is a valid form dictionary.
-
-    Returns True if the dictionary variable contains both 'label' and 'value' members,
-    which are required for a valid UI form element.
-
-    :param var: Variable to check for form structure.
-
-    :return: True if the variable is a valid form dictionary, False otherwise.
-    """
-    is_a_form = False
-    if isinstance(var, dict):
-        if all(k in var.keys() for k in ["label", "value"]):
-            is_a_form = True
-
-    return is_a_form
-
-
-def str2list(value: Any) -> Any:
-    """
-    Convert string representation of numbers to list of floats.
-
-    Maps string values like "[1,2,3]" or "1,2,3" to [1.0, 2.0, 3.0].
-    Handles special cases like "inf", "-inf", and empty strings.
-
-    :param value: Value to convert, typically a string or already converted type.
-
-    :return: List of floats if conversion successful, original value otherwise.
-    """
-    if isinstance(value, str):
-        if value in ["inf", "-inf", ""]:
-            return value
-        try:
-            return [float(n) for n in value.split(",") if n != ""]
-        except ValueError:
-            return value
+        raise ValueError(
+            f"Provided type_uid string {value!s} is not a recognized "
+            f"geoh5py object or group type uid."
+        )
 
     return value
 
 
-def str2inf(value: Any) -> Any:
+def to_class_type(
+    values: str | UUID | list[str] | list[UUID],
+) -> (
+    type[objects.ObjectBase]
+    | type[groups.Group]
+    | list[type[objects.ObjectBase]]
+    | list[type[groups.Group]]
+):
     """
-    Convert string representations of infinity to float infinity values.
+    Promote strings or uuid to a class type.
 
-    Converts "inf" and "-inf" strings to their corresponding float values.
+    Strings can represent both uid(s) or names that represent geoh5py objects.
+    We first attempt to convert strings to uid(s) and then fall back on conversion
+    from name to class(es), and finally to type uid(s).  GA naming doesn't match
+    geoh5py naming, so we must map names to classes before type uid conversion.
 
-    :param value: Value to convert, typically a string.
-
-    :return: Float infinity value if input is "inf" or "-inf", original value otherwise.
+    :param values: Value or list of strings representing either geoh5py type uids or class names.
+    :return: Value or list of geoh5py objects or groups.
     """
-    if value in ["inf", "-inf"]:
-        return float(value)
+    return dict_mapper(values, [name_or_uid_to_type, to_class])
+
+
+def to_list(value: Any) -> list[Any]:
+    """Promote single values to list."""
+    if isinstance(value, str) and ";" in value:
+        value = value.split(";")
+    if not isinstance(value, list):
+        value = [value]
     return value
+
+
+def to_path(value: list[str]) -> list[Path]:
+    """Promote path strings to patlib.Path objects."""
+    out = []
+    for path in value:
+        if isinstance(path, str):
+            out.append(Path(path))
+        else:
+            out.append(path)
+    return out
 
 
 def workspace2path(value: Any) -> str:
@@ -466,89 +227,3 @@ def workspace2path(value: Any) -> str:
             return "[in-memory]"
         return str(value.h5file)
     return value
-
-
-def path2workspace(value: Any) -> Any:
-    """
-    Convert a file path string to a Workspace object if it represents a valid geoh5 file.
-
-    Creates a Workspace object from a path string if the file exists and has a .geoh5 extension.
-
-    :param value: File path string, Path object, or other value to convert.
-
-    :return: Workspace object if the value represents a valid geoh5 file, original value otherwise.
-    """
-    if (
-        isinstance(value, (str, Path))
-        and Path(value).suffix == ".geoh5"
-        and Path(value).exists()
-    ):
-        workspace = Workspace(value, mode="r")
-        workspace.close()
-        return workspace
-    return value
-
-
-def container_group2name(value: Any) -> Any:
-    """
-    Convert a ContainerGroup object to its name string.
-
-    **Deprecated:** This function will be removed in future releases.
-
-    :param value: ContainerGroup object or other value to convert.
-
-    :return: Name string for ContainerGroup objects, original value otherwise.
-    """
-    logger.warning(
-        "Deprecation Warning - This function will be removed in future releases."
-    )
-    if isinstance(value, ContainerGroup):
-        return value.name
-    return value
-
-
-def monitored_directory_copy(
-    directory: str,
-    entities: EntityContainer | list[EntityContainer],
-    copy_children: bool = True,
-) -> str:
-    """
-    Create a temporary geoh5 file in the monitoring folder and export entities for update.
-
-    Creates a temporary workspace in the specified monitoring directory and copies
-    the given entities to it. This is useful for monitoring and updating entities
-    in a separate workspace environment.
-
-    :param directory: Path to the monitoring directory where the temporary file will be created.
-    :param entities: Entity (ObjectBase or Group) to be copied for monitoring.
-    :param copy_children: Whether to copy children entities along with the main entities.
-
-    :return: Full path to the created temporary geoh5 file.
-    """
-    directory_path = Path(directory)
-    working_path = directory_path / ".working"
-    working_path.mkdir(exist_ok=True)
-
-    temp_geoh5 = f"temp{time():.3f}.geoh5"
-
-    if not isinstance(entities, list | tuple):
-        entities = [entities]
-
-    with fetch_active_workspace(entities[0].workspace, mode="r"):
-        with Workspace.create(working_path / temp_geoh5) as w_s:
-            for entity in entities:
-                entity.copy(parent=w_s, copy_children=copy_children)
-
-    move(working_path / temp_geoh5, directory_path / temp_geoh5, copy)
-
-    return str(directory_path / temp_geoh5)
-
-
-def optional_uuid_mapper(value: Any):
-    """
-    Take values and convert them into UUID or None (or list of).
-
-    :param value: Either a string of entity, or list of.
-    :return: UUID, Nont or list of.
-    """
-    return dict_mapper(value, [str2none, entity2uuid])
