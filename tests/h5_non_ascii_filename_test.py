@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 import sys
-from copy import deepcopy
 from pathlib import Path
 
 import h5py
@@ -29,8 +28,7 @@ import numpy as np
 import pytest
 
 from geoh5py import Workspace
-from geoh5py.ui_json.constants import default_ui_json
-from geoh5py.ui_json.input_file import InputFile
+from geoh5py.ui_json import UIJson
 
 
 NON_ASCII_FILENAME = (
@@ -81,17 +79,21 @@ def test_non_ascii_path_geoh5(tmp_path: Path):
     workspace = Workspace.create(path / "test.geoh5")
     workspace.close()
 
-    ifile = InputFile(ui_json=deepcopy(default_ui_json))
-    ifile.update_ui_values({"geoh5": workspace})
-    ifile.write_ui_json("test.ui.json", path)
+    class TestUIJson(UIJson):
+        title: str = "Test UIJson"
+        run_command: str = "run_command"
+        conda_environment: str = ""
+
+    ifile = TestUIJson(geoh5=workspace.h5file)
+    ifile.write(path / "test.ui.json")
 
     # Read file back
-    new_read = InputFile.read_ui_json(path / "test.ui.json")
+    new_read = TestUIJson.read(path / "test.ui.json")
 
     assert all(
         part_a == part_b
         for part_a, part_b in zip(
-            new_read.data["geoh5"].h5file.parts, workspace.h5file.parts, strict=False
+            new_read.geoh5.parts, workspace.h5file.parts, strict=False
         )
     )
 
