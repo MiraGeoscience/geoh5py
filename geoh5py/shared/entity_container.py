@@ -47,7 +47,7 @@ class EntityContainer(Entity):
     Base Entity class
     """
 
-    _TYPE_UID: uuid.UUID | None = None
+    _TYPE_UID: uuid.UUID
 
     def __init__(self, **kwargs):
         self._children: list = []

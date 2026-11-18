@@ -39,7 +39,6 @@ class BaseSurvey(ObjectBase, ABC):
     A base survey object.
     """
 
-    __INPUT_TYPE = None
     __TYPE = None
     __UNITS = None
 

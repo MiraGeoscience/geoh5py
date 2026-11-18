@@ -650,7 +650,6 @@ class MovingLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     """
 
     __INPUT_TYPE = ["Rx"]
-    _TYPE_UID: uuid.UUID | None = None
     _default_name: str | None = None
 
     @property
@@ -684,7 +683,6 @@ class LargeLoopGroundEMSurvey(BaseEMSurvey, Curve, ABC):
     """
 
     __INPUT_TYPE = ["Tx and Rx"]
-    _TYPE_UID: uuid.UUID | None = None
     _default_name: str | None = None
 
     @property
@@ -760,7 +758,6 @@ class AirborneEMSurvey(BaseEMSurvey, Curve, ABC):
         "vertical_offset": "Vertical offset",
         "yaw": "Yaw",
     }
-    _TYPE_UID: uuid.UUID | None = None
     _default_name: str | None = None
 
     @property
