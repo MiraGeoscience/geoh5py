@@ -74,10 +74,28 @@ class ConcatenatedData(Concatenated, Data, ABC):
             return
 
         parent.add_children([self])
+
+    @property
+    def name(self) -> str:
+        """
+        :obj:`str` Name of the entity
+        """
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        self._name = self.fix_up_name(new_name)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = self._name
+
         parental_attr = self.concatenator.get_concatenated_attributes(self.parent.uid)
 
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+
+        if self.on_file:
+            self.workspace.update_attribute(self, "attributes")
 
     @property
     def n_values(self) -> int | None:
