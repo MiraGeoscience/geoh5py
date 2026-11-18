@@ -56,6 +56,7 @@ autosummary_generate = []
 autodoc_mock_imports = [
     "h5py",
     "numpy",
+    "defusedxml",
 ]
 extensions = [
     "sphinx.ext.autodoc",
