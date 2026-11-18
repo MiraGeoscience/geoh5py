@@ -82,6 +82,7 @@ jobs:
     if: ${{ (github.event_name == 'release' || github.event.inputs.publish-pypi == 'true') && needs.call-workflow-pypi-release.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
+      # Draft-release assets cannot be downloaded by this job with read-only contents access.
       contents: write
       id-token: write
     steps:
