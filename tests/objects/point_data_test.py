@@ -90,7 +90,7 @@ def test_create_point_data(tmp_path):
 def test_add_children(tmp_path):
     h5file_path = tmp_path / r"testPoints.geoh5"
     with Workspace.create(h5file_path) as workspace:
-        group = groups.Group.create(workspace)
+        group = groups.ContainerGroup.create(workspace)
         point = Points.create(workspace, vertices=np.random.randn(12, 3))
         group.add_children(point)
 
