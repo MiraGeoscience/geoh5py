@@ -28,5 +28,5 @@ from .base import Group
 class NoTypeGroup(Group):
     """A group with no type."""
 
-    _TYPE_UID = uuid.UUID("{dd99b610-be92-48c0-873c-5b5946ea2840}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{dd99b610-be92-48c0-873c-5b5946ea2840}")
     _default_name = "NoType"

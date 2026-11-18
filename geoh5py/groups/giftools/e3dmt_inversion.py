@@ -186,6 +186,6 @@ E3DMTINV_PARAMETERS.update(
 class E3DMTInv(BaseGIFtoolsGroup):
     """Inversion group for UBC-E3DMT."""
 
-    _TYPE_UID = UUID("{8cf239e3-63a6-4813-adf8-9714293b602e}")
+    _TYPE_UID: UUID = UUID("{8cf239e3-63a6-4813-adf8-9714293b602e}")
     _default_name = "e3dmt_iter"
     _default_parameters: dict[str, Any] = E3DMTINV_PARAMETERS

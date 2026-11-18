@@ -73,7 +73,7 @@ class MovingLoopGroundFEMReceivers(MovingLoopGroundFEMSurvey):  # pylint: disabl
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    _TYPE_UID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{a81c6b0a-f290-4bc8-b72d-60e59964bfe8}")
     _default_name = "Survey Ground FEM Rx"
     __TYPE = "Receivers"
 
@@ -101,7 +101,7 @@ class MovingLoopGroundFEMTransmitters(MovingLoopGroundFEMSurvey):  # pylint: dis
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    _TYPE_UID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{f59d5a1c-5e63-4297-b5bc-43898cb4f5f8}")
     _default_name = "Survey Ground FEM Tx"
     __TYPE = "Transmitters"
 
@@ -160,7 +160,7 @@ class LargeLoopGroundFEMReceivers(LargeLoopGroundFEMSurvey):  # pylint: disable=
     Airborne frequency-domain electromagnetic receivers class.
     """
 
-    _TYPE_UID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{30928322-cf2c-4230-b393-4dc629259b64}")
     _default_name = "Survey FEM rx (arbitrary wire)"
     __TYPE = "Receivers"
 
@@ -188,7 +188,7 @@ class LargeLoopGroundFEMTransmitters(LargeLoopGroundFEMSurvey):  # pylint: disab
     Airborne frequency-domain electromagnetic transmitters class.
     """
 
-    _TYPE_UID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{fe1a240a-9189-49ff-aa7e-6067405b6e0a}")
     _default_name = "Survey FEM tx (arbitrary wire)"
     __TYPE = "Transmitters"
 

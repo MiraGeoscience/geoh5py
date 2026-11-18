@@ -135,6 +135,6 @@ H3DTDINV_PARAMETERS: dict[str, Any] = {
 class H3DTDInv(BaseGIFtoolsGroup):
     """Inversion group for UBC-H3DTDInv."""
 
-    _TYPE_UID = UUID("{4f864000-15a1-4381-afec-b274ab765568}")
+    _TYPE_UID: UUID = UUID("{4f864000-15a1-4381-afec-b274ab765568}")
     _default_name = "H3DTDinv"
     _default_parameters: dict[str, Any] = H3DTDINV_PARAMETERS

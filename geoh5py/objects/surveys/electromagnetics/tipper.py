@@ -202,7 +202,7 @@ class TipperReceivers(TipperSurvey, Curve):  # pylint: disable=too-many-ancestor
     A z-tipper EM survey object.
     """
 
-    _TYPE_UID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{0b639533-f35b-44d8-92a8-f70ecff3fd26}")
     _default_name = "Survey ZTEM Rx"
     __TYPE = "Receivers"
 
@@ -221,7 +221,7 @@ class TipperBaseStations(TipperSurvey, Points):
     A z-tipper EM survey object.
     """
 
-    _TYPE_UID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{f495cd13-f09b-4a97-9212-2ea392aeb375}")
     _default_name = "Survey ZTEM Base Stations"
     __TYPE = "Base stations"
     _minimum_vertices = 1

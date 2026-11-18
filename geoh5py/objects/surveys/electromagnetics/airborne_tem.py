@@ -84,7 +84,7 @@ class AirborneTEMReceivers(AirborneTEMSurvey):
     Airborne time-domain electromagnetic receivers class.
     """
 
-    _TYPE_UID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{19730589-fd28-4649-9de0-ad47249d9aba}")
     _default_name = "Survey Airborne TEM Rx"
     __TYPE = "Receivers"
 
@@ -103,7 +103,7 @@ class AirborneTEMTransmitters(AirborneTEMSurvey):
     Airborne time-domain electromagnetic transmitters class.
     """
 
-    _TYPE_UID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{58c4849f-41e2-4e09-b69b-01cf4286cded}")
     _default_name = "Survey Airborne TEM Tx"
     __TYPE = "Transmitters"
 

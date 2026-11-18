@@ -49,7 +49,7 @@ class Grid2D(GridObject):
         Defaults to an horizontal grid (dip=0).
     """
 
-    _TYPE_UID = uuid.UUID("{48f5054a-1c5c-4ca4-9048-80f36dc60a06}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{48f5054a-1c5c-4ca4-9048-80f36dc60a06}")
     _default_name = "2D grid"
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update(

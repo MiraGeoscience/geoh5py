@@ -28,12 +28,12 @@ from .base import Group
 class DrillholeGroup(Group):
     """The type for the group containing drillholes."""
 
-    _TYPE_UID = uuid.UUID("{825424fb-c2c6-4fea-9f2b-6cd00023d393}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{825424fb-c2c6-4fea-9f2b-6cd00023d393}")
     _default_name = "Drillholes"
 
 
 class IntegratorDrillholeGroup(DrillholeGroup):
     """The type for the group containing drillholes."""
 
-    _TYPE_UID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{952829b6-76a2-4d0b-b908-7f8d2482dc0d}")
     _default_name = "Integrator Drillhole Group"

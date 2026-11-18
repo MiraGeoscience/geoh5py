@@ -28,5 +28,5 @@ from .base import Group
 class AirborneGeophysics(Group):
     """The type for the basic Container group."""
 
-    _TYPE_UID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{812f3b2a-fdae-4752-8391-3b657953a983}")
     _default_name = "airborne"

@@ -48,7 +48,7 @@ DCOCTREE_PARAMETERS.update(
 class DCOctreeInversion(BaseGIFtoolsGroup):
     """Inversion group for UBC-DCOctree."""
 
-    _TYPE_UID = UUID("{54d296de-0588-472c-9a62-480098303394}")
+    _TYPE_UID: UUID = UUID("{54d296de-0588-472c-9a62-480098303394}")
     _default_name = "dcoctree_inv"
     _default_parameters: dict[str, Any] = DCOCTREE_PARAMETERS
 
@@ -119,6 +119,6 @@ DCOCTREE_FORWARD_PARAMETERS.update(
 class DCOctreeForward(BaseGIFtoolsGroup):
     """Forward group for UBC-DCOctree."""
 
-    _TYPE_UID = UUID("{a522d641-6cb7-421b-836b-a14c0d9c7801}")
+    _TYPE_UID: UUID = UUID("{a522d641-6cb7-421b-836b-a14c0d9c7801}")
     _default_name = "dcoctree_fwd"
     _default_parameters: dict[str, Any] = DCOCTREE_FORWARD_PARAMETERS

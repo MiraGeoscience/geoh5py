@@ -34,7 +34,7 @@ from .base import Group
 class FusionTableGroup(Group):
     """Group for Data Fusion Table."""
 
-    _TYPE_UID = uuid.UUID("{d9576a5e-07e9-42ee-8b83-6b4b1cd992d4}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{d9576a5e-07e9-42ee-8b83-6b4b1cd992d4}")
     _default_name = "Data Fusion Table"
 
     _attribute_map = Entity._attribute_map.copy()  # pylint: disable=protected-access

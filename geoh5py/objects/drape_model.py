@@ -39,7 +39,7 @@ class DrapeModel(ObjectBase):
         of the drape model.
     """
 
-    _TYPE_UID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{C94968EA-CF7D-11EB-B8BC-0242AC130003}")
     _default_name = "Draped Model"
     _LAYERS_DTYPE = np.dtype([("I", "<i4"), ("K", "<i4"), ("Bottom elevation", "<f8")])
     _PRISM_DTYPE = np.dtype(

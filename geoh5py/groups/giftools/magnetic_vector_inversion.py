@@ -156,6 +156,6 @@ MVIINV_PARAMETERS: dict[str, Any] = {
 class MVIInv(BaseGIFtoolsGroup):
     """Inversion group for UBC-MVIInv (mviinv)."""
 
-    _TYPE_UID = UUID("{9472b5cb-a285-4257-a2e8-68a3d33aa1f2}")
+    _TYPE_UID: UUID = UUID("{9472b5cb-a285-4257-a2e8-68a3d33aa1f2}")
     _default_name = "mviinv"
     _default_parameters: dict[str, Any] = MVIINV_PARAMETERS

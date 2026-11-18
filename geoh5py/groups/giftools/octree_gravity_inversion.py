@@ -98,6 +98,6 @@ OCTGRVDEINVERSION_PARAMETERS.update(
 class OCTGRVDEInversion(BaseGIFtoolsGroup):
     """Inversion group for UBC-OCTGRVDE."""
 
-    _TYPE_UID = UUID("{4e043415-a0ea-4cef-bf89-2771e27b346c}")
+    _TYPE_UID: UUID = UUID("{4e043415-a0ea-4cef-bf89-2771e27b346c}")
     _default_name = "octgrvde"
     _default_parameters: dict[str, Any] = OCTGRVDEINVERSION_PARAMETERS

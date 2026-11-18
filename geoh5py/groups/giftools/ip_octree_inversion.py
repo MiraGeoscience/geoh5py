@@ -66,6 +66,6 @@ IPOCTREEINV_PARAMETERS.update(
 class IPOctreeInversion(BaseGIFtoolsGroup):
     """Inversion group for UBC-IPOctree."""
 
-    _TYPE_UID = UUID("{d9fd455e-ea94-40f5-9d86-e7c49c7b5005}")
+    _TYPE_UID: UUID = UUID("{d9fd455e-ea94-40f5-9d86-e7c49c7b5005}")
     _default_name = "ipoctree_inv"
     _default_parameters: dict[str, Any] = IPOCTREEINV_PARAMETERS

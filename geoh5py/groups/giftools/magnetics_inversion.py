@@ -54,6 +54,6 @@ MAGINV3D_PARAMETERS: dict[str, Any] = {
 class MagInv3D(BaseGIFtoolsGroup):
     """Inversion group for UBC-MAGINV3D (maginv3d_60)."""
 
-    _TYPE_UID = UUID("{b99e8db8-e118-4042-864e-9e1128f2d1e6}")
+    _TYPE_UID: UUID = UUID("{b99e8db8-e118-4042-864e-9e1128f2d1e6}")
     _default_name = "maginv3d_60"
     _default_parameters: dict[str, Any] = MAGINV3D_PARAMETERS

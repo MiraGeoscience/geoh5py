@@ -33,7 +33,7 @@ class AirborneGravity(Curve):
 
     """
 
-    _TYPE_UID = uuid.UUID("{b54f6be6-0eb5-4a4e-887a-ba9d276f9a83}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{b54f6be6-0eb5-4a4e-887a-ba9d276f9a83}")
     _default_name = "Survey airborne gravity"
 
 
@@ -45,5 +45,5 @@ class GroundGravity(Curve):
 
     """
 
-    _TYPE_UID = uuid.UUID("{5ffa3816-358d-4cdd-9b7d-e1f7f5543e05}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{5ffa3816-358d-4cdd-9b7d-e1f7f5543e05}")
     _default_name = "Survey ground gravity"
