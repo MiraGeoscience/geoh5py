@@ -48,7 +48,6 @@ from ..shared.utils import (
     box_intersect,
     clear_array_attributes,
     extract_uids,
-    find_unique_name,
     get_unique_name_from_entities,
     mask_by_extent,
     str2uuid,
@@ -181,8 +180,6 @@ class ObjectBase(EntityContainer):
         property_groups: dict[PropertyGroup | None, list[Data]] = {}
         data_objects = []
 
-        names = [child.name for child in self.children if isinstance(child, Data)]
-
         for name, attr in data.items():
             if not isinstance(attr, dict):
                 raise TypeError(
@@ -196,9 +193,6 @@ class ObjectBase(EntityContainer):
                     "Use the 'visual_parameters' property instead."
                 )
                 continue
-
-            name = find_unique_name(name, names)
-            names.append(name)
 
             attr, validate_property_group = self.validate_association(
                 {**attr, "name": name}, property_group=property_group, **kwargs
@@ -750,10 +744,6 @@ class ObjectBase(EntityContainer):
             raise TypeError(
                 f"Input 'entity_type' must be of type {ObjectType}, not {type(entity_type)}"
             )
-
-        if entity_type.name == "Entity":
-            entity_type.name = self.name
-            entity_type.description = self.name
 
         return entity_type
 
