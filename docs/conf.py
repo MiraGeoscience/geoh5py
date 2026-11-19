@@ -56,17 +56,16 @@ autosummary_generate = []
 autodoc_mock_imports = [
     "h5py",
     "numpy",
+    "defusedxml",
 ]
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinx.ext.todo",
     "sphinxcontrib.googleanalytics",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = []
-todo_include_todos = True
 
 # -- Options for auto-doc ----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#module-sphinx.ext.autodoc

@@ -45,9 +45,7 @@ class BlockModel(GridObject):
         :obj:`~geoh5py.objects.grid_object.GridObject` class.
     """
 
-    _TYPE_UID = uuid.UUID(
-        fields=(0xB020A277, 0x90E2, 0x4CD7, 0x84, 0xD6, 0x612EE3F25051)
-    )
+    _TYPE_UID = uuid.UUID("b020a277-90e2-4cd7-84d6-612ee3f25051")
     _default_name = "Block Model"
     _attribute_map = GridObject._attribute_map.copy()
     _attribute_map.update({"Origin": "origin", "Rotation": "rotation"})
