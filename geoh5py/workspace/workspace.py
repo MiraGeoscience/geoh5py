@@ -105,7 +105,7 @@ def _copy_posix_acl(source: Path, target: Path) -> None:
     attribute = "system.posix_acl_access"
     with suppress(OSError):  # no ACL, or not supported by the file system
         # pylint: disable-next=no-member
-        os.setxattr(target, attribute, os.getxattr(source, attribute))
+        os.setxattr(target, attribute, os.getxattr(source, attribute))  # type: ignore[attr-defined,unused-ignore]
 
 
 TYPE_UID_TO_CLASS = map_to_class(

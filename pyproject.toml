@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-  "poetry-core>=1.8.0",
+  "poetry-core>=2.2.1",
   "poetry-dynamic-versioning>=1.9.1,<2.0",
   # list dependencies to work with PIP_NO_DEPS=1
   "MarkupSafe>=2.0",
@@ -15,7 +15,6 @@ build-backend = "poetry_dynamic_versioning.backend"
 name = "geoh5py"
 requires-python = ">=3.12,<3.15"
 
-
 description = "Python API for geoh5, an open file format for geoscientific data"
 license = "LGPL-3.0-or-later"
 license-files = [
@@ -25,7 +24,7 @@ license-files = [
 ]
 keywords = ["geology", "geophysics", "data", "interoperability"]
 readme = "package.rst"
-dynamic = ["version", "dependencies", "classifiers"]
+dynamic = ["version", "classifiers"]
 authors = [
     { name = "Mira Geoscience", email = "support@mirageoscience.com" }
 ]
@@ -34,14 +33,37 @@ maintainers = [
     { name = "Dominique Fournier", email = "dominiquef@mirageoscience.com" },
     { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
 ]
+dependencies = [
+    "defusedxml>=0.7.1,<0.8.0",
+    "h5py>=3.15.0,<3.16.0",
+    "numpy>=2.4.0,<2.5.0",
+    "Pillow>=13.0.0,<14.0.0",  # Security floor (GHSA-wqgw-9xfh-qf2g).
+    "psutil>=7.2.2,<7.3.0",
+    "pydantic>=2.12.0,<2.13.0",
+]
 
 [project.urls]
 homepage = "https://www.mirageoscience.com/mining-industry-software/python-integration/"
 repository = "https://github.com/MiraGeoscience/geoh5py"
 documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 
+[dependency-groups]
+dev = [
+    "lockfile>=0.12.2,<0.13.0",
+    "packaging",
+    "Pygments",
+    "pylint",
+    "pytest",
+    "pytest-cov",
+    "pyyaml",
+    "scipy>=1.17.0,<1.18.0",
+    "sphinx>=3.0,<4.0",
+    "sphinx-autodoc-typehints>=1.10,<2.0",
+    "sphinx-rtd-theme>=0.4.3,<0.5.0",
+]
+
 [tool.poetry]
-requires-poetry = '>=2.0,<3.0'
+requires-poetry = ">=2.3.0"
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -61,28 +83,6 @@ include = [
     { path = "geoh5py/_version.py", format = ["sdist", "wheel"] },
 ]
 version = "0.0.0.dev0"
-
-[tool.poetry.dependencies]
-defusedxml = "~0.7.1"
-h5py = "~3.15.0"
-numpy = "~2.4.0"
-Pillow = "^12.2.0"
-psutil = "~7.2.2"
-pydantic = "~2.12.0"
-
-
-[tool.poetry.group.dev.dependencies]
-lockfile = "^0.12.2"
-packaging = '*'
-Pygments = "*"
-pylint = "*"
-pytest = "*"
-pytest-cov = "*"
-pyyaml = '*'
-scipy = "~1.17.0"
-sphinx = "^3.0"
-sphinx-autodoc-typehints = "^1.10"
-sphinx-rtd-theme = "^0.4.3"
 
 [tool.poetry.requires-plugins]
 poetry-dynamic-versioning = { version = ">=1.9.1,<2.0.0", extras = ["plugin"] }
