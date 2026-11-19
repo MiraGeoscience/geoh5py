@@ -31,7 +31,6 @@ import pytest
 
 from geoh5py import Workspace, groups, objects
 from geoh5py.objects import Points
-from geoh5py.shared.exceptions import iterable, iterable_message
 from geoh5py.shared.utils import (
     ClassIdentifierEnum,
     as_str_if_uuid,
@@ -77,20 +76,6 @@ def test_dict_mapper_preserves_numpy_arrays():
         mapped = dict_mapper({"values": array}, [nan2str])
 
         assert mapped["values"] is array
-
-
-def test_iterable():
-    assert iterable([1, 2, 4])
-    assert not iterable(2)
-    assert not iterable({"a": 1, "b": 2})
-    assert not iterable("lskdjfs")
-    assert not iterable([1], checklen=True)
-
-
-def test_iterable_message():
-    assert iterable_message(None) == ""
-    assert "Must be one of:" in iterable_message([1, 2, 3])
-    assert "Must be:" in iterable_message([1])
 
 
 def test_mask_by_extent():

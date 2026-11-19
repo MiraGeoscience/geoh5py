@@ -25,7 +25,6 @@ from .boolean_data import BooleanData
 from .colour import Colour
 from .data import Data
 from .data_association_enum import DataAssociationEnum
-from .data_unit import DataUnit
 from .datetime_data import DatetimeData
 from .filename_data import FilenameData
 from .float_data import FloatData

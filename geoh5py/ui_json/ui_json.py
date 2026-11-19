@@ -327,7 +327,9 @@ class UIJson(BaseModel):
 
         return uijson
 
-    def serialize(self, mode: Literal["json", "python"] | str = "python") -> dict:
+    def serialize(
+        self, mode: Literal["json", "python"] | str = "python", exclude_unset=True
+    ) -> dict:
         """
                 Return a demoted dictionary representation of the uijson data.
 
@@ -335,7 +337,7 @@ class UIJson(BaseModel):
 
                 :return: Serialized uijson dictionary or string.
         """
-        return self.model_dump(exclude_unset=True, by_alias=True, mode=mode)
+        return self.model_dump(exclude_unset=exclude_unset, by_alias=True, mode=mode)
 
     def to_file_data(
         self, entity: EntityContainer, name: str | None = None
