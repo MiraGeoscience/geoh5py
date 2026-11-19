@@ -284,9 +284,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         if self.parent is None:
             return name
 
-        return get_unique_name_from_entities(
-            name, self.parent.children, types=type(self)
-        )
+        return get_unique_name_from_entities(name, self.parent.children)
 
     @abstractmethod
     def mask_by_extent(
