@@ -649,7 +649,7 @@ class ReferencedValueMapType(ReferenceDataType):
     Data container for referenced value map.
     """
 
-    _TYPE_UID: UUID = UUID("2d5d6c1e-4d8c-4f3a-9b3f-2e5a0d8e1c1f")
+    _TYPE_UID: UUID = UUID("{2d5d6c1e-4d8c-4f3a-9b3f-2e5a0d8e1c1f}")
 
     def __init__(
         self,
