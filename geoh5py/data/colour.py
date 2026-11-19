@@ -36,26 +36,13 @@ class Colour(Data):
     """
     Base class for the ternary colour map.
 
-    Warning: actually, GA is storing RGBA but ignore the "A" band (full 255).
+    Warning: ANALYST is storing RGBA but ignore the "A" band (full 255).
     To mimic this behavior, works with RGB only (and drop A if exists).
     """
-
-    _allowed_parent = [
-        "Points",
-        "Curve",
-        "BlockModel",
-        "Octree",
-        "Grid2D",
-    ]
 
     _formats = [("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")]
 
     _nan_value = np.array([(90, 90, 90, 0)], dtype=_formats)
-
-    def __init__(self, *args, **kwargs):
-        self._verify_parents(kwargs.get("parent", None))
-
-        super().__init__(*args, **kwargs)
 
     @classmethod
     def _array_to_rgb(cls, values: np.ndarray) -> np.ndarray:
@@ -124,25 +111,6 @@ class Colour(Data):
         values[nan_mask] = cls._nan_value
 
         return values[["r", "g", "b", "a"]]
-
-    @classmethod
-    def _verify_parents(cls, parent: Any):
-        """
-        Verify if the parent is allowed for Colour data.
-
-        For now the objects that can use Colour data are limited.
-        Raises an error if the parent is not allowed.
-
-        :param parent: The parent object class.
-        """
-        if parent is not None:
-            # use name to avoid circular import
-            parent_classes = parent.__class__.__name__
-            if parent_classes not in cls._allowed_parent:
-                raise TypeError(
-                    f"Parent '{parent_classes}' is not allowed for Colour data.\n"
-                    f"The allowed parents are {cls._allowed_parent}"
-                )
 
     @property
     def nan_value(self):
