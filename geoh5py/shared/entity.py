@@ -101,6 +101,7 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.uid: uuid.UUID = uid or uuid.uuid4()
         self._entity_type = self.validate_entity_type(entity_type)
         self._parent: EntityContainer
+        self.metadata = metadata
         self.parent = parent or self.workspace.root
         self.name = name or self._default_name or type(self).__name__
 
@@ -108,7 +109,6 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         self.allow_move = allow_move
         self.allow_rename = allow_rename
         self.clipping_ids = clipping_ids
-        self.metadata = metadata
 
         self.partially_hidden = partially_hidden
         self.public = public

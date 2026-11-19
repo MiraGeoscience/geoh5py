@@ -394,7 +394,7 @@ def test_survey_with_info(tmp_path):
         )
 
     with Workspace(h5file_path) as workspace:
-        well = workspace.get_entity("Han Solo(1)")[0]
+        well = workspace.get_entity("Han Solo")[0]
         assert len(well._surveys.dtype) == 4
 
 

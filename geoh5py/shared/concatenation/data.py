@@ -84,6 +84,8 @@ class ConcatenatedData(Concatenated, Data, ABC):
 
     @name.setter
     def name(self, new_name: str):
+        current_name = getattr(self, "name", None)
+
         self._name = self.fix_up_name(new_name)
 
         if self.entity_type.name == "Entity":
@@ -93,6 +95,10 @@ class ConcatenatedData(Concatenated, Data, ABC):
 
         if f"Property:{self.name}" not in parental_attr:
             parental_attr[f"Property:{self.name}"] = as_str_if_uuid(self.uid)
+
+        # Remove the old name from the parent's attributes if it exists
+        if current_name and f"Property:{current_name}" in parental_attr:
+            del parental_attr[f"Property:{current_name}"]
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")

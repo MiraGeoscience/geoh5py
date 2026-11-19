@@ -678,7 +678,6 @@ class ObjectBase(EntityContainer):
 
         for child in children.copy():
             if child not in self._children:
-                warn(f"Child {child} not found in parent {self}.")
                 children.remove(child)
                 continue
             if (

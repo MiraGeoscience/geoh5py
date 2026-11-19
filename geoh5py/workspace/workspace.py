@@ -431,26 +431,26 @@ class Workspace(AbstractContextManager):
         return cls(h5file=h5file, **kwargs)
 
     def create_from_concatenation(self, attributes):
-        if "Name" in attributes:
-            attributes["Name"] = attributes["Name"].replace("\u2044", "/")
+        if "name" in attributes:
+            attributes["name"] = attributes["name"].replace("\u2044", "/")
 
         recovered_entity = None
 
-        if "Object Type ID" in attributes:
+        if "object_type_id" in attributes:
             recovered_entity = self.create_entity(
                 ObjectBase,
                 save_on_creation=False,
                 entity=attributes,
-                entity_type={"uid": attributes.pop("Object Type ID")},
+                entity_type={"uid": attributes.pop("object_type_id")},
             )
 
-        elif "Type ID" in attributes:
+        elif "type_id" in attributes:
             recovered_entity = self.create_entity(
                 Data,
                 save_on_creation=False,
                 entity=attributes,
                 entity_type=self.fetch_type(
-                    uuid.UUID(attributes.pop("Type ID")), "Data"
+                    uuid.UUID(attributes.pop("type_id")), "Data"
                 ),
             )
 
@@ -537,20 +537,29 @@ class Workspace(AbstractContextManager):
         entity = entity or {}
         entity_type = entity_type or {}
 
-        if entity_class is not RootGroup and (
-            "parent" not in entity or entity["parent"] is None
-        ):
-            entity["parent"] = self.root
+        parent = entity.get("parent")
+        if entity_class is not RootGroup and parent is None:
+            parent = self.root
+            entity["parent"] = parent
 
-        if entity_class is None or issubclass(entity_class, Data):
-            created_data = self.create_data(Data, entity, entity_type)
-            if save_on_creation and self.h5file is not None:
-                self.save_entity(created_data, compression=compression)
-            return created_data
+        if entity.get("uid") is None:
+            entity["uid"] = uuid.uuid4()
 
-        created_entity = self.create_object_or_group(entity_class, entity, entity_type)
+        try:
+            if entity_class is None or issubclass(entity_class, Data):
+                created_entity = self.create_data(Data, entity, entity_type)
+            else:
+                created_entity = self.create_object_or_group(
+                    entity_class, entity, entity_type
+                )
+        except Exception:
+            if parent is not None:
+                parent.remove_children(parent.get_entity(entity["uid"]))
+            raise
+
         if created_entity is not None and save_on_creation and self.h5file is not None:
             self.save_entity(created_entity, compression=compression)
+
         return created_entity
 
     def add_or_update_property_group(
@@ -688,6 +697,9 @@ class Workspace(AbstractContextManager):
         present on file.
         """
         for child in children:
+            if child is None:
+                continue
+
             if isinstance(child, PropertyGroup):
                 self._io_call(
                     H5Writer.add_or_update_property_group, child, remove=True, mode="r+"

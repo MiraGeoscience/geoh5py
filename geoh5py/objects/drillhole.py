@@ -764,13 +764,6 @@ class Drillhole(Points):
                     "and 'from-to'."
                 )
 
-        if attributes["name"] in self.get_data_list():
-            raise ValueError(
-                f"Data with name '{attributes['name']}' already present "
-                f"on the drillhole '{self.name}'. "
-                "Consider changing the values or renaming."
-            )
-
         if "depth" in attributes.keys():
             attributes["association"] = "VERTEX"
             attributes["values"] = self.validate_depth_data(

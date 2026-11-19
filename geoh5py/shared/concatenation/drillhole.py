@@ -123,13 +123,6 @@ class ConcatenatedDrillhole(ConcatenatedObject, Drillhole):
                 "collocation_distance", self.default_collocation_distance
             )
 
-        if attributes["name"] in self.get_data_list():
-            raise ValueError(
-                f"Data with name '{attributes['name']}' already present "
-                f"on the drillhole '{self.name}'. "
-                "Consider changing the values or renaming."
-            )
-
         if collocation_distance < 0:
             raise UserWarning("Input depth 'collocation_distance' must be >0.")
 
