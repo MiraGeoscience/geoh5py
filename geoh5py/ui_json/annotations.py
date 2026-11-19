@@ -34,12 +34,7 @@ from geoh5py.shared.utils import (
     stringify,
     workspace2path,
 )
-from geoh5py.shared.validators import (
-    to_class_type,
-    to_list,
-    to_path,
-)
-from geoh5py.ui_json.utils import optional_uuid_mapper
+from geoh5py.ui_json.utils import optional_uuid_mapper, to_class_type, to_list, to_path
 
 
 logger = logging.getLogger(__name__)
