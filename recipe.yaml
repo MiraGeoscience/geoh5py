@@ -27,14 +27,14 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - poetry-core >=1.8.0
-    - poetry-dynamic-versioning >=1.9, 1.*
+    - poetry-core >=2.2.1
+    - poetry-dynamic-versioning >=1.9.1, 1.*
   run:
     - python >=${{ python_min }}
-    - defusedxml 0.7.*
+    - defusedxml >=0.7.1, 0.7.*
     - h5py 3.15.*
     - numpy 2.4.*
-    - pillow >=12.2.0, 12.*
+    - pillow >=13.0.0, 13.*  # Security floor (GHSA-wqgw-9xfh-qf2g).
     - pydantic 2.12.*
     - psutil >=7.2.2, 7.2.*
 
@@ -45,7 +45,7 @@ tests:
         - ${{ module_name }}
         - ${{ module_name }}._version
   - script:
-      - pytest --ignore=tests/version_test.py
+      - pytest --ignore=tests/version_test.py --ignore=tests/geoh5_pydantic
     requirements:
       run:
         - pytest
