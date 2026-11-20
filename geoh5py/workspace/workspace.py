@@ -465,6 +465,8 @@ class Workspace(AbstractContextManager):
         entity_class,
         entity: dict,
         entity_type: dict | EntityType,
+        save_on_creation: bool = True,
+        compression: int = 5,
     ) -> Data:
         """
         Create a new Data entity with attributes.
@@ -472,6 +474,8 @@ class Workspace(AbstractContextManager):
         :param entity_class: :obj:`~geoh5py.data.data.Data` class.
         :param entity: Properties of the entity.
         :param entity_type: Properties of the entity_type.
+        :param save_on_creation: Save the entity to geoh5 immediately.
+        :param compression: Compression level for data.
 
         :return: The newly created entity.
         """
@@ -511,6 +515,9 @@ class Workspace(AbstractContextManager):
 
         created_entity = member(entity_type=entity_type, **entity)
 
+        if save_on_creation and self.h5file is not None:
+            self.save_entity(created_entity, compression=compression)
+
         return created_entity
 
     def create_entity(
@@ -547,20 +554,25 @@ class Workspace(AbstractContextManager):
 
         try:
             if entity_class is None or issubclass(entity_class, Data):
-                created_entity = self.create_data(Data, entity, entity_type)
-            else:
-                created_entity = self.create_object_or_group(
-                    entity_class, entity, entity_type
+                return self.create_data(
+                    Data,
+                    entity,
+                    entity_type,
+                    save_on_creation=save_on_creation,
+                    compression=compression,
                 )
+
+            return self.create_object_or_group(
+                entity_class,
+                entity,
+                entity_type,
+                save_on_creation=save_on_creation,
+                compression=compression,
+            )
         except Exception:
             if parent is not None:
                 parent.remove_children(parent.get_entity(entity["uid"]))
             raise
-
-        if created_entity is not None and save_on_creation and self.h5file is not None:
-            self.save_entity(created_entity, compression=compression)
-
-        return created_entity
 
     def add_or_update_property_group(
         self, property_group: PropertyGroup, remove: bool = False
@@ -580,7 +592,12 @@ class Workspace(AbstractContextManager):
             )
 
     def create_object_or_group(
-        self, entity_class, entity: dict, entity_type: dict | EntityType
+        self,
+        entity_class,
+        entity: dict,
+        entity_type: dict | EntityType,
+        save_on_creation: bool = True,
+        compression: int = 5,
     ) -> Group | ObjectBase | None:
         """
         Create an object or a group with attributes.
@@ -589,6 +606,8 @@ class Workspace(AbstractContextManager):
             :obj:`~geoh5py.groups.group.Group` class.
         :param entity: Attributes of the entity.
         :param entity_type: Attributes of the entity_type.
+        :param save_on_creation: Save the entity to geoh5 immediately.
+        :param compression: Compression level for data.
 
         :return: A new Object or Group.
         """
@@ -634,7 +653,12 @@ class Workspace(AbstractContextManager):
                 member = ConcatenatedDrillhole
 
         entity_type = member.find_or_create_type(self, **entity_type)
-        return member(entity_type=entity_type, **entity)
+        created_entity = member(entity_type=entity_type, **entity)
+
+        if save_on_creation and self.h5file is not None:
+            self.save_entity(created_entity, compression=compression)
+
+        return created_entity
 
     def create_root(
         self, entity_attributes: dict | None = None, type_attributes: dict | None = None
