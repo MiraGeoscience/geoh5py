@@ -30,7 +30,7 @@ from geoh5py.workspace import Workspace
 
 
 def test_create_point_data(tmp_path: Path):
-    h5file_path = tmp_path / r"test.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
     with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
         assert group.parent == workspace.root, (
@@ -48,7 +48,7 @@ def test_create_point_data(tmp_path: Path):
 
 
 def test_parent_extent(tmp_path: Path):
-    h5file_path = tmp_path / r"test.geoh5"
+    h5file_path = tmp_path / f"{__name__}.geoh5"
 
     with Workspace.create(h5file_path) as workspace:
         group = ContainerGroup.create(workspace, parent=None)
@@ -72,3 +72,60 @@ def test_parent_extent(tmp_path: Path):
         assert np.allclose(group.extent, np.vstack([lim_min, lim_max])), (
             "Group extent should match child extent."
         )
+
+
+def test_name_increment(tmp_path: Path):
+    h5file_path = tmp_path / f"{__name__}.geoh5"
+
+    with Workspace.create(h5file_path) as workspace:
+        ContainerGroup.create(workspace, name="myGroup")
+
+        # Name increment if group in same parent
+        group = ContainerGroup.create(workspace, name="myGroup")
+        assert group.name == "myGroup(1)"
+
+        # No increment if group in different parent
+        other_group = ContainerGroup.create(workspace, name="myGroup", parent=group)
+        assert other_group.name == "myGroup"
+
+        point_a = Points.create(
+            workspace, vertices=np.random.randn(12, 3), parent=group, name="myPoint"
+        )
+
+        # Name increment if point in same parent
+        point_b = Points.create(
+            workspace, vertices=np.random.randn(12, 3), parent=group, name="myPoint"
+        )
+        assert point_b.name == "myPoint(1)"
+
+        # No increment if point in different parent
+        other_point = Points.create(
+            workspace,
+            vertices=np.random.randn(12, 3),
+            parent=other_group,
+            name="myPoint",
+        )
+        assert other_point.name == "myPoint"
+
+        # Name increment if data in same parent
+        point_a.add_data(
+            {
+                "myData": {"values": np.random.randn(12)},
+            }
+        )
+
+        data_a = point_a.add_data(
+            {
+                "myData": {"values": np.random.randn(12)},
+            }
+        )
+
+        assert data_a.name == "myData(1)"
+
+        # No increment if data in different parent
+        data_b = other_point.add_data(
+            {
+                "myData": {"values": np.random.randn(12)},
+            }
+        )
+        assert data_b.name == "myData"

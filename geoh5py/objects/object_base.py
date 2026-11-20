@@ -48,7 +48,6 @@ from ..shared.utils import (
     box_intersect,
     clear_array_attributes,
     extract_uids,
-    find_unique_name,
     get_unique_name_from_entities,
     mask_by_extent,
     str2uuid,
@@ -181,8 +180,6 @@ class ObjectBase(EntityContainer):
         property_groups: dict[PropertyGroup | None, list[Data]] = {}
         data_objects = []
 
-        names = [child.name for child in self.children if isinstance(child, Data)]
-
         for name, attr in data.items():
             if not isinstance(attr, dict):
                 raise TypeError(
@@ -197,14 +194,11 @@ class ObjectBase(EntityContainer):
                 )
                 continue
 
-            name = find_unique_name(name, names)
-            names.append(name)
-
             attr, validate_property_group = self.validate_association(
                 {**attr, "name": name}, property_group=property_group, **kwargs
             )
 
-            data_object = self.workspace.create_entity(
+            data_object: Data = self.workspace.create_entity(
                 Data,
                 entity={
                     "parent": self,
@@ -344,7 +338,7 @@ class ObjectBase(EntityContainer):
         if self.visual_parameters is not None:
             raise UserWarning("Visual parameters already exist.")
 
-        visual_parameters = self.workspace.create_entity(
+        visual_parameters: VisualParameters = self.workspace.create_entity(
             Data,  # type: ignore
             save_on_creation=True,
             entity={
@@ -667,7 +661,7 @@ class ObjectBase(EntityContainer):
 
         return data
 
-    def remove_children(self, children: list[Entity | PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup | None]):
         """
         Remove children from the list of children entities.
 
@@ -684,7 +678,6 @@ class ObjectBase(EntityContainer):
 
         for child in children.copy():
             if child not in self._children:
-                warn(f"Child {child} not found in parent {self}.")
                 children.remove(child)
                 continue
             if (
@@ -750,10 +743,6 @@ class ObjectBase(EntityContainer):
             raise TypeError(
                 f"Input 'entity_type' must be of type {ObjectType}, not {type(entity_type)}"
             )
-
-        if entity_type.name == "Entity":
-            entity_type.name = self.name
-            entity_type.description = self.name
 
         return entity_type
 

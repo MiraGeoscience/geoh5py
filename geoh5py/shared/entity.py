@@ -28,7 +28,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..shared.utils import map_attributes, str2uuid, str_json_to_dict, to_list
+from ..shared.utils import (
+    get_unique_name_from_entities,
+    map_attributes,
+    str2uuid,
+    str_json_to_dict,
+    to_list,
+)
 from .entity_type import EntityType
 
 
@@ -92,17 +98,18 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         **kwargs,
     ):
         self.on_file = on_file
-        self.name = name or self._default_name or type(self).__name__
-        self._entity_type = self.validate_entity_type(entity_type)
-        self._parent = None
-
         self.uid: uuid.UUID = uid or uuid.uuid4()
+        self._entity_type = self.validate_entity_type(entity_type)
+        self._parent: EntityContainer
+        self.metadata = metadata
+        self.parent = parent or self.workspace.root
+        self.name = name or self._default_name or type(self).__name__
+
         self.allow_delete = allow_delete
         self.allow_move = allow_move
         self.allow_rename = allow_rename
         self.clipping_ids = clipping_ids
-        self.metadata = metadata
-        self.parent = parent or self.workspace.root
+
         self.partially_hidden = partially_hidden
         self.public = public
         self.visible = visible
@@ -267,13 +274,17 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
         kwargs["entity_class"] = cls
         return EntityType.find_or_create(workspace, **kwargs)
 
-    @classmethod
-    def fix_up_name(cls, name: str) -> str:
-        """If the given  name is not a valid one, transforms it to make it valid
-        :return: a valid name built from the given name. It simply returns the given name
-        if it was already valid.
+    def fix_up_name(self, name: str) -> str:
         """
-        return name
+        If the given  name is not a valid one, transforms it to make it valid
+
+        :param name: Name to be fixed up.
+        :return: A valid incremented name built from the given name.
+        """
+        if self.parent is None:
+            return name
+
+        return get_unique_name_from_entities(name, self.parent.children)
 
     @abstractmethod
     def mask_by_extent(
@@ -361,6 +372,9 @@ class Entity(ABC):  # pylint: disable=too-many-instance-attributes
     @name.setter
     def name(self, new_name: str):
         self._name = self.fix_up_name(new_name)
+
+        if self.entity_type.name == "Entity":
+            self.entity_type.name = self._name
 
         if self.on_file:
             self.workspace.update_attribute(self, "attributes")
