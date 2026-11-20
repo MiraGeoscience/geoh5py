@@ -170,7 +170,7 @@ class Drillhole(Points):
             attributes, property_group=name
         )
 
-        data_object = self.workspace.create_entity(
+        data_object: FilenameData = self.workspace.create_entity(
             Data,
             entity={
                 "parent": self,
@@ -542,7 +542,7 @@ class Drillhole(Points):
     @depths.setter
     def depths(self, value: FloatData | np.ndarray | None):
         if isinstance(value, np.ndarray):
-            value = self.workspace.create_entity(
+            self._depths = self.workspace.create_entity(
                 Data,
                 entity={
                     "parent": self,
@@ -553,7 +553,7 @@ class Drillhole(Points):
                 entity_type={"primitive_type": "FLOAT"},
             )
 
-        if isinstance(value, (FloatData, type(None))):
+        elif isinstance(value, (FloatData, type(None))):
             self._depths = value
         else:
             raise ValueError(

@@ -198,7 +198,7 @@ class ObjectBase(EntityContainer):
                 {**attr, "name": name}, property_group=property_group, **kwargs
             )
 
-            data_object = self.workspace.create_entity(
+            data_object: Data = self.workspace.create_entity(
                 Data,
                 entity={
                     "parent": self,
@@ -338,7 +338,7 @@ class ObjectBase(EntityContainer):
         if self.visual_parameters is not None:
             raise UserWarning("Visual parameters already exist.")
 
-        visual_parameters = self.workspace.create_entity(
+        visual_parameters: VisualParameters = self.workspace.create_entity(
             Data,  # type: ignore
             save_on_creation=True,
             entity={

@@ -96,7 +96,7 @@ class Points(ObjectBase):
         }
         entity_type = {"name": name, "primitive_type": "FILENAME"}
 
-        file_data = self.workspace.create_entity(
+        file_data: FilenameData = self.workspace.create_entity(
             None, entity=attributes, entity_type=entity_type
         )
 
