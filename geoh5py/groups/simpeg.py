@@ -27,5 +27,5 @@ from .uijson import UIJsonGroup
 class SimPEGGroup(UIJsonGroup):
     """Group for SimPEG inversions."""
 
-    _TYPE_UID = uuid.UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{55ed3daf-c192-4d4b-a439-60fa987fe2b8}")
     _default_name = "SimPEG"

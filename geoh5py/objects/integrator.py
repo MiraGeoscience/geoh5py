@@ -32,7 +32,7 @@ class IntegratorPoints(Points):
     Sub-class of :obj:`geoh5py.objects.points.Points`.
     """
 
-    _TYPE_UID = uuid.UUID("{6832ACF3-78AA-44D3-8506-9574A3510C44}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{6832ACF3-78AA-44D3-8506-9574A3510C44}")
     _default_name = "Geoscience INTEGRATOR Points"
 
 
@@ -41,5 +41,5 @@ class NeighbourhoodSurface(Surface):
     Points object made up of vertices.
     """
 
-    _TYPE_UID = uuid.UUID("{88087FB8-76AE-445B-9CDF-68DBCE530404}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{88087FB8-76AE-445B-9CDF-68DBCE530404}")
     _default_name = "Neighbourhood Surface"

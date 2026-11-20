@@ -46,7 +46,7 @@ class UIJsonGroup(Group):
     :param options: Dictionary containing the ui.json structure.
     """
 
-    _TYPE_UID = UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
+    _TYPE_UID: UUID = UUID("{BB50AC61-A657-4926-9C82-067658E246A0}")
     _default_name = "UIJson"
 
     def __init__(

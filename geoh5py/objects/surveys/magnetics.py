@@ -33,7 +33,7 @@ class AirborneMagnetics(Curve):
 
     """
 
-    _TYPE_UID = uuid.UUID("4b99204c-d133-4579-a916-a9c8b98cfccb")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{4b99204c-d133-4579-a916-a9c8b98cfccb}")
     _default_name = "Survey Airborne Magnetics"
 
 
@@ -45,5 +45,5 @@ class GroundMagnetics(Curve):
 
     """
 
-    _TYPE_UID = uuid.UUID("{028e4905-cc97-4dab-b1bf-d76f58b501b5}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{028e4905-cc97-4dab-b1bf-d76f58b501b5}")
     _default_name = "Survey Ground Magnetics"

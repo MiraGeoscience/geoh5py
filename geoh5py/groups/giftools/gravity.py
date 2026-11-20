@@ -52,7 +52,7 @@ GZINV3D_PARAMETERS: dict[str, Any] = {
 class GZInv3D(BaseGIFtoolsGroup):
     """Inversion group for UBC-GZINV3D (gzinv3d_60)."""
 
-    _TYPE_UID = UUID("{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}")
+    _TYPE_UID: UUID = UUID("{20eb4ff8-bdfe-43f3-8745-f418dcc9e14a}")
     _default_name = "gzinv3d_60"
     _default_parameters: dict[str, Any] = GZINV3D_PARAMETERS
 
@@ -84,6 +84,6 @@ GZFOR3D_PARAMETERS: dict[str, Any] = {
 class GZFor3D(BaseGIFtoolsGroup):
     """Inversion group for UBC-GZINV3D (gzinv3d_60)."""
 
-    _TYPE_UID = UUID("{a4857df0-d175-4824-ac5d-cecfdcc2f20b}")
+    _TYPE_UID: UUID = UUID("{a4857df0-d175-4824-ac5d-cecfdcc2f20b}")
     _default_name = "gzfor3d"
     _default_parameters: dict[str, Any] = GZFOR3D_PARAMETERS

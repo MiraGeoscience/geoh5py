@@ -51,7 +51,7 @@ class VPModel(GridObject, DrapeModel):
     :param weight_property_id: UUID or name of the weight property.
     """
 
-    _TYPE_UID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{7d37f28f-f379-4006-984e-043db439ee95}")
     _default_name = "VP Model"
     _VALUE_MAP = {
         0: "Unknown",

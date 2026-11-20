@@ -202,7 +202,7 @@ class AirborneAppConReceivers(AirborneAppConSurvey, Curve):  # pylint: disable=t
     An airborne apparent conductivity survey object.
     """
 
-    _TYPE_UID = uuid.UUID("{9f4772d3-92e7-4601-a3c7-23042c2a76ca}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{9f4772d3-92e7-4601-a3c7-23042c2a76ca}")
     __TYPE = "Receivers"
     _default_name = "Airborne Apparent Conductivity rx"
 
@@ -221,7 +221,7 @@ class AirborneAppConBaseStations(AirborneAppConSurvey, Points):
     An airborne apparent conductivity survey object.
     """
 
-    _TYPE_UID = uuid.UUID("{b389d178-97eb-4ba1-b378-b8b1e8ab35ff}")
+    _TYPE_UID: uuid.UUID = uuid.UUID("{b389d178-97eb-4ba1-b378-b8b1e8ab35ff}")
     __TYPE = "Base stations"
     _default_name = "Airborne Apparent Conductivity base"
     _minimum_vertices = 1

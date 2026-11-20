@@ -52,6 +52,6 @@ GGINV3D_PARAMETERS: dict[str, Any] = {
 class GGInv3D(BaseGIFtoolsGroup):
     """Inversion group for UBC-GGINV3D (gginv3d)."""
 
-    _TYPE_UID = UUID("{0f080369-b3a3-464c-83fa-9b3c1efa9895}")
+    _TYPE_UID: UUID = UUID("{0f080369-b3a3-464c-83fa-9b3c1efa9895}")
     _default_name = "gginv3d"
     _default_parameters: dict[str, Any] = GGINV3D_PARAMETERS

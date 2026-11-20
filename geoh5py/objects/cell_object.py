@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from uuid import UUID
 
 import numpy as np
 
@@ -39,7 +38,6 @@ class CellObject(Points, ABC):
     """
 
     _attribute_map: dict = Points._attribute_map.copy()
-    _TYPE_UID: UUID | None = None
 
     def __init__(
         self,

@@ -189,26 +189,24 @@ def test_concatenated_entities(tmp_path):
         concat = class_type(entity_type=entity_type)
 
         class_obj_type = type("TestObject", (ConcatenatedObject, Drillhole), {})
-        object_type = ObjectBase.find_or_create_type(workspace)
+        object_type = Drillhole.find_or_create_type(workspace)
 
-        with pytest.raises(UserWarning) as error:
-            concat_object = class_obj_type(entity_type=object_type)
-
-        assert (
-            "Creating a concatenated object must have a parent of type Concatenator."
-            in str(error)
-        )
+        with pytest.raises(
+            UserWarning,
+            match="Creating a concatenated object must have a parent of type Concatenator",
+        ):
+            class_obj_type(entity_type=object_type)
 
         concat_object = class_obj_type(entity_type=object_type, parent=concat)
 
-        with pytest.raises(UserWarning) as error:
+        with pytest.raises(
+            UserWarning, match="Creating a concatenated data must have a parent"
+        ):
             class_type = type("TestData", (ConcatenatedData, FloatData), {})
             dtype = data_type.DataType.find_or_create(
                 workspace, primitive_type=FloatData
             )
             class_type(entity_type=dtype)
-
-        assert "Creating a concatenated data must have a parent" in str(error)
 
         data = class_type(entity_type=dtype, parent=concat_object)
 

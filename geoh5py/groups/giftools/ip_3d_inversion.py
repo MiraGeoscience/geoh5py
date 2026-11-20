@@ -101,6 +101,6 @@ IPINV3D_PARAMETERS: dict[str, Any] = {
 class IPInv3D(BaseGIFtoolsGroup):
     """Inversion group for UBC-IPINV3D (ipinv3d)."""
 
-    _TYPE_UID = UUID("{9f9543a0-e857-4a56-ab66-9f21e2b002c6}")
+    _TYPE_UID: UUID = UUID("{9f9543a0-e857-4a56-ab66-9f21e2b002c6}")
     _default_name = "ipinv3d"
     _default_parameters: dict[str, Any] = IPINV3D_PARAMETERS
