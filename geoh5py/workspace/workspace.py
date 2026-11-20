@@ -547,9 +547,9 @@ class Workspace(AbstractContextManager):
 
         try:
             if entity_class is None or issubclass(entity_class, Data):
-                created_entity = self.create_data(Data, entity, entity_type)
+                created_entity: Data = self.create_data(Data, entity, entity_type)
             else:
-                created_entity = self.create_object_or_group(
+                created_entity: Group | ObjectBase | None = self.create_object_or_group(
                     entity_class, entity, entity_type
                 )
         except Exception:

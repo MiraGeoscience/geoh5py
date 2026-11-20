@@ -661,7 +661,7 @@ class ObjectBase(EntityContainer):
 
         return data
 
-    def remove_children(self, children: list[Entity | PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup | None]):
         """
         Remove children from the list of children entities.
 

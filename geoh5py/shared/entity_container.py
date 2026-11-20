@@ -287,7 +287,7 @@ class EntityContainer(Entity):
         ]
         return sorted(name_list)
 
-    def remove_children(self, children: list[Entity | PropertyGroup]):
+    def remove_children(self, children: list[Entity | PropertyGroup | None]):
         """
         Remove children from the list of children entities.
 
