@@ -34,11 +34,9 @@ requirements:
     - defusedxml >=0.7.1, 0.7.*
     - h5py 3.15.*
     - numpy 2.4.*
-    - pillow >=12.2.0, <14.0.0
+    - pillow >=13.0.0, 13.*  # Security floor (GHSA-wqgw-9xfh-qf2g).
     - pydantic 2.12.*
     - psutil >=7.2.2, 7.2.*
-  run_constraints:
-    - pillow >=13.0.0  # Security floor (GHSA-wqgw-9xfh-qf2g).
 
 tests:
   - python:
