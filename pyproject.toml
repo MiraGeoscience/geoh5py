@@ -1,11 +1,11 @@
 [build-system]
 requires = [
   "poetry-core>=2.2.1",
-  "poetry-dynamic-versioning>=1.9.1,<2.0",
+  "poetry-dynamic-versioning>=1.9.1,==1.*",
   # list dependencies to work with PIP_NO_DEPS=1
   "MarkupSafe>=2.0",
-  "dunamai>=1.25,<2.0",
-  "jinja2>=3.0,<4.0",
+  "dunamai>=1.25,==1.*",
+  "jinja2==3.*",
   "packaging>=24.0",
   "tomlkit>=0.13",
 ]
@@ -34,12 +34,12 @@ maintainers = [
     { name = "Matthieu Cedou", email = "matthieuc@mirageoscience.com" }
 ]
 dependencies = [
-    "defusedxml>=0.7.1,<0.8.0",
-    "h5py>=3.15.0,<3.16.0",
-    "numpy>=2.4.0,<2.5.0",
-    "Pillow>=13.0.0,<14.0.0",  # Security floor (GHSA-wqgw-9xfh-qf2g).
-    "psutil>=7.2.2,<7.3.0",
-    "pydantic>=2.12.0,<2.13.0",
+    "defusedxml>=0.7.1,==0.7.*",
+    "h5py==3.15.*",
+    "numpy==2.4.*",
+    "Pillow==13.*",  # Security floor (GHSA-wqgw-9xfh-qf2g).
+    "psutil>=7.2.2,==7.2.*",
+    "pydantic==2.12.*",
 ]
 
 [project.urls]
@@ -49,17 +49,17 @@ documentation = "https://mirageoscience-geoh5py.readthedocs-hosted.com/"
 
 [dependency-groups]
 dev = [
-    "lockfile>=0.12.2,<0.13.0",
+    "lockfile>=0.12.2,==0.12.*",
     "packaging",
     "Pygments",
     "pylint",
     "pytest",
     "pytest-cov",
     "pyyaml",
-    "scipy>=1.17.0,<1.18.0",
-    "sphinx>=3.0,<4.0",
-    "sphinx-autodoc-typehints>=1.10,<2.0",
-    "sphinx-rtd-theme>=0.4.3,<0.5.0",
+    "scipy==1.17.*",
+    "sphinx==3.*",
+    "sphinx-autodoc-typehints>=1.10,==1.*",
+    "sphinx-rtd-theme>=0.4.3,==0.4.*",
 ]
 
 [tool.poetry]
