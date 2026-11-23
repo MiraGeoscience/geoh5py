@@ -26,3 +26,4 @@ from __future__ import annotations
 from .utils import monitored_directory_copy
 from .forms import BaseForm
 from .ui_json import UIJson
+from .input_file import InputFile
