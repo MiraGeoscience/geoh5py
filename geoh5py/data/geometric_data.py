@@ -94,4 +94,4 @@ class GeometricDataConstants(Data):
             self.workspace.update_attribute(self, "attributes")
 
             if hasattr(self._entity_type, "set_parent_reference"):
-                self._entity_type.set_parent_reference(self, new_name)
+                self._entity_type.set_parent_reference(self, self._name)

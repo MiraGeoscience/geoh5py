@@ -80,9 +80,13 @@ class ConcatenatedObject(Concatenated, ObjectBase):
             if "Property:" in key:
                 child_data = self.workspace.get_entity(uuid.UUID(value))[0]
                 if child_data is None:
-                    attributes: dict = self.concatenator.get_concatenated_attributes(
-                        value
-                    ).copy()
+                    attributes = {
+                        INV_KEY_MAP.get(attr, attr): val
+                        for attr, val in self.concatenator.get_concatenated_attributes(
+                            value
+                        ).items()
+                    }
+
                     attributes["parent"] = self
                     self.workspace.create_from_concatenation(attributes)
                 elif not isinstance(child_data, ConcatenatedPropertyGroup):

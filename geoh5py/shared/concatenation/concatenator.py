@@ -347,11 +347,11 @@ class Concatenator(Group):  # pylint: disable=too-many-public-methods
 
         for key in self.concatenated_object_ids:
             attrs = {
-                attr: val
+                INV_KEY_MAP.get(attr, attr): val
                 for attr, val in self.get_concatenated_attributes(key).items()
                 if "Property" not in attr
             }
-            attrs["surveys"] = self.fetch_values(uuid.UUID(attrs.get("ID")), "surveys")
+            attrs["surveys"] = self.fetch_values(uuid.UUID(attrs.get("uid")), "surveys")
             attrs["parent"] = self
             attr_dict[key] = self.workspace.create_from_concatenation(attrs)
 

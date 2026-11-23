@@ -339,9 +339,6 @@ class Data(Entity):
                 f"does not match the data type {type(self)}."
             )
 
-        if entity_type.name == "Entity":
-            entity_type.name = self.name
-
         return entity_type
 
     @staticmethod

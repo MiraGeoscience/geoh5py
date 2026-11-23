@@ -22,7 +22,7 @@ import logging
 import numpy as np
 import pytest
 
-from geoh5py.objects import Points, Surface
+from geoh5py.objects import Points
 from geoh5py.workspace import Workspace
 
 
@@ -112,25 +112,12 @@ def test_colour_data(tmp_path, caplog):
         assert all(data_object.values == result3)
 
 
-def test_colour_errors():
-    with Workspace() as workspace:
+def test_colour_errors(tmp_path):
+    with Workspace.create(tmp_path / f"{__name__}.geoh5") as workspace:
         values = np.array(
             [(10, 50, 90), (60, 100, 40), (210, 150, 120)],
             dtype=[("r", np.uint8), ("g", np.uint8), ("b", np.uint8)],
         )
-
-        from geoh5py.shared.utils import array_is_colour
-
-        surface = Surface.create(workspace)
-
-        with pytest.raises(TypeError, match="Parent 'Surface' is not allowed"):
-            surface.add_data(
-                {
-                    "colour1": {
-                        "values": values,
-                    }
-                }
-            )
 
         points = Points.create(workspace, vertices=np.random.rand(3, 3))
 

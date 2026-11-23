@@ -110,7 +110,7 @@ def test_create_group(tmp_path):
 
     # Read the group back in
     with Workspace(h5file_path) as workspace:
-        rec_obj = workspace.get_entity(group_name)[0]
+        rec_obj = workspace.get_entity(group.name)[0]
 
         assert rec_obj.mesh == obj.uid
         assert rec_obj.reference_data == reference.uid

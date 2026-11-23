@@ -114,6 +114,7 @@ INV_KEY_MAP = {
     "NW": "w_count",
     "options": "options",
     "Object": "OBJECT",
+    "Object Type ID": "object_type_id",
     "Origin": "origin",
     "Octree Cells": "octree_cells",
     "parameters": "parameters",
@@ -143,6 +144,7 @@ INV_KEY_MAP = {
     "Trace": "trace",
     "TraceDepth": "trace_depth",
     "Transparent no data": "transparent_no_data",
+    "Type ID": "type_id",
     "Unknown": "UNKNOWN",
     "U cell delimiters": "u_cell_delimiters",
     "V cell delimiters": "v_cell_delimiters",
@@ -1150,22 +1152,24 @@ def get_unique_name_from_entities(
     :return: A unique name.
     """
 
-    def child_check(child_: Any) -> bool:
+    def child_check(child: Any) -> bool:
         """
         Function to filter entities based on instance type.
         """
-        if types is not None and not isinstance(child_, types):
+        if types is not None and not isinstance(child, types):
             return False
         return True
 
     names = []
-    for child in entities:
-        if child_check(child):
-            sub_name = getattr(child, key, None)
-            if isinstance(sub_name, str):
-                names.append(sub_name)
-            elif isinstance(sub_name, Iterable):
-                names.extend([str(n) for n in sub_name if isinstance(n, str)])
+    for entity in entities:
+        if not child_check(entity):
+            continue
+
+        sub_name = getattr(entity, key, None)
+        if isinstance(sub_name, str):
+            names.append(sub_name)
+        elif isinstance(sub_name, Iterable):
+            names.extend([str(n) for n in sub_name if isinstance(n, str)])
 
     return find_unique_name(name, names)
 

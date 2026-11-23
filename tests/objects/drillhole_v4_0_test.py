@@ -492,7 +492,7 @@ def test_append_data_to_tables(tmp_path):
             ignore=["_metadata", "_parent"],
         )
 
-        well_b_reload = workspace.get_entity("Number 2")[0]
+        well_b_reload = workspace.get_entity("Number 2(1)")[0]
 
         compare_entities(
             well_b,
@@ -520,7 +520,7 @@ def test_append_data_to_tables(tmp_path):
         )
 
         assert (
-            workspace.get_entity("Number 2")[0].get_data_list()
+            workspace.get_entity("Number 2(1)")[0].get_data_list()
             == well_b.get_data_list()
         )
 

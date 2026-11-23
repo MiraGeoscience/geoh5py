@@ -296,10 +296,9 @@ class PropertyGroup:
 
         if getattr(self.parent, "_property_groups", None):
             original_name = new_name
-            property_groups = (
-                self.parent.property_groups if self.parent.property_groups else []
-            )
-            new_name = get_unique_name_from_entities(new_name, property_groups)
+
+            if isinstance(property_groups := self.parent.property_groups, list):
+                new_name = get_unique_name_from_entities(new_name, property_groups)
 
             if original_name != new_name:
                 warn(
