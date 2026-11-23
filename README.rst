@@ -74,6 +74,8 @@ To configure the development environment and tools, please see `README-dev.rst`_
 
 License
 ^^^^^^^
+Copyright (c) 2020-2026 Mira Geoscience Ltd.
+
 geoh5py is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -97,11 +99,6 @@ Third Party Software notices and/or additional terms and conditions are located 
 `THIRD_PARTY_SOFTWARE.rst`_ file.
 
 .. _THIRD_PARTY_SOFTWARE.rst: docs/THIRD_PARTY_SOFTWARE.rst
-
-
-Copyright
-^^^^^^^^^
-Copyright (c) 2020-2026 Mira Geoscience Ltd.
 
 
 Citing geoh5py
