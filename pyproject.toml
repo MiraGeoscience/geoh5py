@@ -85,7 +85,7 @@ include = [
 version = "0.0.0.dev0"
 
 [tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.9.1,<2.0.0", extras = ["plugin"] }
+poetry-dynamic-versioning = { version = ">=1.9.1, 1.*", extras = ["plugin"] }
 
 [tool.poetry-dynamic-versioning]
 bump = true
