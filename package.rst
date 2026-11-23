@@ -34,6 +34,8 @@ and services.
 
 License
 ^^^^^^^
+Copyright (c) 2020-2026 Mira Geoscience Ltd.
+
 geoh5py is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -46,8 +48,3 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with geoh5py.  If not, see <https://www.gnu.org/licenses/>.
-
-
-Copyright
-^^^^^^^^^
-Copyright (c) 2020-2026 Mira Geoscience Ltd.
