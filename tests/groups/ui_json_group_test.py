@@ -92,7 +92,7 @@ def test_uijson_group(tmp_path):
 
             assert new_workspace.get_entity("something.ui.json")[0]
             assert Path(group.options["geoh5"]).stem == "testUIJSONGroup"
-            assert Path(rec_obj.options["geoh5"]).stem == "testGroup2"
+            assert Path(rec_obj.options["geoh5"]).stem == "testUIJSONGroup"
             assert rec_obj.options["out_group"] == str(group.uid)
 
 

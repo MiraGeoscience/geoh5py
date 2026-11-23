@@ -141,6 +141,28 @@ def optional_uuid_mapper(value: Any):
     return dict_mapper(value, [str2none, entity2uuid])
 
 
+def str2list(value: Any) -> Any:
+    """
+    Convert string representation of numbers to list of floats.
+
+    Maps string values like "[1,2,3]" or "1,2,3" to [1.0, 2.0, 3.0].
+    Handles special cases like "inf", "-inf", and empty strings.
+
+    :param value: Value to convert, typically a string or already converted type.
+
+    :return: List of floats if conversion successful, original value otherwise.
+    """
+    if isinstance(value, str):
+        if value in ["inf", "-inf", ""]:
+            return value
+        try:
+            return [float(n) for n in value.split(",") if n != ""]
+        except ValueError:
+            return value
+
+    return value
+
+
 def to_class(
     value: UUID | type[objects.ObjectBase] | type[groups.Group],
 ) -> type[objects.ObjectBase] | type[groups.Group]:
