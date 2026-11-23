@@ -94,7 +94,8 @@ class UIJsonGroup(Group):
 
         :return: The prepared options dictionary.
         """
-        options["geoh5"] = str(self.workspace.h5file)
+        if options.get("geoh5", None) in ["", None]:
+            options["geoh5"] = str(self.workspace.h5file)
 
         out_group = options.get("out_group", None)
 
