@@ -22,7 +22,7 @@ repos:
     -   id: pycln
         args: [--config=pyproject.toml]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.5
+    rev: v0.17.6
     hooks:
     -   id: ruff-check
         args:
@@ -63,7 +63,7 @@ repos:
     -   id: relint
         args: [-W]  # to fail on warnings
 -   repo: https://github.com/MiraGeoscience/pre-commit-hooks
-    rev: v1.1.0
+    rev: v1.2.0
     hooks:
     -   id: check-copyright
         files: (^package\.rst|^LICENSE|^README(|-dev)\.rst|\.py|\.pyi)$
