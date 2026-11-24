@@ -41,10 +41,6 @@ geoscientific data (points, curve, surface, 2D and 3D grids) in
 ``*.geoh5`` file format. Users will be able to directly leverage the powerful visualization
 capabilities of `Geoscience ANALYST <https://mirageoscience.com/mining-industry-software/geoscience-analyst/>`_.
 
-.. contents:: Table of Contents
-   :local:
-   :depth: 3
-
 Documentation
 ^^^^^^^^^^^^^
 
@@ -108,3 +104,7 @@ If you use **geoh5py** in your research, please cite it as follows:
 
 .. image:: https://zenodo.org/badge/207860560.svg
    :target: https://zenodo.org/badge/latestdoi/207860560
+
+Trademarks
+^^^^^^^^^^
+"Python" and the Python logos are trademarks or registered trademarks of the Python Software Foundation.
