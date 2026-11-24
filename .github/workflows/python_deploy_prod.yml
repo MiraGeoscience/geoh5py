@@ -53,7 +53,7 @@ jobs:
     name: Publish production Conda package on JFrog Artifactory
     needs: validate-release-tag
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-conda == 'true' }}
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@edb72d7524d25db3b4eb976890eb6837a8eb39f8 # v4.0.1
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_conda_assets.yml@4a000ba323d8818b874c907dd7cfb3b29960cba4 # v4.1.0
     permissions:
       contents: write
     with:
@@ -66,7 +66,7 @@ jobs:
     name: Publish production PyPI package (JFrog Artifactory)
     needs: validate-release-tag
     if: ${{ github.event_name == 'release' || github.event.inputs.publish-pypi == 'true' }}
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@edb72d7524d25db3b4eb976890eb6837a8eb39f8 # v4.0.1
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-release_pypi_assets.yml@4a000ba323d8818b874c907dd7cfb3b29960cba4 # v4.1.0
     permissions:
       contents: write
     with:
@@ -86,7 +86,7 @@ jobs:
       id-token: write
     steps:
       - name: Download release assets
-        uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-download_dist_release@edb72d7524d25db3b4eb976890eb6837a8eb39f8 # v4.0.1
+        uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-download_dist_release@4a000ba323d8818b874c907dd7cfb3b29960cba4 # v4.1.0
         with:
           release-tag: ${{ github.event.release.tag_name || github.ref_name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
