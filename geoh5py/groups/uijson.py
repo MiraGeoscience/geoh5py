@@ -116,7 +116,7 @@ class UIJsonGroup(Group):
         copy_relatives: bool = True,
         clear_cache: bool = False,
         **kwargs,
-    ) -> UIJsonGroup | None:
+    ) -> UIJsonGroup:
         """
         Sub-class extension of :func:`~geoh5py.groups.base.Group.copy`.
 
