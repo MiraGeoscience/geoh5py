@@ -129,7 +129,13 @@ class UIJson(BaseModel):
         :return: Flattened dictionary of key/value pairs.
         """
         data = {}
-        fields = self.model_fields_set if active_only else self.model_fields
+
+        # Preserve the order of fields as defined in the model
+        fields = [
+            name
+            for name in self.model_fields
+            if not active_only or name in self.model_fields_set
+        ]
 
         for field in fields:
             if skip_disabled and not self.is_enabled(field):
