@@ -216,14 +216,15 @@ def to_list(value: Any) -> list[Any]:
     return value
 
 
-def to_path(value: list[str]) -> list[Path]:
+def to_path(value: list[str]) -> list[Path | None]:
     """Promote path strings to patlib.Path objects."""
-    out = []
+    out: list[Path | None] = []
     for path in value:
-        if isinstance(path, str):
-            out.append(Path(path))
+        if path == "" or None:
+            out.append(None)
         else:
-            out.append(path)
+            out.append(Path(path))
+
     return out
 
 

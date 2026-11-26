@@ -36,6 +36,7 @@ from pydantic import (
 from pydantic.alias_generators import to_camel, to_snake
 
 from geoh5py.groups import GroupTypeEnum
+from geoh5py.shared.utils import dict_mapper, none2str, path2str, str2none
 from geoh5py.ui_json.annotations import (
     AssociationOptions,
     DataTypeOptions,
@@ -330,17 +331,24 @@ class FileForm(BaseForm):
     :param file_type: List of file extensions (without the dot) for each file type.
     """
 
-    value: Path
+    value: Path | None
     file_description: list[str]
     file_type: list[str]
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def str2path(cls, value):
+        return dict_mapper(
+            value, [str2none, lambda val: Path(val) if val is not None else None]
+        )
+
     @field_serializer("value", when_used="json")
-    def to_string(self, value: Path) -> str:
-        return str(value)
+    def to_string(self, value: Path | None) -> str:
+        return dict_mapper(value, [none2str, path2str])
 
     @model_validator(mode="after")
     def value_file_type(self):
-        if self.value.suffix[1:] not in self.file_type:
+        if self.value is not None and self.value.suffix[1:] not in self.file_type:
             raise ValueError(f"Provided file {self.value} has an invalid extension.")
         return self
 
@@ -363,7 +371,7 @@ class MultiFileForm(BaseForm):
 
     @field_serializer("value", when_used="json")
     def to_string(self, value: list[Path]) -> str:
-        return ";".join([str(path) for path in value])
+        return ";".join([dict_mapper(path, [none2str, path2str]) for path in value])
 
     @field_validator("file_multi", mode="before")
     @classmethod
@@ -375,6 +383,9 @@ class MultiFileForm(BaseForm):
     def valid_file(cls, value):
         bad_paths = []
         for path in value:
+            if path is None:
+                continue
+
             if not path.exists():
                 bad_paths.append(path)
         if any(bad_paths):
@@ -391,8 +402,12 @@ class MultiFileForm(BaseForm):
     def value_file_type(self):
         bad_paths = []
         for path in self.value:
+            if path is None:
+                continue
+
             if path.suffix[1:] not in self.file_type:
                 bad_paths.append(path)
+
         if any(bad_paths):
             raise ValueError(f"Provided paths {bad_paths} have invalid extensions.")
         return self
