@@ -196,7 +196,7 @@ class UIJson(BaseModel):
                 form_type = BaseForm.infer(value)
                 fields[name] = (form_type, ...)
             else:
-                fields[name] = (type(value), ...)
+                fields[name] = (Any, ...)
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
