@@ -195,8 +195,8 @@ class UIJson(BaseModel):
             if isinstance(value, dict):
                 form_type = BaseForm.infer(value)
                 fields[name] = (form_type, ...)
-            # else:
-            #     fields[name] = (AnyJsonType, ...)
+            else:
+                fields[name] = (type(value), ...)
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),
