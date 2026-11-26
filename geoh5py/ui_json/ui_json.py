@@ -133,7 +133,7 @@ class UIJson(BaseModel):
         # Preserve the order of fields as defined in the model
         fields = [
             name
-            for name in self.model_fields
+            for name in self.model_fields.keys()
             if not active_only or name in self.model_fields_set
         ]
 
