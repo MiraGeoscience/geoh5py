@@ -345,7 +345,7 @@ def test_multi_file_form(tmp_path):
         file_multi=True,
     )
 
-    assert form.value is None
+    assert form.value == [None]
 
 
 def test_directory_form(tmp_path):

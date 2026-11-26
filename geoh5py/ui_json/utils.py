@@ -220,7 +220,7 @@ def to_path(value: list[str]) -> list[Path | None]:
     """Promote path strings to patlib.Path objects."""
     out: list[Path | None] = []
     for path in value:
-        if path == "" or None:
+        if path is None or path == "":
             out.append(None)
         else:
             out.append(Path(path))
