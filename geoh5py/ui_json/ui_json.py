@@ -133,7 +133,7 @@ class UIJson(BaseModel):
         # Preserve the order of fields as defined in the model
         fields = [
             name
-            for name in self.model_fields
+            for name in self.model_fields.keys()
             if not active_only or name in self.model_fields_set
         ]
 
@@ -195,8 +195,8 @@ class UIJson(BaseModel):
             if isinstance(value, dict):
                 form_type = BaseForm.infer(value)
                 fields[name] = (form_type, ...)
-            # else:
-            #     fields[name] = (AnyJsonType, ...)
+            elif name not in cls.model_fields.keys():
+                fields[name] = (Any, ...)
 
         model = create_model(  # type: ignore
             kwargs.get("title", title),

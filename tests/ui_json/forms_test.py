@@ -275,6 +275,15 @@ def test_file_form(tmp_path):
             file_type=["wrong_ext"],
         )
 
+    file_form = FileForm(
+        label="file",
+        value="",
+        file_description=["something"],
+        file_type=["ext"],
+    )
+
+    assert file_form.value is None
+
 
 def test_multi_file_form(tmp_path):
     with Workspace.create(tmp_path / "test.geoh5") as geoh5:
@@ -286,7 +295,7 @@ def test_multi_file_form(tmp_path):
             value=[str(p) for p in paths],
             file_description=["something"],
             file_type=["ext"],
-            file_multi=None,
+            file_multi=True,
         )
 
         multi_file_form = setup_from_uijson(geoh5, multi_file_form)
@@ -327,6 +336,16 @@ def test_multi_file_form(tmp_path):
             file_type=["wrong_ext"],
             file_multi=True,
         )
+
+    form = MultiFileForm(
+        label="Files",
+        value="",
+        file_description=["something"],
+        file_type=["ext"],
+        file_multi=True,
+    )
+
+    assert form.value == [None]
 
 
 def test_directory_form(tmp_path):

@@ -111,7 +111,7 @@ OptionalValueList = Annotated[
 ]
 
 PathList = Annotated[
-    list[Path],
+    list[Path | None],
     BeforeValidator(to_path),
     BeforeValidator(to_list),
     PlainSerializer(stringify, when_used="json"),
