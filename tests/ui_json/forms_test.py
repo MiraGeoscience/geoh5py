@@ -288,12 +288,12 @@ def test_file_form(tmp_path):
     # Case insensitive extension
     file_form = FileForm(
         label="file",
-        value=tmp_path / "my_file.EXT",
+        value=filepath,
         file_description=["something"],
-        file_type=["ext"],
+        file_type=["EXT"],
     )
 
-    assert file_form.value == tmp_path / "my_file.EXT"
+    assert file_form.value == tmp_path / "my_file.ext"
 
 
 def test_multi_file_form(tmp_path):
@@ -361,9 +361,9 @@ def test_multi_file_form(tmp_path):
 
     form = MultiFileForm(
         label="Files",
-        value=[tmp_path / "my_file.ext", tmp_path / "my_other_file.EXT"],
+        value=[str(p) for p in paths],
         file_description=["something"],
-        file_type=["ext"],
+        file_type=["EXT"],
         file_multi=True,
     )
 
