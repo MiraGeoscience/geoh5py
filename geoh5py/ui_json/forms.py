@@ -335,6 +335,8 @@ class FileForm(BaseForm):
     file_description: list[str]
     file_type: list[str]
 
+    _file_ext_lower: list[str] = []
+
     @field_validator("value", mode="before")
     @classmethod
     def str2path(cls, value):
@@ -347,8 +349,16 @@ class FileForm(BaseForm):
         return dict_mapper(value, [none2str, path2str])
 
     @model_validator(mode="after")
+    def case_insensitive_extensions(self):
+        self._file_ext_lower = ["." + ext.lower() for ext in self.file_type]
+        return self
+
+    @model_validator(mode="after")
     def value_file_type(self):
-        if self.value is not None and self.value.suffix[1:] not in self.file_type:
+        if (
+            self.value is not None
+            and self.value.suffix.lower() not in self._file_ext_lower
+        ):
             raise ValueError(f"Provided file {self.value} has an invalid extension.")
         return self
 
@@ -368,6 +378,8 @@ class MultiFileForm(BaseForm):
     file_description: list[str]
     file_type: list[str]
     file_multi: bool = True
+
+    _file_ext_lower: list[str] = []
 
     @field_serializer("value", when_used="json")
     def to_string(self, value: list[Path]) -> str:
@@ -393,6 +405,11 @@ class MultiFileForm(BaseForm):
         return value
 
     @model_validator(mode="after")
+    def case_insensitive_extensions(self):
+        self._file_ext_lower = ["." + ext.lower() for ext in self.file_type]
+        return self
+
+    @model_validator(mode="after")
     def same_length(self):
         if len(self.file_description) != len(self.file_type):
             raise ValueError("File description and type lists must be the same length.")
@@ -405,7 +422,7 @@ class MultiFileForm(BaseForm):
             if path is None:
                 continue
 
-            if path.suffix[1:] not in self.file_type:
+            if path.suffix.lower() not in self._file_ext_lower:
                 bad_paths.append(path)
 
         if any(bad_paths):
