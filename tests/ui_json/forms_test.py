@@ -275,6 +275,7 @@ def test_file_form(tmp_path):
             file_type=["wrong_ext"],
         )
 
+    # Blank form
     file_form = FileForm(
         label="file",
         value="",
@@ -283,6 +284,16 @@ def test_file_form(tmp_path):
     )
 
     assert file_form.value is None
+
+    # Case insensitive extension
+    file_form = FileForm(
+        label="file",
+        value=filepath,
+        file_description=["something"],
+        file_type=["EXT"],
+    )
+
+    assert file_form.value == tmp_path / "my_file.ext"
 
 
 def test_multi_file_form(tmp_path):
@@ -337,6 +348,7 @@ def test_multi_file_form(tmp_path):
             file_multi=True,
         )
 
+    # Test blank form
     form = MultiFileForm(
         label="Files",
         value="",
@@ -346,6 +358,14 @@ def test_multi_file_form(tmp_path):
     )
 
     assert form.value == [None]
+
+    form = MultiFileForm(
+        label="Files",
+        value=[str(p) for p in paths],
+        file_description=["something"],
+        file_type=["EXT"],
+        file_multi=True,
+    )
 
 
 def test_directory_form(tmp_path):

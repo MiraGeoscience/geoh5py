@@ -346,9 +346,19 @@ class FileForm(BaseForm):
     def to_string(self, value: Path | None) -> str:
         return dict_mapper(value, [none2str, path2str])
 
+    @property
+    def file_ext_lower(self):
+        """
+        Return the file extensions in lower case with a leading dot.
+        """
+        return ["." + ext.lower() for ext in self.file_type]
+
     @model_validator(mode="after")
     def value_file_type(self):
-        if self.value is not None and self.value.suffix[1:] not in self.file_type:
+        if (
+            self.value is not None
+            and self.value.suffix.lower() not in self.file_ext_lower
+        ):
             raise ValueError(f"Provided file {self.value} has an invalid extension.")
         return self
 
@@ -392,6 +402,13 @@ class MultiFileForm(BaseForm):
             raise ValueError(f"Provided path(s) {bad_paths} does not exist.")
         return value
 
+    @property
+    def file_ext_lower(self):
+        """
+        Return the file extensions in lower case with a leading dot.
+        """
+        return ["." + ext.lower() for ext in self.file_type]
+
     @model_validator(mode="after")
     def same_length(self):
         if len(self.file_description) != len(self.file_type):
@@ -405,7 +422,7 @@ class MultiFileForm(BaseForm):
             if path is None:
                 continue
 
-            if path.suffix[1:] not in self.file_type:
+            if path.suffix.lower() not in self.file_ext_lower:
                 bad_paths.append(path)
 
         if any(bad_paths):
